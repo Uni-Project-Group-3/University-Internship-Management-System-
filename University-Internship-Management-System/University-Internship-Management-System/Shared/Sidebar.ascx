@@ -18,6 +18,10 @@
             <svg class="app-sidebar__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M4 21V4h11v17M15 9h5v12M1 21h22M8 8h3m-3 4h3m-3 4h3" /></svg>
             <span>Manage Companies</span>
         </asp:HyperLink>
+        <asp:HyperLink ID="PlacementsLink" runat="server" NavigateUrl="~/Coordinator/MonitorPlacementsProgress.aspx" CssClass="app-sidebar__link" Visible="false">
+            <svg class="app-sidebar__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2" /><path d="M7 15v-3m5 3V8m5 7v-5" /></svg>
+            <span>Monitor Placements &amp; Progress</span>
+        </asp:HyperLink>
     </nav>
     <div class="app-sidebar__footer">
         <div class="app-sidebar__note">
