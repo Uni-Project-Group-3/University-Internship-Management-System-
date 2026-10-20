@@ -1,0 +1,148 @@
+/* جميع الألوان من الملف المشترك، والتنسيق للمحتوى الرئيسي فقط */
+body {
+    margin: 0;
+    background: var(--background);
+    color: var(--text);
+    font-family: var(--font-body);
+}
+
+.review-page {
+    max-width: 1240px;
+    margin: 0 auto;
+    padding: 48px 32px;
+}
+
+.page-heading { margin-bottom: 24px; }
+.eyebrow { color: var(--primary); font-size: 11px; font-weight: 700; letter-spacing: 1.4px; }
+.page-heading h1 { margin: 10px 0; font-size: clamp(28px, 4vw, 36px); font-weight: 700; }
+.page-heading > p:last-child { color: var(--text-secondary); }
+.preview-note { color: var(--text-secondary); font-size: 12px; line-height: 1.8; margin: 12px 0 20px; }
+.selection-panel { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 20px; padding: 24px; margin-bottom: 28px; background: var(--surface); border: 1px solid var(--border); border-radius: 16px; }
+.selection-panel > div { width: min(100%, 420px); }
+.form-label { font-size: 13px; font-weight: 600; }
+.form-label span { color: var(--text-secondary); font-weight: 400; }
+.form-control, .form-select { min-height: 44px; color: var(--text); background-color: var(--text-inverse); border-color: var(--border); border-radius: 8px; }
+.form-control::placeholder { color: var(--text-secondary); font-size: 13px; }
+.form-control:focus, .form-select:focus { border-color: var(--primary); box-shadow: none; outline: 2px solid var(--primary); outline-offset: 2px; }
+textarea.form-control { resize: vertical; }
+.review-card { padding: 26px; margin-bottom: 22px; background: var(--surface); border: 1px solid var(--border); border-radius: 16px; box-shadow: 0 4px 16px color-mix(in srgb, var(--primary) 3%, transparent); }
+.review-card h2 { margin: 0; font-size: 19px; font-weight: 600; line-height: 1.5; }
+.review-card h3 { font-size: 14px; font-weight: 600; }
+.section-heading { display: flex; align-items: center; gap: 12px; margin-bottom: 24px; }
+.section-number { display: grid; place-items: center; flex-shrink: 0; width: 36px; height: 36px; background: var(--primary-soft); color: var(--primary); border-radius: 9px; font-size: 12px; font-weight: 700; }
+.information-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; margin: 0; }
+dt { color: var(--text-secondary); font-size: 12px; font-weight: 400; }
+dd { margin: 6px 0 0; font-size: 14px; font-weight: 600; overflow-wrap: anywhere; }
+.evaluation-heading { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; flex-wrap: wrap; margin-bottom: 10px; }
+.status-badge { display: inline-block; padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; }
+.status-success { background: var(--success-light); color: var(--success); }
+.status-pending { background: var(--warning-light); color: var(--warning); }
+.section-description, .feedback-text { color: var(--text-secondary); font-size: 13px; line-height: 1.8; }
+.evaluation-facts { display: flex; flex-wrap: wrap; gap: 24px 48px; margin: 20px 0; padding-bottom: 20px; border-bottom: 1px solid var(--border); }
+.feedback-text { margin-bottom: 0; }
+.hours-heading { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+.hours-heading span { color: var(--primary); font-size: 13px; font-weight: 600; }
+progress { display: block; width: 100%; height: 10px; margin: 12px 0; border: 0; border-radius: 20px; background: var(--background); accent-color: var(--primary); overflow: hidden; }
+progress::-webkit-progress-bar { background: var(--background); }
+progress::-webkit-progress-value { background: var(--primary); border-radius: 20px; }
+progress::-moz-progress-bar { background: var(--primary); border-radius: 20px; }
+.requirements-list { list-style: none; padding: 0; margin: 20px 0 0; }
+.requirements-list li { display: flex; justify-content: space-between; align-items: baseline; gap: 16px; padding: 14px 0; border-bottom: 1px solid var(--border); font-size: 13px; }
+.requirement-met { color: var(--success); font-weight: 600; }
+.requirement-missing { color: var(--warning); font-weight: 600; }
+.decision-panel { border-top: 3px solid var(--primary); }
+.decision-panel > .section-description { margin: 16px 0 24px; }
+.review-check { margin: 20px 0; }
+.form-check-label { font-size: 12px; line-height: 1.8; }
+.form-check-input { border-color: var(--border); }
+.form-check-input:checked { background-color: var(--primary); border-color: var(--primary); }
+.primary-button, .secondary-button { padding: 11px 16px; border: 1px solid var(--primary); border-radius: 8px; background: var(--primary); color: var(--text-inverse); font-size: 13px; font-weight: 600; transition: background .2s ease, color .2s ease, transform .2s ease; }
+.primary-button span { display: inline-block; margin-left: 8px; transition: transform .2s ease; }
+.secondary-button { background: var(--surface); color: var(--primary); border-color: var(--border); }
+.decision-panel button { width: 100%; }
+button:disabled { background: var(--background); color: var(--text-secondary); border-color: var(--border); cursor: not-allowed; }
+button:focus-visible, .approval-notice:focus { outline: 2px solid var(--primary); outline-offset: 4px; }
+.report-section { margin-top: 26px; padding-top: 24px; border-top: 1px solid var(--border); }
+.report-section .preview-note { margin-bottom: 0; }
+.approval-notice { padding: 22px; color: var(--success); background: var(--success-light); border: 1px solid var(--success); border-radius: 12px; font-size: 14px; line-height: 1.8; }
+.modal-content { background: var(--surface); color: var(--text); border-color: var(--border); border-radius: 16px; }
+.modal-header, .modal-footer { padding: 20px 24px; border-color: var(--border); }
+.modal-body { padding: 24px; font-size: 14px; line-height: 1.8; }
+
+/* ظهور خفيف عند فتح الصفحة بدون حركة مستمرة أثناء المراجعة */
+@keyframes reviewEntrance {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.page-heading, .selection-panel, .review-card { animation: reviewEntrance .4s ease backwards; }
+.selection-panel { animation-delay: .04s; }
+.review-card:nth-child(2) { animation-delay: .08s; }
+.review-card:nth-child(3) { animation-delay: .16s; }
+.review-card:nth-child(4) { animation-delay: .24s; }
+
+@media (hover: hover) {
+    .primary-button:not(:disabled):hover { background: var(--primary-hover); color: var(--text-inverse); transform: translateY(-2px); }
+    .primary-button:not(:disabled):hover span { transform: translateX(3px); }
+    .secondary-button:not(:disabled):hover { background: var(--primary-soft); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .review-page * { animation: none !important; transition: none !important; }
+    .primary-button:not(:disabled):hover, .primary-button:not(:disabled):hover span { transform: none; }
+}
+
+@media (max-width: 575px) {
+    .review-page { padding: 28px 16px; }
+    .review-card, .selection-panel { padding: 20px; }
+    .information-grid { grid-template-columns: 1fr; gap: 18px; }
+}
+
+/* معاينة التقرير منفصلة بصرياً عن عناصر مراجعة المنسق */
+.completion-report {
+    margin-top: 32px;
+}
+
+.report-toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 16px;
+    margin-bottom: 16px;
+}
+
+.report-toolbar p { margin: 0; color: var(--text-secondary); font-size: 13px; }
+.report-toolbar > div { display: flex; gap: 12px; flex-wrap: wrap; }
+.report-paper { padding: 40px; border: 1px solid var(--border); border-radius: 12px; background: var(--surface); }
+.report-header { border-bottom: 2px solid var(--primary); padding-bottom: 22px; margin-bottom: 24px; }
+.report-header > p { font-size: 12px; }
+.report-header h2 { margin: 22px 0 12px; font-size: 26px; }
+.report-disclaimer { color: var(--warning); font-weight: 700; letter-spacing: .5px; }
+.report-introduction { font-size: 14px; line-height: 1.8; margin-bottom: 28px; }
+.report-information > div { padding-bottom: 12px; border-bottom: 1px solid var(--border); }
+.report-footer { margin-top: 32px; border-top: 1px solid var(--border); padding-top: 16px; }
+.report-footer p { font-size: 11px; line-height: 1.8; color: var(--text-secondary); margin: 0; }
+
+@media (max-width: 575px) {
+    .report-paper { padding: 24px 20px; }
+}
+
+/* نخفي صفحة المراجعة كاملة عند الطباعة، ونطبع التقرير فقط إن كان مفتوحاً */
+@media print {
+    @page { size: A4; margin: 18mm; }
+
+    body { background: var(--surface); }
+    .review-page { max-width: none; padding: 0; margin: 0; }
+    .review-page > :not(.completion-report) { display: none !important; }
+    .report-toolbar { display: none !important; }
+    .completion-report[hidden] { display: none !important; }
+    .completion-report { margin: 0; }
+    .report-paper { padding: 0; border: 0; border-radius: 0; box-shadow: none; }
+    .report-information { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px 24px; }
+    .report-information > div, .report-header, .report-footer { break-inside: avoid; }
+    .report-header h2 { font-size: 23px; }
+    .report-disclaimer { color: var(--text); }
+    .review-page * { animation: none !important; transition: none !important; }
+    .completion-report:focus { outline: none; }
+}
