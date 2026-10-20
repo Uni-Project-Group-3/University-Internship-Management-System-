@@ -1,0 +1,104 @@
+/* تنسيق المحتوى الرئيسي فقط، باستخدام الألوان المشتركة */
+body {
+    margin: 0;
+    background: var(--background);
+    color: var(--text);
+    font-family: "Segoe UI", Arial, sans-serif;
+}
+
+.applications-page {
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 48px 32px;
+}
+
+.page-heading {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 24px;
+    margin-bottom: 24px;
+}
+
+.eyebrow { color: var(--primary); font-size: 11px; font-weight: 700; letter-spacing: 1.4px; }
+.page-heading h1 { margin: 10px 0; font-size: clamp(28px, 4vw, 36px); font-weight: 700; }
+.page-heading p:last-child { margin: 0; color: var(--muted); }
+.preview-note { color: var(--muted); font-size: 12px; line-height: 1.8; }
+.summary-row { margin-top: 10px; margin-bottom: 24px; }
+.summary-card { height: 100%; padding: 22px; border: 1px solid var(--border); border-radius: 14px; background: var(--surface); }
+.summary-card span { display: block; color: var(--muted); font-size: 13px; }
+.summary-card strong { display: block; margin-top: 8px; font-size: 30px; font-weight: 650; }
+.pending-text { color: var(--warning); }
+.accepted-text { color: var(--success); }
+.rejected-text { color: var(--danger); }
+.guidance { margin-bottom: 30px; padding-left: 16px; border-left: 3px solid var(--primary); }
+.guidance strong { color: var(--primary); font-size: 14px; }
+.guidance p { color: var(--muted); font-size: 13px; margin: 6px 0 0; line-height: 1.8; }
+.confirmation-notice { padding: 18px 22px; margin-bottom: 24px; border: 1px solid var(--success); border-radius: 12px; color: var(--success); background: var(--surface); line-height: 1.8; }
+.list-heading { display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap; margin-bottom: 20px; }
+.list-heading h2 { margin: 0; font-size: 20px; font-weight: 650; }
+#resultCount { color: var(--muted); font-size: 14px; font-weight: 400; }
+.status-filter { display: flex; gap: 12px; align-items: center; }
+.status-filter label { font-size: 13px; color: var(--muted); }
+.form-select { width: 160px; background-color: var(--surface); border-color: var(--border); color: var(--text); font-size: 13px; min-height: 42px; }
+.form-select:focus { border-color: var(--primary); box-shadow: none; outline: 2px solid var(--primary); outline-offset: 2px; }
+.application-card { margin-bottom: 18px; padding: 26px; border: 1px solid var(--border); border-radius: 16px; background: var(--surface); box-shadow: 0 4px 16px color-mix(in srgb, var(--primary) 3%, transparent); transition: border-color .2s ease, box-shadow .2s ease; }
+.application-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; }
+.company-heading { display: flex; align-items: center; gap: 14px; }
+.company-mark { display: grid; place-items: center; width: 46px; height: 46px; flex-shrink: 0; border-radius: 10px; background: var(--background); color: var(--primary); font-weight: 700; }
+.company-heading h3 { margin: 0 0 5px; font-size: 19px; font-weight: 650; line-height: 1.5; }
+.company-name { margin: 0; font-size: 13px; color: var(--muted); }
+.status-badge { display: inline-block; flex-shrink: 0; padding: 5px 11px; border-radius: 20px; font-size: 12px; font-weight: 600; }
+.status-accepted { color: var(--success); background: color-mix(in srgb, var(--success) 8%, var(--surface)); }
+.status-pending { color: var(--warning); background: color-mix(in srgb, var(--warning) 8%, var(--surface)); }
+.status-rejected { color: var(--danger); background: color-mix(in srgb, var(--danger) 8%, var(--surface)); }
+.application-meta { display: flex; gap: 12px 24px; flex-wrap: wrap; color: var(--muted); font-size: 12px; margin: 20px 0; }
+.decision-note { font-size: 13px; line-height: 1.8; margin-bottom: 20px; }
+.application-actions { display: flex; justify-content: flex-end; align-items: center; flex-wrap: wrap; gap: 12px; padding-top: 18px; border-top: 1px solid var(--border); }
+.primary-link, .confirm-button, .details-button { display: inline-block; padding: 10px 16px; border: 1px solid var(--primary); border-radius: 8px; font-size: 13px; font-weight: 600; text-decoration: none; transition: background .2s ease, color .2s ease, transform .2s ease; }
+.primary-link, .confirm-button { background: var(--primary); color: var(--surface); }
+.details-button { background: var(--surface); color: var(--primary); border-color: var(--border); }
+.confirm-button span, .primary-link span { margin-left: 10px; }
+.confirm-button:disabled { background: var(--background); border-color: var(--border); color: var(--muted); cursor: not-allowed; }
+.is-confirmed { border-color: var(--success); }
+.empty-state { padding: 48px 20px; text-align: center; border: 1px dashed var(--border); border-radius: 14px; }
+.empty-state h3 { font-size: 19px; }
+.empty-state p { font-size: 13px; color: var(--muted); }
+.modal-content { border-color: var(--border); border-radius: 16px; background: var(--surface); color: var(--text); }
+.modal-header, .modal-footer { padding: 20px 24px; border-color: var(--border); }
+.modal-body { padding: 24px; font-size: 14px; line-height: 1.8; }
+.modal-company { color: var(--primary); font-weight: 650; }
+#detailsMeta .application-meta { display: grid; gap: 8px; }
+button:focus-visible, a:focus-visible, .confirmation-notice:focus { outline: 2px solid var(--primary); outline-offset: 4px; }
+
+/* ظهور قصير وحركات خفيفة تحافظ على هدوء الصفحة */
+@keyframes applicationsEntrance {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.page-heading, .summary-row, .application-card { animation: applicationsEntrance .4s ease backwards; }
+.application-card:nth-child(2) { animation-delay: .06s; }
+.application-card:nth-child(3) { animation-delay: .12s; }
+.application-card:nth-child(4) { animation-delay: .18s; }
+
+@media (hover: hover) {
+    .application-card:hover { border-color: var(--primary); box-shadow: 0 8px 24px color-mix(in srgb, var(--primary) 7%, transparent); }
+    .primary-link:hover, .confirm-button:not(:disabled):hover { background: var(--surface); color: var(--primary); transform: translateY(-2px); }
+    .details-button:hover { background: var(--background); border-color: var(--primary); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .applications-page * { animation: none !important; transition: none !important; }
+    .primary-link:hover, .confirm-button:not(:disabled):hover { transform: none; }
+}
+
+@media (max-width: 575px) {
+    .applications-page { padding: 28px 16px; }
+    .application-card { padding: 20px; }
+    .application-top { flex-wrap: wrap; }
+    .company-heading h3 { font-size: 17px; }
+    .summary-card { padding: 18px; }
+    .application-actions { justify-content: flex-start; }
+}

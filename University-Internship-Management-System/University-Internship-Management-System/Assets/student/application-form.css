@@ -1,0 +1,137 @@
+/* الألوان من الملف المشترك، والتنسيقات خاصة بصفحة التقديم */
+body {
+    margin: 0;
+    background: var(--background);
+    color: var(--text);
+    font-family: "Segoe UI", Arial, sans-serif;
+}
+
+.application-page {
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 40px 32px;
+}
+
+.back-link, .cancel-link, .invalid-opportunity a {
+    color: var(--primary);
+    text-decoration: none;
+}
+
+.back-link { font-size: 14px; }
+.back-link:hover, .cancel-link:hover { text-decoration: underline; }
+.page-heading { margin: 28px 0; }
+.eyebrow { color: var(--primary); font-size: 11px; font-weight: 700; letter-spacing: 1.4px; }
+.page-heading h1 { font-size: clamp(28px, 4vw, 36px); font-weight: 700; margin: 10px 0; }
+.page-heading > p:last-child { color: var(--muted); }
+.preview-notice { color: var(--muted); font-size: 13px; margin-bottom: 24px; }
+.invalid-opportunity { color: var(--danger); margin-bottom: 24px; }
+
+.form-section, .opportunity-summary, .preview-result {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 28px;
+    margin-bottom: 20px;
+    box-shadow: 0 4px 18px color-mix(in srgb, var(--primary) 3%, transparent);
+}
+
+.section-heading { display: flex; align-items: flex-start; gap: 14px; margin-bottom: 24px; }
+.section-number { display: grid; place-items: center; flex-shrink: 0; width: 38px; height: 38px; border-radius: 10px; background: var(--background); color: var(--primary); font-weight: 650; font-size: 13px; }
+.section-heading h2, .preview-result h2 { font-size: 19px; font-weight: 650; margin: 0 0 6px; }
+.section-heading p, .field-help { color: var(--muted); font-size: 12px; line-height: 1.7; margin: 0; }
+.form-label { font-weight: 600; font-size: 13px; }
+.form-label span { color: var(--muted); font-weight: 400; }
+.form-control, .form-select { min-height: 46px; background-color: var(--surface); border-color: var(--border); color: var(--text); border-radius: 8px; }
+.form-control::placeholder { color: var(--muted); font-size: 13px; }
+.form-control:focus, .form-select:focus { border-color: var(--primary); outline: 2px solid var(--primary); outline-offset: 2px; box-shadow: none; }
+.field-help { margin: 8px 0 18px; }
+.message-label { display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; gap: 8px; margin-top: 24px; }
+#characterCount { font-size: 11px; color: var(--muted); }
+textarea.form-control { resize: vertical; }
+.form-check-label { font-size: 13px; line-height: 1.8; }
+.form-check-input { border-color: var(--border); }
+.form-check-input:checked { background-color: var(--primary); border-color: var(--primary); }
+.form-actions { display: flex; justify-content: flex-end; align-items: center; gap: 24px; border-top: 1px solid var(--border); padding-top: 24px; margin-top: 24px; }
+.cancel-link { font-size: 14px; }
+.primary-button, .edit-button { border: 1px solid var(--primary); border-radius: 8px; padding: 12px 18px; color: var(--surface); background: var(--primary); font-size: 14px; font-weight: 600; transition: transform .2s ease, background .2s ease, color .2s ease; }
+.primary-button span {
+    display: inline-block;
+    margin-left: 12px;
+    transition: transform .2s ease;
+}
+.primary-button:hover, .edit-button:hover { background: var(--surface); color: var(--primary); }
+a:focus-visible, button:focus-visible { outline: 2px solid var(--primary); outline-offset: 4px; }
+.opportunity-summary { border-top: 3px solid var(--primary); }
+.opportunity-summary h2 { font-size: 22px; line-height: 1.4; font-weight: 650; }
+.company-name { color: var(--muted); font-size: 14px; margin-bottom: 24px; }
+.opportunity-summary dl { margin-bottom: 24px; }
+.opportunity-summary dl div { padding: 14px 0; border-bottom: 1px solid var(--border); }
+.opportunity-summary dt { font-size: 12px; font-weight: 400; color: var(--muted); }
+.opportunity-summary dd { font-size: 14px; font-weight: 600; margin: 5px 0 0; }
+.summary-note, .preview-result p { color: var(--muted); font-size: 13px; line-height: 1.8; margin-bottom: 0; }
+.preview-result { border-top: 3px solid var(--success); }
+.preview-result h2 { color: var(--success); }
+.edit-button { margin-top: 20px; }
+
+/* حركة قصيرة عند فتح الصفحة، وتتوقف حسب تفضيل المستخدم */
+@keyframes formEntrance {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.page-heading, .form-section, .opportunity-summary, .preview-result {
+    animation: formEntrance .45s ease backwards;
+}
+
+.form-section:nth-child(1) { animation-delay: .06s; }
+.form-section:nth-child(2) { animation-delay: .14s; }
+.form-section:nth-child(3) { animation-delay: .22s; }
+.opportunity-summary { animation-delay: .12s; }
+
+/* إبراز القسم أثناء التعبئة بدون تحريكه حتى لا يتشتت الطالب */
+.form-section {
+    transition: border-color .2s ease, box-shadow .2s ease;
+}
+
+.form-section:focus-within {
+    border-color: var(--primary);
+    box-shadow: 0 6px 22px color-mix(in srgb, var(--primary) 7%, transparent);
+}
+
+.section-number {
+    transition: background .2s ease, color .2s ease;
+}
+
+.form-section:focus-within .section-number {
+    background: var(--primary);
+    color: var(--surface);
+}
+
+.form-control, .form-select {
+    transition: border-color .2s ease;
+}
+
+/* حركة المرور للأزرار فقط وعلى الأجهزة التي تستخدم الماوس */
+@media (hover: hover) {
+    .primary-button:hover, .edit-button:hover {
+        transform: translateY(-2px);
+    }
+
+    .primary-button:hover span {
+        transform: translateX(4px);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .application-page * { animation: none !important; transition: none !important; }
+    .primary-button:hover, .edit-button:hover, .primary-button:hover span {
+        transform: none;
+    }
+}
+
+@media (max-width: 575px) {
+    .application-page { padding: 28px 16px; }
+    .form-section, .opportunity-summary, .preview-result { padding: 20px; }
+    .form-actions { justify-content: space-between; gap: 12px; }
+    .primary-button { padding: 12px; }
+}
