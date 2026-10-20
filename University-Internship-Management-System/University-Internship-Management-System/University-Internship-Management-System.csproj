@@ -109,6 +109,11 @@
     <Content Include="Shared\HomeNavbar.ascx" />
     <Content Include="Assets\shared\navbar.css" />
     <Content Include="Assets\shared\sidebar.css" />
+    <Content Include="Auth\Login.aspx" />
+    <Content Include="Assets\auth\auth.css" />
+    <Content Include="Js_project\Auth\auth.js" />
+    <Content Include="Assets\auth\just-campus.jpg" />
+    <Content Include="Assets\shared\images\just-logo.png" />
     <Content Include="About.aspx" />
     <Content Include="Academic\test.aspx" />
     <Content Include="Company\test.aspx" />
@@ -211,6 +216,13 @@
       <DependentUpon>test.aspx</DependentUpon>
     </Compile>
     <Compile Include="App_Start\BundleConfig.cs" />
+    <Compile Include="Auth\Login.aspx.cs">
+      <DependentUpon>Login.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="Auth\Login.aspx.designer.cs">
+      <DependentUpon>Login.aspx</DependentUpon>
+    </Compile>
     <Compile Include="About.aspx.cs">
       <DependentUpon>About.aspx</DependentUpon>
       <SubType>ASPXCodeBehind</SubType>

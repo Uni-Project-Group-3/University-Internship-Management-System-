@@ -13,7 +13,7 @@ namespace University_Internship_Management_System.Shared
             HomeLink.NavigateUrl = HomeUrl;
             RoleLabel.Text = UserRole;
 
-            bool isHome = string.Equals(Request.AppRelativeCurrentExecutionFilePath,
+            bool isHome = string.Equals(Page.AppRelativeVirtualPath,
                 HomeUrl, StringComparison.OrdinalIgnoreCase);
             HomeLink.CssClass = isHome ? "app-sidebar__link is-active" : "app-sidebar__link";
 
