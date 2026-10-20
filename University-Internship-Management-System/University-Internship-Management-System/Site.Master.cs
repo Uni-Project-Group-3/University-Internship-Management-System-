@@ -1,9 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Web;
+using System;
 using System.Web.UI;
-using System.Web.UI.WebControls;
 
 namespace University_Internship_Management_System
 {
@@ -11,7 +7,7 @@ namespace University_Internship_Management_System
     {
         protected void Page_Load(object sender, EventArgs e)
         {
-
+            HomeNavigation.Visible = Page is _Default;
         }
     }
 }

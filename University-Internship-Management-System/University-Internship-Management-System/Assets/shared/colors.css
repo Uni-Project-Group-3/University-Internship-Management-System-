@@ -1,0 +1,12 @@
+/* Shared colour palette for all roles in the internship management system. */
+:root {
+    --primary: #1f3d78;      /* Navigation, links, main buttons */
+    --background: #f4f6f9;   /* Page background */
+    --surface: #ffffff;     /* Cards, tables, forms */
+    --text: #243041;        /* Headings and body text */
+    --muted: #5e6b7a;       /* Secondary text */
+    --border: #d8dee8;      /* Dividers and input borders */
+    --success: #167044;     /* Approved, completed */
+    --warning: #8a5700;     /* Pending, awaiting review */
+    --danger: #b4232b;      /* Rejected, errors */
+}

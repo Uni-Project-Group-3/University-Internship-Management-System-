@@ -13,6 +13,8 @@ namespace University_Internship_Management_System
 
     public partial class SiteMaster
     {
+        protected global::System.Web.UI.UserControl HomeNavigation;
+
 
         /// <summary>
         /// HeadContent control.

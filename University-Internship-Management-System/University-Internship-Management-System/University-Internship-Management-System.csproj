@@ -99,14 +99,18 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Content Include="Assets\academic\academic.css" />
+    <Content Include="Assets\company\company.css" />
+    <Content Include="Assets\coordinator\coordinator.css" />
+    <Content Include="Assets\public\public.css" />
+    <Content Include="Assets\student\student.css" />
+    <Content Include="Assets\shared\colors.css" />
+    <Content Include="Shared\Sidebar.ascx" />
+    <Content Include="Shared\HomeNavbar.ascx" />
+    <Content Include="Assets\shared\navbar.css" />
+    <Content Include="Assets\shared\sidebar.css" />
     <Content Include="About.aspx" />
     <Content Include="Academic\test.aspx" />
-    <Content Include="Assets\academic\test.css" />
-    <Content Include="Assets\company\test.css" />
-    <Content Include="Assets\coordinator\test.css" />
-    <Content Include="Assets\public\test.css" />
-    <Content Include="Assets\shared\test.css" />
-    <Content Include="Assets\student\test.css" />
     <Content Include="Company\test.aspx" />
     <Content Include="Contact.aspx" />
     <Content Include="Content\bootstrap-grid.css" />
@@ -274,6 +278,13 @@
     <Compile Include="Student\test.aspx.designer.cs">
       <DependentUpon>test.aspx</DependentUpon>
     </Compile>
+    <Compile Include="Shared\Sidebar.ascx.cs">
+      <DependentUpon>Sidebar.ascx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="Shared\Sidebar.ascx.designer.cs">
+      <DependentUpon>Sidebar.ascx</DependentUpon>
+    </Compile>
     <Compile Include="ViewSwitcher.ascx.cs">
       <DependentUpon>ViewSwitcher.ascx</DependentUpon>
     </Compile>
@@ -283,6 +294,7 @@
   </ItemGroup>
   <ItemGroup>
     <Folder Include="App_Data\" />
+    <Folder Include="Assets\shared\images\" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
