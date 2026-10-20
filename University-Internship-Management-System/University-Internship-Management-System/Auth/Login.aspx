@@ -1,4 +1,5 @@
 ﻿<%@ Page Title="Sign In | UIMS" Language="C#" AutoEventWireup="true" Async="true" EnableViewState="false" CodeBehind="Login.aspx.cs" Inherits="University_Internship_Management_System.Auth.Login" %>
+<%@ Register Src="~/Shared/HomeNavbar.ascx" TagPrefix="shared" TagName="PublicNavbar" %>
 <!DOCTYPE html>
 <html lang="en">
 <head id="Head1" runat="server">
@@ -7,6 +8,7 @@
     <meta name="robots" content="noindex, nofollow" />
     <title>Sign In | UIMS</title>
     <link runat="server" href="~/Assets/shared/colors.css" rel="stylesheet" />
+    <link runat="server" href="~/Assets/shared/navbar.css" rel="stylesheet" />
     <link runat="server" href="~/Assets/auth/auth.css" rel="stylesheet" />
 </head>
 <body class="auth-page">
@@ -17,20 +19,19 @@
         <symbol id="icon-arrow" viewBox="0 0 24 24"><path d="M4 12h15m-6-6 6 6-6 6" /></symbol>
         <symbol id="icon-shield" viewBox="0 0 24 24"><path d="m12 3 8 3v6c0 5-8 9-8 9s-8-4-8-9V6l8-3Z" /><path d="m8 12 3 3 5-6" /></symbol>
     </svg>
+    <shared:PublicNavbar runat="server" EnableViewState="false" />
     <form id="form1" runat="server" class="auth-layout" novalidate="novalidate">
         <asp:HiddenField ID="CsrfToken" runat="server" ClientIDMode="Static" />
+        <div class="auth-shell">
         <section class="auth-campus" aria-labelledby="campusTitle">
             <img class="auth-campus__image" src="../Assets/auth/just-campus.jpg" alt="The library courtyard at Jordan University of Science and Technology" fetchpriority="high" />
             <div class="auth-campus__overlay"></div>
             <a class="auth-campus__wordmark" href="../Default.aspx" aria-label="UIMS home">UIMS<span>JUST INTERNSHIPS</span></a>
-            <div class="auth-campus__story">
-                <span class="auth-eyebrow">KNOWLEDGE. EXPERIENCE. POSSIBILITY.</span>
-                <h1 id="campusTitle">Your Future <br />Starts Here<span>.</span></h1>
-                <p>University Internship Management System</p>
-                <div class="auth-campus__rule"></div>
-                <span class="auth-campus__location">Jordan University of Science and Technology &middot; Irbid, Jordan</span>
-            </div>
-            <div class="auth-campus__credit">Photo: <a href="https://commons.wikimedia.org/wiki/File:Jordan_University_of_Science_and_Technology%27s_Library.jpg" target="_blank" rel="noopener noreferrer">Fawwaz Dawod</a> &middot; <a href="https://creativecommons.org/licenses/by-sa/3.0/" target="_blank" rel="noopener noreferrer">CC BY-SA 3.0</a> &middot; Display cropped with overlay</div>
+
+
+
+
+
         </section>
         <main class="auth-panel">
             <div class="auth-panel__inner" id="loginContent">
@@ -39,9 +40,8 @@
                     <span><strong>Jordan University of<br />Science and Technology</strong><span lang="ar" dir="rtl">&#1580;&#1575;&#1605;&#1593;&#1577; &#1575;&#1604;&#1593;&#1604;&#1608;&#1605; &#1608;&#1575;&#1604;&#1578;&#1603;&#1606;&#1608;&#1604;&#1608;&#1580;&#1610;&#1575; &#1575;&#1604;&#1571;&#1585;&#1583;&#1606;&#1610;&#1577;</span></span>
                 </a>
                 <div class="auth-welcome">
-                    <span class="auth-eyebrow">YOUR INTERNSHIP JOURNEY</span>
                     <h2>Welcome Back</h2>
-                    <p>Sign in to connect your learning<br class="auth-desktop-break" /> with real-world experience.</p>
+                    <p>Sign in to your internship workspace.</p>
                 </div>
                 <div class="auth-fields">
                     <div class="auth-field">
@@ -61,20 +61,46 @@
                         </div>
                         <span id="passwordError" class="auth-field-error" aria-live="polite"><asp:Literal ID="PasswordError" runat="server" Mode="Encode" /></span>
                     </div>
-                    <div class="auth-options"><asp:Button ID="ForgotPassword" runat="server" Text="Forgot Password?" CssClass="auth-link" OnClick="ForgotPassword_Click" CausesValidation="false" data-action="reset" data-loading="Sending..." /></div>
+                    <div class="auth-options"><button id="ForgotPassword" type="button" class="auth-link" aria-haspopup="dialog" aria-controls="forgotPasswordDialog">Forgot Password?</button></div>
                     <div id="authMessage" class="auth-message" role="status" aria-live="polite"><asp:Literal ID="AuthMessage" runat="server" Mode="Encode" /></div>
                     <asp:Button ID="SignIn" runat="server" ClientIDMode="Static" Text="Sign In" CssClass="auth-button" OnClick="SignIn_Click" CausesValidation="false" data-action="login" data-loading="Signing in..." />
                     <p class="auth-account-note">Use the account provided by your administrator.</p>
                 </div>
-                <footer class="auth-footer"><svg class="auth-icon" aria-hidden="true"><use href="#icon-shield" /></svg><span>Authorized university users only</span></footer>
+                <div class="auth-footer"><svg class="auth-icon" aria-hidden="true"><use href="#icon-shield" /></svg><span>Authorized university users only</span></div>
             </div>
-            <span class="auth-panel__copyright">&copy; <%= DateTime.Now.Year %> JUST &middot; University Internship Management System</span>
         </main>
-        <dialog id="firstLoginDialog" class="auth-dialog" aria-labelledby="changeTitle" aria-describedby="changeDescription">
+        </div>
+        <dialog id="forgotPasswordDialog" class="auth-dialog auth-reset-dialog" aria-labelledby="resetTitle" aria-describedby="resetDescription">
+            <button type="button" class="auth-dialog__close" data-close-reset="true" aria-label="Close password reset">
+                <svg class="auth-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M6 18 18 6" /></svg>
+            </button>
+            <div class="auth-dialog__icon"><svg class="auth-icon" aria-hidden="true"><use href="#icon-mail" /></svg></div>
+            <span class="auth-eyebrow">LET'S GET YOU BACK IN</span>
+            <h2 id="resetTitle">Reset Your Password</h2>
+            <p id="resetDescription">Enter your account email address and we'll send you instructions to reset your password.</p>
+            <div id="resetFields">
+                <div class="auth-field">
+                    <label for="ResetEmail">Email address</label>
+                    <div class="auth-input-wrap">
+                        <svg class="auth-icon" aria-hidden="true"><use href="#icon-mail" /></svg>
+                        <input id="ResetEmail" type="email" class="auth-input" maxlength="254" autocomplete="email" inputmode="email" placeholder="Enter your email address" aria-describedby="resetEmailError" />
+                    </div>
+                    <span id="resetEmailError" class="auth-field-error" aria-live="polite"></span>
+                </div>
+                <p id="resetError" class="auth-message" role="alert" hidden="hidden"></p>
+                <button id="SendResetLink" class="auth-button" type="button">Send Reset Link</button>
+            </div>
+            <div id="resetConfirmation" class="auth-reset-confirmation" role="status" tabindex="-1" hidden="hidden">
+                <svg class="auth-icon" aria-hidden="true"><use href="#icon-shield" /></svg>
+                <p>If an account exists for this email, password reset instructions will be sent.</p>
+            </div>
+            <button type="button" class="auth-link auth-reset-back" data-close-reset="true"><svg class="auth-icon" aria-hidden="true"><use href="#icon-arrow" /></svg>Back to Login</button>
+        </dialog>
+        <dialog id="firstLoginDialog" class="auth-dialog auth-first-dialog" aria-labelledby="changeTitle" aria-describedby="changeDescription">
             <div class="auth-dialog__icon"><svg class="auth-icon" aria-hidden="true"><use href="#icon-shield" /></svg></div>
             <span class="auth-eyebrow">SECURE YOUR ACCOUNT</span>
-            <h2 id="changeTitle">A fresh start.<br />A password of your own.</h2>
-            <p id="changeDescription">For your first sign-in, replace your temporary password to continue to your workspace.</p>
+            <h2 id="changeTitle">Change Your Password</h2>
+            <p id="changeDescription">Choose a strong password to secure your account before continuing to your workspace.</p>
             <div class="auth-field">
                 <label for="NewPassword">New password</label>
                 <div class="auth-input-wrap">
@@ -87,7 +113,7 @@
                 <ul id="passwordRules" class="auth-password-rules"><li data-rule="length">At least 12 characters</li><li data-rule="case">Uppercase and lowercase letters</li><li data-rule="number">At least one number</li><li data-rule="symbol">At least one symbol</li></ul>
             </div>
             <div class="auth-field">
-                <label for="ConfirmPassword">Confirm password</label>
+                <label for="ConfirmPassword">Confirm new password</label>
                 <div class="auth-input-wrap">
                     <svg class="auth-icon" aria-hidden="true"><use href="#icon-lock" /></svg>
                     <asp:TextBox ID="ConfirmPassword" runat="server" ClientIDMode="Static" TextMode="Password" CssClass="auth-input" autocomplete="new-password" placeholder="Re-enter your new password" aria-describedby="matchText" />
@@ -97,10 +123,14 @@
             </div>
             <div class="auth-message" role="alert"><asp:Literal ID="ChangeError" runat="server" Mode="Encode" /></div>
             <asp:Button ID="SaveChanges" runat="server" ClientIDMode="Static" Text="Save Changes" CssClass="auth-button" OnClick="SaveChanges_Click" CausesValidation="false" data-action="change" data-loading="Saving changes..." />
-            <p class="auth-dialog__note"><svg class="auth-icon" aria-hidden="true"><use href="#icon-lock" /></svg> Your password must be updated before continuing.</p>
+            <p id="firstChangeStatus" class="auth-message" role="status" tabindex="-1" hidden="hidden"></p>
+            <p class="auth-dialog__note"><svg class="auth-icon" aria-hidden="true"><use href="#icon-lock" /></svg> Update your temporary password to continue securely.</p>
+            <p id="firstLoginPreviewNotice" class="auth-preview-note" hidden="hidden">Design preview only. Firebase is not connected and no password will be saved.</p>
+            <a id="exitPasswordPreview" class="auth-link auth-preview-back" href="Login.aspx" hidden="hidden">Back to Login</a>
         </dialog>
         <noscript><p class="auth-noscript">Enable JavaScript for password visibility controls and the secure first-login dialog.</p></noscript>
     </form>
+    <footer class="auth-public-footer"><span>&copy; <%= DateTime.Now.Year %> Jordan University of Science and Technology.</span><span>University Internship Management System.</span></footer>
     <script src="../Js_project/Auth/auth.js" defer="defer"></script>
 </body>
 </html>

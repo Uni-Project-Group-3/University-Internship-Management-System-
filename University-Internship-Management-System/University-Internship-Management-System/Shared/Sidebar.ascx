@@ -10,6 +10,10 @@
             <svg class="app-sidebar__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M3 10 12 3l9 7v10a1 1 0 0 1-1 1h-5v-8H9v8H4a1 1 0 0 1-1-1Z" /></svg>
             <span>Dashboard</span>
         </asp:HyperLink>
+        <asp:HyperLink ID="ProgressMonitorLink" runat="server" NavigateUrl="~/Academic/StudentProgressMonitor.aspx" CssClass="app-sidebar__link" Visible="false">
+            <svg class="app-sidebar__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><rect x="4" y="3" width="16" height="18" rx="2" /><path d="M8 16v-4m4 4V8m4 8v-6" /></svg>
+            <span>Student Progress</span>
+        </asp:HyperLink>
     </nav>
     <div class="app-sidebar__footer">
         <div class="app-sidebar__note">

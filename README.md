@@ -72,10 +72,10 @@ existing URLs and page content are retained.
 
 ## Firebase status
 
-This checkout contains no Firebase connection, HTTP requests, authentication,
-data models, CRUD handlers or database configuration. No database was contacted
-or modified during the refactor. No unused Firebase client or speculative CRUD
-methods were added.
+Password reset uses the single shared `Shared/FirebaseAuthService.cs` service.
+It calls Firebase Authentication from the server with a reused `HttpClient`.
+Sign-in, role authorization and Realtime Database integration are still not wired.
+No database records were contacted or modified.
 
 Before implementing a data-backed feature, supply the Realtime Database URL,
 existing record paths and the intended Firebase authentication flow. Implement
@@ -87,7 +87,8 @@ to enable access.
 Data-backed pages should use `Async="true"` and register a `PageAsyncTask` for
 asynchronous work. Validate input before writing, prevent duplicate submissions
 where applicable and show a safe error message without exposing credentials.
-There are currently no data submission handlers requiring these additions.
+The password reset handler uses asynchronous page operations and server input
+validation; database submission handlers have not been implemented.
 
 ## Refactor scope
 
@@ -115,7 +116,7 @@ msbuild .\University-Internship-Management-System\University-Internship-Manageme
 The refactor was checked with MSBuild, ASP.NET markup precompilation, project/file
 reference checks and local IIS Express HTTP smoke tests. There is no automated
 unit test suite or Firebase integration test in this checkout. Live Firebase
-behaviour cannot be verified until an integration exists.
+email delivery requires Firebase configuration; sign-in integration is still missing.
 
 
 ## Login page implementation status
@@ -131,11 +132,10 @@ protection in the browser, and an accessible native first-login dialog. Password
 feedback checks a 12-character minimum with uppercase/lowercase letters, a number
 and a symbol; Firebase project policy still needs to be reconciled during wiring.
 
-**Authentication integration is blocked:** the checkout has no Firebase client,
-authorization service, role records or first-login enforcement architecture.
-The current handlers explicitly report unavailable configuration. They do not
-create authenticated sessions, grant dashboard access, send reset emails or claim
-a password was changed. The modal can read a server-owned pending-change flag,
+**Sign-in integration is blocked:** the checkout has no sign-in authorization
+service, role records or first-login enforcement architecture. Login and first-login
+handlers do not create authenticated sessions, grant dashboard access or claim
+a password was changed. Password recovery is implemented separately below. The modal can read a server-owned pending-change flag,
 but there is currently no authentication service that sets it. Existing dashboards
 remain as they were; they are not secured by this page alone.
 
@@ -167,6 +167,47 @@ JavaScript syntax and behaviour checks passed for independent eye toggles,
 strength/matching feedback, loading and duplicate-submit prevention, and dialog
 Escape prevention. Browser checks at 1440, 900 and 390 pixels showed no horizontal
 overflow. Local HTTP checks passed for server email validation, CSRF rejection,
-configuration-error handling, all existing pages and new assets. Firebase login,
-password changes, reset delivery and role authorization remain unimplemented and
-untested until the missing integration details are supplied.
+configuration-error handling, all existing pages and new assets. Firebase login, password changes and role authorization remain unimplemented.
+Password reset dispatch is implemented; live delivery needs server configuration.
+
+
+## Forgot Password popup
+
+The existing Login page now has a native, accessible reset dialog. It validates
+email on both client and server, submits asynchronously to the same page, disables
+duplicate submissions and restores focus after Close, Back to Login, Escape or a
+backdrop click. First-login dialog behaviour and login handlers are preserved.
+
+Set **FIREBASE_API_KEY** in the web server process environment to the intended
+Firebase project's Web API key, then restart IIS Express/the app pool. No key is
+stored in the repository. Enable and configure the project's Firebase password
+reset email template and hosted email action handler. The service calls only
+`accounts:sendOobCode` with `PASSWORD_RESET`; it does not create/enable accounts,
+modify roles, clear first-login flags or issue application sessions.
+
+Accepted requests, unknown/deleted/disabled accounts and provider account-specific
+throttling all produce the same neutral confirmation. A 60-second server-session
+cooldown applies to all valid requests regardless of email; network, configuration
+and server failures display a generic recovery error. Raw Firebase errors are
+never returned to the browser. Existing application authorization checks must
+remain in place; password recovery alone does not grant dashboard access.
+
+Validation: local popup interaction and endpoint checks, JavaScript regression
+checks and 11 isolated Firebase-response cases passed. Service tests used an
+in-memory HTTP handler and sent no real email. Live delivery and disabled-account
+login restrictions cannot be verified without configured Firebase authentication
+and the application's missing authorization integration.
+
+
+## First-login popup design preview
+
+Open `Auth/Login?preview=first-login` after starting the project to preview the
+password-change popup without signing in. The preview is explicitly labelled;
+its loading/feedback interaction never saves a password or grants access.
+The normal Login page and existing backend handlers are unchanged.
+
+The popup uses the existing theme, independent password visibility controls,
+live password-strength and match feedback, and a Save button disabled until
+all displayed requirements pass. Escape is prevented; the preview-only Back to
+Login link provides an exit. This is presentation work only. Firebase password
+updates, profile flags, provisioning and route authorization remain future work.

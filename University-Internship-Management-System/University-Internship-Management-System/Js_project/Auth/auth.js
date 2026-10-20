@@ -6,6 +6,16 @@
     const dialog = document.getElementById("firstLoginDialog");
     const newPassword = document.getElementById("NewPassword");
     const confirmation = document.getElementById("ConfirmPassword");
+    const resetDialog = document.getElementById("forgotPasswordDialog");
+    const resetOpener = document.getElementById("ForgotPassword");
+    const resetEmail = document.getElementById("ResetEmail");
+    const resetButton = document.getElementById("SendResetLink");
+    const resetError = document.getElementById("resetError");
+    const saveChanges = document.getElementById("SaveChanges");
+    const requiresPasswordChange = form.dataset.passwordRequired === "true";
+    const isPasswordPreview = !requiresPasswordChange &&
+        new URLSearchParams(window.location.search).get("preview") === "first-login";
+    let resetBusy = false;
     let submitting = false;
     document.querySelectorAll("[data-loading]").forEach(button => { button.dataset.label = button.value; });
 
@@ -48,13 +58,14 @@
         message.textContent = confirmation.value ? (match ? "Passwords match" : "Passwords do not match yet") : "";
         message.classList.toggle("is-valid", Boolean(match));
         message.classList.toggle("is-invalid", Boolean(confirmation.value && !match));
+        saveChanges.disabled = submitting || !Object.values(rules).every(Boolean) || !match;
     }
 
     newPassword.addEventListener("input", updatePasswordFeedback);
     confirmation.addEventListener("input", updatePasswordFeedback);
     dialog.addEventListener("cancel", event => event.preventDefault());
 
-    if (form.dataset.passwordRequired === "true") {
+    if (requiresPasswordChange || isPasswordPreview) {
         if (typeof dialog.showModal === "function") {
             dialog.showModal();
         } else {
@@ -62,20 +73,112 @@
             document.getElementById("loginContent").setAttribute("inert", "");
         }
         newPassword.focus();
+        document.getElementById("firstLoginPreviewNotice").hidden = !isPasswordPreview;
+        document.getElementById("exitPasswordPreview").hidden = !isPasswordPreview;
+    }
+    updatePasswordFeedback();
+
+    resetOpener.addEventListener("click", () => {
+        if (requiresPasswordChange || isPasswordPreview) return;
+        document.getElementById("resetFields").hidden = false;
+        document.getElementById("resetConfirmation").hidden = true;
+        document.getElementById("resetEmailError").textContent = "";
+        resetEmail.removeAttribute("aria-invalid");
+        resetError.hidden = true;
+        resetEmail.value = document.getElementById("Email").value.trim();
+        resetDialog.showModal();
+        resetEmail.focus();
+    });
+
+    document.querySelectorAll("[data-close-reset]").forEach(button => {
+        button.addEventListener("click", () => resetDialog.close());
+    });
+    resetDialog.addEventListener("close", () => resetOpener.focus());
+    resetDialog.addEventListener("click", event => {
+        const bounds = resetDialog.getBoundingClientRect();
+        if (event.target === resetDialog && (event.clientX < bounds.left || event.clientX > bounds.right ||
+            event.clientY < bounds.top || event.clientY > bounds.bottom)) {
+            resetDialog.close();
+        }
+    });
+    resetEmail.addEventListener("keydown", event => {
+        if (event.key === "Enter") {
+            event.preventDefault();
+            sendResetLink();
+        }
+    });
+    resetButton.addEventListener("click", sendResetLink);
+
+    async function sendResetLink() {
+        if (resetBusy) return;
+        const valid = Boolean(resetEmail.value.trim()) && resetEmail.validity.valid;
+        document.getElementById("resetEmailError").textContent = valid ? "" : "Enter a valid email address.";
+        resetEmail.setAttribute("aria-invalid", String(!valid));
+        if (!valid) {
+            resetEmail.focus();
+            return;
+        }
+
+        resetBusy = true;
+        resetButton.disabled = true;
+        resetButton.textContent = "Sending...";
+        resetDialog.setAttribute("aria-busy", "true");
+        resetError.hidden = true;
+        const controller = new AbortController();
+        const timeout = window.setTimeout(() => controller.abort(), 20000);
+        try {
+            const url = new URL(form.action, window.location.href);
+            url.searchParams.set("action", "reset");
+            const response = await fetch(url, {
+                method: "POST",
+                credentials: "same-origin",
+                signal: controller.signal,
+                headers: { "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8" },
+                body: new URLSearchParams({
+                    email: resetEmail.value.trim(),
+                    csrfToken: document.getElementById("CsrfToken").value
+                })
+            });
+            const result = await response.json();
+            if (!response.ok || !result.success) {
+                resetError.textContent = result.message || "Unable to send your request. Please try again later.";
+                resetError.hidden = false;
+                return;
+            }
+
+            document.getElementById("resetFields").hidden = true;
+            const confirmation = document.getElementById("resetConfirmation");
+            confirmation.hidden = false;
+            if (resetDialog.open) confirmation.focus();
+        } catch {
+            resetError.textContent = "We couldn't connect. Check your connection and try again in a minute.";
+            resetError.hidden = false;
+        } finally {
+            window.clearTimeout(timeout);
+            resetBusy = false;
+            resetButton.disabled = false;
+            resetButton.textContent = "Send Reset Link";
+            resetDialog.removeAttribute("aria-busy");
+        }
     }
 
     form.addEventListener("submit", event => {
+        if (resetDialog.open) {
+            event.preventDefault();
+            sendResetLink();
+            return;
+        }
         if (submitting) {
             event.preventDefault();
             return;
         }
         const button = event.submitter;
         const action = button ? button.dataset.action : "login";
-        if (action === "login" || action === "reset") {
+        if (action === "login") {
             const email = document.getElementById("Email");
             const password = document.getElementById("Password");
             const emailValid = Boolean(email.value.trim()) && email.validity.valid;
-            const passwordValid = action === "reset" || Boolean(password.value);
+            const passwordValid = Boolean(password.value);
             document.getElementById("emailError").textContent = emailValid ? "" : "Enter a valid email address.";
             document.getElementById("passwordError").textContent = passwordValid ? "" : "Enter your password.";
             email.setAttribute("aria-invalid", String(!emailValid));
@@ -94,6 +197,25 @@
                 return;
             }
         }
+        if (action === "change" && isPasswordPreview) {
+            event.preventDefault();
+            submitting = true;
+            saveChanges.disabled = true;
+            saveChanges.value = "Previewing...";
+            dialog.setAttribute("aria-busy", "true");
+            window.setTimeout(() => {
+                const status = document.getElementById("firstChangeStatus");
+                status.textContent = "Preview complete. No password was changed.";
+                status.classList.add("is-success");
+                status.hidden = false;
+                dialog.removeAttribute("aria-busy");
+                saveChanges.value = "Preview Again";
+                submitting = false;
+                updatePasswordFeedback();
+                status.focus();
+            }, 450);
+            return;
+        }
         submitting = true;
         form.setAttribute("aria-busy", "true");
         if (button) {
@@ -110,5 +232,6 @@
             button.removeAttribute("aria-disabled");
             button.value = button.dataset.label;
         });
+        updatePasswordFeedback();
     });
 })();

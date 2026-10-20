@@ -12,6 +12,12 @@ namespace University_Internship_Management_System.Shared
         {
             HomeLink.NavigateUrl = HomeUrl;
             RoleLabel.Text = UserRole;
+            ProgressMonitorLink.Visible = string.Equals(UserRole, "Academic", StringComparison.OrdinalIgnoreCase);
+            if (string.Equals(Page.AppRelativeVirtualPath, "~/Academic/StudentProgressMonitor.aspx", StringComparison.OrdinalIgnoreCase))
+            {
+                ProgressMonitorLink.CssClass += " is-active";
+                ProgressMonitorLink.Attributes["aria-current"] = "page";
+            }
 
             bool isHome = string.Equals(Page.AppRelativeVirtualPath,
                 HomeUrl, StringComparison.OrdinalIgnoreCase);
