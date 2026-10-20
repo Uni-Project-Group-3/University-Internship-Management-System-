@@ -1,4 +1,14 @@
 <%@ Page Language="C#" %>
+
+<script runat="server">
+    protected void btnLogout_Click(object sender, System.EventArgs e)
+    {
+        Session.Clear();
+        Session.Abandon();
+        Response.Redirect("~/Auth/Login.aspx");
+    }
+</script>
+
 <!DOCTYPE html>
 <html lang="en">
 <head runat="server">
@@ -6,11 +16,69 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Final Completion Review | JUST Internships</title>
     <link href="../Content/bootstrap.min.css" rel="stylesheet" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet" />
     <link href="../Assets/shared/colors.css" rel="stylesheet" />
-    <link href="../Assets/coordinator/final-completion-review.css" rel="stylesheet" />
+    <link href="../Assets/coordinator/final-completion-review.css?v=20261021-original-shell" rel="stylesheet" />
 </head>
 <body>
     <form id="reviewForm" runat="server">
+        <div class="app">
+            <!-- سايد بار المنسق داخل الصفحة مباشرة حسب التنظيم المتفق عليه -->
+            <aside class="sidebar" id="coordinatorSidebar" aria-label="Coordinator navigation">
+                <button type="button" id="closeSidebar" class="sidebar-close" aria-label="Close navigation">&times;</button>
+                <a href="CoordinatorDashboard.aspx" class="brand">
+                    <img class="brand-logo" src="../Assets/shared/images/JUST-Logo-01.png" alt="Jordan University of Science and Technology logo" width="52" height="52" />
+                    <div class="brand-text"><strong>JUST</strong><span>Internships</span></div>
+                </a>
+
+                <ul class="side-nav">
+                    <li><a href="CoordinatorDashboard.aspx"><i class="bi bi-house-door"></i>Dashboard</a></li>
+                    <li><a href="ManageStudents.aspx"><i class="bi bi-mortarboard"></i>Manage Students</a></li>
+                    <li><a href="ManageCompanies.aspx"><i class="bi bi-building"></i>Manage Companies</a></li>
+                    <li><a href="ManageSupervisors.aspx"><i class="bi bi-person-badge"></i>Academic Supervisors</a></li>
+                    <li><a href="AssignSupervisors.aspx"><i class="bi bi-diagram-3"></i>Assign Supervisors</a></li>
+                    <li><a href="MonitorPlacements.aspx"><i class="bi bi-activity"></i>Placements &amp; Progress</a></li>
+                    <li><a href="FinalCompletionReview.aspx" class="active" aria-current="page"><i class="bi bi-patch-check"></i>Final Completion Review<span class="count">4</span></a></li>
+                    <li><a href="ContactMessages.aspx"><i class="bi bi-envelope"></i>Contact Messages</a></li>
+                </ul>
+
+                <div class="side-divider"></div>
+
+                <ul class="side-nav">
+                    <li><a href="Account.aspx"><i class="bi bi-gear"></i>Coordinator Account</a></li>
+                </ul>
+
+                <div class="side-promo">
+                    <i class="bi bi-person-plus"></i>
+                    <p>New semester?<br />Add students and assign groups.</p>
+                    <a href="ManageStudents.aspx">Add students &rarr;</a>
+                </div>
+            </aside>
+            <div id="sidebarBackdrop" class="sidebar-backdrop" aria-hidden="true"></div>
+            <div class="main" id="coordinatorMain">
+                <header class="topbar">
+                    <button type="button" class="menu-btn" id="openSidebar" aria-label="Open navigation" aria-controls="coordinatorSidebar" aria-expanded="false"><i class="bi bi-list"></i></button>
+                    <div class="search">
+                        <i class="bi bi-search"></i>
+                        <input id="navbarSearch" type="search" aria-label="Workspace search" placeholder="Search for students, companies, or supervisors..." />
+                    </div>
+                    <div class="topbar-actions">
+                        <button type="button" class="icon-btn" id="navbarNotifications" aria-label="Notifications preview"><i class="bi bi-bell"></i><span class="dot"></span></button>
+                        <div class="dropdown">
+                            <button type="button" class="user-chip" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Account menu">
+                                <span class="avatar"><asp:Label ID="lblInitials" runat="server" Text="CO" /></span>
+                                <span class="name"><asp:Label ID="lblUserName" runat="server" Text="Coordinator" /><span class="role">Internship Coordinator</span></span>
+                                <i class="bi bi-chevron-down small"></i>
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-end">
+                                <li><a class="dropdown-item" href="Account.aspx"><i class="bi bi-person me-2"></i>Account</a></li>
+                                <li><hr class="dropdown-divider" /></li>
+                                <li><asp:LinkButton ID="btnLogout" runat="server" CssClass="dropdown-item text-danger" OnClick="btnLogout_Click" CausesValidation="false"><i class="bi bi-box-arrow-right me-2"></i>Log out</asp:LinkButton></li>
+                            </ul>
+                        </div>
+                    </div>
+                </header>
+                <p id="navbarNotice" class="navbar-notice" role="status" hidden></p>
         <main class="review-page">
             <header class="page-heading">
                 <p class="eyebrow">JUST / COORDINATOR WORKSPACE</p>
@@ -127,8 +195,10 @@
             </div>
             <noscript><p>Enable JavaScript to load the sample student review and preview completion approval.</p></noscript>
         </main>
+            </div>
+        </div>
     </form>
     <script src="../Scripts/bootstrap.bundle.min.js"></script>
-    <script src="../Js_project/Coordinator/final-completion-review.js"></script>
+    <script src="../Js_project/Coordinator/final-completion-review.js?v=20261021-original-shell"></script>
 </body>
 </html>

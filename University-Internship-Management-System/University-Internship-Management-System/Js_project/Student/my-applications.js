@@ -78,3 +78,82 @@ confirmModal.addEventListener("hidden.bs.modal", function () {
 });
 
 filterApplications();
+
+
+// سلوك القائمة الجانبية مكرر داخل ملف كل صفحة، دون ملف مشترك
+function setupStudentSidebar() {
+    const sidebar = document.getElementById("studentSidebar");
+    const main = document.getElementById("studentMain");
+    const openButton = document.getElementById("openSidebar");
+    const closeButton = document.getElementById("closeSidebar");
+    const backdrop = document.getElementById("sidebarBackdrop");
+    const mobileScreen = window.matchMedia("(max-width: 991.98px)");
+
+    function setSidebarOpen(open) {
+        const isOpen = open && mobileScreen.matches;
+        document.body.classList.toggle("sidebar-open", isOpen);
+        openButton.setAttribute("aria-expanded", String(isOpen));
+        main.inert = isOpen;
+        sidebar.inert = mobileScreen.matches && !isOpen;
+
+        if (isOpen) {
+            closeButton.focus();
+        }
+    }
+
+    function closeSidebar() {
+        setSidebarOpen(false);
+        openButton.focus();
+    }
+
+    openButton.addEventListener("click", function () { setSidebarOpen(true); });
+    closeButton.addEventListener("click", closeSidebar);
+    backdrop.addEventListener("click", closeSidebar);
+    mobileScreen.addEventListener("change", function () { setSidebarOpen(false); });
+
+    // إبقاء تنقل لوحة المفاتيح داخل القائمة المفتوحة وإغلاقها بزر Escape
+    sidebar.addEventListener("keydown", function (event) {
+        if (!mobileScreen.matches || !document.body.classList.contains("sidebar-open")) {
+            return;
+        }
+
+        if (event.key === "Escape") {
+            event.preventDefault();
+            closeSidebar();
+        }
+
+        if (event.key === "Tab") {
+            const links = sidebar.querySelectorAll('a[href], button');
+            const first = links[0];
+            const last = links[links.length - 1];
+
+            if (event.shiftKey && document.activeElement === first) {
+                event.preventDefault();
+                last.focus();
+            } else if (!event.shiftKey && document.activeElement === last) {
+                event.preventDefault();
+                first.focus();
+            }
+        }
+    });
+
+    setSidebarOpen(false);
+}
+
+setupStudentSidebar();
+
+
+// البحث العلوي ينتقل لصفحة الفرص للطالب أو يختار الطالب المطابق لدى المنسق
+const navbarSearch = document.getElementById("navbarSearch");
+navbarSearch.addEventListener("keydown", function (event) {
+    if (event.key !== "Enter") { return; }
+    event.preventDefault();
+    const search = navbarSearch.value.trim();
+    window.location.href = "ExploreOpportunities.aspx?search=" + encodeURIComponent(search);
+});
+
+document.getElementById("navbarNotifications").addEventListener("click", function () {
+    const notice = document.getElementById("navbarNotice");
+    notice.textContent = "Notifications preview — live notifications are not connected yet.";
+    notice.hidden = !notice.hidden;
+});

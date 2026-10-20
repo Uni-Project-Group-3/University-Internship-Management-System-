@@ -118,6 +118,7 @@
     <Content Include="Js_project\Student\application-form.js" />
     <Content Include="Js_project\Student\explore-opportunities.js" />
     <Content Include="Assets\shared\colors.css" />
+    <Content Include="Assets\shared\images\JUST-Logo-01.png" />
     <Content Include="Shared\Sidebar.ascx" />
     <Content Include="Shared\HomeNavbar.ascx" />
     <Content Include="Js_project\Public\navbar.js" />

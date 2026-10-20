@@ -1,4 +1,14 @@
 <%@ Page Language="C#" %>
+
+<script runat="server">
+    protected void btnLogout_Click(object sender, System.EventArgs e)
+    {
+        Session.Clear();
+        Session.Abandon();
+        Response.Redirect("~/Auth/Login.aspx");
+    }
+</script>
+
 <!DOCTYPE html>
 <html lang="en">
 <head runat="server">
@@ -6,11 +16,69 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Application Form | JUST Internships</title>
     <link href="../Content/bootstrap.min.css" rel="stylesheet" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet" />
     <link href="../Assets/shared/colors.css" rel="stylesheet" />
-    <link href="../Assets/student/application-form.css" rel="stylesheet" />
+    <link href="../Assets/student/application-form.css?v=20261021-original-shell" rel="stylesheet" />
 </head>
 <body>
     <form id="applicationForm" runat="server">
+        <div class="app">
+            <!-- نفس السايد بار المرسل، مكرر داخل الصفحة مع ضبط الروابط المتوفرة -->
+            <aside class="sidebar" id="studentSidebar" aria-label="Student navigation">
+                <button type="button" id="closeSidebar" class="sidebar-close" aria-label="Close navigation">&times;</button>
+                <a href="StudentDashboard.aspx" class="brand">
+                    <img class="brand-logo" src="../Assets/shared/images/JUST-Logo-01.png" alt="Jordan University of Science and Technology logo" width="52" height="52" />
+                    <div class="brand-text"><strong>JUST</strong><span>Internships</span></div>
+                </a>
+
+                <ul class="side-nav">
+                    <li><a href="StudentDashboard.aspx"><i class="bi bi-house-door"></i>Dashboard</a></li>
+                    <li><a href="ExploreOpportunities.aspx" class="active"><i class="bi bi-compass"></i>Explore Opportunities</a></li>
+                    <li><a href="MyApplications.aspx"><i class="bi bi-file-earmark-text"></i>My Applications</a></li>
+                    <li><a href="MyTasks.aspx"><i class="bi bi-list-check"></i>My Tasks<span class="count">3</span></a></li>
+                    <li><a href="MyProgress.aspx"><i class="bi bi-graph-up-arrow"></i>Progress &amp; Evaluation</a></li>
+                    <li><a href="MyProfile.aspx"><i class="bi bi-person"></i>My Profile</a></li>
+                </ul>
+
+                <div class="side-divider"></div>
+
+                <ul class="side-nav">
+                    <li><a href="ChangePassword.aspx"><i class="bi bi-gear"></i>Settings</a></li>
+                    <li><a href="../Contact.aspx"><i class="bi bi-question-circle"></i>Help</a></li>
+                </ul>
+
+                <div class="side-promo">
+                    <i class="bi bi-mortarboard-fill"></i>
+                    <p>Build your future<br />with real experience.</p>
+                    <a href="ExploreOpportunities.aspx">Explore opportunities &rarr;</a>
+                </div>
+            </aside>
+            <div id="sidebarBackdrop" class="sidebar-backdrop" aria-hidden="true"></div>
+            <div class="main" id="studentMain">
+                <header class="topbar">
+                    <button type="button" class="menu-btn" id="openSidebar" aria-label="Open navigation" aria-controls="studentSidebar" aria-expanded="false"><i class="bi bi-list"></i></button>
+                    <div class="search">
+                        <i class="bi bi-search"></i>
+                        <input id="navbarSearch" type="search" aria-label="Workspace search" placeholder="Search for internships, companies, or skills..." />
+                    </div>
+                    <div class="topbar-actions">
+                        <button type="button" class="icon-btn" id="navbarNotifications" aria-label="Notifications preview"><i class="bi bi-bell"></i><span class="dot"></span></button>
+                        <div class="dropdown">
+                            <button type="button" class="user-chip" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Account menu">
+                                <span class="avatar"><asp:Label ID="lblInitials" runat="server" Text="ST" /></span>
+                                <span class="name"><asp:Label ID="lblUserName" runat="server" Text="Student" /><span class="role">Student</span></span>
+                                <i class="bi bi-chevron-down small"></i>
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-end">
+                                <li><a class="dropdown-item" href="MyProfile.aspx"><i class="bi bi-person me-2"></i>My Profile</a></li>
+                                <li><a class="dropdown-item" href="ChangePassword.aspx"><i class="bi bi-key me-2"></i>Change Password</a></li>
+                                <li><hr class="dropdown-divider" /></li>
+                                <li><asp:LinkButton ID="btnLogout" runat="server" CssClass="dropdown-item text-danger" OnClick="btnLogout_Click" CausesValidation="false"><i class="bi bi-box-arrow-right me-2"></i>Log out</asp:LinkButton></li>
+                            </ul>
+                        </div>
+                    </div>
+                </header>
+                <p id="navbarNotice" class="navbar-notice" role="status" hidden></p>
         <main class="application-page">
             <a class="back-link" href="ExploreOpportunities.aspx">&larr; Back to opportunities</a>
             <header class="page-heading">
@@ -117,7 +185,10 @@
             </div>
             <noscript><p>Please enable JavaScript to select an opportunity and preview your application.</p></noscript>
         </main>
+            </div>
+        </div>
     </form>
-    <script src="../Js_project/Student/application-form.js"></script>
+    <script src="../Scripts/bootstrap.bundle.min.js"></script>
+    <script src="../Js_project/Student/application-form.js?v=20261021-original-shell"></script>
 </body>
 </html>
