@@ -141,6 +141,9 @@
     <Content Include="Content\bootstrap.rtl.min.css" />
     <Content Include="Content\Site.css" />
     <Content Include="Coordinator\test.aspx" />
+    <Content Include="Coordinator\ManageCompanies.aspx" />
+    <Content Include="Assets\coordinator\manage-companies.css" />
+    <Content Include="Js_project\Coordinator\manage-companies.js" />
     <Content Include="Default.aspx" />
     <Content Include="favicon.ico" />
     <Content Include="Global.asax" />
@@ -252,6 +255,8 @@
     <Compile Include="Contact.aspx.designer.cs">
       <DependentUpon>Contact.aspx</DependentUpon>
     </Compile>
+    <Compile Include="Coordinator\ManageCompanies.aspx.cs"><DependentUpon>ManageCompanies.aspx</DependentUpon><SubType>ASPXCodeBehind</SubType></Compile>
+    <Compile Include="Coordinator\ManageCompanies.aspx.designer.cs"><DependentUpon>ManageCompanies.aspx</DependentUpon></Compile>
     <Compile Include="Coordinator\test.aspx.cs">
       <DependentUpon>test.aspx</DependentUpon>
       <SubType>ASPXCodeBehind</SubType>

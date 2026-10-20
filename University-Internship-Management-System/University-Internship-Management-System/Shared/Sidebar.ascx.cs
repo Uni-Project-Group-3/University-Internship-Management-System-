@@ -12,6 +12,13 @@ namespace University_Internship_Management_System.Shared
         {
             HomeLink.NavigateUrl = HomeUrl;
             RoleLabel.Text = UserRole;
+            ManageCompaniesLink.Visible = string.Equals(UserRole, "Coordinator", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(UserRole, "Admin", StringComparison.OrdinalIgnoreCase);
+            if (string.Equals(Page.AppRelativeVirtualPath, "~/Coordinator/ManageCompanies.aspx", StringComparison.OrdinalIgnoreCase))
+            {
+                ManageCompaniesLink.CssClass = "app-sidebar__link is-active";
+                ManageCompaniesLink.Attributes["aria-current"] = "page";
+            }
             ProgressMonitorLink.Visible = string.Equals(UserRole, "Academic", StringComparison.OrdinalIgnoreCase);
             if (string.Equals(Page.AppRelativeVirtualPath, "~/Academic/StudentProgressMonitor.aspx", StringComparison.OrdinalIgnoreCase))
             {

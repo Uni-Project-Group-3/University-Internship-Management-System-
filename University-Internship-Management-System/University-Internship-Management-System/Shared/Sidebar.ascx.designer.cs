@@ -6,5 +6,6 @@ namespace University_Internship_Management_System.Shared
         protected global::System.Web.UI.WebControls.Literal RoleLabel;
         protected global::System.Web.UI.WebControls.HyperLink HomeLink;
         protected global::System.Web.UI.WebControls.HyperLink ProgressMonitorLink;
+        protected global::System.Web.UI.WebControls.HyperLink ManageCompaniesLink;
     }
 }
