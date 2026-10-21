@@ -111,7 +111,6 @@
     <Content Include="Js_project\Public\navbar.js" />
     <Content Include="Assets\shared\navbar.css" />
     <Content Include="Assets\shared\sidebar.css" />
-    <Content Include="Assets\shared\dashboard-navigation.css" />
     <Content Include="Js_project\Public\dashboard-navigation.js" />
     <Content Include="Auth\Login.aspx" />
     <Content Include="Assets\auth\auth.css" />

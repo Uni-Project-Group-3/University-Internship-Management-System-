@@ -1,1 +1,66 @@
-/* Academic page styles. Shared layout is in Assets/shared/sidebar.css. */
+/* Standalone academic page navigation. Markup stays in each ASPX page. */
+.dashboard-direct { margin: 0; background: var(--background); color: var(--text); font-family: var(--font-body); }
+.dashboard-direct .app-layout { display: flex; min-height: 100vh; }
+.dashboard-direct .dash-main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.dashboard-direct .dash-main > .app-content { flex: 1; width: 100%; min-width: 0; max-width: none; margin: 0; padding: 12px 28px 28px; }
+.dashboard-direct .dash-sidebar, .dashboard-direct .dash-topbar, .dashboard-direct .dash-sidebar * { box-sizing: border-box; }
+.dashboard-direct .dash-sidebar { width: 252px; flex: 0 0 252px; padding: 25px 16px; background: var(--sidebar-bg); position: sticky; top: 0; height: 100dvh; overflow-y: auto; display: flex; flex-direction: column; z-index: 40; }
+.dashboard-direct .dash-brand { display: flex; align-items: center; gap: 10px; padding: 0 12px 28px; text-decoration: none; }
+.dashboard-direct .dash-brand-logo { width: 38px; height: 38px; border: 3px solid var(--primary); border-radius: 9px; display: grid; place-items: center; color: var(--primary); font: 800 18px var(--font-heading); }
+.dashboard-direct .dash-brand-text { line-height: 1.1; }
+.dashboard-direct .dash-brand-text strong { display: block; color: var(--dark); font: 800 19px var(--font-heading); }
+.dashboard-direct .dash-brand-text > span { color: var(--text); font-size: 14px; }
+.dashboard-direct .dash-side-nav { list-style: none; padding: 0; margin: 0; }
+.dashboard-direct .dash-side-nav a, .dashboard-direct .dash-nav-disabled { display: flex; align-items: center; gap: 12px; padding: 10px 13px; margin-bottom: 4px; border-radius: 12px; color: var(--text-secondary); font-size: 12px; font-weight: 500; line-height: 1.55; text-decoration: none; transition: background .15s, color .15s; }
+.dashboard-direct .dash-side-nav svg { width: 19px; height: 19px; flex: 0 0 19px; }
+.dashboard-direct .dash-side-nav a:hover { background: color-mix(in srgb, var(--surface) 55%, transparent); color: var(--primary); }
+.dashboard-direct .dash-side-nav a.active { background: var(--surface); color: var(--primary); font-weight: 600; box-shadow: 0 2px 8px color-mix(in srgb, var(--text) 6%, transparent); }
+.dashboard-direct .dash-nav-disabled { color: var(--muted); cursor: default; }
+.dashboard-direct .dash-side-divider { height: 1px; background: var(--border); margin: 17px 12px; }
+.dashboard-direct .dash-side-promo { margin-top: auto; background: var(--primary-light); border-radius: 18px; padding: 18px 16px; }
+.dashboard-direct .dash-side-promo > svg { width: 32px; height: 32px; color: var(--primary); }
+.dashboard-direct .dash-side-promo p { font-size: 12px; font-weight: 600; line-height: 1.6; margin: 12px 0 14px; }
+.dashboard-direct .dash-side-promo a { display: inline-block; background: var(--surface); color: var(--primary); padding: 7px 13px; border-radius: 20px; font-size: 11px; font-weight: 600; text-decoration: none; }
+.dashboard-direct .dash-topbar { display: flex; align-items: center; gap: 16px; padding: 16px 28px; background: var(--background); position: sticky; top: 0; z-index: 30; }
+.dashboard-direct .dash-search { position: relative; flex: 1; min-width: 0; max-width: 450px; }
+.dashboard-direct .dash-search > svg { position: absolute; left: 13px; top: 50%; transform: translateY(-50%); width: 18px; height: 18px; color: var(--muted); }
+.dashboard-direct .dash-search input { width: 100%; box-sizing: border-box; border: 1px solid var(--border-light); border-radius: 12px; padding: 11px 14px 11px 39px; background: var(--surface); color: var(--text); font: 12px var(--font-body); }
+.dashboard-direct .dash-search input:disabled { color: var(--muted); cursor: not-allowed; }
+.dashboard-direct .dash-topbar-actions { margin-left: auto; display: flex; align-items: center; gap: 12px; }
+.dashboard-direct .dash-icon-btn, .dashboard-direct .dash-menu-btn, .dashboard-direct .dash-sidebar-close { display: grid; place-items: center; border: 0; border-radius: 12px; background: transparent; color: var(--text); width: 38px; height: 38px; cursor: pointer; }
+.dashboard-direct .dash-icon-btn svg, .dashboard-direct .dash-menu-btn svg, .dashboard-direct .dash-sidebar-close svg { width: 21px; height: 21px; }
+.dashboard-direct .dash-icon-btn:disabled { opacity: .55; cursor: default; }
+.dashboard-direct .dash-menu-btn, .dashboard-direct .dash-sidebar-close { display: none; }
+.dashboard-direct .dash-profile { position: relative; }
+.dashboard-direct .dash-user-chip { display: flex; align-items: center; gap: 9px; padding: 4px 12px 4px 4px; border-radius: 40px; background: var(--surface); color: var(--text); font-size: 11px; font-weight: 600; cursor: pointer; list-style: none; }
+.dashboard-direct .dash-user-chip::-webkit-details-marker { display: none; }
+.dashboard-direct .dash-avatar { width: 34px; height: 34px; display: grid; place-items: center; border-radius: 50%; background: var(--primary); color: var(--text-inverse); font-size: 11px; }
+.dashboard-direct .dash-user-name { line-height: 1.4; }
+.dashboard-direct .dash-role { display: block; font-size: 9px; font-weight: 500; color: var(--muted); }
+.dashboard-direct .dash-profile-menu { position: absolute; right: 0; top: calc(100% + 8px); min-width: 180px; padding: 7px; border: 1px solid var(--border-light); border-radius: 12px; background: var(--surface); box-shadow: 0 10px 30px color-mix(in srgb, var(--text) 10%, transparent); }
+.dashboard-direct .dash-profile-menu a { display: flex; align-items: center; gap: 10px; padding: 10px; border-radius: 7px; color: var(--text); font-size: 11px; text-decoration: none; }
+.dashboard-direct .dash-profile-menu a:hover { background: var(--primary-soft); }
+.dashboard-direct .dash-profile-menu svg { width: 17px; height: 17px; }
+.dashboard-direct .dash-sidebar-backdrop { display: none; }
+.dashboard-direct .dash-sr-only { position: absolute; width: 1px; height: 1px; padding: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+.dashboard-direct :is(.dash-sidebar,.dash-topbar) :is(a,button,input,summary):focus-visible { outline: 2px solid var(--primary); outline-offset: 3px; }
+@media (max-width: 991.98px) {
+    .dashboard-direct .dash-sidebar { position: fixed; left: 0; top: 0; transform: translateX(-100%); transition: transform .22s ease; box-shadow: 0 0 40px color-mix(in srgb, var(--text) 15%, transparent); max-width: calc(100vw - 44px); z-index: 50; }
+    .dashboard-direct.dash-sidebar-open .dash-sidebar { transform: translateX(0); }
+    .dashboard-direct.dash-sidebar-open { overflow: hidden; }
+    .dashboard-direct .dash-sidebar-backdrop:not([hidden]) { display: block; position: fixed; inset: 0; border: 0; background: color-mix(in srgb, var(--text) 35%, transparent); z-index: 45; }
+    .dashboard-direct .dash-menu-btn { display: grid; flex-shrink: 0; background: var(--surface); }
+    .dashboard-direct .dash-sidebar-close { display: grid; position: absolute; top: 25px; right: 10px; width: 30px; height: 30px; }
+    .dashboard-direct .dash-brand { padding-right: 28px; }
+    .dashboard-direct .dash-topbar { padding: 13px 16px; gap: 10px; }
+    .dashboard-direct .dash-main > .app-content { padding: 8px 18px 24px; }
+}
+@media (max-width: 575.98px) {
+    .dashboard-direct .dash-user-name, .dashboard-direct .dash-user-chip > span:last-child { display: none; }
+    .dashboard-direct .dash-user-chip { padding: 4px; }
+    .dashboard-direct .dash-topbar-actions { gap: 5px; }
+    .dashboard-direct .dash-icon-btn { width: 29px; }
+    .dashboard-direct .dash-search input { font-size: 11px; padding-right: 8px; }
+    .dashboard-direct .dash-search input::placeholder { color: transparent; }
+}
+@media (prefers-reduced-motion: reduce) { .dashboard-direct .dash-sidebar, .dashboard-direct .dash-side-nav a { transition: none; } }

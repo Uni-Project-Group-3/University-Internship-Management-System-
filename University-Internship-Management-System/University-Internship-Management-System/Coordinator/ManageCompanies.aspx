@@ -8,7 +8,7 @@
     <link runat="server" href="~/Assets/shared/colors.css" rel="stylesheet" />
 
     <link runat="server" href="~/Assets/coordinator/manage-companies.css" rel="stylesheet" />
-    <link runat="server" href="~/Assets/shared/dashboard-navigation.css" rel="stylesheet" />
+    <link runat="server" href="~/Assets/coordinator/coordinator.css" rel="stylesheet" />
 </head>
 <body class="dashboard-direct app-page companies-page">
     <form id="form1" runat="server">
