@@ -42,9 +42,15 @@ namespace UIMS.Company
             // Enable once Login.aspx stores the role in Session["Role"].
             // if (Session["Role"] as string != "Company")
             // {
-            //     Response.Redirect("~/Login.aspx");
+            //     Response.Redirect("~/Auth/Login.aspx");
             //     return;
             // }
+
+            // The current frontend uses client-side inputs, not the legacy server controls.
+            if (txtSearch == null)
+            {
+                return;
+            }
 
             LoadHeader();
 
@@ -344,9 +350,10 @@ namespace UIMS.Company
 
         protected void btnLogout_Click(object sender, EventArgs e)
         {
+            System.Web.Security.FormsAuthentication.SignOut();
             Session.Clear();
             Session.Abandon();
-            Response.Redirect("~/Login.aspx");
+            Response.Redirect("~/Auth/Login.aspx");
         }
     }
 }

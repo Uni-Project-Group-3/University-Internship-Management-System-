@@ -1,3 +1,4 @@
+<%@ Page Language="C#" AutoEventWireup="true" CodeBehind="Profile.aspx.cs" Inherits="University_Internship_Management_System.Student.Profile" %>
 <!DOCTYPE html>
 
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en">
@@ -8,42 +9,41 @@
     <link runat="server"
         href="~/Assets/shared/colors.css" rel="stylesheet" />
 
-    <link runat="server"
-        href="~/Assets/student/student.css" rel="stylesheet" />
+    
 
     <link runat="server"
-        href="~/Assets/student/profile.css" rel="stylesheet" />
+        href="~/Assets/student/profile.css?v=20261021-original-ui" rel="stylesheet" />
 </head>
 
-<body class="app-page role-shell">
+<body class="app-page role-shell" data-demo-role="student">
     <form id="form1" runat="server" aria-describedby="profileAvailability" enctype="multipart/form-data">
         <div class="app">
             <aside class="sidebar" id="StudentSidebar" aria-label="Student navigation" data-role-sidebar="true"><button class="sidebar-close" type="button" aria-label="Close navigation menu"><svg class="bi bi-x nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="m6 6 12 12M6 18 18 6"/></svg></button>
-                <a href="test.aspx" class="brand">
+                <a href="StudentDashboard.aspx" class="brand">
                     <div class="brand-logo">J</div>
                     <div class="brand-text"><strong>JUST</strong><span>Internships</span></div>
                 </a>
 
-                <ul class="side-nav" role="list">
-                    <li><a href="test.aspx" ><svg class="bi bi-house-door nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="m3 10 9-7 9 7v10h-6v-7H9v7H3V10Z"/></svg>Dashboard</a></li>
-                    <li><a role="link" aria-disabled="true" title="This page is not available in the project yet"><svg class="bi bi-compass nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="9"/><path d="m16 8-2 6-6 2 2-6 6-2Z"/></svg>Explore Opportunities</a></li>
-                    <li><a role="link" aria-disabled="true" title="This page is not available in the project yet"><svg class="bi bi-file-earmark-text nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M5 3h9l5 5v13H5V3Z"/><path d="M14 3v5h5M8 12h8m-8 4h6"/></svg>My Applications</a></li>
-                    <li><a role="link" aria-disabled="true" title="This page is not available in the project yet"><svg class="bi bi-list-check nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="m3 6 2 2 3-4m2 3h11M3 13l2 2 3-4m2 3h11M3 20l2 2 3-4m2 3h11"/></svg>My Tasks</a></li>
-                    <li><a role="link" aria-disabled="true" title="This page is not available in the project yet"><svg class="bi bi-graph-up-arrow nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M3 3v18h18M6 16l5-5 4 3 6-8m-5 0h5v5"/></svg>Progress &amp; Evaluation</a></li>
-                    <li><a href="Profile.aspx" class="active" aria-current="page"><svg class="bi bi-person nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="12" cy="7" r="4"/><path d="M4 21v-2a8 8 0 0 1 16 0v2"/></svg>My Profile</a></li>
-                </ul>
+                <ul class="side-nav" aria-label="Student pages">
+<li><a href="StudentDashboard.aspx"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m3 10 9-7 9 7v10h-6v-7H9v7H3V10Z"/></svg><span>Dashboard</span></a></li>
+<li><a href="ExploreOpportunities.aspx"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="m8 12 3 3 5-6"/></svg><span>Explore Opportunities</span></a></li>
+<li><a href="MyApplications.aspx"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="m8 12 3 3 5-6"/></svg><span>My Applications</span></a></li>
+<li><a href="ApplicationForm.aspx"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="m8 12 3 3 5-6"/></svg><span>Application Form</span></a></li>
+<li><a href="Profile.aspx" class="active" aria-current="page"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="7" r="3"/><path d="M5 21v-3a7 7 0 0 1 14 0v3"/></svg><span>My Profile</span></a></li>
+
+<li><a href="MyTasks.aspx"><svg class="nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M4 5h16v14H4zM8 9h8M8 13h6" /></svg><span>My Tasks</span></a></li>
+
+<li><a href="MyProgressEvaluation.aspx"><svg class="nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M4 5h16v14H4zM8 9h8M8 13h6" /></svg><span>My Progress &amp; Evaluation</span></a></li>
+</ul>
 
                 <div class="side-divider"></div>
 
-                <ul class="side-nav" role="list">
-                    <li><a role="link" aria-disabled="true" title="This page is not available in the project yet"><svg class="bi bi-gear nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="m9 3-1 3-3 1-2 4 2 2v4l4 2 3-1 3 1 4-2v-4l2-2-2-4-3-1-1-3H9Z"/><circle cx="12" cy="11" r="3"/></svg>Settings</a></li>
-                    <li><a href="../Contact.aspx"><svg class="bi bi-question-circle nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="9"/><path d="M9 8a3 3 0 0 1 6 1c0 2-3 2-3 5m0 3h.01"/></svg>Help</a></li>
-                </ul>
+                <ul class="side-nav" role="list"><li><a href="../Contact.aspx"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="m8 12 3 3 5-6"/></svg><span>Help &amp; contact</span></a></li></ul>
 
                 <div class="side-promo">
                     <svg class="bi bi-mortarboard-fill nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="m2 8 10-5 10 5-10 5L2 8Zm4 3v6c3 3 9 3 12 0v-6m4-3v9"/></svg>
                     <p>Build your future<br />with real experience.</p>
-                    <a role="link" aria-disabled="true" title="This page is not available in the project yet">Explore opportunities &rarr;</a>
+                    <a href="ExploreOpportunities.aspx">Explore opportunities &rarr;</a>
                 </div>
             </aside>
             <button type="button" class="sidebar-backdrop" aria-label="Close navigation menu" tabindex="-1"></button>
@@ -240,7 +240,8 @@
             </div>
         </div>
     </form>
-    <script>
+    <script src="../Js_project/Demo/demo-store.js?v=20261021-original-ui"></script>
+<script>
         (() => {
             "use strict";
             const sidebar = document.querySelector(".sidebar");
@@ -302,5 +303,6 @@
             mobile.addEventListener("change", () => setSidebar(false));
         })();
     </script>
+<script src="../Js_project/Student/profile.js?v=20261021-original-ui"></script>
 </body>
 </html>

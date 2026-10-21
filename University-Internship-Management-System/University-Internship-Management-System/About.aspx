@@ -1,9 +1,18 @@
-﻿<%@ Page Title="About" Language="C#" MasterPageFile="~/Site.Master" AutoEventWireup="true" CodeBehind="About.aspx.cs" Inherits="University_Internship_Management_System.About" %>
-
-<asp:Content ID="BodyContent" ContentPlaceHolderID="MainContent" runat="server">
-    <main aria-labelledby="title">
-        <h2 id="title"><%: Title %>.</h2>
-        <h3>Your application description page.</h3>
-        <p>Use this area to provide additional information.</p>
-    </main>
-</asp:Content>
+<%@ Page Title="About UIMS | JUST Internships" Language="C#" AutoEventWireup="true" CodeBehind="About.aspx.cs" Inherits="University_Internship_Management_System.About" %>
+<!DOCTYPE html><html lang="en"><head runat="server"><meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" /><title>About UIMS | JUST Internships</title><link href="Assets/shared/colors.css" rel="stylesheet" /><link href="Assets/public/about.css" rel="stylesheet" /></head><body><form id="form1" runat="server"><header class="home-header">
+    <nav class="home-navbar" aria-label="Public navigation">
+        <a class="home-navbar__brand" href="<%= ResolveUrl("~/Default.aspx") %>">
+            <img class="home-navbar__logo" src="<%= ResolveUrl("~/Assets/shared/images/just-logo.png") %>" width="40" height="40" alt="Official JUST emblem" />
+            <span><strong>UIMS</strong><span class="home-navbar__subtitle">JUST Internships</span></span>
+        </a>
+        <button class="home-navbar__toggle" type="button" aria-label="Open navigation menu" aria-expanded="false" aria-controls="publicNavigationLinks" hidden="hidden">
+            <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16" /></svg>
+        </button>
+        <div id="publicNavigationLinks" class="home-navbar__links">
+            <a id="HomeLink" class="home-navbar__link" href="<%= ResolveUrl("~/Default.aspx") %>">Home</a>
+            <a id="AboutLink" aria-current="page" class="home-navbar__link is-active" href="<%= ResolveUrl("~/About.aspx") %>">About Us</a>
+            <a id="ContactLink" class="home-navbar__link" href="<%= ResolveUrl("~/Contact.aspx") %>">Contact Us</a>
+            <a id="LoginLink" class="home-navbar__link home-navbar__sign-in" href="<%= ResolveUrl("~/Auth/Login.aspx") %>">Sign In</a>
+        </div>
+    </nav>
+</header><main><span class="public-eyebrow">About UIMS</span><h1>One internship journey.<br />Four connected workspaces.</h1><p>UIMS is the University Internship Management System project for Jordan University of Science and Technology, Faculty of Information Technology.</p><section class="public-grid"><article class="public-card"><h2>Students &amp; companies</h2><p>Students explore opportunities and submit applications. Company Supervisors review applications, assign tasks and give feedback.</p></article><article class="public-card"><h2>Academic supervision</h2><p>Academic Supervisors monitor their assigned students within the appropriate department and prepare final academic evaluations.</p></article><article class="public-card"><h2>Coordinator review</h2><p>The Coordinator manages accounts and assignments and reviews the completion requirements. Student confirmation precedes the demonstration certificate and grace period.</p></article></section><h2>Departments</h2><p>Computer Science · Artificial Intelligence · Cybersecurity · Computer Information Systems</p><p class="public-note">This development version uses a unified local demonstration state. It does not issue an official certificate, authenticate real accounts or perform background Firebase account deactivation.</p><a class="public-action" href="Auth/Login.aspx">Open your workspace</a><a class="public-action secondary" href="Contact.aspx">Contact us</a></main><footer class="public-footer">&copy; 2026 Jordan University of Science and Technology · University Internship Management System</footer></form><script src="Js_project/Public/navbar.js" defer="defer"></script></body></html>

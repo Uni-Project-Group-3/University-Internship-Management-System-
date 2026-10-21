@@ -1,251 +1,195 @@
-﻿/* =========================================================
-   academic-dashboard.js  (ACADEMIC SUPERVISOR)
 
-   How it works:
-   - Every sidebar button has  onclick="loadSomething()".
-   - Each load function builds the page HTML and puts it inside
-     <main id="mainContent"> using innerHTML.
-   - The sidebar and navbar never change, only the main area.
-   ========================================================= */
+/* Original-page demo bindings. Layout and server controls remain in the ASPX. */
+(function () {
+    'use strict';
+    if (!window.UimsDemo?.enabled()) { location.replace('../Auth/Login.aspx?demo=1'); return; }
+    let binding;
+    function initialize() {
+        binding?.abort();
+        binding = new AbortController();
+        const signal = binding.signal, demo = window.UimsDemo;
+        let view = demo.view(), selected = null, render = () => {};
+        if (!view || view.user.mustChangePassword || view.user.role !== document.body.dataset.demoRole) {
+            location.href = '../Auth/Login.aspx?demo=1';
+            return;
+        }
+        const by = id => document.getElementById(id) || document.querySelector('[id$="_' + id + '"]');
+        const all = selector => [...document.querySelectorAll(selector)];
+        const escape = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+        const text = (id, value) => { const element = by(id); if (element) element.textContent = value ?? '—'; };
+        const value = id => by(id)?.value?.trim() || '';
+        const set = (id, value) => { if (by(id)) by(id).value = value ?? ''; };
+        const options = (id, records, placeholder = 'All') => {
+            const element = by(id); if (!element) return;
+            const previous = element.value;
+            element.innerHTML = '<option value="">' + escape(placeholder) + '</option>' + records.map(record => '<option value="' + escape(record.id) + '">' + escape(record.name) + '</option>').join('');
+            if (records.some(record => record.id === previous)) element.value = previous;
+        };
+        const on = (id, type, handler) => by(id)?.addEventListener(type, handler, {signal});
+        const click = (id, handler) => on(id, 'click', event => { event.preventDefault(); try { handler(event); } catch(exception) { error(exception,event.currentTarget.closest('dialog,.modal,.offcanvas')); } });
+        const button = (label, action, id, className = 'row-action') => {
+            const paths={edit:'M4 16v4h4L20 8l-4-4L4 16Z',delete:'M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13',reset:'M13 7a5 5 0 1 0 0 10 5 5 0 0 0 0-10ZM8 12H2m2 0v4',status:'M12 2v10M6 5a9 9 0 1 0 12 0',assign:'M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 3a4 4 0 1 0 0 8 4 4 0 0 0 0-8M20 8v6m-3-3h6'};
+            const icon=className.includes('action-btn')&&paths[action];
+            const content=icon?'<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="'+paths[action]+'"/></svg>':escape(label);
+            return '<button type="button" title="'+escape(label)+'" aria-label="'+escape(label)+'" class="' + className + '" data-uims="' + action + '" data-record="' + escape(id) + '">' + content + '</button>';
+        };
+        const cells = values => '<tr>' + values.map(cell => '<td>' + cell + '</td>').join('') + '</tr>';
+        const fill = (selector, records, row) => {
+            const element = document.querySelector(selector);
+            if(!element)return;
+            const emptyState=element.id==='taskList'?element.querySelector('#noTasksMsg'):null;
+            element.innerHTML=records.map(row).join('');
+            if(emptyState)element.append(emptyState);
+        };
+        const messageElement = () => by('uimsPageNotice') || document.querySelector('main .preview-note,main .completion-notice,main .companies-notice,main .evaluation-notice,main .monitor-notice,main .workspace-note,#messagesAvailability,#traineesAvailability,#accountAvailability') || by('pageNotice') || by('profileMessage') || by('pnlMessage');
+        function notice(message) {
+            let element = messageElement();
+            if (!element) { element = document.createElement('p'); element.id='uimsPageNotice'; element.className = 'uims-feedback'; element.setAttribute('role','status'); (document.querySelector('main') || document.querySelector('.content')).prepend(element); }
+            element.hidden = false; element.textContent = message;
+        }
+        function error(error, scope) {
+            let element = scope?.querySelector('[data-uims-error]');
+            if (scope && !element) { element = document.createElement('p'); element.dataset.uimsError = ''; element.className = 'uims-error'; element.setAttribute('role','alert'); (scope.querySelector('.modal-body') || scope).append(element); }
+            if (element) element.textContent = error.message; else notice(error.message);
+        }
+        const dirty = new WeakSet(), openers = new WeakMap();
+        let beforeClose=null;
+        function open(id) {
+            const dialog = by(id); if (!dialog) throw Error('Missing original popup: ' + id);
+            const alreadyOpen=dialog.tagName==='DIALOG'?dialog.open:dialog.classList.contains('show');
+            if(!alreadyOpen){openers.set(dialog, document.activeElement);dirty.delete(dialog);}
+            dialog.querySelectorAll('[data-uims-error],.uims-discard').forEach(el => el.remove());
+            if (dialog.tagName === 'DIALOG') { if (!dialog.open) dialog.showModal(); }
+            else if (dialog.classList.contains('offcanvas')) bootstrap.Offcanvas.getOrCreateInstance(dialog).show();
+            else bootstrap.Modal.getOrCreateInstance(dialog).show();
+            dialog.querySelector('input:not([readonly]):not([disabled]),textarea:not([disabled]),select:not([disabled])')?.focus();
+        }
+        function close(id, force = false) {
+            const dialog = by(id); if (!dialog) return;
+            if(!force&&beforeClose?.(id)===false)return;
+            if (dirty.has(dialog) && !force) {
+                if (dialog.querySelector('.uims-discard')) return;
+                const prompt = document.createElement('div'); prompt.className = 'uims-discard'; prompt.setAttribute('role','alert');
+                prompt.innerHTML = '<p>Discard unsaved changes?</p><button type="button" data-keep>Keep editing</button><button type="button" data-discard>Discard changes</button>';
+                (dialog.querySelector('.modal-footer') || dialog).append(prompt);
+                prompt.querySelector('[data-keep]').onclick = () => prompt.remove();
+                prompt.querySelector('[data-discard]').onclick = () => { prompt.remove(); close(id, true); };
+                prompt.querySelector('button').focus(); return;
+            }
+            dirty.delete(dialog);
+            if (dialog.tagName === 'DIALOG') dialog.close();
+            else if (dialog.classList.contains('offcanvas')) bootstrap.Offcanvas.getInstance(dialog)?.hide();
+            else bootstrap.Modal.getInstance(dialog)?.hide();
+            openers.get(dialog)?.focus();
+        }
+        function transact(action, payload, popup) {
+            try {
+                const result = demo.transaction(action, payload); view = demo.view();
+                if (popup) close(popup, true);
+                render(); notice('Saved in local demo storage. No Firebase operation or email was sent.');
+                return {ok:true, result};
+            } catch (exception) { error(exception, popup ? by(popup) : null); return {ok:false}; }
+        }
+        function valid(ids, popup) {
+            const invalid = ids.map(by).find(field => field && (!field.checkValidity() || field.required && !field.value.trim()));
+            if (!invalid) return true;
+            invalid.reportValidity(); error(Error('Check the highlighted field.'), by(popup)); return false;
+        }
+        const actions = {};
+        document.addEventListener('click', event => {
+            const control = event.target.closest('[data-uims]'); if (!control) return;
+            event.preventDefault();
+            try { actions[control.dataset.uims]?.(control.dataset.record, control); } catch (exception) { error(exception); }
+        }, {signal});
+        all('dialog,.modal,.offcanvas').forEach(dialog => {
+            const changed = () => dirty.add(dialog);
+            dialog.addEventListener('input', changed, {signal}); dialog.addEventListener('change', changed, {signal});
+            dialog.addEventListener('cancel', event => { event.preventDefault(); close(dialog.id); }, {signal});
+            dialog.addEventListener('hide.bs.modal', event => { if (dirty.has(dialog)) { event.preventDefault(); close(dialog.id); } }, {signal});
+            dialog.addEventListener('hidden.bs.modal', () => openers.get(dialog)?.focus(), {signal});
+            dialog.addEventListener('click', event => {
+                if(event.defaultPrevented)return;
+                if (event.target.closest('[data-bs-dismiss], [data-close], [data-completion-close], [data-profile-cancel], .popup-close, .monitor-close, .evaluation-close, .companies-close, .placements-close, [data-close-exam]')) {
+                    event.preventDefault(); event.stopPropagation(); close(dialog.id);
+                } else if (event.target === dialog && dialog.tagName === 'DIALOG') {
+                    const rect = dialog.getBoundingClientRect();
+                    if (event.clientX < rect.left || event.clientX > rect.right || event.clientY < rect.top || event.clientY > rect.bottom) close(dialog.id);
+                }
+            }, {signal});
+        });
+        function detail(student, id, selector) {
+            const progress = view.progress.find(item => item.id === student); if (!progress) throw Error('This student is not available to this demo identity.');
+            const target = document.querySelector(selector);
+            if (target) target.innerHTML = '<h3>' + escape(progress.name) + '</h3><dl>' + [['University ID',progress.universityId],['Department',progress.department],['Company',progress.company?.name],['Company Supervisor',progress.companySupervisor?.name],['Academic Supervisor',progress.supervisor?.name],['Training status',progress.placement?.completionStatus || 'Not placed'],['Approved / Required hours',progress.approvedHours + ' / ' + progress.requiredHours],['Tasks completed',progress.completedTasks + ' / ' + progress.tasks.length],['Risk indicators',progress.risks.join(', ') || 'None'],['Confirmed at UTC',progress.placement?.studentConfirmedAt],['Disable deadline UTC',progress.placement?.accountDisableAt],['Certificate',progress.placement?.certificateId]].map(([label,content]) => '<dt>' + escape(label) + '</dt><dd>' + escape(content || '—') + '</dd>').join('') + '</dl>' + progress.tasks.map(task => '<article><h4>' + escape(task.title) + '</h4><p>' + escape(task.description) + '</p><p>' + escape(task.deadline) + ' · ' + escape(task.status) + '</p><p>' + escape(task.feedback) + '</p>' + view.submissions.filter(sub => sub.taskId === task.id).map(sub => '<p>Submitted ' + escape(sub.createdAt) + ': ' + escape(sub.description) + ' · ' + escape(sub.fileName) + '</p>').join('') + '</article>').join('') + progress.evaluations.map(evaluation => '<article><h4>' + escape(evaluation.kind) + ' evaluation · ' + escape(evaluation.status) + '</h4><p>' + escape(evaluation.comments) + '</p></article>').join('');
+            selected = student; open(id);
+        }
+        function shell() {
+            all('[id$="lblUserName"],[id$="NavName"]').forEach(el => el.textContent = view.user.name);
+            document.addEventListener('click', event => {
+                const element = event.target.closest('a,button,input');
+                if (element && (/log\s*out/i.test(element.textContent) || /logout/i.test(element.id))) {
+                    event.preventDefault(); event.stopImmediatePropagation(); demo.logout(); location.href = '../Auth/Login.aspx?demo=1';
+                }
+            }, {signal,capture:true});
+            all('[id*=Logout],[id*=logout]').forEach(el => el.disabled = false);
+            if (!document.querySelector('script[src*="dashboard-navigation.js"]')) {
+                const sidebar = document.querySelector('aside.sidebar,aside.dash-sidebar,aside[id$="Sidebar"]');
+                const toggle = document.querySelector('.menu-btn,.dash-menu-btn');
+                const main = document.querySelector('.main,.dash-main');
+                const media = matchMedia('(max-width:991.98px)');
+                const setOpen = show => {
+                    const active = media.matches && show;
+                    document.body.classList.toggle('sidebar-open',active); toggle?.setAttribute('aria-expanded',String(active));
+                    if (sidebar) sidebar.inert = media.matches && !active;
+                    if (main) main.inert = active;
+                    document.querySelector('.sidebar-backdrop,.dash-sidebar-backdrop')?.toggleAttribute('hidden',!active);
+                    if (active) sidebar?.querySelector('button,a[href]')?.focus();
+                };
+                window.toggleSidebar = () => setOpen(!document.body.classList.contains('sidebar-open'));
+                if (toggle) { toggle.onclick = null; toggle.addEventListener('click',window.toggleSidebar,{signal}); }
+                all('.sidebar-close,.dash-sidebar-close,.legacy-sidebar-close,.sidebar-backdrop,.dash-sidebar-backdrop').forEach(el => el.addEventListener('click',()=>{setOpen(false);toggle?.focus();},{signal}));
+                document.addEventListener('keydown',event=>{if(event.key==='Escape'&&document.body.classList.contains('sidebar-open')){setOpen(false);toggle?.focus();}},{signal});
+                media.addEventListener('change',()=>setOpen(false),{signal}); setOpen(false);
+            }
+            const topSearch = document.querySelector('.topbar input,.dash-topbar input');
+            const search = document.querySelector('main input[type="search"],.content input[type="search"],#taskSearch,#searchInput');
+            if(topSearch&&!search){topSearch.disabled=false;topSearch.addEventListener('keydown',event=>{if(event.key!=='Enter')return;event.preventDefault();const route={admin:'MonitorPlacementsProgress.aspx',student:'ExploreOpportunities.aspx',company:'MyTrainees.aspx',academic:'StudentProgressMonitor.aspx'}[view.user.role];location.href=route+'?search='+encodeURIComponent(topSearch.value.trim());},{signal});}
+            if (topSearch && search && topSearch !== search) { topSearch.disabled=false;topSearch.addEventListener('input',()=>{search.value=topSearch.value;search.dispatchEvent(new Event('input'));},{signal}); }
+        }
 
+        function notifications() {
+            const items=[];
+            if(view.user.role==='student'){view.applications.forEach(a=>items.push('Application: '+a.status));view.placements.filter(p=>p.completionStatus==='PendingStudentConfirmation').forEach(()=>items.push('Coordinator approval received. Confirm completion in the Student Dashboard.'));}
+            if(view.user.role==='company')items.push(view.applications.filter(a=>a.status==='pending').length+' pending applications',view.tasks.filter(t=>t.status==='submitted').length+' task submissions awaiting review');
+            if(view.user.role==='academic')items.push(view.progress.filter(s=>s.evaluations.some(e=>e.kind==='company'&&e.status==='submitted')&&!s.evaluations.some(e=>e.kind==='academic'&&e.status==='submitted')).length+' assigned students awaiting academic evaluation');
+            if(view.user.role==='admin')items.push(view.messages.filter(m=>m.status==='unread').length+' unread contact messages',view.progress.filter(s=>s.placement?.completionStatus==='PendingStudentConfirmation').length+' pending student confirmations');
+            let dialog=by('originalNotifications');
+            if(!dialog){dialog=document.createElement('dialog');dialog.id='originalNotifications';dialog.className='uims-notifications';dialog.setAttribute('aria-label','Demo notifications');document.forms[0].append(dialog);}
+            dialog.innerHTML='<h2>Notifications · local demo</h2>'+items.map(item=>'<p>'+escape(item)+'</p>').join('')+(items.length?'':'<p>No notifications.</p>')+'<button type="button" data-notification-close>Close</button>';
+            dialog.querySelector('button').onclick=()=>dialog.close();dialog.showModal();
+        }
+        all('.topbar button,.dash-topbar button').forEach(el=>{if(!/notification/i.test(el.getAttribute('aria-label')||'')&&!el.querySelector('.bi-bell'))return;el.disabled=false;el.title='Local demo notifications';el.addEventListener('click',event=>{event.preventDefault();event.stopImmediatePropagation();view=demo.view();if(view)notifications();},{signal,capture:true});});
+        shell();
+        
+        render=()=>{
+            const active=view.placements.filter(p=>p.completionStatus==='InTraining').length,pending=view.applications.filter(a=>a.status==='pending').length;
+            const counts={lblStudents:view.students.length,lblCompanies:view.companies.length,lblOpportunities:view.opportunities.length,lblAwaiting:view.progress.filter(p=>p.evaluations.filter(e=>e.status==='submitted').length>=2&&p.placement?.completionStatus==='InTraining').length,lblApplied:view.applications.length,lblInReview:pending,lblTasks:view.tasks.filter(t=>t.status!=='completed').length,lblHours:view.progress[0]?.approvedHours||0,lblApplications:view.applications.length,lblTrainees:view.students.length,lblToReview:view.tasks.filter(t=>t.status==='submitted').length,lblInTraining:active,lblDelayed:view.progress.filter(p=>p.risks.length).length,lblEvalDue:view.progress.filter(p=>p.evaluations.some(e=>e.kind==='company'&&e.status==='submitted')&&!p.evaluations.some(e=>e.kind==='academic'&&e.status==='submitted')).length};
+            Object.entries(counts).forEach(([id,count])=>text(id,count));text('lblGreeting','Welcome, '+view.user.name);text('lblDate',new Date(demo.now()).toLocaleDateString());
+            all('.stat-note').forEach(el=>el.textContent='Calculated from local demo records');
+            const route=view.user.role==='student'?'MyApplications.aspx':view.user.role==='company'?'MyTrainees.aspx':view.user.role==='academic'?'StudentProgressMonitor.aspx':'MonitorPlacementsProgress.aspx';
+            all('.panel').forEach(panel=>{
+                const rows=panel.querySelectorAll('.list-row');if(!rows.length)return;rows.forEach(row=>row.remove());
+                const heading=panel.querySelector('h3,h2')?.textContent.toLowerCase()||'';let records=heading.includes('task')?view.tasks.slice(0,3).map(task=>({name:task.title,note:task.status+' · '+task.deadline})):heading.includes('application')?view.applications.slice(0,3).map(a=>({name:view.user.role==='student'?(view.opportunities.find(o=>o.id===a.opportunityId)?.title||'Internship application'):(view.users.find(u=>u.id===a.studentId)?.name||'Applicant'),note:a.status})):heading.includes('opportunit')?view.opportunities.filter(o=>o.status==='open').slice(0,3).map(o=>({name:o.title,note:o.department+' · '+o.location})):view.progress.slice(0,3).map(student=>({name:student.name,note:(student.company?.name||'Not placed')+' · '+student.approvedHours+' approved hours · '+(student.placement?.completionStatus||'Awaiting placement')}));
+                panel.insertAdjacentHTML('beforeend',records.length?records.map(record=>'<div class="list-row"><div class="row-body"><a class="row-title" href="'+route+'">'+escape(record.name)+'</a><div class="row-sub">'+escape(record.note)+'</div></div></div>').join(''):'<div class="list-row"><p>No matching demo records yet.</p></div>');
+            });
+        };
 
-/* ================= 1) SAMPLE DATA (replace with Firebase later) ================= */
-const supervisor = {
-    fullName: "Dr. Omar Khasawneh",
-    shortName: "Dr. Omar K.",
-    firstName: "Dr. Omar"
-};
-
-const counts = { assigned: 15, delayed: 3, evaluationsSent: 4 };
-
-const students = [
-    { name: "Ahmad Saleh", company: "Orange Jordan", hours: 120, required: 240, status: "On Track" },
-    { name: "Sara Al-Zoubi", company: "Zain Jordan", hours: 180, required: 240, status: "On Track" },
-    { name: "Yousef Obeidat", company: "Umniah", hours: 60, required: 240, status: "Delayed" },
-    { name: "Hala Rawashdeh", company: "Orange Jordan", hours: 232, required: 240, status: "On Track" }
-];
-
-const companyEvaluations = [
-    { student: "Hala Rawashdeh", company: "Orange Jordan", date: "Oct 19" },
-    { student: "Sara Al-Zoubi", company: "Zain Jordan", date: "Oct 17" }
-];
-
-const alerts = [
-    { text: "Yousef Obeidat missed 2 task deadlines", tone: "tone-danger", icon: "bi-exclamation-triangle" },
-    { text: "Ahmad Saleh resubmitted “API documentation”", tone: "tone-primary", icon: "bi-arrow-repeat" },
-    { text: "3 students have hours awaiting company approval", tone: "tone-warning", icon: "bi-clock-history" }
-];
-
-
-/* ================= 2) HELPERS ================= */
-const mainContent = document.getElementById("mainContent");
-
-// Highlight the clicked sidebar button
-function setActive(buttonId) {
-    document.querySelectorAll(".side-link").forEach(btn => btn.classList.remove("active"));
-    document.getElementById(buttonId).classList.add("active");
-    closeSidebar();
-    window.scrollTo(0, 0);
-}
-
-function getGreeting() {
-    const hour = new Date().getHours();
-    if (hour < 12) return "Good morning";
-    if (hour < 18) return "Good afternoon";
-    return "Good evening";
-}
-
-// "TUE, OCT 20, 03:30 PM"
-function getDateLine() {
-    const d = new Date();
-    return d.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" }) + ", " +
-        d.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" });
-}
-
-function getInitials(name) {
-    return name.replace("Dr. ", "").split(" ").slice(0, 2).map(w => w[0]).join("").toUpperCase();
-}
-
-// Status text → colour class
-function statusClass(status) {
-    const green = ["Accepted", "Approved", "Completed", "On Track", "Ready"];
-    const red = ["Rejected", "Delayed"];
-    const orange = ["Pending", "Needs Revision", "Awaiting Academic", "Awaiting Company"];
-
-    if (green.includes(status)) return "tone-success";
-    if (red.includes(status)) return "tone-danger";
-    if (orange.includes(status)) return "tone-warning";
-    return "tone-primary";   // Under Review, Submitted, New ...
-}
-
-// Simple page for buttons you haven't built yet
-function comingSoon(title, text, icon) {
-    return `
-    <div class="page">
-        <header class="dash-head">
-            <div class="dash-date">${getDateLine()}</div>
-            <h1 class="dash-title">${title}</h1>
-            <p class="dash-sub">${text}</p>
-        </header>
-        <section class="panel empty-state">
-            <span class="stat-icon tone-primary"><i class="bi ${icon}"></i></span>
-            <h3>${title} — coming soon</h3>
-            <p>Write this page's HTML inside its load function.</p>
-        </section>
-    </div>`;
-}
-
-
-
-/* ================= 3) PAGES — one function per sidebar button ================= */
-
-function loadDashboard() {
-    setActive("btnDashboard");
-
-    let studentsHtml = "";
-    students.forEach(s => {
-        const percent = Math.round((s.hours / s.required) * 100);
-        const barColor = s.status === "Delayed" ? "danger" : "";
-        studentsHtml += `
-        <div class="item">
-            <span class="item-logo">${getInitials(s.name)}</span>
-            <div class="item-body">
-                <div class="item-title">${s.name}</div>
-                <div class="item-sub">${s.company} · ${s.hours}/${s.required} hrs</div>
-                <div class="progress-line ${barColor}"><span style="width:${percent}%"></span></div>
-            </div>
-            <div class="item-meta"><span class="pill ${statusClass(s.status)}">${s.status}</span></div>
-        </div>`;
-    });
-
-    let evaluationsHtml = "";
-    companyEvaluations.forEach(e => {
-        evaluationsHtml += `
-        <div class="item">
-            <span class="item-icon tone-success"><i class="bi bi-clipboard-check"></i></span>
-            <div class="item-body">
-                <div class="item-title">${e.student}</div>
-                <div class="item-sub">${e.company}</div>
-            </div>
-            <div class="item-meta">
-                <span class="pill tone-success">Ready</span>
-                <span>${e.date}</span>
-            </div>
-            <i class="bi bi-chevron-right chev"></i>
-        </div>`;
-    });
-
-    let alertsHtml = "";
-    alerts.forEach(a => {
-        alertsHtml += `
-        <div class="item">
-            <span class="item-icon ${a.tone}"><i class="bi ${a.icon}"></i></span>
-            <div class="item-body"><div class="item-title">${a.text}</div></div>
-        </div>`;
-    });
-
-    mainContent.innerHTML = `
-    <div class="dash">
-
-        <header class="dash-head">
-            <div class="dash-date">${getDateLine()}</div>
-            <h1 class="dash-title">${getGreeting()}, ${supervisor.firstName}.</h1>
-            <p class="dash-sub">Follow your students' training progress in one place.</p>
-        </header>
-
-        <section class="stats">
-            <article class="stat soft">
-                <div class="stat-label">Assigned Students</div>
-                <div class="stat-value">${counts.assigned}</div>
-                <div class="stat-note">Group A · Software Eng.</div>
-                <span class="stat-icon tone-primary"><i class="bi bi-people"></i></span>
-            </article>
-            <article class="stat">
-                <div class="stat-label">On Track</div>
-                <div class="stat-value">${counts.assigned - counts.delayed}</div>
-                <div class="stat-note">Progressing normally</div>
-                <span class="stat-icon tone-success"><i class="bi bi-check-lg"></i></span>
-            </article>
-            <article class="stat">
-                <div class="stat-label">Delayed</div>
-                <div class="stat-value">${String(counts.delayed).padStart(2, "0")}</div>
-                <div class="stat-note">Need follow-up</div>
-                <span class="stat-icon tone-danger"><i class="bi bi-exclamation-triangle"></i></span>
-            </article>
-            <article class="stat">
-                <div class="stat-label">Evaluations Sent</div>
-                <div class="stat-value">${String(counts.evaluationsSent).padStart(2, "0")}</div>
-                <div class="stat-note">of ${counts.assigned} to the coordinator</div>
-                <span class="stat-icon tone-primary"><i class="bi bi-send"></i></span>
-            </article>
-        </section>
-
-        <section class="hero">
-            <div class="hero-content">
-                <div class="hero-kicker">Final academic evaluation <i class="bi bi-arrow-up-right"></i></div>
-                <h2>${companyEvaluations.length} students are ready for evaluation.</h2>
-                <p>Company evaluations are in — prepare the academic evaluation and send it to the coordinator.</p>
-                <button type="button" class="hero-btn" onclick="loadEvaluation()">Start evaluating <i class="bi bi-arrow-right"></i></button>
-            </div>
-        </section>
-
-        <section class="panel area-list">
-            <div class="panel-head">
-                <h2 class="panel-title">My Students</h2>
-                <button type="button" class="link-btn" onclick="loadProgress()">View all</button>
-            </div>
-            ${studentsHtml}
-        </section>
-
-        <section class="panel area-side1">
-            <div class="panel-head">
-                <h2 class="panel-title">Company Evaluations Received</h2>
-                <button type="button" class="link-btn" onclick="loadEvaluation()">View all</button>
-            </div>
-            ${evaluationsHtml}
-        </section>
-
-        <section class="panel area-side2">
-            <div class="panel-head">
-                <h2 class="panel-title">Alerts</h2>
-                <button type="button" class="link-btn" onclick="loadProgress()">View all</button>
-            </div>
-            ${alertsHtml}
-        </section>
-
-    </div>`;
-}
-
-function loadProgress() {
-    setActive("btnProgress");
-    mainContent.innerHTML = comingSoon("Student Progress Monitor", "Tasks, submissions, company evaluations, training hours, delays and feedback for each student.", "bi-graph-up");
-}
-
-function loadEvaluation() {
-    setActive("btnEvaluation");
-    mainContent.innerHTML = comingSoon("Final Academic Evaluation", "Prepare each student's final academic evaluation, add comments and send it to the coordinator.", "bi-clipboard-check");
-}
-
-function loadAccount() {
-    setActive("btnAccount");
-    mainContent.innerHTML = comingSoon("Academic Supervisor Account", "View and update your permitted account information.", "bi-person");
-}
-
-
-/* ================= 4) MOBILE SIDEBAR ================= */
-function openSidebar() {
-    document.getElementById("sidebar").classList.add("open");
-    document.getElementById("sidebarBackdrop").classList.add("show");
-}
-
-function closeSidebar() {
-    document.getElementById("sidebar").classList.remove("open");
-    document.getElementById("sidebarBackdrop").classList.remove("show");
-}
-
-
-
-/* ================= 5) FIRST LOAD ================= */
-document.getElementById("userName").textContent = supervisor.shortName;
-document.getElementById("userInitials").textContent = getInitials(supervisor.fullName);
-loadDashboard();   // the user lands on Dashboard directly
+        render();
+        notice('DEMO — original interface connected to local browser storage. No Firebase or real authentication.');
+        window.addEventListener('storage', event => { if (event.key === 'uims.demo.v1') { view=demo.view(); if(view&&!view.user.mustChangePassword&&view.user.role===document.body.dataset.demoRole)render();else location.href='../Auth/Login.aspx?demo=1'; } }, {signal});
+        window.addEventListener('focus',()=>{const current=demo.current();if(!current||current.mustChangePassword)location.href='../Auth/Login.aspx?demo=1';},{signal});
+        window.addEventListener('pageshow',()=>{const current=demo.current();if(!current||current.mustChangePassword)location.href='../Auth/Login.aspx?demo=1';},{signal});
+    }
+    if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',initialize,{once:true});else initialize();
+    if(window.Sys?.WebForms?.PageRequestManager)Sys.WebForms.PageRequestManager.getInstance().add_endRequest(initialize);
+})();

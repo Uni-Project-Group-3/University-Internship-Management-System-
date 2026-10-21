@@ -235,3 +235,71 @@
         updatePasswordFeedback();
     });
 })();
+
+
+/* Explicit local demo identity selection. No real authentication or password storage. */
+(function(){
+    const demo=window.UimsDemo, mount=document.getElementById('loginContent');if(!demo||!mount)return;
+    const section=document.createElement('section');section.className='auth-demo';
+    section.innerHTML='<h2>Local frontend demo</h2><p>Not secure authentication. Select a test identity; passwords are validated for UI testing only and are never saved. Data stays in this browser.</p><label for="demoIdentity">Test identity</label><select id="demoIdentity"></select><button type="button" id="demoEnter">Enter demo workspace</button><p id="demoLoginError" role="alert"></p>';
+    mount.append(section);
+    const identities=section.querySelector('select'),error=section.querySelector('[role="alert"]'),dialog=document.getElementById('firstLoginDialog');
+    try{demo.read().users.filter(u=>u.status!=='deleted').forEach(u=>{const option=document.createElement('option');option.value=u.id;option.textContent=u.name+' — '+u.role+' ('+u.status+')';identities.append(option);});}catch(e){error.textContent=e.message;}
+    function redirect(user){location.href='../'+demo.dashboards[user.role];}
+    function enter(){try{const user=demo.login(identities.value);if(!user.mustChangePassword){redirect(user);return;}document.getElementById('changeDescription').textContent='DEMO ONLY: validate a new password to test the first-login workflow. No password is stored or changed in Firebase.';document.getElementById('firstLoginPreviewNotice').hidden=false;document.getElementById('firstLoginPreviewNotice').textContent='Local demonstration. This is not secure authentication.';if(!dialog.open)dialog.showModal();document.getElementById('NewPassword').focus();}catch(e){error.textContent=e.message;}}
+    section.querySelector('#demoEnter').addEventListener('click',enter);
+    document.getElementById('SaveChanges').addEventListener('click',e=>{if(!demo.enabled())return;e.preventDefault();e.stopImmediatePropagation();try{demo.transaction('changePassword',{password:document.getElementById('NewPassword').value,confirm:document.getElementById('ConfirmPassword').value});redirect(demo.current());}catch(ex){const status=document.getElementById('firstChangeStatus');status.hidden=false;status.textContent=ex.message;}},true);
+    document.getElementById('SendResetLink').addEventListener('click',e=>{e.preventDefault();e.stopImmediatePropagation();const email=document.getElementById('ResetEmail');if(!email.checkValidity()||!email.value){email.reportValidity();return;}document.getElementById('resetFields').hidden=true;const confirmation=document.getElementById('resetConfirmation');confirmation.hidden=false;confirmation.textContent='DEMO ONLY: no email was sent. In the connected system, if an account exists, password reset instructions will be sent.';},true);
+
+    const loginForm=document.querySelector('.auth-layout');
+    document.getElementById('ResetEmail').required=true;
+    const loginNote=document.createElement('p');loginNote.className='auth-preview-note';loginNote.textContent='Frontend DEMO: use a listed test email and any nonempty sample password. No password is authenticated or stored. Never enter real credentials.';section.prepend(loginNote);
+    loginForm.addEventListener('submit',e=>{
+        if(new URLSearchParams(location.search).get('preview')==='first-login'&&!demo.enabled())return;
+        e.preventDefault();e.stopImmediatePropagation();
+        if(dialog.open&&demo.current()?.mustChangePassword){try{demo.transaction('changePassword',{password:document.getElementById('NewPassword').value,confirm:document.getElementById('ConfirmPassword').value});redirect(demo.current());}catch(ex){const feedback=document.getElementById('firstChangeStatus');feedback.hidden=false;feedback.textContent=ex.message;}return;}
+        const reset=document.getElementById('forgotPasswordDialog');if(reset.open){document.getElementById('SendResetLink').click();return;}
+        const email=document.getElementById('Email'),password=document.getElementById('Password');
+        document.getElementById('emailError').textContent=email.value&&email.checkValidity()?'':'Enter a valid demo email.';
+        document.getElementById('passwordError').textContent=password.value?'':'Enter a sample password for UI testing.';
+        if(!email.value||!email.checkValidity()||!password.value)return;
+        const account=demo.read().users.find(user=>user.email.toLowerCase()===email.value.trim().toLowerCase());
+        if(!account||account.status!=='active'){error.textContent='This demo account is unavailable.';return;}
+        identities.value=account.id;enter();
+    },true);
+    const current=demo.current();if(demo.enabled()&&current?.mustChangePassword){identities.value=current.id;enter();}
+})();
+
+(() => {
+    "use strict";
+
+    document.querySelectorAll(".home-navbar").forEach(nav => {
+        const toggle = nav.querySelector(".home-navbar__toggle");
+        const links = nav.querySelector(".home-navbar__links");
+        const mobile = window.matchMedia("(max-width: 700px)");
+
+        /** @param {boolean} open */
+        function setOpen(open) {
+            toggle.setAttribute("aria-expanded", String(open));
+            toggle.setAttribute("aria-label", open ? "Close navigation menu" : "Open navigation menu");
+            links.classList.toggle("is-open", open);
+        }
+
+        nav.classList.add("has-menu-toggle");
+        toggle.hidden = false;
+        toggle.addEventListener("click", () => setOpen(toggle.getAttribute("aria-expanded") !== "true"));
+        nav.addEventListener("keydown", event => {
+            if (event.key === "Escape" && toggle.getAttribute("aria-expanded") === "true") {
+                setOpen(false);
+                toggle.focus();
+            }
+        });
+        nav.addEventListener("focusout", event => {
+            if (!nav.contains(event.relatedTarget)) setOpen(false);
+        });
+        document.addEventListener("click", event => {
+            if (!nav.contains(event.target)) setOpen(false);
+        });
+        mobile.addEventListener("change", () => setOpen(false));
+    });
+})();

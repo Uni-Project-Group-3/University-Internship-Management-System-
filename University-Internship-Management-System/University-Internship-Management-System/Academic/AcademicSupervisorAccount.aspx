@@ -1,4 +1,4 @@
-<%@ Page Title="Academic Supervisor Account" %>
+<%@ Page Language="C#" AutoEventWireup="true" CodeBehind="AcademicSupervisorAccount.aspx.cs" Inherits="University_Internship_Management_System.Academic.AcademicSupervisorAccount" %>
 <!DOCTYPE html>
 <html lang="en">
 <head runat="server">
@@ -6,35 +6,33 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Academic Supervisor Account | JUST Internships</title>
     <link runat="server" href="~/Assets/shared/colors.css" rel="stylesheet" />
-    <link runat="server" href="~/Assets/academic/academic.css" rel="stylesheet" />
-    <link runat="server" href="~/Assets/academic/supervisor-account.css" rel="stylesheet" />
+    
+    <link runat="server" href="~/Assets/academic/supervisor-account.css?v=20261021-original-ui" rel="stylesheet" />
 </head>
-<body class="app-page supervisor-account-page role-shell">
+<body class="app-page supervisor-account-page role-shell" data-demo-role="academic">
     <form id="form1" runat="server">
         <div class="app">
             <aside class="sidebar" id="sidebar" aria-label="Academic Supervisor navigation" data-role-sidebar="true"><button class="sidebar-close" type="button" aria-label="Close navigation menu"><svg class="bi bi-x nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="m6 6 12 12M6 18 18 6"/></svg></button>
-                <a href="test.aspx" class="brand">
+                <a href="AcademicDashboard.aspx" class="brand">
                     <div class="brand-logo">J</div>
                     <div class="brand-text"><strong>JUST</strong><span>Internships</span></div>
                 </a>
 
-                <ul class="side-nav" role="list">
-                    <li><a href="test.aspx" ><svg class="bi bi-house-door nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="m3 10 9-7 9 7v10h-6v-7H9v7H3V10Z"/></svg>Dashboard</a></li>
-                    <li><a href="StudentProgressMonitor.aspx"><svg class="bi bi-activity nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M2 12h5l3-9 4 18 3-9h5"/></svg>Student Progress Monitor</a></li>
-                    <li><a role="link" aria-disabled="true" title="This page is not available in the project yet"><svg class="bi bi-clipboard-check nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4V2h6v2m-7 9 3 3 5-6"/></svg>Final Academic Evaluation</a></li>
-                </ul>
+                <ul class="side-nav" aria-label="Academic pages">
+<li><a href="AcademicDashboard.aspx"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m3 10 9-7 9 7v10h-6v-7H9v7H3V10Z"/></svg><span>Dashboard</span></a></li>
+<li><a href="StudentProgressMonitor.aspx"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12h5l3-9 4 18 3-9h5"/></svg><span>Student Progress Monitor</span></a></li>
+<li><a href="FinalAcademicEvaluation.aspx"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="m8 12 3 3 5-6"/></svg><span>Final Academic Evaluation</span></a></li>
+<li><a href="AcademicSupervisorAccount.aspx" class="active" aria-current="page"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="m8 12 3 3 5-6"/></svg><span>My Account</span></a></li>
+</ul>
 
                 <div class="side-divider"></div>
 
-                <ul class="side-nav" role="list">
-                    <li><a href="AcademicSupervisorAccount.aspx" class="active" aria-current="page"><svg class="bi bi-gear nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="m9 3-1 3-3 1-2 4 2 2v4l4 2 3-1 3 1 4-2v-4l2-2-2-4-3-1-1-3H9Z"/><circle cx="12" cy="11" r="3"/></svg>My Account</a></li>
-                    <li><a href="../Contact.aspx"><svg class="bi bi-question-circle nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="9"/><path d="M9 8a3 3 0 0 1 6 1c0 2-3 2-3 5m0 3h.01"/></svg>Help</a></li>
-                </ul>
+                <ul class="side-nav" role="list"><li><a href="../Contact.aspx"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="m8 12 3 3 5-6"/></svg><span>Help &amp; contact</span></a></li></ul>
 
                 <div class="side-promo">
                     <svg class="bi bi-journal-check nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="4" y="2" width="16" height="20" rx="2"/><path d="M8 2v20M2 6h4m-4 6h4m-4 6h4m5-7 2 2 4-5"/></svg>
                     <p>Review company evaluations<br />and support student progress.</p>
-                    <a role="link" aria-disabled="true" title="This page is not available in the project yet">Start evaluating &rarr;</a>
+                    <a href="FinalAcademicEvaluation.aspx">Start evaluating &rarr;</a>
                 </div>
             </aside>
             <button type="button" class="sidebar-backdrop" aria-label="Close navigation menu" tabindex="-1"></button>
@@ -62,7 +60,7 @@
                 <span id="navigationAvailability" class="nav-sr-only">Workspace search and notifications require a connected account.</span></header>
                 <main class="app-content">
                 <div class="account-shell">
-                    <nav class="account-breadcrumb" aria-label="Breadcrumb"><a href="test.aspx">Academic workspace</a><span aria-hidden="true">/</span><span aria-current="page">My Account</span></nav>
+                    <nav class="account-breadcrumb" aria-label="Breadcrumb"><a href="AcademicDashboard.aspx">Academic workspace</a><span aria-hidden="true">/</span><span aria-current="page">My Account</span></nav>
                     <header class="account-heading"><div><p class="account-eyebrow">YOUR SUPERVISION JOURNEY</p><h1>Academic Supervisor Account</h1><p>View your academic details and manage your contact information.</p></div><span class="account-role">Academic Supervisor</span></header>
                     <div id="accountAvailability" class="account-notice" role="note"><span aria-hidden="true">i</span><p><strong>Account connection pending.</strong> No supervisor data is loaded. You can try the contact fields, but changes cannot be saved yet.</p></div>
                     <div class="account-layout">
@@ -71,7 +69,7 @@
                             <section class="account-card" aria-labelledby="academicAccountTitle"><div class="account-section-heading"><div><h2 id="academicAccountTitle">Academic Information</h2><p>Official account details are managed by the university.</p></div><span class="account-view-only">View only</span></div><dl class="account-info"><div><dt>Full Name</dt><dd>Not connected</dd></div><div><dt>Staff ID</dt><dd>Not connected</dd></div><div><dt>Department</dt><dd>Not connected</dd></div><div><dt>Account Role</dt><dd>Academic Supervisor <span class="account-inline-note">Page role</span></dd></div><div class="account-field-wide"><dt>University Email</dt><dd>Not connected</dd></div></dl></section>
                             <section class="account-card" aria-labelledby="contactInformationTitle"><div class="account-section-heading"><div><h2 id="contactInformationTitle">Contact Information</h2><p>Help students and coordinators know how to reach you.</p></div></div><div class="account-form-grid"><div class="account-field"><label for="supervisorPhone">Phone Number</label><input id="supervisorPhone" name="phone" type="tel" maxlength="25" autocomplete="tel" title="Enter 7 to 25 characters using numbers, spaces, +, parentheses, dots or hyphens." pattern="[+0-9\(\) .\-]{7,25}" placeholder="Enter your phone number" aria-describedby="supervisorPhoneHelp" /><span id="supervisorPhoneHelp" class="account-help">Include your country code when needed.</span></div><div class="account-field"><label for="supervisorOffice">Office Location</label><input id="supervisorOffice" name="officeLocation" type="text" maxlength="120" placeholder="Building and room number" /></div><div class="account-field account-field-wide"><label for="supervisorOfficeHours">Office Hours</label><input id="supervisorOfficeHours" name="officeHours" type="text" maxlength="200" placeholder="Add your availability for student meetings" aria-describedby="officeHoursHelp" /><span id="officeHoursHelp" class="account-help">Up to 200 characters. This is an optional contact detail.</span></div></div></section>
                             <section class="account-card account-access" aria-labelledby="accountAccessTitle"><span class="account-access-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m12 3 8 4v5c0 5-8 9-8 9s-8-4-8-9V7l8-4Z"/><path d="m8 12 3 3 5-6"/></svg></span><div><h2 id="accountAccessTitle">Account Access</h2><p>Use the sign-in page to access the existing password recovery form.</p><a href="../Auth/Login.aspx">Go to sign in <span aria-hidden="true">&#8594;</span></a></div></section>
-                            <footer class="account-actions"><p>Saving requires a verified supervisor account and a connection to the university records.</p><button type="button" disabled="disabled" aria-describedby="accountAvailability">Save Changes</button></footer>
+                            <footer class="account-actions"><p>Saving requires a verified supervisor account and a connection to the university records.</p><button id="saveAcademicProfile" type="button" aria-describedby="accountAvailability">Save Changes</button></footer>
                         </div>
                     </div>
                     <footer class="account-footer"><span>UIMS &middot; JUST Internships</span><span>Academic workspace</span></footer>
@@ -80,7 +78,8 @@
             </div>
         </div>
     </form>
-    <script>
+    <script src="../Js_project/Demo/demo-store.js?v=20261021-original-ui"></script>
+<script>
         (() => {
             "use strict";
             const sidebar = document.querySelector(".sidebar");
@@ -142,5 +141,6 @@
             mobile.addEventListener("change", () => setSidebar(false));
         })();
     </script>
+<script src="../Js_project/Academic/academic-supervisor-account.js?v=20261021-original-ui"></script>
 </body>
 </html>

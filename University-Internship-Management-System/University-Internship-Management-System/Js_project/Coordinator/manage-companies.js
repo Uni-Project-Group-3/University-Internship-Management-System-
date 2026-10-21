@@ -1,97 +1,216 @@
-(() => {
+
+/* Original-page demo bindings. Layout and server controls remain in the ASPX. */
+(function () {
     'use strict';
-
-    const editor = document.getElementById('companyEditor');
-    const actions = document.getElementById('accountPreview');
-    const confirmation = document.getElementById('accountConfirmation');
-    const fields = [...document.querySelectorAll('[data-company-field]')];
-    const validation = document.getElementById('companyValidation');
-    const search = document.getElementById('companySearch');
-    const filters = ['companyStatus', 'accountStatus', 'companySort'].map(id => document.getElementById(id));
-    const returnFocus = new WeakMap();
-    const actionCopy = {
-        details: ['Supervisor details', 'The selected supervisor\'s contact details, account status, password-change requirement, and company relationship will be displayed here.', 'View details'],
-        reset: ['Reset supervisor password?', 'A trusted server operation will issue a new temporary password, revoke existing sessions, and require a password change before dashboard access. This does not send an ordinary Forgot Password email.', 'Reset password'],
-        disable: ['Disable supervisor account?', 'This supervisor will lose sign-in and protected access. The company, other supervisors, and academic records will remain unchanged.', 'Disable account'],
-        enable: ['Enable supervisor account?', 'The existing account will be reactivated with the same identity and company link. Any pending password-change requirement will remain in effect.', 'Enable account'],
-        delete: ['Delete supervisor account?', 'Sign-in access will be removed for this supervisor. Required historical references will be retained. This action will not delete the company or internship history.', 'Delete account']
-    };
-
-    function openDialog(dialog, opener) {
-        returnFocus.set(dialog, opener);
-        dialog.showModal();
-    }
-
-    function openEditor(edit, opener) {
-        document.getElementById('editorTitle').textContent = edit ? 'Edit company & supervisor' : 'Add company & supervisor';
-        document.getElementById('saveCompany').textContent = edit ? 'Save changes' : 'Create company';
-        document.getElementById('editorNotice').textContent = edit
-            ? 'Layout preview: no record selected, so fields are not prefilled. Saving is unavailable.'
-            : 'Design preview only. This form does not create or update records.';
-        fields.forEach(field => { field.value = ''; field.removeAttribute('aria-invalid'); });
-        validation.textContent = '';
-        validation.removeAttribute('data-valid');
-        openDialog(editor, opener);
-    }
-
-    document.querySelectorAll('[data-open]').forEach(button => button.addEventListener('click', () => {
-        if (button.dataset.open === 'addCompany') openEditor(false, button);
-        else openDialog(actions, button);
-    }));
-
-    document.querySelectorAll('.companies-modal').forEach(dialog => {
-        dialog.querySelectorAll('[data-close]').forEach(button => button.addEventListener('click', () => dialog.close()));
-        dialog.addEventListener('close', () => returnFocus.get(dialog)?.focus());
-        dialog.addEventListener('click', event => {
-            const bounds = dialog.getBoundingClientRect();
-            if (event.target === dialog && (event.clientX < bounds.left || event.clientX > bounds.right || event.clientY < bounds.top || event.clientY > bounds.bottom)) dialog.close();
-        });
-    });
-
-    document.querySelectorAll('[data-account-action]').forEach(button => button.addEventListener('click', () => {
-        if (button.dataset.accountAction === 'edit') {
-            openEditor(true, button);
+    if (!window.UimsDemo?.enabled()) { location.replace('../Auth/Login.aspx?demo=1'); return; }
+    let binding;
+    function initialize() {
+        binding?.abort();
+        binding = new AbortController();
+        const signal = binding.signal, demo = window.UimsDemo;
+        let view = demo.view(), selected = null, render = () => {};
+        if (!view || view.user.mustChangePassword || view.user.role !== document.body.dataset.demoRole) {
+            location.href = '../Auth/Login.aspx?demo=1';
             return;
         }
-        const [title, description, label] = actionCopy[button.dataset.accountAction];
-        document.getElementById('confirmationTitle').textContent = title;
-        document.getElementById('confirmationDescription').textContent = description;
-        document.getElementById('confirmAccountAction').textContent = label;
-        openDialog(confirmation, button);
-    }));
-    document.getElementById('backToActions').addEventListener('click', () => confirmation.close());
-
-    document.getElementById('validateCompany').addEventListener('click', () => {
-        const invalid = fields.filter(field => !field.checkValidity() || (field.required && !field.value.trim()));
-        fields.forEach(field => field.setAttribute('aria-invalid', invalid.includes(field) ? 'true' : 'false'));
-        validation.dataset.valid = String(invalid.length === 0);
-        validation.textContent = invalid.length
-            ? 'Check the highlighted fields. Company name, supervisor name, and a valid supervisor email are required. Use a full website URL when provided.'
-            : 'Form validation complete. Nothing was saved; Firebase integration is not connected.';
-        invalid[0]?.focus();
-    });
-    fields.forEach(field => {
-        field.addEventListener('input', () => {
-            field.removeAttribute('aria-invalid');
-            validation.textContent = '';
+        const by = id => document.getElementById(id) || document.querySelector('[id$="_' + id + '"]');
+        const all = selector => [...document.querySelectorAll(selector)];
+        const escape = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+        const text = (id, value) => { const element = by(id); if (element) element.textContent = value ?? '—'; };
+        const value = id => by(id)?.value?.trim() || '';
+        const set = (id, value) => { if (by(id)) by(id).value = value ?? ''; };
+        const options = (id, records, placeholder = 'All') => {
+            const element = by(id); if (!element) return;
+            const previous = element.value;
+            element.innerHTML = '<option value="">' + escape(placeholder) + '</option>' + records.map(record => '<option value="' + escape(record.id) + '">' + escape(record.name) + '</option>').join('');
+            if (records.some(record => record.id === previous)) element.value = previous;
+        };
+        const on = (id, type, handler) => by(id)?.addEventListener(type, handler, {signal});
+        const click = (id, handler) => on(id, 'click', event => { event.preventDefault(); try { handler(event); } catch(exception) { error(exception,event.currentTarget.closest('dialog,.modal,.offcanvas')); } });
+        const button = (label, action, id, className = 'row-action') => {
+            const paths={edit:'M4 16v4h4L20 8l-4-4L4 16Z',delete:'M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13',reset:'M13 7a5 5 0 1 0 0 10 5 5 0 0 0 0-10ZM8 12H2m2 0v4',status:'M12 2v10M6 5a9 9 0 1 0 12 0',assign:'M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 3a4 4 0 1 0 0 8 4 4 0 0 0 0-8M20 8v6m-3-3h6'};
+            const icon=className.includes('action-btn')&&paths[action];
+            const content=icon?'<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="'+paths[action]+'"/></svg>':escape(label);
+            return '<button type="button" title="'+escape(label)+'" aria-label="'+escape(label)+'" class="' + className + '" data-uims="' + action + '" data-record="' + escape(id) + '">' + content + '</button>';
+        };
+        const cells = values => '<tr>' + values.map(cell => '<td>' + cell + '</td>').join('') + '</tr>';
+        const fill = (selector, records, row) => {
+            const element = document.querySelector(selector);
+            if(!element)return;
+            const emptyState=element.id==='taskList'?element.querySelector('#noTasksMsg'):null;
+            element.innerHTML=records.map(row).join('');
+            if(emptyState)element.append(emptyState);
+        };
+        const messageElement = () => by('uimsPageNotice') || document.querySelector('main .preview-note,main .completion-notice,main .companies-notice,main .evaluation-notice,main .monitor-notice,main .workspace-note,#messagesAvailability,#traineesAvailability,#accountAvailability') || by('pageNotice') || by('profileMessage') || by('pnlMessage');
+        function notice(message) {
+            let element = messageElement();
+            if (!element) { element = document.createElement('p'); element.id='uimsPageNotice'; element.className = 'uims-feedback'; element.setAttribute('role','status'); (document.querySelector('main') || document.querySelector('.content')).prepend(element); }
+            element.hidden = false; element.textContent = message;
+        }
+        function error(error, scope) {
+            let element = scope?.querySelector('[data-uims-error]');
+            if (scope && !element) { element = document.createElement('p'); element.dataset.uimsError = ''; element.className = 'uims-error'; element.setAttribute('role','alert'); (scope.querySelector('.modal-body') || scope).append(element); }
+            if (element) element.textContent = error.message; else notice(error.message);
+        }
+        const dirty = new WeakSet(), openers = new WeakMap();
+        let beforeClose=null;
+        function open(id) {
+            const dialog = by(id); if (!dialog) throw Error('Missing original popup: ' + id);
+            const alreadyOpen=dialog.tagName==='DIALOG'?dialog.open:dialog.classList.contains('show');
+            if(!alreadyOpen){openers.set(dialog, document.activeElement);dirty.delete(dialog);}
+            dialog.querySelectorAll('[data-uims-error],.uims-discard').forEach(el => el.remove());
+            if (dialog.tagName === 'DIALOG') { if (!dialog.open) dialog.showModal(); }
+            else if (dialog.classList.contains('offcanvas')) bootstrap.Offcanvas.getOrCreateInstance(dialog).show();
+            else bootstrap.Modal.getOrCreateInstance(dialog).show();
+            dialog.querySelector('input:not([readonly]):not([disabled]),textarea:not([disabled]),select:not([disabled])')?.focus();
+        }
+        function close(id, force = false) {
+            const dialog = by(id); if (!dialog) return;
+            if(!force&&beforeClose?.(id)===false)return;
+            if (dirty.has(dialog) && !force) {
+                if (dialog.querySelector('.uims-discard')) return;
+                const prompt = document.createElement('div'); prompt.className = 'uims-discard'; prompt.setAttribute('role','alert');
+                prompt.innerHTML = '<p>Discard unsaved changes?</p><button type="button" data-keep>Keep editing</button><button type="button" data-discard>Discard changes</button>';
+                (dialog.querySelector('.modal-footer') || dialog).append(prompt);
+                prompt.querySelector('[data-keep]').onclick = () => prompt.remove();
+                prompt.querySelector('[data-discard]').onclick = () => { prompt.remove(); close(id, true); };
+                prompt.querySelector('button').focus(); return;
+            }
+            dirty.delete(dialog);
+            if (dialog.tagName === 'DIALOG') dialog.close();
+            else if (dialog.classList.contains('offcanvas')) bootstrap.Offcanvas.getInstance(dialog)?.hide();
+            else bootstrap.Modal.getInstance(dialog)?.hide();
+            openers.get(dialog)?.focus();
+        }
+        function transact(action, payload, popup) {
+            try {
+                const result = demo.transaction(action, payload); view = demo.view();
+                if (popup) close(popup, true);
+                render(); notice('Saved in local demo storage. No Firebase operation or email was sent.');
+                return {ok:true, result};
+            } catch (exception) { error(exception, popup ? by(popup) : null); return {ok:false}; }
+        }
+        function valid(ids, popup) {
+            const invalid = ids.map(by).find(field => field && (!field.checkValidity() || field.required && !field.value.trim()));
+            if (!invalid) return true;
+            invalid.reportValidity(); error(Error('Check the highlighted field.'), by(popup)); return false;
+        }
+        const actions = {};
+        document.addEventListener('click', event => {
+            const control = event.target.closest('[data-uims]'); if (!control) return;
+            event.preventDefault();
+            try { actions[control.dataset.uims]?.(control.dataset.record, control); } catch (exception) { error(exception); }
+        }, {signal});
+        all('dialog,.modal,.offcanvas').forEach(dialog => {
+            const changed = () => dirty.add(dialog);
+            dialog.addEventListener('input', changed, {signal}); dialog.addEventListener('change', changed, {signal});
+            dialog.addEventListener('cancel', event => { event.preventDefault(); close(dialog.id); }, {signal});
+            dialog.addEventListener('hide.bs.modal', event => { if (dirty.has(dialog)) { event.preventDefault(); close(dialog.id); } }, {signal});
+            dialog.addEventListener('hidden.bs.modal', () => openers.get(dialog)?.focus(), {signal});
+            dialog.addEventListener('click', event => {
+                if(event.defaultPrevented)return;
+                if (event.target.closest('[data-bs-dismiss], [data-close], [data-completion-close], [data-profile-cancel], .popup-close, .monitor-close, .evaluation-close, .companies-close, .placements-close, [data-close-exam]')) {
+                    event.preventDefault(); event.stopPropagation(); close(dialog.id);
+                } else if (event.target === dialog && dialog.tagName === 'DIALOG') {
+                    const rect = dialog.getBoundingClientRect();
+                    if (event.clientX < rect.left || event.clientX > rect.right || event.clientY < rect.top || event.clientY > rect.bottom) close(dialog.id);
+                }
+            }, {signal});
         });
-        field.addEventListener('keydown', event => { if (event.key === 'Enter' && field.tagName !== 'TEXTAREA') event.preventDefault(); });
-    });
+        function detail(student, id, selector) {
+            const progress = view.progress.find(item => item.id === student); if (!progress) throw Error('This student is not available to this demo identity.');
+            const target = document.querySelector(selector);
+            if (target) target.innerHTML = '<h3>' + escape(progress.name) + '</h3><dl>' + [['University ID',progress.universityId],['Department',progress.department],['Company',progress.company?.name],['Company Supervisor',progress.companySupervisor?.name],['Academic Supervisor',progress.supervisor?.name],['Training status',progress.placement?.completionStatus || 'Not placed'],['Approved / Required hours',progress.approvedHours + ' / ' + progress.requiredHours],['Tasks completed',progress.completedTasks + ' / ' + progress.tasks.length],['Risk indicators',progress.risks.join(', ') || 'None'],['Confirmed at UTC',progress.placement?.studentConfirmedAt],['Disable deadline UTC',progress.placement?.accountDisableAt],['Certificate',progress.placement?.certificateId]].map(([label,content]) => '<dt>' + escape(label) + '</dt><dd>' + escape(content || '—') + '</dd>').join('') + '</dl>' + progress.tasks.map(task => '<article><h4>' + escape(task.title) + '</h4><p>' + escape(task.description) + '</p><p>' + escape(task.deadline) + ' · ' + escape(task.status) + '</p><p>' + escape(task.feedback) + '</p>' + view.submissions.filter(sub => sub.taskId === task.id).map(sub => '<p>Submitted ' + escape(sub.createdAt) + ': ' + escape(sub.description) + ' · ' + escape(sub.fileName) + '</p>').join('') + '</article>').join('') + progress.evaluations.map(evaluation => '<article><h4>' + escape(evaluation.kind) + ' evaluation · ' + escape(evaluation.status) + '</h4><p>' + escape(evaluation.comments) + '</p></article>').join('');
+            selected = student; open(id);
+        }
+        function shell() {
+            all('[id$="lblUserName"],[id$="NavName"]').forEach(el => el.textContent = view.user.name);
+            document.addEventListener('click', event => {
+                const element = event.target.closest('a,button,input');
+                if (element && (/log\s*out/i.test(element.textContent) || /logout/i.test(element.id))) {
+                    event.preventDefault(); event.stopImmediatePropagation(); demo.logout(); location.href = '../Auth/Login.aspx?demo=1';
+                }
+            }, {signal,capture:true});
+            all('[id*=Logout],[id*=logout]').forEach(el => el.disabled = false);
+            if (!document.querySelector('script[src*="dashboard-navigation.js"]')) {
+                const sidebar = document.querySelector('aside.sidebar,aside.dash-sidebar,aside[id$="Sidebar"]');
+                const toggle = document.querySelector('.menu-btn,.dash-menu-btn');
+                const main = document.querySelector('.main,.dash-main');
+                const media = matchMedia('(max-width:991.98px)');
+                const setOpen = show => {
+                    const active = media.matches && show;
+                    document.body.classList.toggle('sidebar-open',active); toggle?.setAttribute('aria-expanded',String(active));
+                    if (sidebar) sidebar.inert = media.matches && !active;
+                    if (main) main.inert = active;
+                    document.querySelector('.sidebar-backdrop,.dash-sidebar-backdrop')?.toggleAttribute('hidden',!active);
+                    if (active) sidebar?.querySelector('button,a[href]')?.focus();
+                };
+                window.toggleSidebar = () => setOpen(!document.body.classList.contains('sidebar-open'));
+                if (toggle) { toggle.onclick = null; toggle.addEventListener('click',window.toggleSidebar,{signal}); }
+                all('.sidebar-close,.dash-sidebar-close,.legacy-sidebar-close,.sidebar-backdrop,.dash-sidebar-backdrop').forEach(el => el.addEventListener('click',()=>{setOpen(false);toggle?.focus();},{signal}));
+                document.addEventListener('keydown',event=>{if(event.key==='Escape'&&document.body.classList.contains('sidebar-open')){setOpen(false);toggle?.focus();}},{signal});
+                media.addEventListener('change',()=>setOpen(false),{signal}); setOpen(false);
+            }
+            const topSearch = document.querySelector('.topbar input,.dash-topbar input');
+            const search = document.querySelector('main input[type="search"],.content input[type="search"],#taskSearch,#searchInput');
+            if(topSearch&&!search){topSearch.disabled=false;topSearch.addEventListener('keydown',event=>{if(event.key!=='Enter')return;event.preventDefault();const route={admin:'MonitorPlacementsProgress.aspx',student:'ExploreOpportunities.aspx',company:'MyTrainees.aspx',academic:'StudentProgressMonitor.aspx'}[view.user.role];location.href=route+'?search='+encodeURIComponent(topSearch.value.trim());},{signal});}
+            if (topSearch && search && topSearch !== search) { topSearch.disabled=false;topSearch.addEventListener('input',()=>{search.value=topSearch.value;search.dispatchEvent(new Event('input'));},{signal}); }
+        }
 
-    function updateEmptyState() {
-        const filtered = search.value.trim() || filters.slice(0, 2).some(filter => filter.value);
-        document.getElementById('companyEmptyTitle').textContent = filtered ? 'Directory data is not connected' : 'Your next partnership starts here';
-        document.getElementById('companyEmptyMessage').textContent = filtered
-            ? 'Search and filter results will be available after company records are connected.'
-            : 'Company profiles and their linked supervisors will appear here once the database is connected.';
+        function notifications() {
+            const items=[];
+            if(view.user.role==='student'){view.applications.forEach(a=>items.push('Application: '+a.status));view.placements.filter(p=>p.completionStatus==='PendingStudentConfirmation').forEach(()=>items.push('Coordinator approval received. Confirm completion in the Student Dashboard.'));}
+            if(view.user.role==='company')items.push(view.applications.filter(a=>a.status==='pending').length+' pending applications',view.tasks.filter(t=>t.status==='submitted').length+' task submissions awaiting review');
+            if(view.user.role==='academic')items.push(view.progress.filter(s=>s.evaluations.some(e=>e.kind==='company'&&e.status==='submitted')&&!s.evaluations.some(e=>e.kind==='academic'&&e.status==='submitted')).length+' assigned students awaiting academic evaluation');
+            if(view.user.role==='admin')items.push(view.messages.filter(m=>m.status==='unread').length+' unread contact messages',view.progress.filter(s=>s.placement?.completionStatus==='PendingStudentConfirmation').length+' pending student confirmations');
+            let dialog=by('originalNotifications');
+            if(!dialog){dialog=document.createElement('dialog');dialog.id='originalNotifications';dialog.className='uims-notifications';dialog.setAttribute('aria-label','Demo notifications');document.forms[0].append(dialog);}
+            dialog.innerHTML='<h2>Notifications · local demo</h2>'+items.map(item=>'<p>'+escape(item)+'</p>').join('')+(items.length?'':'<p>No notifications.</p>')+'<button type="button" data-notification-close>Close</button>';
+            dialog.querySelector('button').onclick=()=>dialog.close();dialog.showModal();
+        }
+        all('.topbar button,.dash-topbar button').forEach(el=>{if(!/notification/i.test(el.getAttribute('aria-label')||'')&&!el.querySelector('.bi-bell'))return;el.disabled=false;el.title='Local demo notifications';el.addEventListener('click',event=>{event.preventDefault();event.stopImmediatePropagation();view=demo.view();if(view)notifications();},{signal,capture:true});});
+        shell();
+        
+        let supervisorId=null, pendingAction='',page=0;
+        function editor(companyId,userId){selected=companyId;supervisorId=userId;const company=view.companies.find(company=>company.id===companyId),supervisor=view.users.find(user=>user.id===userId);const map={companyName:company?.name,industry:company?.industry,officialEmail:company?.email,companyPhone:company?.phone,companyWebsite:company?.website,companyAddress:company?.address,companyDescription:company?.description,supervisorName:supervisor?.name,supervisorEmail:supervisor?.email,supervisorPhone:supervisor?.phone};Object.entries(map).forEach(([id,content])=>set(id,content));text('editorTitle',companyId?'Edit company & supervisor':'Add company & supervisor');text('editorNotice','Local demo records persist across pages. No real credential is created.');by('saveCompany').disabled=false;open('companyEditor');}
+        render=()=>{
+            const supervisors=view.users.filter(user=>user.role==='company'&&user.status!=='deleted');
+            const records=view.companies.flatMap(company=>{const linked=supervisors.filter(user=>user.companyId===company.id);return(linked.length?linked:[null]).map(supervisor=>({company,supervisor}));}).filter(({company,supervisor})=>(!value('companySearch')||[company.name,company.email,supervisor?.name,supervisor?.email].join(' ').toLowerCase().includes(value('companySearch').toLowerCase()))&&(!value('companyStatus')||company.status===value('companyStatus').toLowerCase())&&(!value('accountStatus')||(value('accountStatus')==='password'?supervisor?.mustChangePassword:supervisor?.status===value('accountStatus').toLowerCase())));
+            records.sort((a,b)=>value('companySort').includes('Industry')?String(a.company.industry||'').localeCompare(String(b.company.industry||'')):a.company.name.localeCompare(b.company.name)*(value('companySort').includes('Z to A')?-1:1));
+            const size=Number(value('companyPageSize'))||10,pages=Math.max(1,Math.ceil(records.length/size));page=Math.min(page,pages-1);const pagination=document.querySelector('.companies-pagination');pagination.querySelector('span').textContent=records.length+' records · Page '+(page+1)+' / '+pages;const buttons=pagination.querySelectorAll('button');buttons[0].disabled=page===0;buttons[1].disabled=page===pages-1;
+            fill('.companies-table-wrap tbody',records.slice(page*size,page*size+size),({company,supervisor})=>cells([escape(company.name),escape(company.industry||'—'),escape(company.email),escape(supervisor?.name||'No supervisor'),escape(supervisor?.email||'—'),escape(supervisor?.status||'Unassigned')+' · Company '+escape(company.status),button(supervisor?'Actions':'Add supervisor',supervisor?'actions':'addSupervisor',supervisor?.id||company.id,'companies-text-button')]));
+            const stats=[view.companies.length,view.companies.filter(company=>company.status==='active').length,view.companies.filter(company=>company.status!=='active').length,supervisors.length];all('.companies-stats strong').forEach((el,index)=>el.textContent=stats[index]);
+            const empty=document.querySelector('.companies-empty');if(empty)empty.hidden=records.length>0;
+        };
+        document.querySelectorAll('[data-open="addCompany"]').forEach(el=>el.addEventListener('click',()=>editor(null,null),{signal}));
+        actions.addSupervisor=id=>editor(id,null);
+        actions.actions=id=>{supervisorId=id;selected=view.users.find(user=>user.id===id)?.companyId;text('accountTitle',view.users.find(user=>user.id===id)?.name);open('accountPreview');};
+        document.querySelector('[data-open="accountPreview"]')?.addEventListener('click',()=>notice('Select a supervisor from the directory first.'),{signal});
+        all('[data-account-action]').forEach(el=>el.addEventListener('click',()=>{
+            if(!supervisorId)return;const action=el.dataset.accountAction;close('accountPreview',true);
+            if(action==='edit'){editor(selected,supervisorId);return;}
+            pendingAction={reset:'resetUser',disable:'statusUser',enable:'statusUser',delete:'deleteUser'}[action];
+            const supervisor=view.users.find(user=>user.id===supervisorId);
+            if(action==='details'){text('confirmationTitle',supervisor.name);text('confirmationDescription',supervisor.email+' · '+supervisor.status+' · First-login change: '+supervisor.mustChangePassword);by('confirmAccountAction').hidden=true;}
+            else {text('confirmationTitle',action+' supervisor account?');text('confirmationDescription',supervisor.name+' — '+supervisor.email+'. Demonstration only; preserves company and internship history.');by('confirmAccountAction').hidden=false;by('confirmAccountAction').disabled=false;by('confirmAccountAction').dataset.requestedStatus=action==='enable'?'active':action==='disable'?'disabled':'';}
+            open('accountConfirmation');
+        },{signal}));
+        click('backToActions',()=>close('accountConfirmation'));
+        click('confirmAccountAction',()=>{const requested=by('confirmAccountAction').dataset.requestedStatus,current=view.users.find(user=>user.id===supervisorId);if(pendingAction==='statusUser'&&requested===current.status){close('accountConfirmation',true);return;}transact(pendingAction,{id:supervisorId},'accountConfirmation');});
+        const fields=['companyName','supervisorName','supervisorEmail','officialEmail','companyWebsite'];
+        click('validateCompany',()=>{if(valid(fields,'companyEditor'))text('companyValidation','Fields are valid. Save to update local demo records.');});
+        click('saveCompany',()=>{if(valid(fields,'companyEditor'))transact('saveCompanySupervisor',{id:selected,supervisorId,name:value('companyName'),email:value('officialEmail'),industry:value('industry'),phone:value('companyPhone'),website:value('companyWebsite'),address:value('companyAddress'),description:value('companyDescription'),supervisorName:value('supervisorName'),supervisorEmail:value('supervisorEmail'),supervisorPhone:value('supervisorPhone')},'companyEditor');});
+        for(const id of ['companySearch','companyStatus','accountStatus','companySort','companyPageSize'])on(id,id==='companySearch'?'input':'change',render);
+        click('resetCompanyFilters',()=>{['companySearch','companyStatus','accountStatus'].forEach(id=>set(id,''));render();});
+
+        all('.companies-pagination button').forEach((el,index)=>el.addEventListener('click',()=>{page+=index?1:-1;render();},{signal}));
+
+        render();
+        notice('DEMO — original interface connected to local browser storage. No Firebase or real authentication.');
+        window.addEventListener('storage', event => { if (event.key === 'uims.demo.v1') { view=demo.view(); if(view&&!view.user.mustChangePassword&&view.user.role===document.body.dataset.demoRole)render();else location.href='../Auth/Login.aspx?demo=1'; } }, {signal});
+        window.addEventListener('focus',()=>{const current=demo.current();if(!current||current.mustChangePassword)location.href='../Auth/Login.aspx?demo=1';},{signal});
+        window.addEventListener('pageshow',()=>{const current=demo.current();if(!current||current.mustChangePassword)location.href='../Auth/Login.aspx?demo=1';},{signal});
     }
-    search.addEventListener('input', updateEmptyState);
-    search.addEventListener('keydown', event => { if (event.key === 'Enter') event.preventDefault(); });
-    filters.forEach(filter => filter.addEventListener('change', updateEmptyState));
-    document.getElementById('resetCompanyFilters').addEventListener('click', () => {
-        search.value = '';
-        filters.forEach(filter => { filter.selectedIndex = 0; });
-        updateEmptyState();
-        search.focus();
-    });
+    if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',initialize,{once:true});else initialize();
+    if(window.Sys?.WebForms?.PageRequestManager)Sys.WebForms.PageRequestManager.getInstance().add_endRequest(initialize);
 })();

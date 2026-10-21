@@ -1,4 +1,4 @@
-<%@ Page Title="My Trainees" %>
+<%@ Page Language="C#" AutoEventWireup="true" CodeBehind="MyTrainees.aspx.cs" Inherits="University_Internship_Management_System.Company.MyTrainees" %>
 <!DOCTYPE html>
 <html lang="en">
 <head runat="server">
@@ -6,38 +6,39 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>My Trainees | JUST Internships</title>
     <link runat="server" href="~/Assets/shared/colors.css" rel="stylesheet" />
-    <link runat="server" href="~/Assets/company/company.css" rel="stylesheet" />
-    <link runat="server" href="~/Assets/company/my-trainees.css?v=20261021-2" rel="stylesheet" />
+    
+    <link runat="server" href="~/Assets/company/my-trainees.css?v=20261021-original-ui" rel="stylesheet" />
 </head>
-<body class="app-page trainees-page role-shell">
+<body class="app-page trainees-page role-shell" data-demo-role="company">
     <form id="form1" runat="server">
         <div class="app">
             <aside class="sidebar" id="sidebar" aria-label="Company Supervisor navigation" data-role-sidebar="true"><button class="sidebar-close" type="button" aria-label="Close navigation menu"><svg class="bi bi-x nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="m6 6 12 12M6 18 18 6"/></svg></button>
-                <a href="test.aspx" class="brand">
+                <a href="CompanyDashboard.aspx" class="brand">
                     <div class="brand-logo">J</div>
                     <div class="brand-text"><strong>JUST</strong><span>Internships</span></div>
                 </a>
 
-                <ul class="side-nav" role="list">
-                    <li><a href="test.aspx" ><svg class="bi bi-house-door nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="m3 10 9-7 9 7v10h-6v-7H9v7H3V10Z"/></svg>Dashboard</a></li>
-                    <li><a role="link" aria-disabled="true" title="This page is not available in the project yet"><svg class="bi bi-briefcase nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="3" y="7" width="18" height="14" rx="2"/><path d="M8 7V3h8v4M3 12h18m-11 0v3h4v-3"/></svg>Manage Opportunities</a></li>
-                    <li><a role="link" aria-disabled="true" title="This page is not available in the project yet"><svg class="bi bi-inbox nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="m6 4-4 11v6h20v-6L18 4H6ZM2 15h6l2 3h4l2-3h6"/></svg>Applications Review</a></li>
-                    <li><a href="MyTrainees.aspx" class="active" aria-current="page"><svg class="bi bi-people nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="9" cy="7" r="3"/><path d="M2 21v-3a7 7 0 0 1 14 0v3m0-17a3 3 0 0 1 0 6m3 4a6 6 0 0 1 3 5v2"/></svg>My Trainees</a></li>
-                    <li><a role="link" aria-disabled="true" title="This page is not available in the project yet"><svg class="bi bi-list-check nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="m3 6 2 2 3-4m2 3h11M3 13l2 2 3-4m2 3h11M3 20l2 2 3-4m2 3h11"/></svg>Manage &amp; Review Tasks</a></li>
-                    <li><a role="link" aria-disabled="true" title="This page is not available in the project yet"><svg class="bi bi-clipboard-check nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4V2h6v2m-7 9 3 3 5-6"/></svg>Reports &amp; Final Evaluation</a></li>
-                </ul>
+                <ul class="side-nav" aria-label="Company pages">
+<li><a href="CompanyDashboard.aspx"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m3 10 9-7 9 7v10h-6v-7H9v7H3V10Z"/></svg><span>Dashboard</span></a></li>
+<li><a href="ManageOpportunities.aspx"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="m8 12 3 3 5-6"/></svg><span>Manage Opportunities</span></a></li>
+<li><a href="ApplicationsReview.aspx"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="m8 12 3 3 5-6"/></svg><span>Applications Review</span></a></li>
+<li><a href="MyTrainees.aspx" class="active" aria-current="page"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="7" r="3"/><path d="M5 21v-3a7 7 0 0 1 14 0v3"/></svg><span>My Trainees</span></a></li>
+
+<li><a href="ManageTasks.aspx"><svg class="nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M4 5h16v14H4zM8 9h8M8 13h6" /></svg><span>Manage &amp; Review Tasks</span></a></li>
+
+<li><a href="ReportsFinalEvaluation.aspx"><svg class="nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M4 5h16v14H4zM8 9h8M8 13h6" /></svg><span>Reports &amp; Final Evaluation</span></a></li>
+
+<li><a href="CompanySupervisorAccount.aspx"><svg class="nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M4 5h16v14H4zM8 9h8M8 13h6" /></svg><span>Supervisor Account</span></a></li>
+</ul>
 
                 <div class="side-divider"></div>
 
-                <ul class="side-nav" role="list">
-                    <li><a role="link" aria-disabled="true" title="This page is not available in the project yet"><svg class="bi bi-gear nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="m9 3-1 3-3 1-2 4 2 2v4l4 2 3-1 3 1 4-2v-4l2-2-2-4-3-1-1-3H9Z"/><circle cx="12" cy="11" r="3"/></svg>Supervisor Account</a></li>
-                    <li><a href="../Contact.aspx"><svg class="bi bi-question-circle nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="9"/><path d="M9 8a3 3 0 0 1 6 1c0 2-3 2-3 5m0 3h.01"/></svg>Help</a></li>
-                </ul>
+                <ul class="side-nav" role="list"><li><a href="../Contact.aspx"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="m8 12 3 3 5-6"/></svg><span>Help &amp; contact</span></a></li></ul>
 
                 <div class="side-promo">
                     <svg class="bi bi-building-add nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M3 21V3h13v8M7 7h1m3 0h1M7 11h1m3 0h1M7 15h1M2 21h10m6-7v8m-4-4h8"/></svg>
                     <p>Have a new role?<br />Reach JUST students today.</p>
-                    <a role="link" aria-disabled="true" title="This page is not available in the project yet">Post opportunity &rarr;</a>
+                    <a href="ManageOpportunities.aspx">Post opportunity &rarr;</a>
                 </div>
             </aside>
             <button type="button" class="sidebar-backdrop" aria-label="Close navigation menu" tabindex="-1"></button>
@@ -57,7 +58,7 @@
                                 <svg class="bi bi-chevron-down small nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="m6 9 6 6 6-6"/></svg>
                             </summary>
                             <ul class="dropdown-menu dropdown-menu-end">
-                                <li><a class="dropdown-item" role="link" aria-disabled="true" title="This page is not available in the project yet"><svg class="bi bi-person nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="12" cy="7" r="4"/><path d="M4 21v-2a8 8 0 0 1 16 0v2"/></svg>Account</a></li>
+                                <li><a href="CompanySupervisorAccount.aspx" class="dropdown-item" role="link"><svg class="bi bi-person nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="12" cy="7" r="4"/><path d="M4 21v-2a8 8 0 0 1 16 0v2"/></svg>Account</a></li>
                                 <li><hr class="dropdown-divider" /></li>
                                 <li><button id="btnLogout" type="button" class="dropdown-item" disabled="disabled" title="Sign-in is not connected yet"><svg class="bi bi-box-arrow-right nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M10 3H3v18h7m4-15 6 6-6 6M8 12h12"/></svg>Log out</button></li>
                             </ul></details>
@@ -65,7 +66,7 @@
                 <span id="navigationAvailability" class="nav-sr-only">Workspace search and notifications require a connected account.</span></header>
                 <main class="app-content">
                 <div class="trainees-content">
-                    <nav class="trainees-breadcrumb" aria-label="Breadcrumb"><a href="test.aspx">Company workspace</a><span aria-hidden="true">/</span><span aria-current="page">My Trainees</span></nav>
+                    <nav class="trainees-breadcrumb" aria-label="Breadcrumb"><a href="CompanyDashboard.aspx">Company workspace</a><span aria-hidden="true">/</span><span aria-current="page">My Trainees</span></nav>
                     <header class="trainees-heading">
                         <div><p class="trainees-eyebrow">PEOPLE &amp; PROGRESS</p><h1>My Trainees</h1><p>Support the students training at your company, from their first day to their final evaluation.</p></div>
                         <span class="trainees-workspace"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="7" width="16" height="13" rx="2"/><path d="M9 7V4h6v3M4 12h16M10 12v3h4v-3"/></svg>Company workspace</span>
@@ -87,9 +88,9 @@
                         <div class="trainees-table-wrap"><table class="trainees-table"><caption class="trainees-sr-only">Company trainees. No records loaded; company data is not connected.</caption><thead><tr><th scope="col">Trainee</th><th scope="col">Internship</th><th scope="col">Training period</th><th scope="col">Progress</th><th scope="col">Status</th><th scope="col">Actions</th></tr></thead><tbody><tr><td colspan="6"><div class="trainees-empty"><div class="trainees-empty-icon" aria-hidden="true"><svg viewBox="0 0 48 48"><rect x="8" y="10" width="32" height="30" rx="5"/><path d="M17 10V7h14v3M16 31c0-4 3-6 8-6s8 2 8 6"/><circle cx="24" cy="19" r="4"/></svg></div><h3>Your trainee list will appear here</h3><p>Once company records are connected, you can view accepted students, follow their training progress, and access their evaluations.</p><span class="trainees-empty-note">No trainee records have been loaded.</span></div></td></tr></tbody></table></div>
                         <footer class="trainees-list-footer"><span>Records unavailable</span><div class="trainees-pagination" aria-label="Trainee list pagination"><button type="button" disabled="disabled" aria-label="Previous page">&#8592;</button><span aria-label="Page unavailable">&#8212;</span><button type="button" disabled="disabled" aria-label="Next page">&#8594;</button></div></footer>
                     </section>
-                    <details class="trainees-details"><summary><span><span class="trainees-small-label">LAYOUT PREVIEW</span><strong>Inside a trainee profile</strong></span><span class="trainees-details-hint">Preview details <span aria-hidden="true">+</span></span></summary>
-                        <div class="trainees-details-body"><p class="trainees-details-note">This is an empty layout preview. Select a real trainee after integration to view their information.</p><dl class="trainees-info"><div><dt>Full name</dt><dd>Not connected</dd></div><div><dt>Student ID</dt><dd>Not connected</dd></div><div><dt>University / Major</dt><dd>Not connected</dd></div><div><dt>Internship</dt><dd>Not connected</dd></div><div><dt>Company supervisor</dt><dd>Not connected</dd></div><div><dt>Training period</dt><dd>Not connected</dd></div></dl><div class="trainees-details-actions"><div><h3>Training &amp; evaluation</h3><p>Training hours, task progress, and evaluations require connected trainee records.</p></div><div><button type="button" disabled="disabled">View training progress</button><button type="button" disabled="disabled">Evaluate trainee</button></div></div></div>
-                    </details>
+                    <dialog id="companyTraineeDialog" class="trainees-details" aria-label="Trainee details"><header><h2>Trainee details</h2><button type="button" data-close aria-label="Close trainee details">&times;</button></header>
+                        <div class="trainees-details-body"><p class="trainees-details-note">This is an empty layout preview. Select a real trainee after integration to view their information.</p><dl class="trainees-info"><div><dt>Full name</dt><dd>Not connected</dd></div><div><dt>Student ID</dt><dd>Not connected</dd></div><div><dt>University / Major</dt><dd>Not connected</dd></div><div><dt>Internship</dt><dd>Not connected</dd></div><div><dt>Company supervisor</dt><dd>Not connected</dd></div><div><dt>Training period</dt><dd>Not connected</dd></div></dl><div class="trainees-details-actions"><div><h3>Training &amp; evaluation</h3><p id="traineeProgressSummary"></p><label>Training date<input id="approvedHoursDate" type="date" required /></label><label>Explicitly approved hours<input id="approvedHoursValue" type="number" min="0.25" max="24" step="0.25" required /></label><p>Hours are approved separately from task completion. Demonstration approval only.</p><button type="button" id="saveApprovedHours">Record approved hours</button></div><div><button type="button" id="viewTraineeProgress">View training progress</button><button type="button" id="openTraineeEvaluation">Evaluate trainee</button></div></div></div>
+                    </dialog>
                     <div class="trainees-guidance"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 8 4v5c0 5-8 9-8 9s-8-4-8-9V7l8-4Z"/><path d="m8 12 3 3 5-6"/></svg><p><strong>A focused view of your training team.</strong> This page is intended for trainees accepted into your company&#8217;s internships. Applications and candidate decisions belong to the recruitment stage.</p></div>
                     <footer class="trainees-footer"><span>UIMS &middot; JUST Internships</span><span>Company workspace</span></footer>
                 </div>
@@ -97,7 +98,8 @@
             </div>
         </div>
     </form>
-    <script>
+    <script src="../Js_project/Demo/demo-store.js?v=20261021-original-ui"></script>
+<script>
         (() => {
             "use strict";
             const sidebar = document.querySelector(".sidebar");
@@ -159,5 +161,6 @@
             mobile.addEventListener("change", () => setSidebar(false));
         })();
     </script>
+<script src="../Js_project/Company/my-trainees.js?v=20261021-original-ui"></script>
 </body>
 </html>

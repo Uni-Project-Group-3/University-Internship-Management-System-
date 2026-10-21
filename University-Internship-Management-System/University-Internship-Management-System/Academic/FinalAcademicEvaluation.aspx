@@ -6,14 +6,14 @@
     <title>Final Academic Evaluation | JUST UIMS</title>
     <link runat="server" href="~/Assets/shared/colors.css" rel="stylesheet" />
 
-    <link runat="server" href="~/Assets/academic/final-academic-evaluation.css" rel="stylesheet" />
-    <link runat="server" href="~/Assets/academic/academic.css" rel="stylesheet" />
+    <link runat="server" href="~/Assets/academic/final-academic-evaluation.css?v=20261021-original-ui" rel="stylesheet" />
+    
 </head>
-<body class="dashboard-direct app-page evaluation-page">
+<body class="dashboard-direct app-page evaluation-page" data-demo-role="academic">
     <form id="form1" runat="server">
         <div class="app-layout">
                         <aside class="dash-sidebar" id="dashboardSidebar" aria-label="Academic navigation">
-                <a href="<%= ResolveUrl("~/Academic/test.aspx") %>" class="dash-brand">
+                <a href="<%= ResolveUrl("~/Academic/AcademicDashboard.aspx") %>" class="dash-brand">
                     <span class="dash-brand-logo">J</span>
                     <span class="dash-brand-text">
                         <strong>JUST</strong>
@@ -26,46 +26,16 @@
                     </svg>
                 </button>
                 <nav aria-label="Workspace navigation">
-                    <ul class="dash-side-nav">
-                        <li>
-                            <a href="<%= ResolveUrl("~/Academic/test.aspx") %>">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                                    <path d="M3 10 12 3l9 7v13H3V10Z"/>
-                                    <path d="M9 20v-7h6v7"/>
-                                </svg>
-                                <span>Dashboard</span>
-                            </a>
-                        </li>
-                        <li>
-                            <a href="<%= ResolveUrl("~/Academic/StudentProgressMonitor.aspx") %>">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                                    <path d="M2 13h5l3-9 4 16 3-9h5"/>
-                                </svg>
-                                <span>Student Progress Monitor</span>
-                            </a>
-                        </li>
-                        <li>
-                            <a href="<%= ResolveUrl("~/Academic/FinalAcademicEvaluation.aspx") %>" class="active" aria-current="page">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                                    <rect x="5" y="3" width="14" height="18" rx="2"/>
-                                    <path d="m8 12 3 3 5-6"/>
-                                </svg>
-                                <span>Final Academic Evaluation</span>
-                            </a>
-                        </li>
-                    </ul>
+                    <ul class="dash-side-nav" aria-label="Academic pages">
+<li><a href="AcademicDashboard.aspx"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m3 10 9-7 9 7v10h-6v-7H9v7H3V10Z"/></svg><span>Dashboard</span></a></li>
+<li><a href="StudentProgressMonitor.aspx"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12h5l3-9 4 18 3-9h5"/></svg><span>Student Progress Monitor</span></a></li>
+<li><a href="FinalAcademicEvaluation.aspx" class="active" aria-current="page"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="m8 12 3 3 5-6"/></svg><span>Final Academic Evaluation</span></a></li>
+<li><a href="AcademicSupervisorAccount.aspx"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="m8 12 3 3 5-6"/></svg><span>My Account</span></a></li>
+</ul>
                     <div class="dash-side-divider">
                     </div>
                     <ul class="dash-side-nav">
-                        <li>
-                            <span class="dash-nav-disabled" aria-disabled="true" title="Account page is not available yet">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                                    <circle cx="12" cy="12" r="4"/>
-                                    <path d="M12 2v3m0 14v3M2 12h3m14 0h3M5 5l2 2m10 10 2 2M5 19l2-2M17 7l2-2"/>
-                                </svg>
-                                <span>My Account</span>
-                            </span>
-                        </li>
+                        
                         <li>
                             <a href="<%= ResolveUrl("~/Contact.aspx") %>">
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -83,7 +53,7 @@
                         <path d="m8 12 3 3 5-6"/>
                     </svg>
                     <p>Support your students.<br />Review their training journey.</p>
-                    <a href="<%= ResolveUrl("~/Academic/FinalAcademicEvaluation.aspx") %>">Start evaluating &rarr;</a>
+                    <a href="FinalAcademicEvaluation.aspx">">Start evaluating &rarr;</a>
                 </div>
             </aside>
             <button type="button" class="dash-sidebar-backdrop" data-sidebar-close aria-label="Close navigation" tabindex="-1" hidden>
@@ -178,13 +148,14 @@
             <footer class="evaluation-dialog-footer">
                 <div data-footer="details" hidden><button type="button" class="evaluation-button evaluation-button--secondary" data-close>Close</button></div>
                 <div data-footer="editor" hidden><button type="button" class="evaluation-button evaluation-button--secondary" data-close>Cancel</button><button type="button" class="evaluation-button evaluation-button--secondary" id="savePreviewDraft">Keep preview draft</button><button type="button" class="evaluation-button" id="reviewEvaluation">Review submission</button></div>
-                <div data-footer="confirmation" hidden><button type="button" class="evaluation-button evaluation-button--secondary" id="backToEvaluation">Back to evaluation</button><button type="button" class="evaluation-button" disabled>Send to Coordinator</button></div>
+                <div data-footer="confirmation" hidden><button type="button" class="evaluation-button evaluation-button--secondary" id="backToEvaluation">Back to evaluation</button><button type="button" id="submitAcademicEvaluation" class="evaluation-button">Send to Coordinator</button></div>
                 <div data-footer="submitted" hidden><button type="button" class="evaluation-button evaluation-button--secondary" data-close>Close</button></div>
                 <div data-footer="discard" hidden><button type="button" class="evaluation-button evaluation-button--secondary" id="continueEvaluation">Keep editing</button><button type="button" class="evaluation-button evaluation-button--danger" id="discardEvaluation">Discard changes</button></div>
             </footer>
         </dialog>
     </form>
-    <script src="<%= ResolveUrl("~/Js_project/Academic/final-academic-evaluation.js") %>"></script>
-    <script src="<%= ResolveUrl("~/Js_project/Public/dashboard-navigation.js") %>"></script>
+    <script src="../Js_project/Demo/demo-store.js?v=20261021-original-ui"></script>
+<script src="<%= ResolveUrl("~/Js_project/Academic/final-academic-evaluation.js?v=20261021-original-ui") %>"></script>
+    <script src="<%= ResolveUrl("~/Js_project/Public/dashboard-navigation.js?v=20261021-original-ui") %>"></script>
 </body>
 </html>

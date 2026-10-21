@@ -1,6 +1,38 @@
 (() => {
     'use strict';
     const sidebar = document.getElementById('dashboardSidebar');
+    if (!sidebar) {
+        const legacySidebar = document.getElementById('sidebar');
+        const legacyMain = document.querySelector('.main');
+        const menu = document.querySelector('.menu-btn');
+        const close = document.querySelector('.legacy-sidebar-close');
+        if (!legacySidebar || !menu || !close) return;
+        const mobile = window.matchMedia('(max-width: 991.98px)');
+        function setLegacyOpen(open, restoreFocus = true) {
+            open = Boolean(open && mobile.matches);
+            document.body.classList.toggle('sidebar-open', open);
+            menu.setAttribute('aria-expanded', String(open));
+            legacySidebar.inert = mobile.matches && !open;
+            if (legacyMain) legacyMain.inert = open;
+            if (open) close.focus();
+            else if (restoreFocus && mobile.matches) menu.focus();
+        }
+        window.toggleSidebar = () => setLegacyOpen(!document.body.classList.contains('sidebar-open'));
+        close.addEventListener('click', () => setLegacyOpen(false));
+        document.addEventListener('keydown', event => {
+            if (event.key === 'Escape' && document.body.classList.contains('sidebar-open')) setLegacyOpen(false);
+        });
+        legacySidebar.addEventListener('keydown', event => {
+            if (!mobile.matches || !document.body.classList.contains('sidebar-open') || event.key !== 'Tab') return;
+            const elements = [...legacySidebar.querySelectorAll('a[href], button')].filter(element => element.getClientRects().length);
+            const first = elements[0], last = elements[elements.length - 1];
+            if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
+            else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
+        });
+        mobile.addEventListener('change', () => setLegacyOpen(false, false));
+        setLegacyOpen(false, false);
+        return;
+    }
     const toggle = document.getElementById('dashboardMenuToggle');
     const backdrop = document.querySelector('.dash-sidebar-backdrop');
     const main = document.querySelector('.dash-main');

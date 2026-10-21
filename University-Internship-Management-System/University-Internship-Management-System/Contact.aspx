@@ -6,7 +6,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Contact Us | JUST Internships</title>
     <link runat="server" href="~/Assets/shared/colors.css" rel="stylesheet" />
-    <link runat="server" href="~/Assets/shared/navbar.css" rel="stylesheet" />
     <link runat="server" href="~/Assets/public/contact.css" rel="stylesheet" />
 </head>
 <body class="contact-page">
@@ -56,7 +55,7 @@
             </aside>
             <section class="contact-form-card" aria-labelledby="messageTitle">
                 <div class="contact-card-heading"><span class="contact-small-label">GET IN TOUCH</span><h2 id="messageTitle">Send us a message</h2><p>Tell us a little about yourself and how we can help.</p></div>
-                <form id="contactForm" aria-describedby="contactStatus">
+                <form id="contactForm" runat="server" aria-describedby="contactStatus">
                     <div class="contact-fields">
                         <div class="contact-field"><label for="contactName">Full name <span aria-hidden="true">*</span></label><input id="contactName" name="fullName" type="text" autocomplete="name" placeholder="Your full name" required="required" maxlength="100" /></div>
                         <div class="contact-field"><label for="contactEmail">Email address <span aria-hidden="true">*</span></label><input id="contactEmail" name="email" type="email" autocomplete="email" placeholder="you@university.edu" required="required" maxlength="254" /></div>
@@ -114,5 +113,5 @@
 })();
 
 </script>
-</body>
+<script src="Js_project/Demo/demo-store.js"></script><script src="Js_project/Public/contact-demo.js"></script></body>
 </html>

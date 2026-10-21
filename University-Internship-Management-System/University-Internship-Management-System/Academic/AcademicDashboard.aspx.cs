@@ -12,7 +12,7 @@ namespace UIMS.Academic
             // after signing in with Firebase Authentication.
             // if (Session["Role"] as string != "Academic")
             // {
-            //     Response.Redirect("~/Login.aspx");
+            //     Response.Redirect("~/Auth/Login.aspx");
             //     return;
             // }
 
@@ -45,9 +45,10 @@ namespace UIMS.Academic
 
         protected void btnLogout_Click(object sender, EventArgs e)
         {
+            System.Web.Security.FormsAuthentication.SignOut();
             Session.Clear();
             Session.Abandon();
-            Response.Redirect("~/Login.aspx");
+            Response.Redirect("~/Auth/Login.aspx");
         }
 
         // ---------- helpers ----------

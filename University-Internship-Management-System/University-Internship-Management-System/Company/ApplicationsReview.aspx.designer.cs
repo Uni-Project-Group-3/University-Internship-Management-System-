@@ -7,7 +7,7 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 
-namespace UIMS.Company
+namespace University_Internship_Management_System.Company
 {
 
 

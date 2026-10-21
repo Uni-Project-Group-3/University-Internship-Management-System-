@@ -6,37 +6,40 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Company Dashboard | JUST Internships</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link runat="server" href="~/Content/bootstrap.min.css" rel="stylesheet" />
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet" />
-    <link href="~/Assets/shared/colors.css" rel="stylesheet" />
-    <link href="~/Assets/Company/company-dashboard.css" rel="stylesheet" />
+    <link runat="server" href="~/Assets/shared/colors.css" rel="stylesheet" />
+    <link runat="server" href="~/Assets/Company/company-dashboard.css?v=20261021-original-ui" rel="stylesheet" />
 </head>
-<body>
+<body data-demo-role="company">
     <form id="form1" runat="server">
         <div class="app">
 
             <!-- ============ SIDEBAR (Company Supervisor) ============ -->
             <aside class="sidebar" id="sidebar">
+<button type="button" class="legacy-sidebar-close" aria-label="Close navigation">&times;</button>
                 <a href="CompanyDashboard.aspx" class="brand">
                     <div class="brand-logo">J</div>
                     <div class="brand-text"><strong>JUST</strong><span>Internships</span></div>
                 </a>
 
-                <ul class="side-nav">
-                    <li><a href="CompanyDashboard.aspx" class="active"><i class="bi bi-house-door"></i>Dashboard</a></li>
-                    <li><a href="ManageOpportunities.aspx"><i class="bi bi-briefcase"></i>Manage Opportunities</a></li>
-                    <li><a href="ApplicationsReview.aspx"><i class="bi bi-inbox"></i>Applications Review<span class="count">6</span></a></li>
-                    <li><a href="MyTrainees.aspx"><i class="bi bi-people"></i>My Trainees</a></li>
-                    <li><a href="ManageTasks.aspx"><i class="bi bi-list-check"></i>Manage &amp; Review Tasks</a></li>
-                    <li><a href="FinalEvaluation.aspx"><i class="bi bi-clipboard-check"></i>Reports &amp; Final Evaluation</a></li>
-                </ul>
+                <ul class="side-nav" aria-label="Company pages">
+<li><a href="CompanyDashboard.aspx" class="active" aria-current="page"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m3 10 9-7 9 7v10h-6v-7H9v7H3V10Z"/></svg><span>Dashboard</span></a></li>
+<li><a href="ManageOpportunities.aspx"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="m8 12 3 3 5-6"/></svg><span>Manage Opportunities</span></a></li>
+<li><a href="ApplicationsReview.aspx"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="m8 12 3 3 5-6"/></svg><span>Applications Review</span></a></li>
+<li><a href="MyTrainees.aspx"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="7" r="3"/><path d="M5 21v-3a7 7 0 0 1 14 0v3"/></svg><span>My Trainees</span></a></li>
+
+<li><a href="ManageTasks.aspx"><svg class="nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M4 5h16v14H4zM8 9h8M8 13h6" /></svg><span>Manage &amp; Review Tasks</span></a></li>
+
+<li><a href="ReportsFinalEvaluation.aspx"><svg class="nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M4 5h16v14H4zM8 9h8M8 13h6" /></svg><span>Reports &amp; Final Evaluation</span></a></li>
+
+<li><a href="CompanySupervisorAccount.aspx"><svg class="nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M4 5h16v14H4zM8 9h8M8 13h6" /></svg><span>Supervisor Account</span></a></li>
+</ul>
 
                 <div class="side-divider"></div>
 
-                <ul class="side-nav">
-                    <li><a href="Account.aspx"><i class="bi bi-gear"></i>Supervisor Account</a></li>
-                    <li><a href="../Contact.aspx"><i class="bi bi-question-circle"></i>Help</a></li>
-                </ul>
+                <ul class="side-nav"><li><a href="../Contact.aspx"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="m8 12 3 3 5-6"/></svg><span>Help &amp; contact</span></a></li>
+</ul>
 
                 <div class="side-promo">
                     <i class="bi bi-building-add"></i>
@@ -49,7 +52,7 @@
             <div class="main">
                 <!-- ============ NAVBAR ============ -->
                 <header class="topbar">
-                    <button type="button" class="menu-btn" onclick="toggleSidebar()"><i class="bi bi-list"></i></button>
+                    <button type="button" class="menu-btn" onclick="toggleSidebar()" aria-label="Open navigation" aria-controls="sidebar" aria-expanded="false"><i class="bi bi-list"></i></button>
                     <div class="search">
                         <i class="bi bi-search"></i>
                         <input type="text" placeholder="Search for trainees, tasks, or applications..." />
@@ -63,7 +66,7 @@
                                 <i class="bi bi-chevron-down small"></i>
                             </button>
                             <ul class="dropdown-menu dropdown-menu-end">
-                                <li><a class="dropdown-item" href="Account.aspx"><i class="bi bi-person me-2"></i>Account</a></li>
+                                <li><a href="CompanySupervisorAccount.aspx" class="dropdown-item"><i class="bi bi-person me-2"></i>Account</a></li>
                                 <li><hr class="dropdown-divider" /></li>
                                 <li><asp:LinkButton ID="btnLogout" runat="server" CssClass="dropdown-item text-danger" OnClick="btnLogout_Click"><i class="bi bi-box-arrow-right me-2"></i>Log out</asp:LinkButton></li>
                             </ul>
@@ -195,6 +198,9 @@
         </div>
     </form>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="../Js_project/Demo/demo-store.js?v=20261021-original-ui"></script>
+<script src="<%= ResolveUrl("~/Scripts/bootstrap.bundle.min.js") %>"></script>
+    <script src="<%= ResolveUrl("~/Js_project/Public/dashboard-navigation.js?v=20261021-original-ui") %>"></script>
+<script src="../Js_project/Company/company-dashboard.js?v=20261021-original-ui"></script>
 </body>
 </html>
