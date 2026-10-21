@@ -44,6 +44,10 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="Microsoft.CodeDom.Providers.DotNetCompilerPlatform, Version=2.0.1.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
+      <HintPath>..\packages\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.2.0.1\lib\net45\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
     <Reference Include="Microsoft.CSharp" />
     <Reference Include="System.ComponentModel.DataAnnotations" />
     <Reference Include="System" />
@@ -95,15 +99,17 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Reference Include="Microsoft.CodeDom.Providers.DotNetCompilerPlatform">
-      <HintPath>..\packages\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.2.0.1\lib\net45\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.dll</HintPath>
-    </Reference>
-  </ItemGroup>
-  <ItemGroup>
+    <Content Include="Academic\AcademicDashboard.aspx" />
+    <Content Include="Assets\academic\academic-dashboard.css" />
     <Content Include="Assets\academic\academic.css" />
+    <Content Include="Assets\company\applications-review.css" />
+    <Content Include="Assets\company\company-dashboard.css" />
     <Content Include="Assets\company\company.css" />
+    <Content Include="Assets\company\manage-opportunities.css" />
+    <Content Include="Assets\coordinator\coordinator-dashboard.css" />
     <Content Include="Assets\coordinator\coordinator.css" />
     <Content Include="Assets\public\public.css" />
+    <Content Include="Assets\student\student-dashboard.css" />
     <Content Include="Assets\student\student.css" />
     <Content Include="Assets\student\explore-opportunities.css" />
     <Content Include="Student\ExploreOpportunities.aspx" />
@@ -226,6 +232,7 @@
     <Content Include="Scripts\WebForms\WebParts.js" />
     <Content Include="Scripts\WebForms\WebUIValidation.js" />
     <Content Include="Site.Master" />
+    <Content Include="Student\StudentDashboard.aspx" />
     <Content Include="Student\test.aspx" />
     <Content Include="ViewSwitcher.ascx" />
     <Content Include="Web.config" />
@@ -258,6 +265,27 @@
       <DependentUpon>About.aspx</DependentUpon>
     </Compile>
     <Compile Include="App_Start\RouteConfig.cs" />
+    <Compile Include="Company\ApplicationsReview.aspx.cs">
+      <DependentUpon>ApplicationsReview.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="Company\ApplicationsReview.aspx.designer.cs">
+      <DependentUpon>ApplicationsReview.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="Company\CompanyDashboard.aspx.cs">
+      <DependentUpon>CompanyDashboard.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="Company\CompanyDashboard.aspx.designer.cs">
+      <DependentUpon>CompanyDashboard.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="Company\ManageOpportunities.aspx.cs">
+      <DependentUpon>ManageOpportunities.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="Company\ManageOpportunities.aspx.designer.cs">
+      <DependentUpon>ManageOpportunities.aspx</DependentUpon>
+    </Compile>
     <Compile Include="Company\test.aspx.cs">
       <DependentUpon>test.aspx</DependentUpon>
       <SubType>ASPXCodeBehind</SubType>
@@ -293,6 +321,7 @@
     <Compile Include="Global.asax.cs">
       <DependentUpon>Global.asax</DependentUpon>
     </Compile>
+    <Compile Include="Models\Opportunity.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Public\test.aspx.cs">
       <DependentUpon>test.aspx</DependentUpon>
@@ -301,6 +330,7 @@
     <Compile Include="Public\test.aspx.designer.cs">
       <DependentUpon>test.aspx</DependentUpon>
     </Compile>
+    <Compile Include="Services\OpportunityService.cs" />
     <Compile Include="Site.Master.cs">
       <DependentUpon>Site.Master</DependentUpon>
       <SubType>ASPXCodeBehind</SubType>
@@ -314,6 +344,13 @@
     </Compile>
     <Compile Include="Site.Mobile.Master.designer.cs">
       <DependentUpon>Site.Mobile.Master</DependentUpon>
+    </Compile>
+    <Compile Include="Student\StudentDashboard.aspx.cs">
+      <DependentUpon>StudentDashboard.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="Student\StudentDashboard.aspx.designer.cs">
+      <DependentUpon>StudentDashboard.aspx</DependentUpon>
     </Compile>
     <Compile Include="Student\test.aspx.cs">
       <DependentUpon>test.aspx</DependentUpon>
