@@ -1,77 +1,52 @@
-﻿using System;
+using System;
 using System.Linq;
+using System.Web;
+using System.Threading.Tasks;
+using System.Web.UI;
+using University_Internship_Management_System.Services;
 
 namespace UIMS.Company
 {
     public partial class CompanyDashboard : System.Web.UI.Page
     {
+        protected string FirstRecordsHtml { get; private set; } = "";
+        protected string SecondRecordsHtml { get; private set; } = "";
+        protected string DashboardStatus { get; private set; } = "Loading live Firebase records.";
+        protected string AccountSummary { get; private set; }
         protected void Page_Load(object sender, EventArgs e)
         {
-            // ---- Role guard ----
-            // Enable this once Login.aspx stores the user's role in Session["Role"]
-            // after signing in with Firebase Authentication.
-            // if (Session["Role"] as string != "Company")
-            // {
-            //     Response.Redirect("~/Auth/Login.aspx");
-            //     return;
-            // }
-
-            if (!IsPostBack)
-            {
-                LoadHeader();
-                LoadStats();
-            }
+            Response.Cache.SetNoStore();
+            var account = Context.Items["Uims.Account"] as UimsAccount;
+            if (account == null || account.Role != "company" || account.MustChangePassword) throw new UnauthorizedAccessException();
+            string name = account.DisplayName ?? account.Email;
+            var parts = name.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+            lblUserName.Text = HttpUtility.HtmlEncode(name);
+            lblInitials.Text = HttpUtility.HtmlEncode(string.Concat(parts.Take(2).Select(part => char.ToUpperInvariant(part[0]))));
+            lblDate.Text = JordanTime.Format(DateTime.UtcNow) + " " + JordanTime.Label;
+            string greeting = JordanTime.LocalNow.Hour < 12 ? "Good morning" : JordanTime.LocalNow.Hour < 18 ? "Good afternoon" : "Good evening";
+            lblGreeting.Text = HttpUtility.HtmlEncode(greeting + ", " + (parts.FirstOrDefault() ?? "User") + ".");
+            AccountSummary = "Signed in as " + account.Email + " · " + "Company: " + account.CompanyId;
+            lblOpportunities.Text = lblApplications.Text = lblTrainees.Text = lblToReview.Text = "—";
+            RegisterAsyncTask(new PageAsyncTask(() => LoadDataAsync(account)));
         }
-
-        private void LoadHeader()
+        private async Task LoadDataAsync(UimsAccount account)
         {
-            string fullName = Session["FullName"] as string ?? "Mohammad Haddad";
-            string firstName = fullName.Split(' ')[0];
-
-            lblUserName.Text = ShortName(fullName);
-            lblInitials.Text = Initials(fullName);
-            lblDate.Text = DateTime.Now.ToString("ddd, MMM dd, hh:mm tt").ToUpper();
-            lblGreeting.Text = Greeting() + ", " + firstName + ".";
+            var database = Context.Items["Uims.Database"] as FirebaseRealtimeDatabaseRepository;
+            if (database == null) throw new UnauthorizedAccessException();
+            var data = await new RoleDashboardService(database).LoadAsync(account);
+            lblOpportunities.Text = data.Counts[0]?.ToString(System.Globalization.CultureInfo.InvariantCulture) ?? "—";
+            lblApplications.Text = data.Counts[1]?.ToString(System.Globalization.CultureInfo.InvariantCulture) ?? "—";
+            lblTrainees.Text = data.Counts[2]?.ToString(System.Globalization.CultureInfo.InvariantCulture) ?? "—";
+            lblToReview.Text = data.Counts[3]?.ToString(System.Globalization.CultureInfo.InvariantCulture) ?? "—";
+            FirstRecordsHtml = RoleDashboardService.Render(data.First, "No verified records to display, or read permission is unavailable.");
+            SecondRecordsHtml = RoleDashboardService.Render(data.Second, "No verified records to display, or read permission is unavailable.");
+            DashboardStatus = data.Status;
         }
-
-        private void LoadStats()
-        {
-            // TODO: replace these sample numbers with counts read from Firebase.
-            lblOpportunities.Text = "04";
-            lblApplications.Text = "06";
-            lblTrainees.Text = "09";
-            lblToReview.Text = "05";
-        }
-
         protected void btnLogout_Click(object sender, EventArgs e)
         {
-            System.Web.Security.FormsAuthentication.SignOut();
-            Session.Clear();
-            Session.Abandon();
-            Response.Redirect("~/Auth/Login.aspx");
-        }
-
-        // ---------- helpers ----------
-        private static string Greeting()
-        {
-            int h = DateTime.Now.Hour;
-            if (h < 12) return "Good morning";
-            if (h < 18) return "Good afternoon";
-            return "Good evening";
-        }
-
-        private static string Initials(string fullName)
-        {
-            return string.Concat(fullName.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries)
-                                         .Take(2)
-                                         .Select(p => char.ToUpper(p[0])));
-        }
-
-        // "Ahmad Saleem" -> "Ahmad S."
-        private static string ShortName(string fullName)
-        {
-            var parts = fullName.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
-            return parts.Length > 1 ? parts[0] + " " + parts[parts.Length - 1][0] + "." : fullName;
+            SessionService.Logout(SessionService.Handle(Request));
+            Response.Redirect("~/Auth/Login.aspx", false);
+            Context.ApplicationInstance.CompleteRequest();
         }
     }
 }

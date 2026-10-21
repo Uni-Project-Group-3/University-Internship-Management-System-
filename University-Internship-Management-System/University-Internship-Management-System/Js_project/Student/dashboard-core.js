@@ -35,8 +35,8 @@
     // e.g. "TUE, OCT 20, 03:30 PM"
     function dateLine() {
         const d = new Date();
-        const day = d.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
-        const time = d.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" });
+        const day = d.toLocaleDateString("en-US", { timeZone: "Asia/Amman", weekday: "short", month: "short", day: "numeric" });
+        const time = d.toLocaleTimeString("en-US", { timeZone: "Asia/Amman", hour: "2-digit", minute: "2-digit", hourCycle: "h23" });
         return `${day}, ${time}`;
     }
 

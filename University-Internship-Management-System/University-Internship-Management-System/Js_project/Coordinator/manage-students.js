@@ -2,19 +2,20 @@
 /* Original-page demo bindings. Layout and server controls remain in the ASPX. */
 (function () {
     'use strict';
-    if (!window.UimsDemo?.enabled()) { location.replace('../Auth/Login.aspx?demo=1'); return; }
+    if (!window.UimsLive?.enabled()) return;
     let binding;
     function initialize() {
         binding?.abort();
         binding = new AbortController();
-        const signal = binding.signal, demo = window.UimsDemo;
+        const signal = binding.signal, demo = window.UimsLive;
         let view = demo.view(), selected = null, render = () => {};
-        if (!view || view.user.mustChangePassword || view.user.role !== document.body.dataset.demoRole) {
-            location.href = '../Auth/Login.aspx?demo=1';
+        if (!view || view.user.mustChangePassword || view.user.role !== document.body.dataset.portal) {
+            location.href = '../Auth/Login.aspx';
             return;
         }
         const by = id => document.getElementById(id) || document.querySelector('[id$="_' + id + '"]');
         const all = selector => [...document.querySelectorAll(selector)];
+        const displayValue=value=>typeof value==='string'&&/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?Z$/.test(value)?new Intl.DateTimeFormat('en-GB',{timeZone:'Asia/Amman',year:'numeric',month:'short',day:'2-digit',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).format(new Date(value))+' Jordan Time (UTC+3)':value;
         const escape = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
         const text = (id, value) => { const element = by(id); if (element) element.textContent = value ?? '—'; };
         const value = id => by(id)?.value?.trim() || '';
@@ -120,7 +121,7 @@
         function detail(student, id, selector) {
             const progress = view.progress.find(item => item.id === student); if (!progress) throw Error('This student is not available to this demo identity.');
             const target = document.querySelector(selector);
-            if (target) target.innerHTML = '<h3>' + escape(progress.name) + '</h3><dl>' + [['University ID',progress.universityId],['Department',progress.department],['Company',progress.company?.name],['Company Supervisor',progress.companySupervisor?.name],['Academic Supervisor',progress.supervisor?.name],['Training status',progress.placement?.completionStatus || 'Not placed'],['Approved / Required hours',progress.approvedHours + ' / ' + progress.requiredHours],['Tasks completed',progress.completedTasks + ' / ' + progress.tasks.length],['Risk indicators',progress.risks.join(', ') || 'None'],['Confirmed at UTC',progress.placement?.studentConfirmedAt],['Disable deadline UTC',progress.placement?.accountDisableAt],['Certificate',progress.placement?.certificateId]].map(([label,content]) => '<dt>' + escape(label) + '</dt><dd>' + escape(content || '—') + '</dd>').join('') + '</dl>' + progress.tasks.map(task => '<article><h4>' + escape(task.title) + '</h4><p>' + escape(task.description) + '</p><p>' + escape(task.deadline) + ' · ' + escape(task.status) + '</p><p>' + escape(task.feedback) + '</p>' + view.submissions.filter(sub => sub.taskId === task.id).map(sub => '<p>Submitted ' + escape(sub.createdAt) + ': ' + escape(sub.description) + ' · ' + escape(sub.fileName) + '</p>').join('') + '</article>').join('') + progress.evaluations.map(evaluation => '<article><h4>' + escape(evaluation.kind) + ' evaluation · ' + escape(evaluation.status) + '</h4><p>' + escape(evaluation.comments) + '</p></article>').join('');
+            if (target) target.innerHTML = '<h3>' + escape(progress.name) + '</h3><dl>' + [['University ID',progress.universityId],['Department',progress.department],['Company',progress.company?.name],['Company Supervisor',progress.companySupervisor?.name],['Academic Supervisor',progress.supervisor?.name],['Training status',progress.placement?.completionStatus || 'Not placed'],['Approved / Required hours',progress.approvedHours + ' / ' + progress.requiredHours],['Tasks completed',progress.completedTasks + ' / ' + progress.tasks.length],['Risk indicators',progress.risks.join(', ') || 'None'],['Confirmed at (Jordan Time)',progress.placement?.studentConfirmedAt],['Disable deadline (Jordan Time)',progress.placement?.accountDisableAt],['Certificate',progress.placement?.certificateId]].map(([label,content]) => '<dt>' + escape(label) + '</dt><dd>' + escape(displayValue(content) || '—') + '</dd>').join('') + '</dl>' + progress.tasks.map(task => '<article><h4>' + escape(task.title) + '</h4><p>' + escape(task.description) + '</p><p>' + escape(displayValue(task.deadline)) + ' · ' + escape(task.status) + '</p><p>' + escape(task.feedback) + '</p>' + view.submissions.filter(sub => sub.taskId === task.id).map(sub => '<p>Submitted ' + escape(displayValue(sub.createdAt)) + ': ' + escape(sub.description) + ' · ' + escape(sub.fileName) + '</p>').join('') + '</article>').join('') + progress.evaluations.map(evaluation => '<article><h4>' + escape(evaluation.kind) + ' evaluation · ' + escape(evaluation.status) + '</h4><p>' + escape(evaluation.comments) + '</p></article>').join('');
             selected = student; open(id);
         }
         function shell() {
@@ -128,7 +129,7 @@
             document.addEventListener('click', event => {
                 const element = event.target.closest('a,button,input');
                 if (element && (/log\s*out/i.test(element.textContent) || /logout/i.test(element.id))) {
-                    event.preventDefault(); event.stopImmediatePropagation(); demo.logout(); location.href = '../Auth/Login.aspx?demo=1';
+                    event.preventDefault(); event.stopImmediatePropagation(); demo.logout(); location.href = '../Auth/Login.aspx';
                 }
             }, {signal,capture:true});
             all('[id*=Logout],[id*=logout]').forEach(el => el.disabled = false);
@@ -193,11 +194,96 @@
         click('completionClearFilters',()=>{['completionSearch','completionStatusFilter','studentDepartmentFilter','studentSupervisorFilter'].forEach(id=>set(id,''));render();});
 
         render();
-        notice('DEMO — original interface connected to local browser storage. No Firebase or real authentication.');
-        window.addEventListener('storage', event => { if (event.key === 'uims.demo.v1') { view=demo.view(); if(view&&!view.user.mustChangePassword&&view.user.role===document.body.dataset.demoRole)render();else location.href='../Auth/Login.aspx?demo=1'; } }, {signal});
-        window.addEventListener('focus',()=>{const current=demo.current();if(!current||current.mustChangePassword)location.href='../Auth/Login.aspx?demo=1';},{signal});
-        window.addEventListener('pageshow',()=>{const current=demo.current();if(!current||current.mustChangePassword)location.href='../Auth/Login.aspx?demo=1';},{signal});
+        notice('Live data integration is pending. No local fallback is enabled.');
+        window.addEventListener('focus',()=>{const current=demo.current();if(!current||current.mustChangePassword)location.href='../Auth/Login.aspx';},{signal});
+        window.addEventListener('pageshow',()=>{const current=demo.current();if(!current||current.mustChangePassword)location.href='../Auth/Login.aspx';},{signal});
     }
     if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',initialize,{once:true});else initialize();
     if(window.Sys?.WebForms?.PageRequestManager)Sys.WebForms.PageRequestManager.getInstance().add_endRequest(initialize);
+})();
+
+/* Live role records: original page containers, server-verified identity, no local fallback. */
+(() => {
+'use strict';
+const config={"page":"Coordinator/ManageStudents","js":"Coordinator/manage-students","css":"coordinator/manage-students","source":"students","table":".completion-table-wrap tbody","search":"completionSearch","filters":{"studentDepartmentFilter":"programId","studentSupervisorFilter":"academicSupervisorId","completionStatusFilter":"@status"},"cells":["@student","@status","@confirmation","@deadline","@certificate"]};
+let binding;
+async function init(){
+ if(!window.UimsTab)return;
+ binding?.abort(); binding=new AbortController();const signal=binding.signal;
+ const by=id=>document.getElementById(id),all=s=>[...document.querySelectorAll(s)];
+ const host=document.querySelector(config.table);if(!host)return;
+ const escape=v=>String(v??'Not recorded').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+ const text=(id,v)=>{if(by(id))by(id).textContent=v;};
+ const date=v=>{if(!v)return 'Not recorded';if(/^\d{4}-\d{2}-\d{2}$/.test(v))return v;const d=new Date(v);return Number.isNaN(+d)?'Not recorded':new Intl.DateTimeFormat('en-GB',{timeZone:'Asia/Amman',year:'numeric',month:'short',day:'2-digit',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).format(d)+' Jordan Time (UTC+3)';};
+ let notice=by('pageNotice')||document.querySelector('[data-role-live-status]');if(!notice){notice=document.createElement('p');notice.dataset.roleLiveStatus='';notice.className='role-live-status';notice.setAttribute('role','status');document.querySelector('main,.content,.app-content')?.prepend(notice);}
+ notice.hidden=false;notice.textContent='Loading authorized Firebase records…';
+ const blocked='This operation requires an authorized live write integration. No changes have been made.';
+ // Existing management controls remain visible with an explicit unavailable state.
+ all('button').filter(b=>!b.closest('.sidebar,.dash-sidebar,.topbar')&&!/close|menu|logout|previous|next|reset|clear/i.test(b.id+' '+b.getAttribute('aria-label')+' '+b.textContent)).forEach(b=>{b.disabled=true;b.title=blocked;});
+ try{
+ const data=await UimsTab.request('roleData',{}, {page:config.page});
+ if(signal.aborted)return;
+ const ready=k=>data.states[k]==='ready',rows=k=>ready(k)?data[k]:[];
+ if(!ready(config.source))throw Error('Firebase did not permit the required records. No demonstration records are shown.');
+ text('lblUserName',data.user.name);text('lblInitials',data.user.name.split(/\s+/).slice(0,2).map(x=>x[0]).join(''));
+ all('[id*=Logout],[id*=logout]').forEach(b=>{b.disabled=false;b.removeAttribute('title');});
+ const placement=r=>config.source==='placements'?r:rows('placements').find(p=>p.id===r.placementId&&p.studentId===r.id);
+ const opportunity=r=>rows('opportunities').find(o=>o.id===r.opportunityId);
+ const tasks=r=>ready('tasks')?rows('tasks').filter(t=>t.placementId===placement(r)?.id):null;
+ const hours=r=>{const p=placement(r);return p&&Number.isFinite(p.approvedHours)&&Number.isFinite(p.requiredHours)?p.approvedHours+' / '+p.requiredHours+' h':'Not recorded';};
+ const value=(r,key)=>{
+ if(key.startsWith('@date:'))return date(r[key.slice(6)]);
+ const p=placement(r);
+ switch(key){case '@student':return (r.fullName||r.studentId||r.id)+' · '+(r.studentNumber||r.id);
+ case '@companyName':return r.name+' · '+(r.industry||'');
+ case '@opportunity':return opportunity(r)?.title||r.opportunityId||'Not recorded';
+ case '@period':return (r.startDate||'Not recorded')+' – '+(r.endDate||'Not recorded');
+ case '@company':return rows('companies').find(c=>c.id===p?.companyId)?.name||p?.companyId||'Not placed';
+ case '@status':return p?.status||(r.placementId&&!ready('placements')?'Unavailable':'not_placed');
+ case '@hours':return hours(r);
+ case '@tasks':{const t=tasks(r);return t?t.filter(x=>x.status==='reviewed').length+' reviewed / '+t.length:'Unavailable';}
+ case '@risk':{const t=tasks(r);return t?t.some(x=>x.status!=='reviewed'&&x.dueDate&&x.dueDate<new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Amman',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date(data.serverUtc)))?'Overdue task':'No overdue tasks':'Not assessed';}
+ case '@companySupervisor':return p?.companySupervisorId||'Not recorded';
+ case '@confirmation':return 'Not available';case '@deadline':return 'Not available';case '@certificate':return 'Not available';case '@restricted':return 'Not authorized for this view';case '@supervisorNames':return ready('companySupervisors')?rows('companySupervisors').filter(s=>s.companyId===r.id).map(s=>s.fullName).join(', ')||'Not recorded':'Unavailable';case '@supervisorEmails':return ready('companySupervisors')?rows('companySupervisors').filter(s=>s.companyId===r.id).map(s=>s.email).join(', ')||'Not recorded':'Unavailable';case '@supervisorStatuses':return ready('companySupervisors')?rows('companySupervisors').filter(s=>s.companyId===r.id).map(s=>s.accountStatus||'Not recorded').join(', ')||'Not recorded':'Unavailable';
+ default:return r[key]??'Not recorded';}
+ };
+ let active='',page=0;
+ const filters=Object.entries(config.filters||{});
+ filters.forEach(([id,key])=>{const el=by(id);if(!el)return;el.replaceChildren(new Option('All',''));[...new Set(rows(config.source).map(r=>String(value(r,key))))].sort().forEach(v=>el.add(new Option(v,v)));});
+ all('fieldset').forEach(f=>f.disabled=false);all('#evaluationFilter,#evaluationStatus').forEach(el=>{el.disabled=true;el.title='Private evaluation status is not available in this read-only view.';});if(by('accountStatus')){by('accountStatus').disabled=true;by('accountStatus').title='Protected account status is not included in the public supervisor directory.';}all('#placementSort option[value=tasks],#placementSort option[value=risk]').forEach(el=>{el.disabled=true;el.title='This view has no authorized task or risk dataset.';});
+ function filtered(){let list=rows(config.source).filter(r=>(!by(config.search)?.value||JSON.stringify(r).toLowerCase().includes(by(config.search).value.toLowerCase()))&&filters.every(([id,key])=>!by(id)?.value||String(value(r,key))===by(id).value));
+ if(active&&active!=='all')list=list.filter(r=>active==='pending'?['submitted','under_review'].includes(r.status):active==='open'?r.status==='published':active==='closed'?r.status!=='published':r.status===active);
+ const sort=by(config.sort)?.value||'';return list.sort((a,b)=>sort==='hours'?(placement(b)?.approvedHours??-1)-(placement(a)?.approvedHours??-1):sort==='applicants'?rows('applications').filter(r=>r.opportunityId===b.id).length-rows('applications').filter(r=>r.opportunityId===a.id).length:sort.includes('deadline')?String(a.applicationDeadline||'').localeCompare(String(b.applicationDeadline||'')):/newest|oldest/i.test(sort)?String(a.submittedAt||a.createdAt||a.publishedAt||'').localeCompare(String(b.submittedAt||b.createdAt||b.publishedAt||''))*(/newest/i.test(sort)?-1:1):String(a.fullName||a.name||a.title||a.studentId||a.id).localeCompare(String(b.fullName||b.name||b.title||b.studentId||b.id))*(sort.includes('desc')||sort.includes('Z to A')?-1:1));}
+ let dialog=by('roleLiveDetails');if(!dialog){dialog=document.createElement('dialog');dialog.id='roleLiveDetails';dialog.className='role-live-details';dialog.setAttribute('aria-label','Record details');dialog.innerHTML='<header><h2>Record details</h2><button type="button" aria-label="Close record details">×</button></header><div></div>';document.forms[0].append(dialog);}
+ dialog.querySelector('button').addEventListener('click',()=>dialog.close(),{signal});
+ function details(r){const body=dialog.querySelector('div');body.replaceChildren();const dl=document.createElement('dl');Object.entries(r).forEach(([key,v])=>{const dt=document.createElement('dt'),dd=document.createElement('dd');dt.textContent=key.replace(/([A-Z])/g,' $1');dd.textContent=/At$/.test(key)?date(v):Array.isArray(v)?v.join(', '):String(v);dl.append(dt,dd);});body.append(dl);dialog.showModal();dialog.querySelector('button').focus();}
+ function render(){const list=filtered(),hasPaging=all('[aria-label="Next page"],#nextPlacements').length>0,size=hasPaging?(Number(by(config.pageSize)?.value)||10):Math.max(1,list.length);page=Math.min(page,Math.max(0,Math.ceil(list.length/size)-1));const visible=list.slice(page*size,(page+1)*size);
+ host.innerHTML=visible.map(r=>config.cards?'<div class="col-md-6 col-xl-4"><article class="opp-card"><h3>'+escape(r.title)+'</h3><p>'+escape(r.description)+'</p><p>'+escape(r.location)+' · '+escape(r.status)+'</p><p>Apply by '+escape(date(r.applicationDeadline))+'</p><button type="button" data-live-record="'+escape(r.id)+'" class="row-action">View details</button></article></div>':'<tr>'+config.cells.map(k=>'<td>'+escape(value(r,k))+'</td>').join('')+'<td><button type="button" class="row-action" data-live-record="'+escape(r.id)+'">View details</button></td></tr>').join('')|| (config.cards?'<p>No matching records.</p>':'<tr><td colspan="'+(config.cells.length+1)+'">No matching records.</td></tr>');
+ const result=list.length+' matching records · Page '+(page+1)+' of '+Math.max(1,Math.ceil(list.length/size));['resultsStatus','placementResults','recordCount'].forEach(id=>text(id,result));all('.trainees-card-footer > span,.messages-card-footer > span,.companies-pagination > span').forEach(el=>el.textContent=result);all('.trainees-pagination > span,.companies-pagination > div > span,.monitor-pagination > div > span').forEach(el=>{el.textContent='Page '+(page+1)+' / '+Math.max(1,Math.ceil(list.length/size));el.removeAttribute('aria-label');});
+ all('[aria-label="Previous page"],#previousPlacements').forEach(b=>b.disabled=page===0);all('[aria-label="Next page"],#nextPlacements').forEach(b=>b.disabled=(page+1)*size>=list.length);
+ if(by('emptyState'))by('emptyState').hidden=true;if(by('noResultsMsg'))by('noResultsMsg').hidden=true;all('.completion-empty,.companies-empty,.monitor-empty').filter(el=>!el.closest('dialog')).forEach(el=>el.hidden=true);
+ }
+ host.addEventListener('click',e=>{const b=e.target.closest('[data-live-record]');if(b){e.preventDefault();const record=rows(config.source).find(r=>r.id===b.dataset.liveRecord);if(record)details(record);}},{signal});
+ [config.search,config.sort,config.pageSize,...filters.map(([id])=>id)].filter(Boolean).forEach(id=>by(id)?.addEventListener('input',()=>{page=0;render();},{signal}));
+ all('[aria-label="Previous page"],#previousPlacements').forEach(b=>b.addEventListener('click',()=>{page--;render();},{signal}));all('[aria-label="Next page"],#nextPlacements').forEach(b=>b.addEventListener('click',()=>{page++;render();},{signal}));
+ all('#statusTabs [data-status]').forEach(b=>{b.disabled=false;b.removeAttribute('title');b.addEventListener('click',()=>{active=b.dataset.status.toLowerCase();all('#statusTabs [data-status]').forEach(tab=>tab.classList.toggle('active',tab===b));page=0;render();},{signal});});
+ all('#resetFilters,#clearPlacements,#resetCompanyFilters,#completionClearFilters,[data-clear-filters]').forEach(b=>{b.disabled=false;b.addEventListener('click',()=>{filters.forEach(([id])=>{if(by(id))by(id).value='';});if(by(config.search))by(config.search).value='';active='';page=0;render();},{signal});});
+ const count=kind=>{const list=rows(config.source);switch(kind){case 'total':return list.length;case 'pending':return list.filter(r=>['submitted','under_review'].includes(r.status)).length;case 'capacity':return ready('opportunities')?rows('opportunities').reduce((n,r)=>n+(Number(r.capacity)||0),0):'Unavailable';case 'applications':return ready('applications')?rows('applications').length:'Unavailable';case 'active':case 'completed':return ready('placements')?rows('placements').filter(r=>r.status===kind).length:'Unavailable';default:return list.filter(r=>r.status===kind).length;}};
+ Object.entries(config.stats||{}).forEach(([id,kind])=>text(id,count(kind)));
+ all('[data-count]').forEach(el=>{const key=el.dataset.count.toLowerCase();el.textContent=key==='all'?rows(config.source).length:key==='open'?count('published'):key==='closed'?rows(config.source).filter(r=>r.status!=='published').length:count(key);});
+ if(by('statSeats')){const card=by('statSeats').closest('.stat-card');const label=card?.querySelector('.stat-label');if(label)label.textContent='Configured capacity';const note=card?.querySelector('.stat-note');if(note)note.textContent='Recorded capacity across your opportunities';}
+ 
+ const traineeStats=all('.trainees-stat strong');if(traineeStats.length){[rows('placements').length,rows('placements').filter(r=>r.status==='active').length,rows('placements').filter(r=>r.status==='completed').length,'Unavailable'].forEach((v,i)=>{traineeStats[i].textContent=v;traineeStats[i].removeAttribute('aria-label');});}
+ const companyStats=all('.companies-stats article > strong');if(companyStats.length){[rows('companies').length,rows('companies').filter(r=>r.accountStatus==='active').length,rows('companies').filter(r=>r.accountStatus&&r.accountStatus!=='active').length,'Unavailable'].forEach((v,i)=>companyStats[i].textContent=v);}
+ all('table caption').forEach(el=>el.textContent='Authorized live Firebase records for the current account.');
+
+ const legacyStats=all('.stat-details h3');if(legacyStats.length===3){const source=rows(config.source);let metrics;if(config.source==='academicSupervisors')metrics=[source.length,source.filter(s=>s.active===true).length,new Set(source.map(s=>s.programId).filter(Boolean)).size];else if(config.page.endsWith('Assign_Supervisors')){const assigned=source.filter(s=>rows('academicSupervisors').some(a=>a.id===s.academicSupervisorId&&a.programId===s.programId));metrics=[source.length,ready('academicSupervisors')?assigned.length:'Unavailable',ready('academicSupervisors')?source.length-assigned.length:'Unavailable'];}if(metrics)metrics.forEach((v,i)=>legacyStats[i].textContent=v);} const stat=all('.monitor-stat strong');if(stat.length){stat[0].textContent=rows('students').length;stat[1].textContent=ready('placements')?rows('placements').filter(r=>r.status==='active').length:'Unavailable';stat[2].textContent=ready('tasks')?rows('tasks').filter(r=>r.status==='submitted').length:'Unavailable';stat[3].textContent=ready('tasks')?rows('students').filter(r=>value(r,'@risk')==='Overdue task').length:'Unavailable';}
+ all('.trainees-notice,.messages-notice,.completion-notice,.companies-notice,.evaluation-notice,.demo-note,.preview-note,#placementMessage,#pageNotice').filter(el=>!el.closest('dialog')).forEach(el=>el.textContent='Live Firebase records. Management writes and private evaluations are not enabled in this read-only integration.');
+ all('.monitor-chip,.trainees-data-badge,.messages-disconnected').forEach(el=>el.textContent='Live Firebase');
+ notice.textContent='Live Firebase records loaded for '+data.user.name+'. '+(Object.values(data.states).some(v=>v!=='ready')?'Some related reads are unavailable. ':'')+'Changes requiring additional permissions remain unavailable.';
+ render();
+ }catch(error){notice.textContent=error.message;host.replaceChildren();const p=document.createElement(config.cards?'p':'tr');p.textContent='Records unavailable. Please retry after signing in.';host.append(p);}
+}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
+if(window.Sys?.Application)window.Sys.Application.add_load(init);
 })();

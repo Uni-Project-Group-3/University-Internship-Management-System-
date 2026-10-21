@@ -1,6 +1,6 @@
-﻿<%@ Page Language="C#" AutoEventWireup="true" CodeBehind="MyProgressEvaluation.aspx.cs" Inherits="University_Internship_Management_System.Student.MyProgressEvaluation" %>
+﻿<%@ Page Async="true" Language="C#" AutoEventWireup="true" CodeBehind="MyProgressEvaluation.aspx.cs" Inherits="University_Internship_Management_System.Student.MyProgressEvaluation" %>
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" dir="ltr">
 <head runat="server">
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -10,7 +10,7 @@
     <link runat="server" href="~/Assets/student/my-progress-evaluation.css?v=20261021-original-ui" rel="stylesheet" />
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet" />
 </head>
-<body class="app-page uims-workspace student-progress" data-demo-role="student">
+<body class="app-page uims-workspace student-progress" data-portal="student">
     <form id="form1" runat="server">
         <div class="app-layout">
             <aside class="sidebar" id="sidebar" aria-label="Student navigation">
@@ -32,26 +32,26 @@
                     <h1>My Progress &amp; Evaluation</h1>
                     <p class="workspace-muted">Review published exam results, supervisor feedback, and approved training progress.</p>
                 </header>
-                <div class="workspace-note"><strong>Read-only frontend demonstration.</strong> Training hours and tasks are sample data, not your account. Firebase and authentication are not connected. Exam layout examples are separate from real published results.</div>
+                <div class="workspace-note">Your current-placement hours and tasks are read from Firebase. Private evaluations and unlinked exams are not displayed.</div>
                 <dl class="workspace-stats">
-                    <div class="workspace-stat"><dt>Approved training hours</dt><dd><span data-uims-progress="ApprovedHours"><asp:Literal ID="ApprovedHours" runat="server" /></span></dd><small>Explicitly approved sample time entries</small></div>
-                    <div class="workspace-stat"><dt>Required hours · demo</dt><dd><span data-uims-progress="RequiredHours"><asp:Literal ID="RequiredHours" runat="server" /></span></dd><small>Sample internship requirement</small></div>
+                    <div class="workspace-stat"><dt>Approved training hours</dt><dd><span data-uims-progress="ApprovedHours"><asp:Literal ID="ApprovedHours" runat="server" /></span></dd><small>Approved hours recorded on your placement</small></div>
+                    <div class="workspace-stat"><dt>Required training hours</dt><dd><span data-uims-progress="RequiredHours"><asp:Literal ID="RequiredHours" runat="server" /></span></dd><small>Current placement requirement</small></div>
                     <div class="workspace-stat"><dt>Hours remaining</dt><dd><span data-uims-progress="RemainingHours"><asp:Literal ID="RemainingHours" runat="server" /></span></dd><small>Required minus approved hours</small></div>
                     <div class="workspace-stat"><dt>Published exam results</dt><dd><span data-uims-progress="EvaluatedExams"><asp:Literal ID="EvaluatedExams" runat="server" /></span></dd><small>Evaluated assessments released to the student</small></div>
                 </dl>
                 <div class="workspace-columns">
                     <section class="workspace-card" aria-labelledby="trainingTitle">
                         <h2 id="trainingTitle">Training progress</h2>
-                        <p class="workspace-muted">Sample placement · Northstar Software · Software Engineering</p>
+                        <p class="workspace-muted">Verified current-placement training records</p>
                         <div class="progress-summary"><span>Approved hours toward requirement</span><strong><span data-uims-progress="HoursPercent"><asp:Literal ID="HoursPercent" runat="server" /></span>%</strong></div>
                         <progress id="HoursProgress" runat="server" max="100" value="0" aria-label="Approved training hours progress"></progress>
                         <p class="workspace-hint">Task completion does not approve training hours. Only approved time entries count.</p>
-                        <span class="workspace-badge success"><span data-uims-progress="HoursApprovalStatus"><asp:Literal ID="HoursApprovalStatus" runat="server" Mode="Encode" /></span> hours approved · demo</span>
-                        <span class="workspace-badge warning"><span data-uims-progress="PendingHours"><asp:Literal ID="PendingHours" runat="server" Mode="Encode" /></span> hours awaiting approval · demo</span>
+                        <span class="workspace-badge success"><span data-uims-progress="HoursApprovalStatus"><asp:Literal ID="HoursApprovalStatus" runat="server" Mode="Encode" /></span> hours approved</span>
+                        <span class="workspace-badge warning"><span data-uims-progress="PendingHours"><asp:Literal ID="PendingHours" runat="server" Mode="Encode" /></span> hours awaiting approval: not independently recorded</span>
                     </section>
                     <section class="workspace-card" aria-labelledby="completionTitle">
-                        <div class="workspace-heading"><h2 id="completionTitle">Completion status</h2><span class="workspace-badge warning">In progress · demo</span></div>
-                        <p>Coordinator approval has not been recorded.</p><ol class="workspace-hint"><li>Coordinator approves completion.</li><li>The student confirms completion in the Student Dashboard.</li><li>The certificate is issued and the one-hour grace period begins.</li><li>A trusted scheduled worker disables account access after the deadline.</li></ol><a class="workspace-button secondary" href="StudentDashboard.aspx">Open Student Dashboard</a>
+                        <div class="workspace-heading"><h2 id="completionTitle">Completion status</h2><span class="workspace-badge warning"><%= System.Web.HttpUtility.HtmlEncode(PlacementStatus) %></span></div>
+                        <p>This view does not infer official completion approval from hours or task status.</p><ol class="workspace-hint"><li>Coordinator approves completion.</li><li>The student confirms completion in the Student Dashboard.</li><li>The certificate is issued and the one-hour grace period begins.</li><li>A trusted scheduled worker disables account access after the deadline.</li></ol><a class="workspace-button secondary" href="StudentDashboard.aspx">Open Student Dashboard</a>
                         <p class="workspace-hint">Reaching the hour requirement alone does not approve internship completion.</p>
                     </section>
                 </div>
@@ -61,7 +61,7 @@
                         <asp:Button ID="ToggleExamDemo" runat="server" Text="Preview illustrative exam results" CssClass="workspace-button secondary" OnClick="ToggleExamDemo_Click" CausesValidation="false" />
                     </div>
                     <asp:Panel ID="ExamDemoNotice" runat="server" CssClass="workspace-note" Visible="false"><strong>Illustrative exam layout only.</strong> These fictional examples are not student records, official criteria, or a university grading scale. The example maximum belongs to each example assessment.</asp:Panel>
-                    <asp:Panel ID="NoExams" runat="server" CssClass="workspace-empty" role="status">No published exam results are available. Unpublished grades are not displayed. Use the separate illustrative preview to try exam selection.</asp:Panel>
+                    <asp:Panel ID="NoExams" runat="server" CssClass="workspace-empty" role="status">No authorized published exam source is linked to this account. Unpublished grades and answer keys are not read.</asp:Panel>
                     <asp:Panel ID="ExamList" runat="server" Visible="false">
                         <div class="workspace-table-scroll" tabindex="0" role="region" aria-label="Published exam results table">
                             <table class="workspace-table exam-table">
@@ -103,7 +103,7 @@
                         <div>
                             <label class="workspace-label" for="taskFilter">Show tasks</label>
                             <select id="taskFilter" class="workspace-input task-filter">
-                                <option value="all">All tasks</option><option value="evaluated">Evaluated</option><option value="submitted">Submitted</option><option value="revision">Revisions needed</option><option value="assigned">Assigned</option>
+                                <option value="all">All tasks</option><option value="reviewed">Reviewed</option><option value="submitted">Submitted</option><option value="in_progress">In progress</option><option value="todo">New</option>
                             </select>
                         </div>
                     </div>
@@ -117,7 +117,7 @@
                     <p id="myTasksNote" class="workspace-hint">Open My Tasks to review the separate task-submission interface. Training-hour approval remains independent.</p>
                     <div class="workspace-table-scroll" tabindex="0" role="region" aria-label="Task evaluations table">
                         <table class="workspace-table">
-                            <caption>Demonstration task records. Exam results above are separate from task progress.</caption>
+                            <caption>Current-placement task records. Exam results and training-hour approval remain separate.</caption>
                             <thead><tr><th scope="col">Task / history</th><th scope="col">Status</th><th scope="col">Company supervisor feedback</th></tr></thead>
                             <tbody>
                                 <asp:Repeater ID="Tasks" runat="server" EnableViewState="false">
@@ -146,8 +146,8 @@
             </div>
         </div>
     </form>
-    <script src="../Js_project/Demo/demo-store.js?v=20261021-original-ui"></script>
-<script src="../Scripts/bootstrap.bundle.min.js"></script>
+    <script src="../Scripts/bootstrap.bundle.min.js"></script>
     <script src="<%= ResolveUrl("~/Js_project/Student/my-progress-evaluation.js?v=20261021-original-ui") %>" defer="defer"></script>
+<script src="../Js_project/Public/tab-session.js" defer="defer"></script>
 </body>
 </html>

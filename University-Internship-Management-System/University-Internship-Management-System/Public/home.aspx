@@ -1,6 +1,6 @@
 <%@ Page Language="C#" AutoEventWireup="true" CodeBehind="home.aspx.cs" Inherits="University_Internship_Management_System.Public.home" %>
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" dir="ltr">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">

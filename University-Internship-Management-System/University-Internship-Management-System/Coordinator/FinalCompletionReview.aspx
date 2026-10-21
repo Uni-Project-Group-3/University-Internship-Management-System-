@@ -1,6 +1,5 @@
 ﻿<%@ Page Language="C#" AutoEventWireup="true" CodeBehind="FinalCompletionReview.aspx.cs" Inherits="University_Internship_Management_System.Coordinator.FinalCompletionReview" %>
 
-<script src="../Js_project/Demo/demo-store.js?v=20261021-original-ui"></script>
 <script runat="server">
     protected void btnLogout_Click(object sender, System.EventArgs e)
     {
@@ -11,7 +10,7 @@
 </script>
 
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" dir="ltr">
 <head runat="server">
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -19,9 +18,9 @@
     <link href="../Content/bootstrap.min.css" rel="stylesheet" />
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet" />
     <link href="../Assets/shared/colors.css" rel="stylesheet" />
-    <link href="../Assets/coordinator/final-completion-review.css?v=20261021-original-ui" rel="stylesheet" />
+    <link href="../Assets/coordinator/final-completion-review.css?v=20261021-live-completion" rel="stylesheet" />
 </head>
-<body class="standalone-shell" data-demo-role="admin">
+<body class="standalone-shell" data-portal="admin">
     <form id="reviewForm" runat="server">
         <div class="app">
             <!-- سايد بار المنسق داخل الصفحة مباشرة حسب التنظيم المتفق عليه -->
@@ -64,10 +63,10 @@
                     <button type="button" class="menu-btn" id="openSidebar" aria-label="Open navigation" aria-controls="coordinatorSidebar" aria-expanded="false"><i class="bi bi-list"></i></button>
                     <div class="search">
                         <i class="bi bi-search"></i>
-                        <input id="navbarSearch" type="search" aria-label="Workspace search" placeholder="Search for students, companies, or supervisors..." />
+                        <input id="navbarSearch" disabled="disabled" title="Workspace search is not connected" type="search" aria-label="Workspace search" placeholder="Search for students, companies, or supervisors..." />
                     </div>
                     <div class="topbar-actions">
-                        <button type="button" class="icon-btn" id="navbarNotifications" aria-label="Notifications preview"><i class="bi bi-bell"></i><span class="dot"></span></button>
+                        <button type="button" class="icon-btn" id="navbarNotifications" aria-label="Notifications unavailable" disabled="disabled" title="Notification reads are not connected"><i class="bi bi-bell"></i><span class="dot"></span></button>
                         <div class="dropdown">
                             <button type="button" class="user-chip" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Account menu">
                                 <span class="avatar"><asp:Label ID="lblInitials" runat="server" Text="CO" /></span>
@@ -90,7 +89,7 @@
                 <p>Review the evaluations, verify requirements, and approve internship completion.</p>
             </header>
 
-            <p class="preview-note">Frontend preview — students, evaluations, hours, and completion criteria are hypothetical examples, not official JUST requirements. Approval is not saved. After preview approval, you can print a sample report or save it as PDF.</p>
+            <p class="preview-note">Live Firebase student, placement and completion records. Private evaluations and approval operations remain unavailable until their authorized integration is complete.</p>
 
             <section class="selection-panel" aria-label="Select student">
                 <div><label for="studentSelect" class="form-label">Student to review</label><select id="studentSelect" class="form-select"><option value="sample-ready">Ahmad Ali · 20230001</option><option value="sample-incomplete">Sara Omar · 20230002</option></select></div>
@@ -126,7 +125,7 @@
                         <p class="section-description">Sent to the coordinator by the assigned academic supervisor.</p>
                         <dl class="evaluation-facts"><div><dt>Submitted on</dt><dd id="academicDate"></dd></div><div><dt>Recommendation</dt><dd id="academicRecommendation"></dd></div></dl>
                         <h3>Academic feedback</h3><p id="academicFeedback" class="feedback-text"></p>
-                        <p class="preview-note">Evaluation scores and the calculated final result will follow the agreed university evaluation method after integration. No grading scale is assumed in this preview.</p>
+                        <p class="preview-note">Evaluation scores and the calculated final result will follow the agreed university evaluation method after integration. No grading scale is assumed.</p>
                     </section>
 
                     <section class="review-card" aria-labelledby="requirementsHeading">
@@ -135,7 +134,7 @@
                         <progress id="hoursProgress" aria-label="Approved training hours"></progress>
                         <p class="section-description">Only approved hours count. Completed tasks do not automatically approve hours.</p>
                         <ul id="requirementsList" class="requirements-list"></ul>
-                        <p class="preview-note">The example uses a hypothetical 240-hour requirement. Replace it with the student's configured requirements.</p>
+                        <p class="preview-note">Required and approved hours are read from the selected student's placement record.</p>
                     </section>
                 </div>
 
@@ -145,14 +144,14 @@
                         <h2 id="decisionHeading">Completion decision</h2>
                         <p id="eligibilityMessage" class="section-description" aria-live="polite"></p>
                         <label for="reviewNotes" class="form-label">Coordinator notes <span>(optional)</span></label>
-                        <textarea id="reviewNotes" class="form-control" rows="4" maxlength="1000" placeholder="Add notes about your review."></textarea>
-                        <div class="form-check review-check"><input id="reviewAcknowledgment" class="form-check-input" type="checkbox" /><label for="reviewAcknowledgment" class="form-check-label">I reviewed both final evaluations and verified the completion requirements.</label></div>
+                        <textarea id="reviewNotes" readonly="readonly" class="form-control" rows="4" maxlength="1000" placeholder="Add notes about your review."></textarea>
+                        <div class="form-check review-check"><input id="reviewAcknowledgment" disabled="disabled" class="form-check-input" type="checkbox" /><label for="reviewAcknowledgment" class="form-check-label">I reviewed both final evaluations and verified the completion requirements.</label></div>
                         <button type="button" id="approveButton" class="primary-button" data-bs-toggle="modal" data-bs-target="#approvalModal" disabled>Approve completion <span aria-hidden="true">&rarr;</span></button>
                         <div class="report-section">
                             <h3>Official completion report</h3>
                             <p class="section-description">After actual approval, generate the PDF and send it to the student's My Progress &amp; Evaluation page for download and printing.</p>
                             <button type="button" id="generateReport" class="secondary-button" disabled>Preview completion report</button>
-                            <p class="preview-note">After preview approval, print the sample report or choose Save as PDF. Official delivery requires backend integration.</p>
+                            <p class="preview-note">Certificate generation and delivery require the verified final-approval workflow.</p>
                         </div>
                     </section>
                 </aside>
@@ -203,6 +202,7 @@
         </div>
     </form>
     <script src="../Scripts/bootstrap.bundle.min.js"></script>
-    <script src="../Js_project/Coordinator/final-completion-review.js?v=20261021-original-ui"></script>
+    <script src="../Js_project/Coordinator/final-completion-review.js?v=20261021-live-completion"></script>
+<script src="../Js_project/Public/tab-session.js" defer="defer"></script>
 </body>
 </html>

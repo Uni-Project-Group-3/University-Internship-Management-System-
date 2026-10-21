@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Globalization;
+using System.Web;
+using University_Internship_Management_System.Services;
 using System.Text.RegularExpressions;
 using System.Web.UI;
 using System.Web.UI.WebControls;
@@ -8,16 +10,13 @@ namespace University_Internship_Management_System.Coordinator
 {
     public partial class CoordinatorAccountProfile : Page
     {
-        private const string DemoEmail = "coordinator@example.edu";
+        private UimsAccount Account => Context.Items["Uims.Account"] as UimsAccount ?? throw new UnauthorizedAccessException();
 
         protected void Page_Load(object sender, EventArgs e)
         {
             Response.Cache.SetNoStore();
-            NavName.Text = Session["FullName"] as string ?? "Coordinator Portal";
-            if (!IsPostBack || ViewState["DisplayedProfile"] == null)
-            {
-                LoadDemoProfile();
-            }
+            NavName.Text = HttpUtility.HtmlEncode(Account.DisplayName);
+            LoadTrustedProfile();
 
             ValidationError.Text = string.Empty;
             ProfileMessage.Text = string.Empty;
@@ -29,42 +28,12 @@ namespace University_Internship_Management_System.Coordinator
 
         protected void EditProfile_Click(object sender, EventArgs e)
         {
-            LoadEditingFields();
-            SetEditing(true);
+            ProfileMessage.Text = "Profile editing is unavailable until scoped write permissions are configured.";
         }
 
         protected void SaveProfile_Click(object sender, EventArgs e)
         {
-            if (!EditProfileFields.Visible || !SaveProfile.Visible)
-            {
-                return;
-            }
-
-            string name = Regex.Replace(FullName.Text.Trim(), @"\s+", " ");
-            string phone = Phone.Text.Trim();
-            string office = Office.Text.Trim();
-            if (name.Length < 2 || name.Length > 80 || !Regex.IsMatch(name, @"\p{L}"))
-            {
-                ShowValidationError(FullName, "Enter a full name between 2 and 80 characters, including at least one letter.");
-                return;
-            }
-
-            if (phone.Length > 0 && !Regex.IsMatch(phone, @"\A(?=(?:[^0-9]*[0-9]){7})[+0-9() -]{7,25}\z"))
-            {
-                ShowValidationError(Phone, "Enter a phone number with at least 7 digits and no more than 25 characters, or leave it blank.");
-                return;
-            }
-
-            if (office.Length > 100)
-            {
-                ShowValidationError(Office, "Office location must be 100 characters or fewer.");
-                return;
-            }
-
-            ViewState["DisplayedProfile"] = new[] { name, phone, office };
-            LoadEditingFields();
-            SetEditing(false);
-            ProfileMessage.Text = "Preview updated on this page only. No account information was saved to Firebase. A new visit restores the demonstration profile.";
+            throw new UnauthorizedAccessException("Profile writes are not configured.");
         }
 
         protected void CancelEdit_Click(object sender, EventArgs e)
@@ -81,16 +50,14 @@ namespace University_Internship_Management_System.Coordinator
 
         protected void btnLogout_Click(object sender, EventArgs e)
         {
-            System.Web.Security.FormsAuthentication.SignOut();
-            Session.Clear();
-            Session.Abandon();
+            SessionService.Logout(SessionService.Handle(Request));
             Response.Redirect("~/Auth/Login.aspx", false);
             Context.ApplicationInstance.CompleteRequest();
         }
 
-        private void LoadDemoProfile()
+        private void LoadTrustedProfile()
         {
-            ViewState["DisplayedProfile"] = new[] { "Dana Mansour", string.Empty, string.Empty };
+            ViewState["DisplayedProfile"] = new[] { Account.DisplayName, string.Empty, string.Empty };
             LoadEditingFields();
             SetEditing(false);
         }
@@ -108,12 +75,12 @@ namespace University_Internship_Management_System.Coordinator
             var profile = (string[])ViewState["DisplayedProfile"];
             ProfileName.Text = profile[0];
             ProfileInitials.Text = GetInitials(profile[0]);
-            OverviewEmail.Text = DemoEmail;
+            OverviewEmail.Text = Account.Email;
             DisplayName.Text = profile[0];
             DisplayPhone.Text = string.IsNullOrEmpty(profile[1]) ? "Not provided" : profile[1];
             DisplayOffice.Text = string.IsNullOrEmpty(profile[2]) ? "Not provided" : profile[2];
-            DisplayEmail.Text = DemoEmail;
-            EditEmail.Text = DemoEmail;
+            DisplayEmail.Text = Account.Email;
+            EditEmail.Text = Account.Email;
             EditingHint.Text = EditProfileFields.Visible
                 ? "Update your permitted personal details."
                 : "Your personal details, shown in read-only mode.";
@@ -127,7 +94,9 @@ namespace University_Internship_Management_System.Coordinator
             FullName.ReadOnly = !editing;
             Phone.ReadOnly = !editing;
             Office.ReadOnly = !editing;
-            EditProfile.Visible = !editing;
+            EditProfile.Visible = true;
+            EditProfile.Enabled = false;
+            EditProfile.ToolTip = "Contact editing requires scoped Firebase write permissions.";
             SaveProfile.Visible = editing;
             CancelEdit.Visible = editing;
             if (editing)

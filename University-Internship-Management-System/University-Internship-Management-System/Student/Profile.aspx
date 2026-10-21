@@ -15,7 +15,7 @@
         href="~/Assets/student/profile.css?v=20261021-original-ui" rel="stylesheet" />
 </head>
 
-<body class="app-page role-shell" data-demo-role="student">
+<body class="app-page role-shell" data-portal="student">
     <form id="form1" runat="server" aria-describedby="profileAvailability" enctype="multipart/form-data">
         <div class="app">
             <aside class="sidebar" id="StudentSidebar" aria-label="Student navigation" data-role-sidebar="true"><button class="sidebar-close" type="button" aria-label="Close navigation menu"><svg class="bi bi-x nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="m6 6 12 12M6 18 18 6"/></svg></button>
@@ -66,7 +66,7 @@
                                 <li><a class="dropdown-item" href="Profile.aspx" aria-current="page"><svg class="bi bi-person nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="12" cy="7" r="4"/><path d="M4 21v-2a8 8 0 0 1 16 0v2"/></svg>My Profile</a></li>
                                 <li><a class="dropdown-item" role="link" aria-disabled="true" title="This page is not available in the project yet"><svg class="bi bi-key nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="7" cy="8" r="4"/><path d="m10 11 10 10m-4-4 3-3m-6 0 3-3"/></svg>Change Password</a></li>
                                 <li><hr class="dropdown-divider" /></li>
-                                <li><button id="btnLogout" type="button" class="dropdown-item" disabled="disabled" title="Sign-in is not connected yet"><svg class="bi bi-box-arrow-right nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M10 3H3v18h7m4-15 6 6-6 6M8 12h12"/></svg>Log out</button></li>
+                                <li><button id="btnLogout" type="button" class="dropdown-item" ><svg class="bi bi-box-arrow-right nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M10 3H3v18h7m4-15 6 6-6 6M8 12h12"/></svg>Log out</button></li>
                             </ul></details>
                     </div>
                 <span id="navigationAvailability" class="nav-sr-only">Workspace search and notifications require a connected account.</span></header>
@@ -132,7 +132,7 @@
                                     <div class="profile-detail">
                                         <dt>Full Name</dt>
                                         <dd>
-                                            <span id="litFullName">Not connected</span>
+                                            <span id="litFullName">Loading…</span>
                                         </dd>
                                     </div>
 
@@ -239,9 +239,14 @@
             </main>
             </div>
         </div>
+    <dialog id="profileConfirmation" class="profile-confirmation" aria-labelledby="profileConfirmTitle">
+        <h2 id="profileConfirmTitle">Save contact changes?</h2>
+        <p>Only your phone number, city and portfolio link will change. Academic and account identity fields remain read-only.</p>
+        <dl id="profileChangeSummary"></dl><p id="profileSaveError" role="alert" hidden></p>
+        <div class="profile-confirm-actions"><button type="button" id="profileKeepEditing">Keep editing</button><button type="button" id="profileConfirmSave" class="profile-save">Save changes</button></div>
+    </dialog>
     </form>
-    <script src="../Js_project/Demo/demo-store.js?v=20261021-original-ui"></script>
-<script>
+    <script>
         (() => {
             "use strict";
             const sidebar = document.querySelector(".sidebar");
@@ -304,5 +309,6 @@
         })();
     </script>
 <script src="../Js_project/Student/profile.js?v=20261021-original-ui"></script>
+<script src="../Js_project/Public/tab-session.js" defer="defer"></script>
 </body>
 </html>

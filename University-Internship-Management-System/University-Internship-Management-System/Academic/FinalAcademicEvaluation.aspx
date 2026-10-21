@@ -6,10 +6,10 @@
     <title>Final Academic Evaluation | JUST UIMS</title>
     <link runat="server" href="~/Assets/shared/colors.css" rel="stylesheet" />
 
-    <link runat="server" href="~/Assets/academic/final-academic-evaluation.css?v=20261021-original-ui" rel="stylesheet" />
+    <link runat="server" href="~/Assets/academic/final-academic-evaluation.css?v=20261021-role-pages-final" rel="stylesheet" />
     
 </head>
-<body class="dashboard-direct app-page evaluation-page" data-demo-role="academic">
+<body class="dashboard-direct app-page evaluation-page" data-portal="academic">
     <form id="form1" runat="server">
         <div class="app-layout">
                         <aside class="dash-sidebar" id="dashboardSidebar" aria-label="Academic navigation">
@@ -81,8 +81,8 @@
                         </button>
                         <details class="dash-profile">
                             <summary class="dash-user-chip">
-                                <span class="dash-avatar">AS</span>
-                                <span class="dash-user-name">Academic Supervisor<span class="dash-role">Academic workspace</span>
+                                <span class="dash-avatar" id="lblInitials">—</span>
+                                <span class="dash-user-name"><span id="lblUserName">Verified account</span><span class="dash-role">Academic workspace</span>
                             </span>
                             <span aria-hidden="true">&#8964;</span>
                         </summary>
@@ -104,7 +104,7 @@
             <main class="app-content evaluation-main">
 
                 <section class="evaluation-heading"><div><p class="evaluation-eyebrow">ACADEMIC ASSESSMENT</p><h1>Final Academic Evaluation</h1><p>Evaluate your assigned students and send their final academic evaluations to the University Internship Coordinator.</p></div><span class="evaluation-department"><span aria-hidden="true">&#9678;</span> Department: not connected</span></section>
-                <div class="evaluation-notice"><strong>Interface preview</strong><span>Assigned students, department, and grading criteria will come from the authorized account after Firebase integration.</span></div>
+                <div class="evaluation-notice"><strong>Verified academic account</strong><span>Assigned students, department, and grading criteria will come from the authorized account after Firebase integration.</span></div>
                 <section class="evaluation-stats" aria-label="Evaluation summary">
                     <article><div><span>My Students</span><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3"/><path d="M3 21v-4a6 6 0 0 1 12 0v4m1-16a3 3 0 0 1 0 6m2 3a5 5 0 0 1 3 5"/></svg></div><strong>&mdash;</strong><small>Officially assigned to you</small></article>
                     <article><div><span>Pending Evaluations</span><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></div><strong>&mdash;</strong><small>Not started and draft evaluations</small></article>
@@ -154,8 +154,8 @@
             </footer>
         </dialog>
     </form>
-    <script src="../Js_project/Demo/demo-store.js?v=20261021-original-ui"></script>
-<script src="<%= ResolveUrl("~/Js_project/Academic/final-academic-evaluation.js?v=20261021-original-ui") %>"></script>
-    <script src="<%= ResolveUrl("~/Js_project/Public/dashboard-navigation.js?v=20261021-original-ui") %>"></script>
+    <script src="<%= ResolveUrl("~/Js_project/Academic/final-academic-evaluation.js?v=20261021-role-pages-final") %>"></script>
+    <script src="<%= ResolveUrl("~/Js_project/Public/dashboard-navigation.js?v=20261021-role-pages-final") %>"></script>
+<script src="../Js_project/Public/tab-session.js" defer="defer"></script>
 </body>
 </html>

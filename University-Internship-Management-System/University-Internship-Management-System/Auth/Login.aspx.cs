@@ -1,206 +1,165 @@
 using System;
-using System.Net.Http;
 using System.Net.Mail;
-using System.Security.Cryptography;
 using System.Threading.Tasks;
 using System.Web;
 using System.Web.UI;
-using Newtonsoft.Json;
-using University_Internship_Management_System.Shared;
+using University_Internship_Management_System.Services;
 
 namespace University_Internship_Management_System.Auth
 {
     public partial class Login : Page
     {
-        private const string ConfigurationMessage =
-            "Sign-in is not available yet. Please contact your system administrator.";
-
-        private bool IsResetRequest => Request.QueryString["action"] == "reset";
-
         protected bool PasswordChangeRequired { get; private set; }
+        protected string IssuedTicket { get; private set; }
+        protected string DashboardUrl { get; private set; }
+        protected bool CompletionPending { get; private set; }
 
         protected void Page_Load(object sender, EventArgs e)
         {
-            Response.Cache.SetCacheability(HttpCacheability.NoCache);
             Response.Cache.SetNoStore();
             Response.Headers["X-Frame-Options"] = "DENY";
             Response.Headers["X-Content-Type-Options"] = "nosniff";
             Response.Headers["Referrer-Policy"] = "same-origin";
-            if (IsResetRequest)
+            if (!IsPostBack)
             {
-                RegisterAsyncTask(new PageAsyncTask(SendResetLinkAsync));
-                return;
+                string token = Guid.NewGuid().ToString("N");
+                CsrfToken.Value = System.Web.Security.MachineKey.Protect(System.Text.Encoding.UTF8.GetBytes(token), "Uims.Login.Csrf") is byte[] bytes
+                    ? Convert.ToBase64String(bytes) : "";
+                Session["Uims.Csrf." + token] = true;
             }
-
-            PasswordChangeRequired = Session["Uims.PasswordChangeRequired"] as bool? == true;
-            form1.Attributes["data-password-required"] = PasswordChangeRequired ? "true" : "false";
-            form1.DefaultButton = PasswordChangeRequired ? SaveChanges.ID : SignIn.ID;
-
-            if (IsPostBack)
-            {
-                return;
-            }
-
-            if (Session["Uims.CsrfToken"] == null)
-            {
-                using (var random = RandomNumberGenerator.Create())
-                {
-                    var bytes = new byte[32];
-                    random.GetBytes(bytes);
-                    Session["Uims.CsrfToken"] = Convert.ToBase64String(bytes);
-                }
-            }
-
-            CsrfToken.Value = (string)Session["Uims.CsrfToken"];
         }
-
         protected void SignIn_Click(object sender, EventArgs e)
         {
-            if (!ValidateRequest() || !ValidateEmail())
-            {
-                return;
-            }
-
-            if (string.IsNullOrEmpty(Password.Text))
-            {
-                PasswordError.Text = "Enter your password.";
-                Password.Attributes["aria-invalid"] = "true";
-                return;
-            }
-
-            // No authentication session is issued without the project's authorization service.
-            AuthMessage.Text = ConfigurationMessage;
+            if (!ValidRequest() || !ValidEmail()) { Password.Text = ""; return; }
+            if (string.IsNullOrEmpty(Password.Text)) { PasswordError.Text = "Enter your password."; return; }
+            RegisterAsyncTask(new PageAsyncTask(SignInAsync));
         }
-
         protected void SaveChanges_Click(object sender, EventArgs e)
         {
-            if (!ValidateRequest() || !PasswordChangeRequired)
-            {
-                AuthMessage.Text = "Please sign in before changing your password.";
-                return;
-            }
-
-            string password = NewPassword.Text;
-            if (!System.Text.RegularExpressions.Regex.IsMatch(password,
-                @"\A(?=.{12,})(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[^a-zA-Z0-9\s]).*\z"))
-            {
-                ChangeError.Text = "Use at least 12 characters, uppercase and lowercase letters, a number, and a symbol.";
-                return;
-            }
-
-            if (password != ConfirmPassword.Text)
-            {
-                ChangeError.Text = "Passwords do not match.";
-                return;
-            }
-
-            ChangeError.Text = ConfigurationMessage;
+            PasswordChangeRequired = true;
+            if (!ValidRequest()) { CurrentPassword.Text = ""; NewPassword.Text = ""; ConfirmPassword.Text = ""; return; }
+            RegisterAsyncTask(new PageAsyncTask(ChangePasswordAsync));
         }
-
-        private async Task SendResetLinkAsync()
+        private async Task ChangePasswordAsync()
         {
-            if (Request.HttpMethod != "POST")
-            {
-                WriteResetResponse(false, "Use the password reset form to continue.", 405);
-                return;
-            }
-
-            string expected = Session["Uims.CsrfToken"] as string;
-            if (string.IsNullOrEmpty(expected) || expected != Request.Form["csrfToken"])
-            {
-                WriteResetResponse(false, "Your session expired. Reload this page and try again.", 403);
-                return;
-            }
-
-            string email = (Request.Form["email"] ?? "").Trim();
-            if (!IsValidEmail(email))
-            {
-                WriteResetResponse(false, "Enter a valid email address.", 400);
-                return;
-            }
-
-            var lastAttempt = Session["Uims.LastPasswordReset"] as DateTime?;
-            if (lastAttempt.HasValue && DateTime.UtcNow - lastAttempt.Value < TimeSpan.FromSeconds(60))
-            {
-                WriteResetResponse(false, "Please wait a minute before requesting another reset link.", 429);
-                return;
-            }
-
-            Session["Uims.LastPasswordReset"] = DateTime.UtcNow;
+            string handle = SessionService.Handle(Request);
+            TabSession session = null;
+            bool locked = false, passwordUpdated = false;
             try
             {
-                await new FirebaseAuthService().SendPasswordResetEmailAsync(email);
-                WriteResetResponse(true,
-                    "If an account exists for this email, password reset instructions will be sent.", 200);
-            }
-            catch (Exception error) when (error is HttpRequestException || error is TaskCanceledException ||
-                error is InvalidOperationException || error is JsonException)
-            {
-                WriteResetResponse(false,
-                    "Password recovery is temporarily unavailable. Please wait a minute and try again.", 503);
-            }
-        }
-
-        protected override void Render(HtmlTextWriter writer)
-        {
-            if (!IsResetRequest)
-            {
-                base.Render(writer);
-            }
-        }
-
-        private void WriteResetResponse(bool success, string message, int status)
-        {
-            Response.StatusCode = status;
-            Response.TrySkipIisCustomErrors = true;
-            if (status == 429)
-            {
-                Response.Headers["Retry-After"] = "60";
-            }
-            Response.ContentType = "application/json";
-            Response.Write(JsonConvert.SerializeObject(new { success, message }));
-        }
-
-        private bool ValidateRequest()
-        {
-            string expected = Session["Uims.CsrfToken"] as string;
-            if (!string.IsNullOrEmpty(expected) && expected == CsrfToken.Value)
-            {
-                return true;
-            }
-
-            AuthMessage.Text = "Your sign-in session expired. Reload this page and try again.";
-            return false;
-        }
-
-        private bool ValidateEmail()
-        {
-            string email = Email.Text.Trim();
-            if (IsValidEmail(email))
-            {
-                Email.Text = email;
-                return true;
-            }
-
-            EmailError.Text = "Enter a valid email address.";
-            Email.Attributes["aria-invalid"] = "true";
-            return false;
-        }
-
-        private static bool IsValidEmail(string email)
-        {
-            try
-            {
-                return email.Length <= 254 && new MailAddress(email).Address == email;
-            }
-            catch (FormatException)
-            {
-                return false;
+                var identity = await SessionService.VerifyAsync(handle);
+                session = SessionService.Get(handle);
+                await session.RefreshLock.WaitAsync(); locked = true;
+                SessionService.Get(handle);
+                var account = await new UserAccountService(new FirebaseRealtimeDatabaseRepository(session.IdToken)).GetActiveAsync(identity);
+                SessionService.RequireCurrent(session, account);
+                if (account.CredentialState != "ready") throw new UnauthorizedAccessException();
+                if (account.MustChangePassword)
+                {
+                    if (!PasswordCompletion.IsValid(session.PendingPasswordCompletion, account))
+                    {
+                        if (NewPassword.Text == CurrentPassword.Text) throw new ArgumentException("Choose a different new password.");
+                        var tokens = await new FirebaseRestAuthenticationService().ReauthenticateAndChangePasswordAsync(account.Uid,
+                            account.Email, CurrentPassword.Text, NewPassword.Text, ConfirmPassword.Text);
+                        passwordUpdated = true;
+                        session.IdToken = tokens.IdToken; session.RefreshToken = tokens.RefreshToken;
+                        session.TokenExpiresUtc = tokens.ExpiresUtc;
+                        identity = await new FirebaseTokenVerifier().VerifyAsync(tokens.IdToken);
+                        var current = await new UserAccountService(new FirebaseRealtimeDatabaseRepository(tokens.IdToken)).GetActiveAsync(identity);
+                        if (current.SecurityVersion != account.SecurityVersion || current.PasswordPolicyVersion != account.PasswordPolicyVersion || current.CredentialState != "ready")
+                            throw new UnauthorizedAccessException();
+                        session.PendingPasswordCompletion = PasswordCompletion.Create(current);
+                        SessionService.RevokeOtherTabs(account.Uid, handle);
+                        LoginDiagnostics.Write("FirebasePasswordUpdateConfirmed");
+                    }
+                    await new FirebaseRealtimeDatabaseRepository(session.IdToken).SavePasswordCompletionAsync(account, session.PendingPasswordCompletion);
+                    account = await new UserAccountService(new FirebaseRealtimeDatabaseRepository(session.IdToken)).GetActiveAsync(identity);
+                    if (account.MustChangePassword) throw new UnauthorizedAccessException();
+                }
+                IssuedTicket = SessionService.Create(identity, session.IdToken, account.SecurityVersion, session.RefreshToken);
+                SessionService.Logout(handle);
+                PasswordChangeRequired = false;
+                DashboardUrl = ResolveUrl("~/" + RoleAuthorizationService.Dashboard(account));
+                LoginDiagnostics.Write("FirstPasswordChangeFinalized");
             }
             catch (ArgumentException)
+            { ChangeError.Text = "Use a different password with 12–128 characters, uppercase, lowercase, number and symbol. Passwords must match."; }
+            catch (UnauthorizedAccessException)
             {
-                return false;
+                CompletionPending = session?.PendingPasswordCompletion != null;
+                ChangeError.Text = CompletionPending ? "Your password changed, but completion remains restricted. Retry completion after the policy/storage issue is resolved."
+                    : passwordUpdated ? "Your Firebase password changed, but account finalization was not accepted. Sign in with the NEW password; access remains restricted."
+                    : "Current password or session was not accepted. Sign in again if your session expired. Access remains restricted.";
+                LoginDiagnostics.Write(passwordUpdated || CompletionPending ? "PasswordChangedCompletionRestricted" : "PasswordReauthenticationRejected");
             }
+            catch (Exception)
+            {
+                CompletionPending = session?.PendingPasswordCompletion != null;
+                ChangeError.Text = CompletionPending
+                    ? "Your Firebase password was changed, but completion could not be saved. Keep this tab open and retry completion after the scoped database rule is approved. Do not enter another password."
+                    : "The password operation could not be completed. Access remains restricted. If your password changed, sign in with it and retry.";
+                LoginDiagnostics.Write("FirstPasswordCompletionFailedAccessRestricted");
+            }
+            finally
+            {
+                if (locked) session.RefreshLock.Release();
+                CurrentPassword.Text = ""; NewPassword.Text = ""; ConfirmPassword.Text = "";
+            }
+        }
+        private async Task SignInAsync()
+        {
+            string stage = "FirebaseRestAuthenticationRejected";
+            try
+            {
+                var tokens = await new FirebaseRestAuthenticationService().SignInAsync(Email.Text.Trim(), Password.Text);
+                Password.Text = "";
+                stage = "FirebaseUidVerificationFailure";
+                var identity = await new FirebaseTokenVerifier().VerifyAsync(tokens.IdToken);
+                if (identity.Uid != tokens.Uid || !string.Equals(identity.Email, tokens.Email, StringComparison.OrdinalIgnoreCase))
+                    throw new UnauthorizedAccessException();
+                stage = "ProfileResolutionFailure";
+                var account = await new UserAccountService(new FirebaseRealtimeDatabaseRepository(tokens.IdToken)).GetActiveAsync(identity);
+                string previous = SessionService.Handle(Request);
+                if (!string.IsNullOrEmpty(previous)) SessionService.Logout(previous);
+                stage = "TabTicketCreationFailure";
+                IssuedTicket = SessionService.Create(identity, tokens.IdToken, account.SecurityVersion, tokens.RefreshToken);
+                LoginDiagnostics.Write("TabTicketCreated");
+                PasswordChangeRequired = account.MustChangePassword;
+                LoginDiagnostics.Write(PasswordChangeRequired ? "FirstLoginRestriction" : "LoginAuthorizedPendingDashboardReadiness");
+                DashboardUrl = ResolveUrl("~/" + RoleAuthorizationService.Dashboard(account));
+                AuthMessage.Text = PasswordChangeRequired
+                    ? "Your identity was verified. Change your password to continue."
+                    : "Your Firebase identity and UIMS profile were verified. The dashboard remains protected by its live-data readiness check.";
+                form1.Attributes["data-password-required"] = PasswordChangeRequired ? "true" : "false";
+            }
+            catch (UnauthorizedAccessException)
+            {
+                LoginDiagnostics.Write(stage);
+                AuthMessage.Text = "Sign-in was not accepted. Check your credentials or contact the coordinator about your account profile.";
+            }
+            catch (Exception)
+            {
+                LoginDiagnostics.Write(stage + "Unavailable");
+                AuthMessage.Text = "Sign-in is temporarily unavailable. Please try again. No account changes were made.";
+            }
+            finally { Password.Text = ""; }
+        }
+        private bool ValidRequest()
+        {
+            try
+            {
+                if (!Request.IsSecureConnection || !Gateway.IsSameOrigin(Request)) throw new UnauthorizedAccessException();
+                var data = System.Web.Security.MachineKey.Unprotect(Convert.FromBase64String(CsrfToken.Value), "Uims.Login.Csrf");
+                string token = System.Text.Encoding.UTF8.GetString(data);
+                if (Session["Uims.Csrf." + token] == null) throw new UnauthorizedAccessException();
+                return true;
+            }
+            catch { AuthMessage.Text = "Your sign-in form expired. Reload this page and try again."; return false; }
+        }
+        private bool ValidEmail()
+        {
+            try { var email = new MailAddress(Email.Text.Trim()); if (email.Address != Email.Text.Trim() || email.Address.Length > 254) throw new FormatException(); return true; }
+            catch { EmailError.Text = "Enter a valid email address."; return false; }
         }
     }
 }

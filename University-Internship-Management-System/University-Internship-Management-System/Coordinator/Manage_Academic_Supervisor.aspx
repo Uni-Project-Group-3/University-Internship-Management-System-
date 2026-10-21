@@ -1,7 +1,7 @@
 ﻿<%@ Page Language="C#" AutoEventWireup="true" CodeBehind="Manage_Academic_Supervisor.aspx.cs" Inherits="University_Internship_Management_System.Coordinator.Manage_Academic_Supervisor" %>
 
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" dir="ltr">
     <head runat="server">
         <meta charset="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -10,9 +10,9 @@
         <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet" />
 
         <link href="../Assets/shared/colors.css" rel="stylesheet" />
-        <link href="../Assets/coordinator/Manage_Academic_Supervisor.css?v=20261021-original-ui" rel="stylesheet" />
+        <link href="../Assets/coordinator/Manage_Academic_Supervisor.css?v=20261021-role-pages-final" rel="stylesheet" />
     </head>
-    <body data-demo-role="admin">
+    <body data-portal="admin">
         <form id="form1" runat="server">
             <div class="app">
 
@@ -135,8 +135,8 @@
                         <div class="topbar-actions ms-auto">
 
                             <div class="user-chip">
-                                <span class="avatar" aria-hidden="true">CO</span>
-                                <span class="name">Coordinator Portal<span class="role">Interface preview</span>
+                                <span class="avatar" id="lblInitials" aria-hidden="true">—</span>
+                                <span class="name"><span id="lblUserName">Coordinator account</span><span class="role">Verified coordinator</span>
                                 </span>
                             </div>
                         </div>
@@ -144,7 +144,7 @@
 
                     <!-- ============ CONTENT ============ -->
                     <div class="content">
-                        <p class="preview-note">Interface preview · Sample data. Changes last until this page is reloaded; no Firebase updates.</p>
+                        <p class="preview-note">Loading verified Firebase records…</p>
                         <div id="pageNotice" class="page-notice" role="status" aria-live="polite" hidden>
                         </div>
                         <div class="page-header d-flex justify-content-between align-items-center animate-fade-up template-style-1">
@@ -166,7 +166,7 @@
                                     </i>
                                 </div>
                                 <div class="stat-details">
-                                    <h3>24</h3>
+                                    <h3>—</h3>
                                     <span>Total Supervisors</span>
                                 </div>
                             </div>
@@ -176,8 +176,8 @@
                                     </i>
                                 </div>
                                 <div class="stat-details">
-                                    <h3>22</h3>
-                                    <span>Active Accounts</span>
+                                    <h3>—</h3>
+                                    <span>Active Supervisor Records</span>
                                 </div>
                             </div>
                             <div class="stat-card animate-fade-up template-style-6">
@@ -186,7 +186,7 @@
                                     </i>
                                 </div>
                                 <div class="stat-details">
-                                    <h3>5</h3>
+                                    <h3>—</h3>
                                     <span>Departments</span>
                                 </div>
                             </div>
@@ -213,7 +213,7 @@
                                         <tr>
                                             <th>Supervisor Info</th>
                                             <th>Department</th>
-                                            <th>Assigned Groups</th>
+                                            <th>Assigned Students</th>
                                             <th>Status</th>
                                             <th class="text-end">Actions</th>
                                         </tr>
@@ -388,10 +388,10 @@
                 </div>
             </div>
         </form>
-        <script src="../Js_project/Demo/demo-store.js?v=20261021-original-ui"></script>
-<script src="../Scripts/bootstrap.bundle.min.js">
+        <script src="../Scripts/bootstrap.bundle.min.js">
         </script>
-        <script src="../Js_project/Coordinator/Manage_Academic_Supervisor.js?v=20261021-original-ui">
+        <script src="../Js_project/Coordinator/Manage_Academic_Supervisor.js?v=20261021-role-pages-final">
         </script>
-    </body>
+    <script src="../Js_project/Public/tab-session.js" defer="defer"></script>
+</body>
 </html>

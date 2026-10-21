@@ -737,5 +737,3 @@
     .auth-page .auth-first-dialog .auth-password-rules { grid-template-columns: 1fr; gap: 5px; }
 }
 
-.auth-demo{margin-top:20px;padding:14px;border:1px solid var(--border);border-radius:10px;background:var(--primary-soft)}.auth-demo h2{font-size:1rem}.auth-demo p{font-size:.8rem}.auth-demo label{display:block}.auth-demo select,.auth-demo button{width:100%;padding:9px;margin-top:8px;border:1px solid var(--border);border-radius:7px;background:var(--surface);color:var(--text)}.auth-demo button{background:var(--primary);color:var(--text-inverse)}
-

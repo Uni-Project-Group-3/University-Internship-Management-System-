@@ -1,6 +1,6 @@
 <%@ Page Title="Contact Us" Language="C#" AutoEventWireup="true" CodeBehind="Contact.aspx.cs" Inherits="University_Internship_Management_System.Contact" %>
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" dir="ltr">
 <head runat="server">
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -113,5 +113,5 @@
 })();
 
 </script>
-<script src="Js_project/Demo/demo-store.js"></script><script src="Js_project/Public/contact-demo.js"></script></body>
+<script src="Js_project/Public/contact-demo.js"></script></body>
 </html>

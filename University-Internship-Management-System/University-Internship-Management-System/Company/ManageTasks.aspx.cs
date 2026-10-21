@@ -13,9 +13,7 @@ namespace University_Internship_Management_System.Company
 
         protected void btnLogout_Click(object sender, EventArgs e)
         {
-            FormsAuthentication.SignOut();
-            Session.Clear();
-            Session.Abandon();
+            University_Internship_Management_System.Services.SessionService.Logout(University_Internship_Management_System.Services.SessionService.Handle(Request));
             Response.Redirect("~/Auth/Login.aspx", false);
             Context.ApplicationInstance.CompleteRequest();
         }

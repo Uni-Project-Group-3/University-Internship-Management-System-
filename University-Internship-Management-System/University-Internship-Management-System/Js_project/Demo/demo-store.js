@@ -12,12 +12,152 @@
         companies:[{id:'company-north',name:'North Tech',email:'training@example.com',status:'active'}],
         opportunities:[{id:'opp-web',companyId:'company-north',title:'Web Development Intern',department:departments[0],location:'Amman',status:'open',requiredHours:160}],
         applications:[],placements:[],tasks:[],submissions:[],evaluations:[],hours:[],messages:[],groups:[]});
+
+    // Cycle 3 uses the existing local demo state. These checks are simulation, not server authorization.
+    function cycleState(s) {
+        for (const key of ['taskGroups','examAttempts','weeklyReports','taskActivity','questionImages']) s[key] ||= [];
+    }
+    function finishAttempt(s, attempt) {
+        if (attempt.status !== 'active') return;
+        const group=s.taskGroups.find(g=>g.id===attempt.groupId),exam=group.exam;
+        attempt.score=exam.questions.reduce((sum,q)=>sum+(Number(attempt.answers[q.id])===q.correct?q.marks:0),0);
+        attempt.maximum=exam.totalMarks;attempt.percentage=attempt.score/attempt.maximum*100;
+        attempt.passed=attempt.percentage>=exam.passing;attempt.status='submitted';attempt.submittedAt=now(s);
+    }
+    function cycleAction(s,u,action,p) {
+        cycleState(s);
+        const roles=allowed=>requireRole(s,allowed);
+        const get=(list,id)=>{const item=s[list].find(x=>x.id===id);if(!item)throw Error('Record unavailable.');return item;};
+        const monitor=studentId=>{const student=get('users',studentId),placement=s.placements.find(x=>x.studentId===studentId);return u&&(u.role==='student'&&u.id===studentId||u.role==='company'&&placement?.companyId===u.companyId||u.role==='academic'&&student.academicSupervisorId===u.id&&student.department===u.department);};
+        const task=()=>{const t=get('tasks',p.id);if(!monitor(t.studentId)||u.role==='company'&&t.companyId!==u.companyId)throw Error('Assignment is not available to this identity.');return t;};
+        const log=(t,message)=>s.taskActivity.push({id:id('activity'),taskId:t.id,studentId:t.studentId,authorId:u.id,message,at:now(s)});
+        if(action==='c3RegisterImage') {
+            roles(['company']);
+            if(!['image/jpeg','image/png','image/webp'].includes(p.mime)||!(p.size>0&&p.size<=2097152)||!(p.width>0&&p.height>0))throw Error('Invalid question image.');
+            const image={id:id('question-image'),companyId:u.companyId,mime:p.mime,size:p.size,width:p.width,height:p.height,createdAt:now(s)};
+            s.questionImages.push(image);return image;
+        }
+        if(action==='c3Create') {
+            roles(['company']);
+            const existing=s.taskGroups.find(g=>g.requestId===p.requestId&&g.companyId===u.companyId);
+            if(existing&&!p.draftId)return existing.id;
+            const group=p.draftId?get('taskGroups',p.draftId):{id:id('task-group'),requestId:required(p.requestId,'Request ID'),companyId:u.companyId,authorId:u.id};
+            if(group.companyId!==u.companyId||group.status==='assigned')throw Error('Only your own unpublished drafts can be changed.');
+            const students=[...new Set(p.studentIds||[])];
+            if(students.some(studentId=>!s.placements.some(pl=>pl.studentId===studentId&&pl.companyId===u.companyId&&pl.completionStatus==='InTraining')||!s.users.some(x=>x.id===studentId&&x.status==='active')))throw Error('Select confirmed active company trainees only.');
+            const modern=!!(p.opensAt||p.closesAt||p.timezone);
+            const title=required(p.title,'Task title'),description=modern?String(p.description||'').trim():required(p.description,'Description');
+            if(modern&&!p.draft){
+                if(!Number.isFinite(Date.parse(p.opensAt))||!Number.isFinite(Date.parse(p.closesAt))||Date.parse(p.opensAt)>=Date.parse(p.closesAt))throw Error('Task opening must be earlier than closing.');
+            }
+            if(!p.draft&&(!students.length||!Number.isFinite(Date.parse(p.deadline))||!(Number(p.maximum)>0&&Number.isFinite(Number(p.maximum)))))throw Error('Select trainees, a deadline and a positive practical maximum.');
+            if(!['low','medium','high'].includes(p.priority)||!(Number(p.week)>=1&&Number(p.week)<=52&&Number.isInteger(Number(p.week))))throw Error('Choose a priority and week from 1 to 52.');
+            if(p.startDate&&(!Number.isFinite(Date.parse(p.startDate))||Date.parse(p.startDate)>Date.parse(p.deadline)))throw Error('Start date must precede deadline.');
+            const links=(p.links||[]).filter(Boolean);if(links.some(url=>!/^https?:\/\//i.test(url)))throw Error('Reference links must use HTTPS or HTTP.');
+            let exam=null;
+            if(p.exam){
+                const e=p.exam,questions=(e.questions||[]).map(q=>({id:q.id||id('question'),type:q.type,text:String(q.text||'').trim(),choices:q.type==='tf'?['True','False']:(q.choices||[]).map(String),correct:Number(q.correct),marks:Number(q.marks),image:q.image||null}));
+                if(questions.some(q=>q.image&&!s.questionImages.some(img=>img.id===q.image.id&&img.companyId===u.companyId)))throw Error('Question image is not owned by your company.');
+                if(!p.draft){
+                    if(modern&&(Date.parse(e.startsAt)<Date.parse(p.opensAt)||Date.parse(e.startsAt)>=Date.parse(p.closesAt)||!p.allowExamAfterClosing&&Date.parse(e.endsAt)>Date.parse(p.closesAt)))throw Error('Exam must fit task availability, or explicitly allow it to finish after task closing.');
+                    if(!e.title?.trim()||!Number.isFinite(Date.parse(e.startsAt))||!(Number(e.duration)>=1&&Number(e.duration)<=240)||!(Number(e.attempts)>=1&&Number(e.attempts)<=5)||Number(e.attempts)%1||!['finish','close'].includes(e.policy))throw Error('Complete exam schedule, duration, attempts and availability policy.');
+                    if(!(Number(e.passing)>=1&&Number(e.passing)<=100)||!(Number(e.totalMarks)>0&&Number.isFinite(Number(e.totalMarks))))throw Error('Set valid total marks and passing percentage.');
+                    if(!questions.length||questions.length>100||questions.length!==Number(e.questionCount))throw Error('Configured question count must match the question builder.');
+                    if(questions.some(q=>!q.text||!['mcq','tf'].includes(q.type)||q.choices.length<2||q.choices.some(c=>!c.trim())||!Number.isInteger(q.correct)||q.correct<0||q.correct>=q.choices.length||!(q.marks>0&&Number.isFinite(q.marks))))throw Error('Complete every question, its choices, one correct answer and marks.');
+                    if(Math.abs(questions.reduce((sum,q)=>sum+q.marks,0)-Number(e.totalMarks))>0.00001)throw Error('Question marks must equal total exam marks.');
+                    if(!Number.isFinite(Date.parse(e.endsAt))||Date.parse(e.endsAt)<=Date.parse(e.startsAt))throw Error('Exam end must be later than its start.');
+                }
+                exam={title:e.title,instructions:e.instructions||'',startsAt:e.startsAt,endsAt:e.endsAt,duration:Number(e.duration),attempts:Number(e.attempts),policy:e.policy,passing:Number(e.passing),totalMarks:Number(e.totalMarks),questionCount:Number(e.questionCount),questions};
+            }
+            Object.assign(group,{title,description,opensAt:p.opensAt?new Date(p.opensAt).toISOString():group.opensAt||'',closesAt:p.closesAt?new Date(p.closesAt).toISOString():group.closesAt||'',timezone:p.timezone||group.timezone||'Asia/Amman',allowExamAfterClosing:!!p.allowExamAfterClosing,week:Number(p.week),category:p.category||'',priority:p.priority,deadline:p.deadline,startDate:p.startDate||'',maximum:Number(p.maximum)||10,criteria:p.criteria||'',checklist:(p.checklist||[]).filter(Boolean),attachments:(p.attachments||[]).map(a=>({name:String(a.name),size:Number(a.size)||0})),links,exam,studentIds:students,status:p.draft?'draft':'assigned',updatedAt:now(s)});
+            if(!p.draftId)s.taskGroups.push(group);
+            if(!p.draft)students.forEach(studentId=>{
+                const t={id:id('task'),groupId:group.id,studentId,companyId:u.companyId,assignedBy:u.id,title,description,opensAt:group.opensAt,closesAt:group.closesAt,deadline:group.deadline,maximum:group.maximum,criteria:group.criteria,status:'assigned',week:group.week,priority:group.priority,checklist:group.checklist.map(text=>({text,done:false})),createdAt:now(s)};
+                s.tasks.push(t);log(t,'Task assigned');
+            });
+            return group.id;
+        }
+        if(action==='c3StartExam'||action==='c3SaveAnswer'||action==='c3SubmitExam') {
+            roles(['student']);const t=task(),group=get('taskGroups',t.groupId),exam=group.exam;
+            if(!exam)throw Error('No attached exam.');
+            const attempts=s.examAttempts.filter(a=>a.taskId===t.id),active=attempts.find(a=>a.status==='active');
+            if(action==='c3StartExam') {
+                if(active)return active.id;
+                if(Date.parse(now(s))<Date.parse(exam.startsAt)||Date.parse(now(s))>=Date.parse(exam.endsAt))throw Error('Exam is outside its scheduled availability.');
+                if(attempts.length>=exam.attempts)throw Error('No attempts remaining.');
+                const end=Date.parse(now(s))+exam.duration*60000;
+                const attempt={id:id('attempt'),groupId:group.id,taskId:t.id,studentId:u.id,status:'active',startedAt:now(s),expiresAt:new Date(exam.policy==='close'?Math.min(end,Date.parse(exam.endsAt)):end).toISOString(),answers:{},published:false};
+                s.examAttempts.push(attempt);log(t,'Exam attempt started');return attempt.id;
+            }
+            const attempt=get('examAttempts',p.attemptId);
+            if(attempt.taskId!==t.id||attempt.studentId!==u.id)throw Error('Attempt does not belong to this assignment.');
+            if(attempt.status==='submitted'){if(action==='c3SubmitExam')return attempt.id;throw Error('This attempt is finalized.');}
+            if(Date.parse(now(s))>=Date.parse(attempt.expiresAt)){finishAttempt(s,attempt);return attempt.id;}
+            if(action==='c3SaveAnswer'){
+                const q=exam.questions.find(q=>q.id===p.questionId);if(!q||!Number.isInteger(Number(p.answer))||Number(p.answer)<0||Number(p.answer)>=q.choices.length)throw Error('Choose a valid answer.');
+                attempt.answers[q.id]=Number(p.answer);attempt.savedAt=now(s);return attempt.id;
+            }
+            finishAttempt(s,attempt);log(t,'Exam submitted; company review pending');return attempt.id;
+        }
+        if(action==='c3Publish') {
+            roles(['company']);const t=task();
+            if(t.status!=='completed'&&!s.examAttempts.some(a=>a.taskId===t.id&&a.status==='submitted'))throw Error('No evaluated result to publish.');
+            t.gradePublished=true;t.publishedAt=now(s);
+            s.examAttempts.filter(a=>a.taskId===t.id&&a.status==='submitted').forEach(a=>{a.published=true;a.publishedAt=now(s);});log(t,'Results published to student');return;
+        }
+        if(action==='c3Move') {
+            roles(['company','student']);const t=task();
+            if(!['assigned','in-progress'].includes(t.status)||!['assigned','in-progress'].includes(p.status))throw Error('Submission, review and completion require their dedicated workflow.');
+            if(u.role==='company'&&p.status==='assigned')throw Error('Work already started cannot be reset by drag-and-drop.');
+            if(t.opensAt&&Date.parse(now(s))<Date.parse(t.opensAt)||t.closesAt&&Date.parse(now(s))>=Date.parse(t.closesAt))throw Error('Task actions are outside the configured availability.');
+            t.status=p.status;log(t,'Status: '+p.status);return;
+        }
+        if(action==='c3Read'||action==='c3Checklist'||action==='c3Comment') {
+            roles(['student','company','academic']);const t=task();
+            if(action==='c3Read'){if(u.role==='student')t.readAt ||= now(s);return;}
+            if(action==='c3Comment'){log(t,required(p.message,'Comment'));return;}
+            if(u.role!=='student')throw Error('Only the assigned student can update this checklist.');
+            if(t.opensAt&&Date.parse(now(s))<Date.parse(t.opensAt)||t.closesAt&&Date.parse(now(s))>=Date.parse(t.closesAt))throw Error('Task actions are outside the configured availability.');
+            if(!t.checklist?.[p.index])throw Error('Checklist item unavailable.');t.checklist[p.index].done=!!p.done;return;
+        }
+        if(action==='c3Weekly') {
+            roles(['company']);const student=get('users',p.studentId),placement=s.placements.find(pl=>pl.studentId===student.id&&pl.companyId===u.companyId),recipient=s.users.find(x=>x.id===student.academicSupervisorId&&x.role==='academic'&&x.status==='active'&&x.department===student.department);
+            if(!placement||!recipient)throw Error('A confirmed trainee and assigned active Academic Supervisor are required.');
+            if(!(Number(p.week)>=1&&Number(p.week)<=52))throw Error('Choose week 1–52.');
+            const existing=s.weeklyReports.find(r=>r.studentId===student.id&&r.week===Number(p.week)&&r.companyId===u.companyId);if(existing)return existing.id;
+            const tasks=s.tasks.filter(t=>t.studentId===student.id&&Number(t.week||1)===Number(p.week));
+            const report={id:id('weekly'),studentId:student.id,companyId:u.companyId,senderId:u.id,recipientId:recipient.id,week:Number(p.week),sentAt:now(s),status:'sent',feedback:required(p.feedback,'Weekly feedback'),snapshot:{tasks:JSON.parse(JSON.stringify(tasks)),attempts:JSON.parse(JSON.stringify(s.examAttempts.filter(a=>tasks.some(t=>t.id===a.taskId)&&a.status==='submitted'))),revisions:s.submissions.filter(sub=>tasks.some(t=>t.id===sub.taskId)),activity:s.taskActivity.filter(a=>tasks.some(t=>t.id===a.taskId)),approvedHours:s.hours.filter(h=>h.studentId===student.id&&h.approved).reduce((sum,h)=>sum+h.hours,0)}};
+            s.weeklyReports.push(report);return report.id;
+        }
+        if(action==='c3AcademicFeedback'){
+            roles(['academic']);const report=get('weeklyReports',p.id);if(report.recipientId!==u.id||!monitor(report.studentId))throw Error('This report is not assigned to you.');
+            report.academicFeedback=required(p.comments,'Academic feedback');report.reviewedAt=now(s);report.reviewedBy=u.id;report.status='reviewed';return;
+        }
+        throw Error('Unknown Cycle 3 operation.');
+    }
+    function cycleView(s,u,tasks) {
+        cycleState(s);
+        const ids=new Set(tasks.map(t=>t.id));
+        const groups=s.taskGroups.filter(g=>u.role==='company'?g.companyId===u.companyId:tasks.some(t=>t.groupId===g.id)).map(g=>{
+            const safe={...g};if(u.role==='student')safe.studentIds=g.studentIds.filter(id=>id===u.id);
+            if(g.exam){safe.exam={...g.exam};delete safe.exam.questions;if(u.role==='company')safe.exam.questions=g.exam.questions;}
+            return safe;
+        });
+        const attempts=s.examAttempts.filter(a=>ids.has(a.taskId)).map(a=>{
+            if(u.role!=='student')return {...a};
+            const safe={id:a.id,taskId:a.taskId,groupId:a.groupId,studentId:a.studentId,status:a.status,startedAt:a.startedAt,expiresAt:a.expiresAt,submittedAt:a.submittedAt,answers:a.answers,published:a.published};
+            if(a.status==='active')safe.questions=s.taskGroups.find(g=>g.id===a.groupId).exam.questions.map(({correct,...q})=>q);
+            if(a.published)Object.assign(safe,{score:a.score,maximum:a.maximum,percentage:a.percentage,passed:a.passed});return safe;
+        });
+        return {taskGroups:groups,examAttempts:attempts,taskActivity:s.taskActivity.filter(a=>ids.has(a.taskId)),weeklyReports:s.weeklyReports.filter(r=>u.role==='company'?r.companyId===u.companyId:u.role==='academic'?r.recipientId===u.id&&s.users.some(st=>st.id===r.studentId&&st.academicSupervisorId===u.id&&st.department===u.department):u.role==='admin')};
+    }
+
     function load() {
         const raw = localStorage.getItem(key);
         if (!raw) { const state=initial(); localStorage.setItem(key,JSON.stringify(state)); return state; }
         const state=JSON.parse(raw);
         if(state.version!==1 || !Array.isArray(state.users)) throw Error('Demo storage is incompatible. Export it before resetting.');
-        state.groups ||= [];
+        state.groups ||= []; cycleState(state);
         return state;
     }
     const now = state => new Date(Date.now()+state.clockOffset).toISOString();
@@ -29,7 +169,14 @@
             p.accountDisabledAt ||= current;
         }});
     }
-    function read(){ const s=load();expire(s);localStorage.setItem(key,JSON.stringify(s));return s; }
+    function read(){
+        const s=load();cycleState(s);
+        const expired=s.examAttempts.filter(a=>a.status==='active'&&Date.parse(now(s))>=Date.parse(a.expiresAt));
+        const overdue=s.placements.some(p=>p.accountDisableAt&&p.accountDisableAt<=now(s)&&(!p.accountDisabledAt||s.users.some(u=>u.id===p.studentId&&u.status==='active')));
+        expired.forEach(a=>finishAttempt(s,a));expire(s);
+        if(expired.length||overdue)localStorage.setItem(key,JSON.stringify(s));
+        return s;
+    }
     function actor(s){ const id=sessionStorage.getItem('uims.demo.user');return s.users.find(u=>u.id===id&&u.status==='active'); }
     function requireRole(s,roles){const u=actor(s);if(!u||!roles.includes(u.role)||u.mustChangePassword)throw Error('Choose an active permitted demo identity and complete its password-change simulation.');return u;}
     const id = prefix => prefix+'-'+crypto.randomUUID();
@@ -39,7 +186,8 @@
         const find=(list,value)=>{const record=s[list].find(r=>r.id===value);if(!record)throw Error('Record no longer exists. Reload and try again.');return record;};
         const placementFor=studentId=>s.placements.find(p=>p.studentId===studentId);
         const canMonitor=studentId=>{const student=find('users',studentId);return u.role==='admin'||u.role==='student'&&u.id===studentId||u.role==='academic'&&student.academicSupervisorId===u.id&&student.department===u.department||u.role==='company'&&placementFor(studentId)?.companyId===u.companyId;};
-        if(action==='reviewReport'){
+        if(action.startsWith('c3')){result=cycleAction(s,u,action,payload);
+        }else if(action==='reviewReport'){
             requireRole(s,['company']);const submission=find('submissions',payload.id),task=find('tasks',submission.taskId);
             if(task.companyId!==u.companyId)throw Error('This submission belongs to a different company.');
             if(!['reviewed','corrections'].includes(payload.outcome))throw Error('Choose a review outcome.');
@@ -127,12 +275,14 @@
             result={id:id('task'),studentId:placement.studentId,companyId:u.companyId,title:required(payload.title,'Task title'),description:required(payload.description,'Description'),deadline:payload.deadline,maximum:Number(payload.maximum),criteria:payload.criteria||'',status:'assigned'};
             if(!(result.maximum>0)||!Number.isFinite(result.maximum))throw Error('Set a positive maximum score for this demonstration task.');s.tasks.push(result);
         }else if(action==='submitTask'){
-            requireRole(s,['student']);const task=find('tasks',payload.id);if(placementFor(u.id)?.completionStatus!=='InTraining')throw Error('Work submission requires an active internship.');if(task.studentId!==u.id||!['assigned','revision'].includes(task.status))throw Error('This task cannot be submitted.');
+            requireRole(s,['student']);const task=find('tasks',payload.id);if(placementFor(u.id)?.completionStatus!=='InTraining')throw Error('Work submission requires an active internship.');if(task.studentId!==u.id||!['assigned','in-progress','revision'].includes(task.status))throw Error('This task cannot be submitted.');
+            if(task.opensAt&&Date.parse(now(s))<Date.parse(task.opensAt)||task.closesAt&&Date.parse(now(s))>=Date.parse(task.closesAt))throw Error('Task actions are outside the configured availability.');
             if(payload.link&&!/^https?:\/\//i.test(payload.link))throw Error('Use an HTTP or HTTPS link.');
-            s.submissions.push({id:id('submission'),taskId:task.id,studentId:u.id,description:required(payload.description,'Work description'),link:payload.link||'',fileName:payload.fileName||'',createdAt:now(s)});task.status='submitted';
+            s.submissions.push({id:id('submission'),taskId:task.id,studentId:u.id,description:required(payload.description,'Work description'),link:payload.link||'',fileName:payload.fileName||'',createdAt:now(s)});task.status='submitted';if(task.groupId){cycleState(s);s.taskActivity.push({id:id('activity'),taskId:task.id,studentId:u.id,authorId:u.id,message:'Work submitted: '+payload.description,at:now(s)});}
         }else if(action==='reviewTask'){
             requireRole(s,['company']);const task=find('tasks',payload.id);if(task.companyId!==u.companyId||task.status!=='submitted')throw Error('Task is not awaiting your review.');if(!['revision','completed'].includes(payload.status))throw Error('Choose a valid review decision.');task.feedback=required(payload.feedback,'Feedback');
-            if(payload.status==='revision')task.status='revision';else{const score=Number(payload.score);if(payload.score===''||!Number.isFinite(score)||score<0||score>task.maximum)throw Error('Score is outside this task maximum.');task.score=score;task.status='completed';}
+            if(payload.status==='revision')task.status='revision';else{const score=Number(payload.score);if(payload.score===''||!Number.isFinite(score)||score<0||score>task.maximum)throw Error('Score is outside this task maximum.');task.score=score;task.status='completed';if(task.groupId)task.gradePublished=false;}
+            if(task.groupId){cycleState(s);s.taskActivity.push({id:id('activity'),taskId:task.id,studentId:task.studentId,authorId:u.id,message:payload.status+': '+task.feedback,at:now(s)});}
         }else if(action==='hours'){
             requireRole(s,['company']);const placement=find('placements',payload.placementId);if(placement.companyId!==u.companyId||placement.completionStatus!=='InTraining')throw Error('Select an active trainee.');if(!/^\d{4}-\d{2}-\d{2}$/.test(payload.date)||isNaN(Date.parse(payload.date))||new Date(payload.date).toISOString().slice(0,10)!==payload.date)throw Error('Choose a valid training date.');const hours=Number(payload.hours);if(!(hours>0&&hours<=24))throw Error('Enter 0–24 hours for a dated demonstration entry.');if(s.hours.some(h=>h.studentId===placement.studentId&&h.date===payload.date))throw Error('An entry already exists for this date.');s.hours.push({id:id('hours'),studentId:placement.studentId,companyId:u.companyId,date:required(payload.date,'Date'),hours,approved:true,approvedBy:u.id});
         }else if(action==='evaluation'){
@@ -158,16 +308,18 @@
         const placementFor=studentId=>state.placements.find(p=>p.studentId===studentId);
         const students=state.users.filter(student=>student.role==='student'&&student.status!=='deleted'&&(user.role==='admin'||user.role==='student'&&student.id===user.id||user.role==='academic'&&student.academicSupervisorId===user.id&&student.department===user.department||user.role==='company'&&placementFor(student.id)?.companyId===user.companyId));
         const ids=new Set(students.map(student=>student.id));
+        const visibleTask=task=>{const safe={...task};if(user.role==='student'&&task.groupId&&!task.gradePublished)delete safe.score;return safe;};
         const progress=students.map(student=>{
             const placement=placementFor(student.id),tasks=state.tasks.filter(task=>task.studentId===student.id);
+            tasks.forEach((task,index)=>tasks[index]=visibleTask(task));
             const hours=state.hours.filter(hour=>hour.studentId===student.id&&hour.approved).reduce((sum,hour)=>sum+(Number.isFinite(Number(hour.hours))?Number(hour.hours):0),0);
             const risks=[];if(tasks.some(task=>task.status!=='completed'&&Date.parse(task.deadline)<Date.parse(now(state))))risks.push('Overdue tasks');if(tasks.some(task=>task.status==='revision'))risks.push('Revision requested');
             const company=state.companies.find(c=>c.id===placement?.companyId),supervisor=state.users.find(a=>a.id===student.academicSupervisorId),companySupervisor=state.users.find(a=>a.role==='company'&&a.companyId===placement?.companyId&&a.status==='active');
             return {...student,placement,company,supervisor,companySupervisor,tasks,approvedHours:hours,requiredHours:Number(placement?.requiredHours)||0,completedTasks:tasks.filter(task=>task.status==='completed').length,risks,evaluations:state.evaluations.filter(e=>e.studentId===student.id&&(user.role!=='student'||e.published===true))};
         });
-        return {user,students,progress,groups:state.groups||[],companies:state.companies,users:state.users,
+        return {...cycleView(state,user,state.tasks.filter(t=>ids.has(t.studentId))),user,students,progress,groups:state.groups||[],companies:state.companies,users:state.users,
             opportunities:state.opportunities.filter(o=>user.role==='admin'||user.role==='company'&&o.companyId===user.companyId||user.role==='student'&&o.department===user.department&&(o.status==='open'||state.applications.some(a=>a.studentId===user.id&&a.opportunityId===o.id))),
-            placements:state.placements.filter(p=>ids.has(p.studentId)),tasks:state.tasks.filter(t=>ids.has(t.studentId)),
+            placements:state.placements.filter(p=>ids.has(p.studentId)),tasks:state.tasks.filter(t=>ids.has(t.studentId)).map(visibleTask),
             applications:state.applications.filter(a=>user.role==='admin'||user.role==='company'&&a.companyId===user.companyId||user.role==='student'&&a.studentId===user.id),
             submissions:state.submissions.filter(sub=>ids.has(sub.studentId)),evaluations:state.evaluations.filter(e=>ids.has(e.studentId)&&(user.role!=='student'||e.published===true)),messages:user.role==='admin'?state.messages:[]};
     }

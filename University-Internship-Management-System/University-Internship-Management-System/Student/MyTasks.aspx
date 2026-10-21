@@ -1,7 +1,7 @@
 ﻿<%@ Page Language="C#" AutoEventWireup="true" CodeBehind="MyTasks.aspx.cs" Inherits="University_Internship_Management_System.Student.MyTasks" %>
 
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" dir="ltr">
     <head runat="server">
         <meta charset="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -10,9 +10,9 @@
         <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet" />
 
         <link href="../Assets/shared/colors.css" rel="stylesheet" />
-        <link href="../Assets/student/MyTasks.css?v=20261021-original-ui" rel="stylesheet" />
+        <link href="../Assets/student/MyTasks.css?v=20261021-studio2" rel="stylesheet" />
     </head>
-    <body data-demo-role="student">
+    <body data-portal="student">
         <form id="form1" runat="server">
             <div class="app">
 
@@ -123,252 +123,33 @@
                         <div class="topbar-actions ms-auto">
                             <div class="user-chip">
                                 <span class="avatar">ST</span>
-                                <span class="name">Student Portal<span class="role">Interface preview</span>
+                                <span class="name">Student Portal<span class="role">Student</span>
                                 </span>
                             </div>
                         </div>
                     </header>
 
                     <!-- CONTENT -->
-                    <div class="content">
-                        <p class="preview-note">Interface preview · Sample data. Changes last until this page is reloaded; no Firebase updates.</p>
-                        <div id="pageNotice" class="page-notice" role="status" aria-live="polite" hidden>
-                        </div>
-                        <div class="page-header animate-fade-up template-style-1">
-                            <h1 class="greeting">My Tasks</h1>
-                            <p class="subtitle">View assigned tasks, track deadlines, and submit your work.</p>
-                        </div>
+                    <div class="content c3-workspace" id="cycle3Workspace">
+    <p class="c3-demo" role="note">Your current-placement tasks are loaded from Firebase. Cycle 3 exams require a verified identity mapping.</p>
+    <div id="pageNotice" role="status" aria-live="polite" hidden></div>
+    <div class="c3-heading"><div><span class="c3-eyebrow">UIMS / TRAINING WORKSPACE</span><h1 id="c3Heading">Training Tasks</h1><p id="c3Subtitle">Plan focused work. Review each student's progress independently.</p></div><div class="c3-actions"><button type="button" id="c3Create" class="c3-primary" data-t="create">+ Create Task</button></div></div>
+    <div id="c3Stats" class="c3-stats" aria-live="polite"></div>
+    <div class="c3-toolbar"><input type="search" id="taskSearch" aria-label="Search tasks" placeholder="Search tasks…" /><select id="c3Student" aria-label="Student"></select><select id="c3Week" aria-label="Week"></select><select id="c3Priority" aria-label="Priority"></select><select id="c3Status" aria-label="Status"></select><select id="c3Sort" aria-label="Sort"><option value="asc">Deadline ↑</option><option value="desc">Deadline ↓</option></select><button type="button" id="c3View" data-t="list">List view</button><label id="c3GroupLabel"><input type="checkbox" id="c3Group" /> <span data-t="group">Group tasks</span></label><button type="button" id="c3Drafts" data-t="drafts">Drafts</button><button type="button" id="c3Reports" data-t="reports">Weekly reports</button><button type="button" id="c3Clear" data-t="clear">Clear filters</button></div>
+    <div id="taskList" class="c3-board" aria-label="Training task board"></div><p id="noTasksMsg" class="c3-empty" hidden>No matching tasks for this placement. Adjust the filters.</p>
+</div>
 
-                        <!-- STATS CARDS -->
-                        <div class="stats-grid">
-                            <div class="stat-card animate-fade-up template-style-2">
-                                <div class="stat-icon primary">
-                                    <i class="bi bi-list-task" aria-hidden="true">
-                                    </i>
-                                </div>
-                                <div class="stat-details">
-                                    <h3>4</h3>
-                                    <span>Total Tasks</span>
-                                </div>
-                            </div>
-                            <div class="stat-card animate-fade-up template-style-3">
-                                <div class="stat-icon warning">
-                                    <i class="bi bi-hourglass-split" aria-hidden="true">
-                                    </i>
-                                </div>
-                                <div class="stat-details">
-                                    <h3>1</h3>
-                                    <span>In Progress</span>
-                                </div>
-                            </div>
-                            <div class="stat-card animate-fade-up template-style-4">
-                                <div class="stat-icon primary-soft">
-                                    <i class="bi bi-eye" aria-hidden="true">
-                                    </i>
-                                </div>
-                                <div class="stat-details">
-                                    <h3>1</h3>
-                                    <span>Awaiting Review</span>
-                                </div>
-                            </div>
-                            <div class="stat-card border-danger-left animate-fade-up template-style-5">
-                                <div class="stat-icon danger">
-                                    <i class="bi bi-exclamation-circle" aria-hidden="true">
-                                    </i>
-                                </div>
-                                <div class="stat-details">
-                                    <h3 class="text-danger">1</h3>
-                                    <span class="text-danger fw-semibold">Revision Requested</span>
-                                </div>
-                            </div>
-                        </div>
+</div></div>
 
-                        <!-- SEARCH & FILTER TOOLBAR -->
-                        <div class="toolbar animate-fade-up template-style-6">
-                            <div class="search-box">
-                                <i class="bi bi-search" aria-hidden="true">
-                                </i>
-                                <input type="text" id="taskSearch" aria-label="Search tasks" placeholder="Search tasks by name..." />
-                            </div>
-                            <div class="filter-box">
-                                <select id="taskFilter" aria-label="Filter by task status" class="form-select">
-                                    <option value="all">All Statuses</option>
-                                    <option value="in-progress">In Progress</option>
-                                    <option value="submitted">Awaiting Review</option>
-                                    <option value="revision">Revision Requested</option>
-                                    <option value="completed">Completed</option>
-                                </select>
-                            </div>
-                        </div>
+<dialog id="c3Dialog" class="c3-dialog" aria-labelledby="c3DialogTitle"><header><div><small id="c3DialogHint">TRAINING WORKSPACE</small><h2 id="c3DialogTitle"></h2></div><button type="button" id="c3Close" aria-label="Close dialog">×</button></header><p id="c3Error" role="alert" hidden></p><div id="c3DialogBody" class="c3-dialog-body"></div><footer id="c3DialogActions"></footer></dialog>
+<dialog id="c3Confirm" class="c3-confirm" aria-labelledby="c3ConfirmTitle"><h2 id="c3ConfirmTitle">Confirm action</h2><p id="c3ConfirmText"></p><div class="c3-actions"><button type="button" id="c3ConfirmCancel">Cancel</button><button type="button" id="c3ConfirmYes" class="c3-primary">Confirm</button></div></dialog>
 
-                        <!-- TASK LIST -->
-                        <div class="task-list" id="taskList">
-
-                            <!-- Task: In Progress -->
-                            <div class="task-card animate-fade-up template-style-7" data-status="in-progress">
-                                <div class="task-info">
-                                    <div class="task-head">
-                                        <h3 class="task-title">Database Design</h3>
-                                        <span class="badge badge-warning">In Progress</span>
-                                    </div>
-                                    <p class="task-desc">Create an Entity Relationship Diagram (ERD) and explain the relationships between the main database entities.</p>
-                                    <div class="task-meta">
-                                        <span>
-                                            <i class="bi bi-calendar-event" aria-hidden="true">
-                                            </i> Oct 23, 2026</span>
-                                        <span>
-                                            <i class="bi bi-person" aria-hidden="true">
-                                            </i> Eng. Ahmad Khalil</span>
-                                    </div>
-                                </div>
-                                <div class="task-action">
-                                    <button type="button" class="btn btn-primary submit-btn" data-bs-toggle="modal" data-bs-target="#submitModal">
-                                        Submit Work <i class="bi bi-arrow-right ms-1" aria-hidden="true">
-                                        </i>
-                                    </button>
-                                </div>
-                            </div>
-
-                            <!-- Task: Submitted -->
-                            <div class="task-card animate-fade-up template-style-8" data-status="submitted">
-                                <div class="task-info">
-                                    <div class="task-head">
-                                        <h3 class="task-title">Weekly Progress Report</h3>
-                                        <span class="badge badge-info">Awaiting Review</span>
-                                    </div>
-                                    <p class="task-desc">Prepare a report describing your completed activities, acquired skills, and internship progress this week.</p>
-                                    <div class="task-meta">
-                                        <span>
-                                            <i class="bi bi-calendar-event" aria-hidden="true">
-                                            </i> Oct 21, 2026</span>
-                                        <span>
-                                            <i class="bi bi-person" aria-hidden="true">
-                                            </i> Eng. Ahmad Khalil</span>
-                                    </div>
-                                </div>
-                                <div class="task-action text-center">
-                                    <span class="action-text">
-                                        <i class="bi bi-clock-history me-1" aria-hidden="true">
-                                        </i> Submitted</span>
-                                </div>
-                            </div>
-
-                            <!-- Task: Revision -->
-                            <div class="task-card border-danger-left animate-fade-up template-style-9" data-status="revision">
-                                <div class="task-info">
-                                    <div class="task-head">
-                                        <h3 class="task-title">Employee Management Module</h3>
-                                        <span class="badge badge-danger">Revision Requested</span>
-                                    </div>
-                                    <p class="task-desc">Implement an employee management module and demonstrate the main operations.</p>
-
-                                    <div class="feedback-note">
-                                        <strong>
-                                            <i class="bi bi-exclamation-triangle-fill me-1" aria-hidden="true">
-                                            </i> Supervisor Feedback:</strong> Please improve input validation and handle empty fields before resubmitting.
-                                    </div>
-
-                                    <div class="task-meta">
-                                        <span class="text-danger fw-semibold">
-                                            <i class="bi bi-calendar-event" aria-hidden="true">
-                                            </i> Oct 22, 2026 (Urgent)</span>
-                                        <span>
-                                            <i class="bi bi-person" aria-hidden="true">
-                                            </i> Eng. Ahmad Khalil</span>
-                                    </div>
-                                </div>
-                                <div class="task-action">
-                                    <button type="button" class="btn btn-danger submit-btn" data-bs-toggle="modal" data-bs-target="#submitModal">
-                                        Resubmit <i class="bi bi-arrow-repeat ms-1" aria-hidden="true">
-                                        </i>
-                                    </button>
-                                </div>
-                            </div>
-
-                            <!-- Task: Completed -->
-                            <div class="task-card animate-fade-up template-style-10" data-status="completed">
-                                <div class="task-info">
-                                    <div class="task-head">
-                                        <h3 class="task-title text-muted text-decoration-line-through">Internship Orientation</h3>
-                                        <span class="badge badge-success">Completed</span>
-                                    </div>
-                                    <p class="task-desc">Review the internship guidelines and document the main responsibilities and workplace policies.</p>
-                                    <div class="task-meta">
-                                        <span>
-                                            <i class="bi bi-check2-circle" aria-hidden="true">
-                                            </i> Completed: Oct 16, 2026</span>
-                                    </div>
-                                </div>
-                                <div class="task-action text-center">
-                                    <div class="success-circle">
-                                        <i class="bi bi-check-lg" aria-hidden="true">
-                                        </i>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Empty State -->
-                            <div id="noTasksMsg" class="no-tasks animate-fade-up template-style-11">
-                                <div class="empty-icon">
-                                    <i class="bi bi-inbox" aria-hidden="true">
-                                    </i>
-                                </div>
-                                <h4 class="fw-bold mt-3 mb-1">No tasks found</h4>
-                                <p class="text-muted m-0">Try adjusting your search or filters.</p>
-                            </div>
-
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- ============ SUBMIT MODAL ============ -->
-            <div class="modal" id="submitModal" tabindex="-1" aria-hidden="true">
-                <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
-                    <div class="modal-content custom-modal">
-                        <div class="modal-header pb-0 border-0 pt-4 px-4">
-                            <h5 class="modal-title fw-bold template-style-12">Submit Work</h5>
-                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
-                            </button>
-                        </div>
-                        <div class="modal-body p-4">
-                            <p class="text-muted mb-4 template-style-13">Provide your work details, repository links, or attach files for supervisor review.</p>
-
-                            <div id="modalError" class="alert alert-danger custom-alert template-style-14">
-                            </div>
-
-                            <div class="mb-4">
-                                <label class="form-label custom-label">Work Description <span class="text-danger">*</span>
-                                </label>
-                                <div id="studentSubmissionHistory" class="text-muted small"></div><textarea id="workDesc" class="form-control custom-input" rows="4" placeholder="Describe what you completed...">
-                                </textarea>
-                            </div>
-
-                            <div class="mb-4">
-                                <label class="form-label custom-label">Link (GitHub / Drive) <span class="text-danger">*</span>
-                                </label>
-                                <input type="url" id="workLink" class="form-control custom-input" placeholder="https://github.com/..." />
-                            </div>
-
-                            <div class="mb-2">
-                                <label class="form-label custom-label">Attach File (Optional)</label>
-                                <input type="file" id="workFile" class="form-control custom-input" />
-                                <small class="text-muted mt-2 d-block template-style-15">Preview attachment only. Files are not uploaded.</small>
-                            </div>
-                        </div>
-                        <div class="modal-footer border-0 pb-4 px-4">
-                            <button type="button" class="btn btn-light custom-btn-light" data-bs-dismiss="modal">Cancel</button>
-                            <button type="button" id="confirmSubmitBtn" class="btn btn-primary custom-btn-primary">Submit for Review</button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
+<dialog id="c3ImageViewer" class="c3-image-viewer" aria-label="Question image"><button type="button" id="c3ImageClose" aria-label="Close image">×</button><img alt="Question illustration" /></dialog>
         </form>
-        <script src="../Js_project/Demo/demo-store.js?v=20261021-original-ui"></script>
-<script src="../Scripts/bootstrap.bundle.min.js">
+        <script src="../Scripts/bootstrap.bundle.min.js">
         </script>
-        <script src="../Js_project/Student/MyTasks.js?v=20261021-original-ui">
+        <script src="../Js_project/Student/MyTasks.js?v=20261021-studio2">
         </script>
-    </body>
+    <script src="../Js_project/Public/tab-session.js" defer="defer"></script>
+</body>
 </html>

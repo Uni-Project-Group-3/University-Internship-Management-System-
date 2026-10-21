@@ -236,8 +236,8 @@ namespace UIMS.Company
             cblMajors.ClearSelection();
             txtSeats.Text = "1";
             rblWorkMode.SelectedIndex = 0;
-            txtDeadline.Text = DateTime.Today.AddDays(14).ToString(DateFormat);
-            txtStartDate.Text = DateTime.Today.AddDays(30).ToString(DateFormat);
+            txtDeadline.Text = University_Internship_Management_System.Services.JordanTime.LocalNow.Date.AddDays(14).ToString(DateFormat);
+            txtStartDate.Text = University_Internship_Management_System.Services.JordanTime.LocalNow.Date.AddDays(30).ToString(DateFormat);
             txtDuration.Text = "8";
         }
 
@@ -275,7 +275,7 @@ namespace UIMS.Company
                 cvDates.ErrorMessage = "Enter valid dates.";
                 args.IsValid = false;
             }
-            else if (string.IsNullOrEmpty(hfOppId.Value) && deadline.Value < DateTime.Today)
+            else if (string.IsNullOrEmpty(hfOppId.Value) && deadline.Value < University_Internship_Management_System.Services.JordanTime.LocalNow.Date)
             {
                 cvDates.ErrorMessage = "The application deadline can't be in the past.";
                 args.IsValid = false;

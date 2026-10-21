@@ -1,7 +1,7 @@
 ﻿<%@ Page Language="C#" AutoEventWireup="true" CodeBehind="Assign_Supervisors.aspx.cs" Inherits="University_Internship_Management_System.Coordinator.Assign_Supervisors" %>
 
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" dir="ltr">
     <head runat="server">
         <meta charset="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -10,9 +10,9 @@
         <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet" />
 
         <link href="../Assets/shared/colors.css" rel="stylesheet" />
-        <link href="../Assets/coordinator/Assign_Supervisors.css?v=20261021-original-ui" rel="stylesheet" />
+        <link href="../Assets/coordinator/Assign_Supervisors.css?v=20261021-role-pages-final" rel="stylesheet" />
     </head>
-    <body data-demo-role="admin">
+    <body data-portal="admin">
         <form id="form1" runat="server">
             <div class="app">
 
@@ -135,8 +135,8 @@
                         <div class="topbar-actions ms-auto">
 
                             <div class="user-chip">
-                                <span class="avatar" aria-hidden="true">CO</span>
-                                <span class="name">Coordinator Portal<span class="role">Interface preview</span>
+                                <span class="avatar" id="lblInitials" aria-hidden="true">—</span>
+                                <span class="name"><span id="lblUserName">Coordinator account</span><span class="role">Verified coordinator</span>
                                 </span>
                             </div>
                         </div>
@@ -144,13 +144,13 @@
 
                     <!-- ============ CONTENT ============ -->
                     <div class="content">
-                        <p class="preview-note">Interface preview · Sample data. Changes last until this page is reloaded; no Firebase updates.</p>
+                        <p class="preview-note">Loading verified Firebase records…</p>
                         <div id="pageNotice" class="page-notice" role="status" aria-live="polite" hidden>
                         </div>
                         <div class="page-header d-flex justify-content-between align-items-center animate-fade-up template-style-1">
                             <div>
                                 <h1 class="greeting">Assign Supervisors</h1>
-                                <p class="subtitle mb-0">Manage student groups and link them to their academic supervisors.</p>
+                                <p class="subtitle mb-0">Review the current academic supervisor assignment for each student.</p>
                             </div>
                             <button type="button" class="btn custom-btn-primary" data-bs-toggle="modal" data-bs-target="#addGroupModal">
                                 <i class="bi bi-plus-lg me-2" aria-hidden="true">
@@ -166,8 +166,8 @@
                                     </i>
                                 </div>
                                 <div class="stat-details">
-                                    <h3>12</h3>
-                                    <span>Total Groups</span>
+                                    <h3>—</h3>
+                                    <span>Total Students</span>
                                 </div>
                             </div>
                             <div class="stat-card animate-fade-up template-style-4">
@@ -176,8 +176,8 @@
                                     </i>
                                 </div>
                                 <div class="stat-details">
-                                    <h3>10</h3>
-                                    <span>Assigned Groups</span>
+                                    <h3>—</h3>
+                                    <span>Assigned Students</span>
                                 </div>
                             </div>
                             <div class="stat-card border-danger-left animate-fade-up template-style-6">
@@ -186,7 +186,7 @@
                                     </i>
                                 </div>
                                 <div class="stat-details">
-                                    <h3 class="text-danger">2</h3>
+                                    <h3 class="text-danger">—</h3>
                                     <span class="text-danger fw-semibold">Action Required (Unassigned)</span>
                                 </div>
                             </div>
@@ -195,15 +195,15 @@
                         <!-- MAIN TABLE PANEL -->
                         <div class="panel animate-fade-up template-style-8">
                             <div class="d-flex justify-content-between align-items-center mb-3">
-                                <h3 class="panel-title m-0">Student Groups</h3>
+                                <h3 class="panel-title m-0">Student Assignments</h3>
                             </div>
                             <div class="table-responsive">
                                 <table class="table custom-table align-middle mb-0" id="groupsTable">
                                     <thead>
                                         <tr>
-                                            <th>Group Details</th>
+                                            <th>Student record</th>
                                             <th>Department</th>
-                                            <th>Students</th>
+                                            <th>University ID</th>
                                             <th>Assigned Supervisor</th>
                                             <th class="text-end">Manage</th>
                                         </tr>
@@ -417,10 +417,10 @@
 
         </form>
 
-        <script src="../Js_project/Demo/demo-store.js?v=20261021-original-ui"></script>
-<script src="../Scripts/bootstrap.bundle.min.js">
+        <script src="../Scripts/bootstrap.bundle.min.js">
         </script>
-        <script src="../Js_project/Coordinator/Assign_Supervisors.js?v=20261021-original-ui">
+        <script src="../Js_project/Coordinator/Assign_Supervisors.js?v=20261021-role-pages-final">
         </script>
-    </body>
+    <script src="../Js_project/Public/tab-session.js" defer="defer"></script>
+</body>
 </html>

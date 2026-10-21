@@ -9,7 +9,8 @@ namespace University_Internship_Management_System
         {
             var settings = new FriendlyUrlSettings
             {
-                AutoRedirectMode = RedirectMode.Permanent
+                // Keep both ASPX and friendly routes, but never redirect away a POST carrying the tab ticket.
+                AutoRedirectMode = RedirectMode.Off
             };
             routes.EnableFriendlyUrls(settings);
         }

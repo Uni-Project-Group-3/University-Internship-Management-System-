@@ -1,7 +1,7 @@
 ﻿<%@ Page Language="C#" AutoEventWireup="true" CodeBehind="ManageOpportunities.aspx.cs" Inherits="UIMS.Company.ManageOpportunities" %>
 
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" dir="ltr">
 <head runat="server">
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -10,9 +10,9 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet" />
     <link runat="server" href="~/Assets/shared/colors.css" rel="stylesheet" />
     
-    <link runat="server" href="~/Assets/company/manage-opportunities.css?v=20261021-original-ui" rel="stylesheet" />
+    <link runat="server" href="~/Assets/company/manage-opportunities.css?v=20261021-role-pages-final" rel="stylesheet" />
 </head>
-<body data-demo-role="company">
+<body data-portal="company">
     <form id="form1" runat="server">
         <div class="app">
 
@@ -52,11 +52,11 @@
                         <input type="search" id="searchBox" placeholder="Search your opportunities..." autocomplete="off" />
                     </div>
                     <div class="topbar-actions">
-                        <button type="button" class="icon-btn" aria-label="Notifications"><i class="bi bi-bell"></i><span class="dot"></span></button>
+                        <button type="button" class="icon-btn" aria-label="Notifications unavailable" disabled="disabled" title="Notification reads are not connected"><i class="bi bi-bell"></i></button>
                         <div class="dropdown">
                             <button type="button" class="user-chip" data-bs-toggle="dropdown">
-                                <span class="avatar">MH</span>
-                                <span class="name">Mohammad H.<span class="role">Company Supervisor</span></span>
+                                <span class="avatar" id="lblInitials">—</span>
+                                <span class="name"><span id="lblUserName">Company account</span><span class="role">Company Supervisor</span></span>
                                 <i class="bi bi-chevron-down small"></i>
                             </button>
                             <ul class="dropdown-menu dropdown-menu-end">
@@ -74,7 +74,7 @@
                     <!-- Page header -->
                     <div class="page-head">
                         <div>
-                            <div class="date-line">Company Supervisor · Orange Jordan</div>
+                            <div class="date-line">COMPANY SUPERVISOR · YOUR COMPANY</div>
                             <h1 class="page-title">Manage Opportunities</h1>
                             <p class="subtitle mb-0">Post internships for JUST students, choose who can apply, and close them when seats are filled.</p>
                         </div>
@@ -383,8 +383,8 @@
         </div>
     </form>
 
-    <script src="../Js_project/Demo/demo-store.js?v=20261021-original-ui"></script>
-<script src="<%= ResolveUrl("~/Scripts/bootstrap.bundle.min.js") %>"></script>
-    <script src="../Js_project/Company/manage-opportunities.js?v=20261021-original-ui"></script>
+    <script src="<%= ResolveUrl("~/Scripts/bootstrap.bundle.min.js") %>"></script>
+    <script src="../Js_project/Company/manage-opportunities.js?v=20261021-role-pages-final"></script>
+<script src="../Js_project/Public/tab-session.js" defer="defer"></script>
 </body>
 </html>

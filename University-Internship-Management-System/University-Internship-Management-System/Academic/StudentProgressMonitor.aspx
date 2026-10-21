@@ -7,10 +7,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <link runat="server" href="~/Assets/shared/colors.css" rel="stylesheet" />
 
-    <link runat="server" href="~/Assets/academic/progress-monitor.css?v=20261021-original-ui" rel="stylesheet" />
+    <link runat="server" href="~/Assets/academic/progress-monitor.css?v=20261021-cycle3" rel="stylesheet" />
     
 </head>
-<body class="dashboard-direct app-page monitor-page" data-demo-role="academic">
+<body class="dashboard-direct app-page monitor-page" data-portal="academic">
     <form id="form1" runat="server">
         <div class="app-layout">
                         <aside class="dash-sidebar" id="dashboardSidebar" aria-label="Academic navigation">
@@ -82,8 +82,8 @@
                         </button>
                         <details class="dash-profile">
                             <summary class="dash-user-chip">
-                                <span class="dash-avatar">AS</span>
-                                <span class="dash-user-name">Academic Supervisor<span class="dash-role">Academic workspace</span>
+                                <span class="dash-avatar" id="lblInitials">—</span>
+                                <span class="dash-user-name"><span id="lblUserName">Verified account</span><span class="dash-role">Academic workspace</span>
                             </span>
                             <span aria-hidden="true">&#8964;</span>
                         </summary>
@@ -144,11 +144,12 @@
             <section class="monitor-detail-section" id="trainingHours"><h3>Training hours</h3><div class="monitor-hour-grid"><div><span>Required</span><strong>&#8212;</strong></div><div><span>Submitted</span><strong>&#8212;</strong></div><div><span>Approved</span><strong>&#8212;</strong></div><div><span>Remaining</span><strong>&#8212;</strong></div></div><div class="monitor-track" aria-hidden="true"></div><p class="monitor-detail-note">Hours progress is unavailable until approved records are connected. Completing tasks does not automatically approve hours.</p><h4>Task completion</h4><div class="monitor-track" aria-hidden="true"></div><p class="monitor-detail-note">Tracked separately from approved training hours.</p></section>
             <section class="monitor-detail-section" id="studentTasks"><h3>Tasks &amp; submissions</h3><div class="monitor-detail-empty">Task descriptions, deadlines, submissions, revision requests, and resubmission history will appear here.</div></section>
             <section class="monitor-detail-section"><h3>Company evaluations <span class="monitor-chip">Read only</span></h3><p class="monitor-detail-note">No evaluations loaded. Scores will retain the university's configured grading scale.</p></section>
-            <section class="monitor-detail-section" id="academicFeedback"><h3>Academic feedback</h3><label class="monitor-feedback-label" for="feedbackText">Your comments</label><textarea id="feedbackText" rows="4" maxlength="2000" placeholder="Feedback will be available for your assigned students after integration." disabled></textarea><p class="monitor-detail-note">Saving will require verified supervisor access and a server timestamp.</p><button type="button" id="saveAcademicFeedback" class="monitor-button">Save feedback</button></section>
+            <section class="monitor-detail-section" id="weeklyReports"><h3>Weekly company reports</h3><div id="weeklyReportList"></div></section><section class="monitor-detail-section" id="academicFeedback"><h3>Academic feedback</h3><label class="monitor-feedback-label" for="feedbackText">Your comments</label><textarea id="feedbackText" rows="4" maxlength="2000" placeholder="Feedback will be available for your assigned students after integration." disabled></textarea><p class="monitor-detail-note">Saving will require verified supervisor access and a server timestamp.</p><button type="button" id="saveAcademicFeedback" class="monitor-button">Save feedback</button></section>
         </dialog>
+<dialog id="weeklyReportDialog" class="monitor-drawer" aria-labelledby="weeklyReportTitle"><div class="monitor-drawer-heading"><h2 id="weeklyReportTitle">Weekly report</h2><button type="button" id="closeWeeklyReport" class="monitor-close" aria-label="Close weekly report">×</button></div><div id="weeklyReportContent" class="monitor-detail-section"></div><div class="monitor-detail-section"><label for="weeklyAcademicComment">Academic feedback</label><textarea id="weeklyAcademicComment" rows="4" maxlength="2000"></textarea><p id="weeklyReportError" role="alert"></p><button type="button" id="saveWeeklyAcademicComment" class="monitor-button">Save academic feedback</button></div></dialog>
     </form>
-    <script src="../Js_project/Demo/demo-store.js?v=20261021-original-ui"></script>
-<script src="<%= ResolveUrl("~/Js_project/Academic/progress-monitor.js?v=20261021-original-ui") %>"></script>
-    <script src="<%= ResolveUrl("~/Js_project/Public/dashboard-navigation.js?v=20261021-original-ui") %>"></script>
+    <script src="<%= ResolveUrl("~/Js_project/Academic/progress-monitor.js?v=20261021-role-pages-final") %>"></script>
+    <script src="<%= ResolveUrl("~/Js_project/Public/dashboard-navigation.js?v=20261021-cycle3") %>"></script>
+<script src="../Js_project/Public/tab-session.js" defer="defer"></script>
 </body>
 </html>

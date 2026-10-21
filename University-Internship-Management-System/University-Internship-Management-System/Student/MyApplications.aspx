@@ -1,6 +1,5 @@
 ﻿<%@ Page Language="C#" AutoEventWireup="true" CodeBehind="MyApplications.aspx.cs" Inherits="University_Internship_Management_System.Student.MyApplications" %>
 
-<script src="../Js_project/Demo/demo-store.js?v=20261021-original-ui"></script>
 <script runat="server">
     protected void btnLogout_Click(object sender, System.EventArgs e)
     {
@@ -11,7 +10,7 @@
 </script>
 
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" dir="ltr">
 <head runat="server">
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -21,7 +20,7 @@
     <link href="../Assets/shared/colors.css" rel="stylesheet" />
     <link href="../Assets/student/my-applications.css?v=20261021-original-ui" rel="stylesheet" />
 </head>
-<body class="standalone-shell" data-demo-role="student">
+<body class="standalone-shell" data-portal="student">
     <form id="applicationsForm" runat="server">
         <div class="app">
             <!-- نفس السايد بار المرسل، مكرر داخل الصفحة مع ضبط الروابط المتوفرة -->
@@ -91,21 +90,21 @@
                 <a href="ExploreOpportunities.aspx" class="primary-link">Explore opportunities <span aria-hidden="true">&rarr;</span></a>
             </header>
 
-            <p class="preview-note">Sample applications for preview. These are separate from the application form. Confirmation resets when you refresh.</p>
+            <p class="preview-note">Your own applications, loaded from Firebase.</p>
 
             <section class="row g-3 summary-row" aria-label="Application summary">
-                <div class="col-6 col-lg-3"><div class="summary-card"><span>Total applications</span><strong>4</strong></div></div>
-                <div class="col-6 col-lg-3"><div class="summary-card"><span>Pending review</span><strong class="pending-text">1</strong></div></div>
-                <div class="col-6 col-lg-3"><div class="summary-card"><span>Accepted offers</span><strong class="accepted-text">2</strong></div></div>
-                <div class="col-6 col-lg-3"><div class="summary-card"><span>Rejected</span><strong class="rejected-text">1</strong></div></div>
+                <div class="col-6 col-lg-3"><div class="summary-card"><span>Total applications</span><strong>—</strong></div></div>
+                <div class="col-6 col-lg-3"><div class="summary-card"><span>Pending review</span><strong class="pending-text">—</strong></div></div>
+                <div class="col-6 col-lg-3"><div class="summary-card"><span>Accepted offers</span><strong class="accepted-text">—</strong></div></div>
+                <div class="col-6 col-lg-3"><div class="summary-card"><span>Rejected</span><strong class="rejected-text">—</strong></div></div>
             </section>
 
-            <div class="guidance"><strong>Your next step</strong><p>An accepted offer needs your confirmation. You can confirm only one internship offer.</p></div>
+            <div class="guidance"><strong>Your next step</strong><p>Review your company decision and current placement. Offer confirmation will be enabled with the coordinated placement workflow.</p></div>
             <div id="confirmationNotice" class="confirmation-notice" role="status" tabindex="-1" hidden></div>
 
             <section aria-labelledby="applicationsHeading">
                 <div class="list-heading">
-                    <h2 id="applicationsHeading">Your applications <span id="resultCount" aria-live="polite">(4)</span></h2>
+                    <h2 id="applicationsHeading">Your applications <span id="resultCount" aria-live="polite">(…)</span></h2>
                     <div class="status-filter">
                         <label for="statusFilter">Status</label>
                         <select id="statusFilter" class="form-select">
@@ -118,54 +117,14 @@
                 </div>
 
                 <!-- طلبات تجريبية، وتستبدل لاحقاً بطلبات الطالب المسجل فقط -->
-                <div class="application-list">
-                    <article class="application-card" data-id="sample-web" data-status="Accepted">
-                        <div class="application-top">
-                            <div class="company-heading"><span class="company-mark" aria-hidden="true">NT</span><div><h3>Web Development Intern</h3><p class="company-name">North Tech</p></div></div>
-                            <span class="status-badge status-accepted">Accepted</span>
-                        </div>
-                        <div class="application-meta"><span>Amman · On-site</span><span>Software Engineering</span><span>8 weeks</span><span>Applied <time datetime="2026-10-15">15 Oct 2026</time></span></div>
-                        <p class="decision-note">Your application has been accepted. Review the offer before confirming.</p>
-                        <div class="application-actions"><button type="button" class="details-button" data-bs-toggle="modal" data-bs-target="#applicationModal">View details</button><button type="button" class="confirm-button" data-bs-toggle="modal" data-bs-target="#confirmModal">Confirm offer <span aria-hidden="true">&rarr;</span></button></div>
-                    </article>
-
-                    <article class="application-card" data-id="sample-security" data-status="Accepted">
-                        <div class="application-top">
-                            <div class="company-heading"><span class="company-mark" aria-hidden="true">SP</span><div><h3>Security Operations Intern</h3><p class="company-name">Secure Path</p></div></div>
-                            <span class="status-badge status-accepted">Accepted</span>
-                        </div>
-                        <div class="application-meta"><span>Remote</span><span>Cybersecurity</span><span>8 weeks</span><span>Applied <time datetime="2026-10-14">14 Oct 2026</time></span></div>
-                        <p class="decision-note">Your application has been accepted. Review the offer before confirming.</p>
-                        <div class="application-actions"><button type="button" class="details-button" data-bs-toggle="modal" data-bs-target="#applicationModal">View details</button><button type="button" class="confirm-button" data-bs-toggle="modal" data-bs-target="#confirmModal">Confirm offer <span aria-hidden="true">&rarr;</span></button></div>
-                    </article>
-
-                    <article class="application-card" data-id="sample-data" data-status="Pending">
-                        <div class="application-top">
-                            <div class="company-heading"><span class="company-mark" aria-hidden="true">DL</span><div><h3>Data Analysis Intern</h3><p class="company-name">Data Lab</p></div></div>
-                            <span class="status-badge status-pending">Pending</span>
-                        </div>
-                        <div class="application-meta"><span>Irbid · On-site</span><span>Computer Science</span><span>10 weeks</span><span>Applied <time datetime="2026-10-18">18 Oct 2026</time></span></div>
-                        <p class="decision-note">Your application is waiting for the company supervisor's review.</p>
-                        <div class="application-actions"><button type="button" class="details-button" data-bs-toggle="modal" data-bs-target="#applicationModal">View details</button></div>
-                    </article>
-
-                    <article class="application-card" data-id="sample-qa" data-status="Rejected">
-                        <div class="application-top">
-                            <div class="company-heading"><span class="company-mark" aria-hidden="true">CT</span><div><h3>Software Testing Intern</h3><p class="company-name">Clear Tech</p></div></div>
-                            <span class="status-badge status-rejected">Rejected</span>
-                        </div>
-                        <div class="application-meta"><span>Amman · On-site</span><span>Software Engineering</span><span>8 weeks</span><span>Applied <time datetime="2026-10-12">12 Oct 2026</time></span></div>
-                        <p class="decision-note">Reason: All available seats have been filled.</p>
-                        <div class="application-actions"><button type="button" class="details-button" data-bs-toggle="modal" data-bs-target="#applicationModal">View details</button></div>
-                    </article>
-                </div>
+                <div class="application-list"></div>
                 <div id="emptyState" class="empty-state" hidden><h3>No applications with this status</h3><p>Choose another status to see your applications.</p></div>
             </section>
 
             <div class="modal fade" id="applicationModal" tabindex="-1" aria-labelledby="detailsTitle" aria-hidden="true">
                 <div class="modal-dialog modal-dialog-centered"><div class="modal-content">
                     <div class="modal-header"><h2 id="detailsTitle" class="modal-title fs-5">Application details</h2><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button></div>
-                    <div class="modal-body"><p id="detailsCompany" class="modal-company"></p><div id="detailsMeta"></div><p id="detailsStatus"></p><p id="detailsDecision"></p><p class="preview-note">Sample record only. Submitted documents will appear here after database integration.</p></div>
+                    <div class="modal-body"><p id="detailsCompany" class="modal-company"></p><div id="detailsMeta"></div><p id="detailsStatus"></p><p id="detailsDecision"></p><p class="preview-note">Your Firebase application record. Private supervisor evaluations are not shown.</p></div>
                     <div class="modal-footer"><button type="button" class="details-button" data-bs-dismiss="modal">Close</button></div>
                 </div></div>
             </div>
@@ -173,7 +132,7 @@
             <div class="modal fade" id="confirmModal" tabindex="-1" aria-labelledby="confirmTitle" aria-hidden="true">
                 <div class="modal-dialog modal-dialog-centered"><div class="modal-content">
                     <div class="modal-header"><h2 id="confirmTitle" class="modal-title fs-5">Confirm this offer?</h2><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button></div>
-                    <div class="modal-body"><p id="selectedOffer"></p><p>You can confirm only one internship offer. Other applications keep their current status.</p><p class="preview-note">Preview only — your choice will reset when you refresh this page.</p></div>
+                    <div class="modal-body"><p id="selectedOffer"></p><p>You can confirm only one internship offer. Other applications keep their current status.</p><p class="preview-note">Confirmation is available only through the authorized placement workflow.</p></div>
                     <div class="modal-footer"><button type="button" class="details-button" data-bs-dismiss="modal">Keep reviewing</button><button type="button" id="confirmOffer" class="confirm-button">Confirm offer</button></div>
                 </div></div>
             </div>
@@ -184,5 +143,6 @@
     </form>
     <script src="../Scripts/bootstrap.bundle.min.js"></script>
     <script src="../Js_project/Student/my-applications.js?v=20261021-original-ui"></script>
+<script src="../Js_project/Public/tab-session.js" defer="defer"></script>
 </body>
 </html>

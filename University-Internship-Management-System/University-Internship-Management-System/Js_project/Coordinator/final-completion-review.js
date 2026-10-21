@@ -2,19 +2,20 @@
 /* Original-page demo bindings. Layout and server controls remain in the ASPX. */
 (function () {
     'use strict';
-    if (!window.UimsDemo?.enabled()) { location.replace('../Auth/Login.aspx?demo=1'); return; }
+    if (!window.UimsLive?.enabled()) return;
     let binding;
     function initialize() {
         binding?.abort();
         binding = new AbortController();
-        const signal = binding.signal, demo = window.UimsDemo;
+        const signal = binding.signal, demo = window.UimsLive;
         let view = demo.view(), selected = null, render = () => {};
-        if (!view || view.user.mustChangePassword || view.user.role !== document.body.dataset.demoRole) {
-            location.href = '../Auth/Login.aspx?demo=1';
+        if (!view || view.user.mustChangePassword || view.user.role !== document.body.dataset.portal) {
+            location.href = '../Auth/Login.aspx';
             return;
         }
         const by = id => document.getElementById(id) || document.querySelector('[id$="_' + id + '"]');
         const all = selector => [...document.querySelectorAll(selector)];
+        const displayValue=value=>typeof value==='string'&&/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?Z$/.test(value)?new Intl.DateTimeFormat('en-GB',{timeZone:'Asia/Amman',year:'numeric',month:'short',day:'2-digit',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).format(new Date(value))+' Jordan Time (UTC+3)':value;
         const escape = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
         const text = (id, value) => { const element = by(id); if (element) element.textContent = value ?? '—'; };
         const value = id => by(id)?.value?.trim() || '';
@@ -120,7 +121,7 @@
         function detail(student, id, selector) {
             const progress = view.progress.find(item => item.id === student); if (!progress) throw Error('This student is not available to this demo identity.');
             const target = document.querySelector(selector);
-            if (target) target.innerHTML = '<h3>' + escape(progress.name) + '</h3><dl>' + [['University ID',progress.universityId],['Department',progress.department],['Company',progress.company?.name],['Company Supervisor',progress.companySupervisor?.name],['Academic Supervisor',progress.supervisor?.name],['Training status',progress.placement?.completionStatus || 'Not placed'],['Approved / Required hours',progress.approvedHours + ' / ' + progress.requiredHours],['Tasks completed',progress.completedTasks + ' / ' + progress.tasks.length],['Risk indicators',progress.risks.join(', ') || 'None'],['Confirmed at UTC',progress.placement?.studentConfirmedAt],['Disable deadline UTC',progress.placement?.accountDisableAt],['Certificate',progress.placement?.certificateId]].map(([label,content]) => '<dt>' + escape(label) + '</dt><dd>' + escape(content || '—') + '</dd>').join('') + '</dl>' + progress.tasks.map(task => '<article><h4>' + escape(task.title) + '</h4><p>' + escape(task.description) + '</p><p>' + escape(task.deadline) + ' · ' + escape(task.status) + '</p><p>' + escape(task.feedback) + '</p>' + view.submissions.filter(sub => sub.taskId === task.id).map(sub => '<p>Submitted ' + escape(sub.createdAt) + ': ' + escape(sub.description) + ' · ' + escape(sub.fileName) + '</p>').join('') + '</article>').join('') + progress.evaluations.map(evaluation => '<article><h4>' + escape(evaluation.kind) + ' evaluation · ' + escape(evaluation.status) + '</h4><p>' + escape(evaluation.comments) + '</p></article>').join('');
+            if (target) target.innerHTML = '<h3>' + escape(progress.name) + '</h3><dl>' + [['University ID',progress.universityId],['Department',progress.department],['Company',progress.company?.name],['Company Supervisor',progress.companySupervisor?.name],['Academic Supervisor',progress.supervisor?.name],['Training status',progress.placement?.completionStatus || 'Not placed'],['Approved / Required hours',progress.approvedHours + ' / ' + progress.requiredHours],['Tasks completed',progress.completedTasks + ' / ' + progress.tasks.length],['Risk indicators',progress.risks.join(', ') || 'None'],['Confirmed at (Jordan Time)',progress.placement?.studentConfirmedAt],['Disable deadline (Jordan Time)',progress.placement?.accountDisableAt],['Certificate',progress.placement?.certificateId]].map(([label,content]) => '<dt>' + escape(label) + '</dt><dd>' + escape(displayValue(content) || '—') + '</dd>').join('') + '</dl>' + progress.tasks.map(task => '<article><h4>' + escape(task.title) + '</h4><p>' + escape(task.description) + '</p><p>' + escape(displayValue(task.deadline)) + ' · ' + escape(task.status) + '</p><p>' + escape(task.feedback) + '</p>' + view.submissions.filter(sub => sub.taskId === task.id).map(sub => '<p>Submitted ' + escape(displayValue(sub.createdAt)) + ': ' + escape(sub.description) + ' · ' + escape(sub.fileName) + '</p>').join('') + '</article>').join('') + progress.evaluations.map(evaluation => '<article><h4>' + escape(evaluation.kind) + ' evaluation · ' + escape(evaluation.status) + '</h4><p>' + escape(evaluation.comments) + '</p></article>').join('');
             selected = student; open(id);
         }
         function shell() {
@@ -128,7 +129,7 @@
             document.addEventListener('click', event => {
                 const element = event.target.closest('a,button,input');
                 if (element && (/log\s*out/i.test(element.textContent) || /logout/i.test(element.id))) {
-                    event.preventDefault(); event.stopImmediatePropagation(); demo.logout(); location.href = '../Auth/Login.aspx?demo=1';
+                    event.preventDefault(); event.stopImmediatePropagation(); demo.logout(); location.href = '../Auth/Login.aspx';
                 }
             }, {signal,capture:true});
             all('[id*=Logout],[id*=logout]').forEach(el => el.disabled = false);
@@ -191,11 +192,13 @@
         click('closeReport',()=>by('completionReport').hidden=true);click('printReport',()=>window.print());
 
         render();
-        notice('DEMO — original interface connected to local browser storage. No Firebase or real authentication.');
-        window.addEventListener('storage', event => { if (event.key === 'uims.demo.v1') { view=demo.view(); if(view&&!view.user.mustChangePassword&&view.user.role===document.body.dataset.demoRole)render();else location.href='../Auth/Login.aspx?demo=1'; } }, {signal});
-        window.addEventListener('focus',()=>{const current=demo.current();if(!current||current.mustChangePassword)location.href='../Auth/Login.aspx?demo=1';},{signal});
-        window.addEventListener('pageshow',()=>{const current=demo.current();if(!current||current.mustChangePassword)location.href='../Auth/Login.aspx?demo=1';},{signal});
+        notice('Live data integration is pending. No local fallback is enabled.');
+        window.addEventListener('focus',()=>{const current=demo.current();if(!current||current.mustChangePassword)location.href='../Auth/Login.aspx';},{signal});
+        window.addEventListener('pageshow',()=>{const current=demo.current();if(!current||current.mustChangePassword)location.href='../Auth/Login.aspx';},{signal});
     }
     if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',initialize,{once:true});else initialize();
     if(window.Sys?.WebForms?.PageRequestManager)Sys.WebForms.PageRequestManager.getInstance().add_endRequest(initialize);
 })();
+
+/* Live completion records. No inference of final approval from hours or task status. */
+(()=>{'use strict';let binding;async function init(){if(!window.UimsTab)return;binding?.abort();binding=new AbortController();const signal=binding.signal,by=id=>document.getElementById(id),text=(id,v)=>{if(by(id))by(id).textContent=v??'Not recorded';};['approveButton','confirmApproval','generateReport','printReport'].forEach(id=>{if(by(id)){by(id).disabled=true;by(id).title='Final evaluations, certificate delivery and approval writes are not configured.';}});try{const data=await UimsTab.request('roleData',{}, {page:'Coordinator/FinalCompletionReview'});if(signal.aborted)return;if(data.states.students!=='ready')throw Error('Student records are unavailable.');const select=by('studentSelect');select.disabled=false;select.replaceChildren(new Option('Choose a student',''));data.students.forEach(s=>select.add(new Option(s.fullName+' · '+s.studentNumber,s.id)));function render(){const s=data.students.find(s=>s.id===select.value);if(!s)return;const p=data.placements?.find(p=>p.id===s.placementId&&p.studentId===s.id),company=data.companies?.find(c=>c.id===p?.companyId),completion=data.completionRecords?.find(c=>c.studentId===s.id&&c.placementId===p?.id);text('studentName',s.fullName);text('studentNumber',s.studentNumber);text('studentMajor',s.programId);text('companyName',company?.name||p?.companyId);text('internshipTitle',p?.opportunityId);text('companySupervisor',p?.companySupervisorId);text('academicSupervisor',s.academicSupervisorId);text('reviewStatus',completion?.status||'No recorded completion approval');text('hoursText',p&&Number.isFinite(p.approvedHours)&&Number.isFinite(p.requiredHours)?p.approvedHours+' / '+p.requiredHours+' approved hours':'Approved hours unavailable');if(by('hoursProgress')){by('hoursProgress').max=p?.requiredHours>0?p.requiredHours:1;by('hoursProgress').value=Number.isFinite(p?.approvedHours)?p.approvedHours:0;}['companyStatus','companyDate','companyRecommendation','companyFeedback','academicStatus','academicDate','academicRecommendation','academicFeedback'].forEach(id=>text(id,'Private evaluation access is not configured'));text('eligibilityMessage','Completion cannot be approved from hours alone. Both final evaluations and the official completion conditions require verified integration.');text('approvalNotice','Read-only live records. No completion state was changed.');const list=by('requirementsList');if(list){list.replaceChildren();['Training status: '+(p?.status||'No current placement'),'Completion record: '+(completion?.status||'Not recorded'),'Final evaluations and certificate delivery: unavailable'].forEach(v=>{const li=document.createElement('li');li.textContent=v;list.append(li);});}}select.addEventListener('change',render,{signal});text('reviewStatus','Choose a student to inspect live records');}catch(error){text('reviewStatus',error.message);}}if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();})();

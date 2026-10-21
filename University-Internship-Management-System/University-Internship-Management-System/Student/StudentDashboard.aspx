@@ -1,7 +1,7 @@
-﻿<%@ Page Language="C#" AutoEventWireup="true" CodeBehind="StudentDashboard.aspx.cs" Inherits="UIMS.Student.StudentDashboard" %>
+﻿<%@ Page Language="C#" AutoEventWireup="true" Async="true" CodeBehind="StudentDashboard.aspx.cs" Inherits="UIMS.Student.StudentDashboard" %>
 
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" dir="ltr">
 <head runat="server">
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -11,7 +11,7 @@
     <link runat="server" href="~/Assets/shared/colors.css" rel="stylesheet" />
     <link runat="server" href="~/Assets/Student/student-dashboard.css?v=20261021-original-ui" rel="stylesheet" />
 </head>
-<body data-demo-role="student">
+<body data-portal="student">
     <form id="form1" runat="server">
         <div class="app">
 
@@ -57,7 +57,7 @@
                         <input type="text" placeholder="Search for internships, companies, or skills..." />
                     </div>
                     <div class="topbar-actions">
-                        <button type="button" class="icon-btn"><i class="bi bi-bell"></i><span class="dot"></span></button>
+                        <button type="button" class="icon-btn"><i class="bi bi-bell"></i></button>
                         <div class="dropdown">
                             <button type="button" class="user-chip" data-bs-toggle="dropdown">
                                 <span class="avatar"><asp:Label ID="lblInitials" runat="server" /></span>
@@ -75,7 +75,7 @@
                 </header>
 
                 <!-- ============ CONTENT ============ -->
-                <main class="content"><p class="uims-feedback" id="studentCompletionNotice" role="status" hidden></p><button type="button" class="btn-hero" id="reviewStudentCompletion" hidden>Review completion &amp; certificate</button>
+                <main class="content"><p class="small text-secondary" role="status"><%= System.Web.HttpUtility.HtmlEncode(DataStatus) %></p><p class="uims-feedback" id="studentCompletionNotice" role="status" hidden></p><button type="button" class="btn-hero" id="reviewStudentCompletion" hidden>Review completion &amp; certificate</button>
                     <div class="date-line"><asp:Label ID="lblDate" runat="server" /></div>
                     <h1 class="greeting"><asp:Label ID="lblGreeting" runat="server" /></h1>
                     <p class="subtitle">Your internship journey, all in one place.</p>
@@ -87,7 +87,7 @@
                                 <div class="stat-icon"><i class="bi bi-file-earmark-text"></i></div>
                                 <div class="stat-label">Applied</div>
                                 <div class="stat-value"><asp:Label ID="lblApplied" runat="server" /></div>
-                                <div class="stat-note">2 this month</div>
+                                <div class="stat-note">Your matching application records</div>
                             </div>
                         </div>
                         <div class="col-6 col-xl-3">
@@ -95,7 +95,7 @@
                                 <div class="stat-icon"><i class="bi bi-clock"></i></div>
                                 <div class="stat-label">In Review</div>
                                 <div class="stat-value"><asp:Label ID="lblInReview" runat="server" /></div>
-                                <div class="stat-note">1 new update</div>
+                                <div class="stat-note">Current application status</div>
                             </div>
                         </div>
                         <div class="col-6 col-xl-3">
@@ -103,7 +103,7 @@
                                 <div class="stat-icon success"><i class="bi bi-check-lg"></i></div>
                                 <div class="stat-label">Pending Tasks</div>
                                 <div class="stat-value"><asp:Label ID="lblTasks" runat="server" /></div>
-                                <div class="stat-note">Next due Oct 23</div>
+                                <div class="stat-note">Assigned tasks not completed</div>
                             </div>
                         </div>
                         <div class="col-6 col-xl-3">
@@ -111,7 +111,7 @@
                                 <div class="stat-icon"><i class="bi bi-hourglass-split"></i></div>
                                 <div class="stat-label">Approved Hours</div>
                                 <div class="stat-value"><asp:Label ID="lblHours" runat="server" /></div>
-                                <div class="stat-note">of 280 required</div>
+                                <div class="stat-note">Approved records only</div>
                             </div>
                         </div>
                     </div>
@@ -132,30 +132,7 @@
                                     <h3>Recent Applications</h3>
                                     <a href="MyApplications.aspx">View all</a>
                                 </div>
-                                <div class="list-row">
-                                    <div class="row-icon">O</div>
-                                    <div class="row-body">
-                                        <div class="row-title">Frontend Developer Intern</div>
-                                        <div class="row-sub">Orange Jordan</div>
-                                    </div>
-                                    <div class="row-meta"><span class="status info">In Review</span><div class="when">Oct 12, 2026</div></div>
-                                </div>
-                                <div class="list-row">
-                                    <div class="row-icon">Z</div>
-                                    <div class="row-body">
-                                        <div class="row-title">Software Engineering Intern</div>
-                                        <div class="row-sub">Zain Jordan</div>
-                                    </div>
-                                    <div class="row-meta"><span class="status success">Accepted</span><div class="when">Oct 8, 2026</div></div>
-                                </div>
-                                <div class="list-row">
-                                    <div class="row-icon">A</div>
-                                    <div class="row-body">
-                                        <div class="row-title">IT Support Intern</div>
-                                        <div class="row-sub">Aramex</div>
-                                    </div>
-                                    <div class="row-meta"><span class="status danger">Rejected</span><div class="when">Oct 5, 2026</div></div>
-                                </div>
+                                <%= RecentApplicationsHtml %>
                             </div>
                         </div>
 
@@ -166,22 +143,7 @@
                                     <h3>Upcoming Deadlines</h3>
                                     <a href="MyTasks.aspx">View all</a>
                                 </div>
-                                <div class="list-row">
-                                    <div class="row-icon soft"><i class="bi bi-calendar-event"></i></div>
-                                    <div class="row-body">
-                                        <div class="row-title">Weekly Report #3</div>
-                                        <div class="row-sub">Zain Jordan</div>
-                                    </div>
-                                    <div class="row-meta"><div class="when-strong">Thu, Oct 23</div><div class="when"><i class="bi bi-clock"></i> 11:59 PM</div></div>
-                                </div>
-                                <div class="list-row">
-                                    <div class="row-icon soft"><i class="bi bi-arrow-repeat"></i></div>
-                                    <div class="row-body">
-                                        <div class="row-title">Login Page UI</div>
-                                        <div class="row-sub"><span class="status warning">Revision requested</span></div>
-                                    </div>
-                                    <div class="row-meta"><div class="when-strong">Mon, Oct 27</div><div class="when"><i class="bi bi-clock"></i> 02:30 PM</div></div>
-                                </div>
+                                <%= DeadlinesHtml %>
                             </div>
 
                             <div class="panel">
@@ -190,13 +152,13 @@
                                     <a href="MyProgressEvaluation.aspx">Details</a>
                                 </div>
                                 <div class="d-flex justify-content-between small mt-2">
-                                    <span class="fw-semibold">Training hours</span><span class="text-secondary">96 / 280 h</span>
+                                    <span class="fw-semibold">Training hours</span><span class="text-secondary"><%= System.Web.HttpUtility.HtmlEncode(HoursText) %></span>
                                 </div>
-                                <div class="progress-slim"><span style="width: 34%"></span></div>
+                                <% if (HasHoursProgress) { %><div class="progress-slim"><span style="width: <%= HoursPercent %>%"></span></div><% } %><p class="small text-secondary">Approved placement hours; final approval is a separate workflow.</p>
                                 <div class="d-flex justify-content-between small mt-3">
-                                    <span class="fw-semibold">Tasks completed</span><span class="text-secondary">5 / 8</span>
+                                    <span class="fw-semibold">Tasks reviewed</span><span class="text-secondary"><%= System.Web.HttpUtility.HtmlEncode(TasksText) %></span>
                                 </div>
-                                <div class="progress-slim"><span class="success" style="width: 62%"></span></div>
+                                <div class="progress-slim"><span class="success" style="width: <%= TasksPercent %>%"></span></div>
                             </div>
                         </div>
                     </div>
@@ -205,9 +167,9 @@
         </div>
     <dialog id="studentCompletionDialog" class="uims-completion-dialog" aria-labelledby="studentCompletionTitle"><header><h2 id="studentCompletionTitle">Your internship completion</h2><button type="button" data-close aria-label="Close completion notice">&times;</button></header><div><p id="studentCompletionInfo"></p><p id="studentCompletionWarning">Confirming makes a demonstration certificate available and starts a persisted 60-minute grace period. This simulation checks expiry on access; it is not a real background scheduler.</p><button type="button" id="confirmStudentCompletion">Confirm Completion</button><button type="button" id="reviewCompletionLater" data-close>Review Later</button><button type="button" id="downloadStudentCertificate">Download demo certificate</button><button type="button" id="printStudentCertificate">Print demo certificate</button></div></dialog></form>
 
-    <script src="../Js_project/Demo/demo-store.js?v=20261021-original-ui"></script>
-<script src="<%= ResolveUrl("~/Scripts/bootstrap.bundle.min.js") %>"></script>
+    <script src="<%= ResolveUrl("~/Scripts/bootstrap.bundle.min.js") %>"></script>
     <script src="<%= ResolveUrl("~/Js_project/Public/dashboard-navigation.js?v=20261021-original-ui") %>"></script>
-<script src="../Js_project/Student/student-dashboard.js?v=20261021-original-ui"></script>
+
+<script src="../Js_project/Public/tab-session.js?v=20261021-postback-ticket" defer="defer"></script>
 </body>
 </html>
