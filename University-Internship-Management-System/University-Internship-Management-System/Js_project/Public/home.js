@@ -17,7 +17,7 @@
        Coordinates: x = east(+), z = south(+)/north(-), y = up. Metres. Eye height is added automatically.
        Stage durations: change holdVh (viewing time) / travelVh (walking time) – units are viewport heights.
        Text height never changes camera timing: a hold simply grows if its content is taller than holdVh. */
-const JOURNEY={eyeHeight:1.7,horizontalFovDeg:62,fovLimits:[36,70],scrollSmoothing:10,travelVh:[65,145,38,38,55,110],holdVh:[28,18,12,28,8,40,40],stages:[{"id":"gateIntro","pos":[19,23],"look":[16,11,0]},{"id":"gateOverview","pos":[6.8,100],"look":[0,6,0]},{"id":"walkwayOverview","pos":[0,-57],"look":[0,3.1,-120]},{"id":"opportunityColumn","pos":[3.5,-58],"look":[7.6,2.7,-58]},{"id":"courtyardReturn","pos":[0,-57],"look":[0,3.1,-120]},{"id":"platformVideo","pos":[-2,-94],"look":[0,5,-118]},{"id":"facultyQuestions","pos":[88,-72],"look":[94,12,-136]}],travel:[{"via":[],"viaLook":[]},{"via":[[6.8,30],[6.8,-12],[1,-42]],"viaLook":[]},{"via":[[1,-57]],"viaLook":[]},{"via":[[1,-57]],"viaLook":[]},{"via":[[-2,-75]],"viaLook":[]},{"via":[[9,-94],[24,-105],[45,-108],[64,-104],[78,-91]],"viaLook":[]}] };
+const JOURNEY={eyeHeight:1.7,horizontalFovDeg:62,fovLimits:[36,70],scrollSmoothing:10,travelVh:[65,145,38,38,55,110,100,145],holdVh:[34,90,8,420,6,70,110,65,110],stages:[{"id":"gateIntro","pos":[19,23],"look":[16,11,0]},{"id":"gateOverview","pos":[0,100],"look":[0,6,0]},{"id":"walkwayOverview","pos":[0,-57],"look":[0,3.1,-120]},{"id":"opportunityColumn","pos":[5.25,-58],"look":[7.6,2.7,-58]},{"id":"courtyardReturn","pos":[0,-57],"look":[0,3.1,-120]},{"id":"platformVideo","pos":[-2,-94],"look":[0,5,-118]},{"id":"facultyQuestions","pos":[87,-104],"look":[87,7.6,-129.6]},{"id":"facultyReveal","pos":[110,-52],"look":[110,7,-136]},{"id":"campusFooter","pos":[110,-40],"look":[110,0,-41.4]}],travel:[{"via":[],"viaLook":[]},{"via":[[6.8,30],[6.8,-12],[1,-42]],"viaLook":[]},{"via":[[1,-57]],"viaLook":[]},{"via":[[1,-57]],"viaLook":[]},{"via":[[-2,-75]],"viaLook":[]},{"via":[[9,-94],[24,-105],[45,-108],[64,-104],[78,-91]],"viaLook":[]},{"via":[],"viaLook":[]},{"via":[],"viaLook":[]}] };
 
 /* 1b. ARCHITECTURAL DIMENSIONS – all values are ESTIMATES scaled from the reference photographs
        (gate photo: ~25 px per metre assumed from a tower diameter of ~7.6 m). Not surveyed. */
@@ -208,7 +208,7 @@ function fallbackCrest(){const c=cv(256,256),g=c.getContext('2d');g.clearRect(0,
   g.fillStyle='#cdbb98';g.beginPath();g.arc(128,128,120,0,7);g.fill();g.strokeStyle='#8c7a58';g.lineWidth=8;g.beginPath();g.arc(128,128,112,0,7);g.stroke();
   const t=new T.CanvasTexture(c);t.encoding=T.sRGBEncoding;return t}
 function signTexture(lines,w,h,{dir='ltr',color='#222',font,px,aspect}){const c=cv(w,h),g=c.getContext('2d');g.clearRect(0,0,w,h);g.fillStyle=color;g.textAlign='center';g.textBaseline='middle';g.direction=dir;
-  lines.forEach(l=>{g.font=l.font||font;g.textAlign=l.align||'center';g.fillText(l.t,l.x*w,l.y*h)});const t=new T.CanvasTexture(c);t.encoding=T.sRGBEncoding;t.anisotropy=maxAniso;return t}
+  lines.forEach(l=>{g.font=l.font||font;g.textAlign=l.align||'center';g.save();g.shadowColor='rgba(255,248,226,.3)';g.shadowBlur=.5;g.shadowOffsetY=1;g.fillText(l.t,l.x*w,l.y*h,w*.94);g.restore()});const t=new T.CanvasTexture(c);t.encoding=T.sRGBEncoding;t.anisotropy=maxAniso;return t}
 const decalMat=t=>new T.MeshStandardMaterial({map:t,transparent:true,roughness:.7,polygonOffset:true,polygonOffsetFactor:-3,polygonOffsetUnits:-3,depthWrite:false,envMapIntensity:.3});
 const ARABIC='"Noto Naskh Arabic","Traditional Arabic","Segoe UI",Tahoma,Arial,serif';
 
@@ -299,7 +299,7 @@ function buildMainGate(){
     crestPatch(x,G.crestY,gz,G.towerR,G.crestR,0);
     colRect(x-G.blockW/2,x+G.blockW/2,gz-G.blockD/2,gz+G.blockD/2,'gate-block')}
   /* --- English / Arabic names on the pale tower bases --- */
-  const enT=signTexture([{t:'JORDAN UNIVERSITY OF',x:.5,y:.36,font:'bold 74px Arial, Helvetica, sans-serif'},{t:'SCIENCE AND TECHNOLOGY',x:.5,y:.66,font:'bold 74px Arial, Helvetica, sans-serif'}],1024,300,{color:'#1c1c1c'});
+  const enT=signTexture([{t:'JORDAN UNIVERSITY OF',x:.5,y:.36,font:'500 66px Arial, Helvetica, sans-serif'},{t:'SCIENCE AND TECHNOLOGY',x:.5,y:.66,font:'500 66px Arial, Helvetica, sans-serif'}],1024,300,{color:'#1c1c1c'});
   const arT=signTexture([{t:'جامعة العلوم',x:.5,y:.33,font:`bold 124px ${ARABIC}`},{t:'والتكنولوجيا الأردنية',x:.5,y:.7,font:`bold 118px ${ARABIC}`}],1024,300,{dir:'rtl',color:'#1c1c1c'});
   const sy=4.55,sw=7.3,sh=sw*300/1024*1;
   add(new T.PlaneGeometry(sw,sh),decalMat(enT),gx-G.blockCx,sy,gz+G.blockD/2+.02,0,false,false);
@@ -395,7 +395,7 @@ function buildCampusCourtyard(){
   /* covered portal (entrance from the gate road): columns, roof slab with visible underside, shallow-arched lintel */
   const pz=cz+R-1;
   for(const s of[-1,1])for(let i=0;i<4;i++){const z=pz+9-i*5.2;add(bx(1.5,5.6,1.5),MAT.courtStone,s*7.6,2.8,z);colRect(s*7.6-.75,s*7.6+.75,z-.75,z+.75,'portal-col')}
-  add(bx(17.6,.8,17),MAT.ceiling,0,6.0,pz+.5);add(bx(17.8,.3,17.2),MAT.copingStone,0,6.55,pz+.5);
+add(bx(17.6,.8,17),MAT.ceiling,0,6.0,pz+.5);add(bx(17.8,.3,17.2),MAT.copingStone,0,6.55,pz+.5);
   for(let i=0;i<4;i++)add(bx(17,.4,.5),MAT.copingStone,0,5.4,pz+9-i*5.2);
   const ls=new T.Shape(),hw=6.2,rs=.9,Rl=(hw*hw+rs*rs)/(2*rs),cyl0=rs-Rl,al=Math.atan2(-cyl0,hw);
   ls.moveTo(-8.8,0);ls.lineTo(-hw,0);ls.absarc(0,cyl0,Rl,Math.PI-al,al,true);ls.lineTo(8.8,0);ls.lineTo(8.8,2.1);ls.lineTo(-8.8,2.1);ls.closePath();
@@ -414,7 +414,7 @@ function planter(x,z,w,d,ry){add(bx(w,.5,d),MAT.copingStone,x,.25,z,ry);add(bx(w
    ===================================================================== */
 function buildITFaculty(){
   const F=DIM.faculty,fx=POS.faculty.x,fz=POS.faculty.z,dep=F.depth;
-  const pp=add(new T.PlaneGeometry(120,70).rotateX(-Math.PI/2),MAT.facultyPaving,fx+5,.02,fz+38,0,false,true);mUV(pp.geometry);
+  const pp=add(new T.PlaneGeometry(120,160).rotateX(-Math.PI/2),MAT.facultyPaving,fx+5,.02,fz+38,0,false,true);mUV(pp.geometry);
   /* central recessed blue-glass vertical section, flanked by tall pale ribbed masses */
   add(new T.PlaneGeometry(F.glassW,F.glassH),MAT.blueGlass,fx,F.glassH/2,fz-1.0,0,false,true);
   add(bx(F.glassW+.2,.5,.6),MAT.stucco,fx,F.glassH+.2,fz-.8);
@@ -441,9 +441,9 @@ function buildITFaculty(){
   planter(fx-24,fz+11,13,2.6,0);planter(fx-9,fz+17.5,12,2.8,0);planter(fx+16,fz+12,14,2.6,0);planter(fx+34,fz+11,12,2.6,0);planter(fx+3,fz+13,6,2.4,0);
   [[-30,8],[-16,8],[-4,9],[7,9],[24,8],[38,8]].forEach(([dx,dz])=>plant('topiary',fx+dx,fz+dz,1.0+rnd()*.2));
   [[-22,7],[-10,7],[22,7]].forEach(([dx,dz])=>plant('cyp',fx+dx,fz+dz,.7+rnd()*.1));
-  plant('palm',fx-31,fz+12,1.0,1.2);plant('palm',fx+27,fz+11,1.05,.4);
-  colCirc(fx-31,fz+12,.8,'palm');colCirc(fx+27,fz+11,.8,'palm');
-  lampCluster(fx-26,fz+14,5.4);lampCluster(fx+5,fz+16,5.4);lampCluster(fx+30,fz+14,5.4);
+  plant('palm',94,fz+12,.44,1.2);plant('palm',fx+27,fz+11,1.05,.4);
+  colCirc(94,fz+12,.5,'palm');colCirc(fx+27,fz+11,.8,'palm');
+  lampCluster(fx-36,fz+14,5.4);lampCluster(fx+5,fz+16,5.4);lampCluster(fx+30,fz+14,5.4);
   const pool={x:fx-2,z:fz+24,w:10,d:4.2};                                  // basin visible in the faculty photo (position/size estimated)
   add(bx(pool.w,.3,pool.d),MAT.copingStone,pool.x,.15,pool.z);add(bx(pool.w-.8,.05,pool.d-.8),MAT.water,pool.x,.31,pool.z,0,false,true);
   colRect(pool.x-pool.w/2-1,pool.x+pool.w/2+1,pool.z-pool.d/2-1,pool.z+pool.d/2+1,'pool');
@@ -488,16 +488,35 @@ const J={cam:null,travel:[],hold:[],segs:[],cur:0,tgt:0,dirty:true,lookV:new T.V
 function createJourneyCamera(){
   const cam=new T.PerspectiveCamera(40,1,.1,900),eye=JOURNEY.eyeHeight,P=(x,z)=>new T.Vector3(x,eye,z),Lk=(x,y,z)=>new T.Vector3(x,y,z);
   J.hold=JOURNEY.stages.map(s=>({pos:P(...s.pos),look:Lk(...s.look)}));
+  J.hold[3].pos.y=2.7;J.hold[8].pos.y=1.0;
   J.travel=JOURNEY.travel.map((t,i)=>{const from=J.hold[i],to=J.hold[i+1];const pos=new T.CatmullRomCurve3([from.pos,...t.via.map(v=>P(...v)),to.pos],false,'centripetal');pos.arcLengthDivisions=1200;pos.updateArcLengths();const look=new T.CatmullRomCurve3([from.look,...t.viaLook.map(v=>Lk(...v)),to.look],false,'centripetal');return {pos,look};});
   J.cam=cam;return cam}
 function fitCamera(){const a=innerWidth/innerHeight,v=2*Math.atan(Math.tan(JOURNEY.horizontalFovDeg*D2R/2)/a)/D2R;
-  J.cam.aspect=a;J.cam.fov=clamp(v,JOURNEY.fovLimits[0],JOURNEY.fovLimits[1]);J.cam.updateProjectionMatrix();J.dirty=true}
+  J.cam.aspect=a;J.cam.fov=clamp(v,JOURNEY.fovLimits[0],JOURNEY.fovLimits[1]);J.cam.updateProjectionMatrix();fitVideoStage(a);fitFlyerStage(a);J.dirty=true}
+function fitVideoStage(a){ /* park the camera so the video screen fills ~66% (desktop) – 92% (portrait) of the viewport width */
+  if(!J.hold.length)return;const vf=J.cam.fov*D2R,hf=2*Math.atan(Math.tan(vf/2)*a),frac=a<.8?.92:a<1.2?.8:.66,d=Math.max(6,Math.max(8.35/(frac*2*Math.tan(hf/2)),4.65/(.66*2*Math.tan(vf/2))));
+  JOURNEY.stages[5].pos[1]=-118+d;const eye=JOURNEY.eyeHeight,P=(x,z)=>new T.Vector3(x,eye,z);J.hold[5].pos.copy(new T.Vector3(0,5,-118+d));J.hold[5].look.set(0,5,-118);
+  [4,5].forEach(i=>{const t=JOURNEY.travel[i],from=J.hold[i],to=J.hold[i+1],pos=new T.CatmullRomCurve3([from.pos,...t.via.map(v=>P(...v)),to.pos],false,'centripetal');pos.arcLengthDivisions=1200;pos.updateArcLengths();J.travel[i].pos=pos})}
+
+// Papers occupy a real vertical strip on the pillar. Camera pauses at each
+// centre, then moves down; all three remain fixed in world coordinates.
+function flyerGeometry(){const mobile=innerWidth<=700;return {width:mobile?540:900,height:mobile?700:520,worldWidth:1.1,spacing:mobile?1.5:.86,top:4.3};}
+function flyerProgress(t){const ease=v=>{v=clamp(v,0,1);return v*v*(3-2*v)};const p=t<.2?0:t<.4?ease((t-.2)/.2):t<.6?1:t<.8?1+ease((t-.6)/.2):2;return RM()?Math.round(p):p;}
+function fitFlyerStage(a){if(!J.hold.length)return;const g=flyerGeometry(),vf=J.cam.fov*D2R,hf=2*Math.atan(Math.tan(vf/2)*a),wh=g.worldWidth*g.height/g.width,d=Math.max(g.worldWidth/(.8*2*Math.tan(hf/2)),wh/(.65*2*Math.tan(vf/2)));J.hold[3].pos.set(6.843-d,g.top+.035,-58);J.hold[3].look.set(7.6,g.top+.035,-58);[2,3].forEach(i=>{const start=J.hold[i].pos.clone();if(i===3)start.y-=2*g.spacing;const tr=JOURNEY.travel[i],curve=new T.CatmullRomCurve3([start,...tr.via.map(v=>new T.Vector3(v[0],JOURNEY.eyeHeight,v[1])),J.hold[i+1].pos],false,'centripetal');curve.arcLengthDivisions=1200;curve.updateArcLengths();J.travel[i].pos=curve});}
+
 /* Segment boundaries come from the DOM, so taller hold content lengthens the pause without changing travel speed. */
 function measureJourney(){const root=document.getElementById('content-layer'),els=[...root.children],y=scrollY;
   els.forEach(e=>{if(e.dataset.travel!==undefined)e.style.setProperty('height',JOURNEY.travelVh[+e.dataset.travel]+'vh');if(e.dataset.stage!==undefined)e.style.setProperty('min-height',JOURNEY.holdVh[+e.dataset.stage]+'vh')});
   J.segs=els.map(e=>{const r=e.getBoundingClientRect();return{type:e.dataset.travel!==undefined?'travel':'hold',i:+(e.dataset.travel??e.dataset.stage),start:r.top+y,len:r.height}});J.dirty=true}
 function poseAt(seg,s){const t=clamp((s-seg.start)/Math.max(1,seg.len),0,1);
-  if(seg.type==='hold'){J.posV.copy(J.hold[seg.i].pos);J.lookV.copy(J.hold[seg.i].look);return}
+  if(seg.type==='travel'&&seg.i===7){
+    // Lower and slide BACK from the college, easing both ends. A much gentler
+    // viewing angle keeps the paving/footer in view without a forward dive.
+    const e=RM()?(t<.5?0:1):t*t*t*(t*(t*6-15)+10),a=J.hold[7],b=J.hold[8];
+    J.posV.lerpVectors(a.pos,b.pos,e);const m=new T.Matrix4(),qa=new T.Quaternion(),qb=new T.Quaternion();
+    m.lookAt(a.pos,a.look,new T.Vector3(0,1,0));qa.setFromRotationMatrix(m);m.lookAt(b.pos,b.look,new T.Vector3(0,1,0));qb.setFromRotationMatrix(m);qa.slerp(qb,e);J.lookV.set(0,0,-30).applyQuaternion(qa).add(J.posV);return;
+  }
+  if(seg.type==='hold'){J.posV.copy(J.hold[seg.i].pos);J.lookV.copy(J.hold[seg.i].look);if(seg.i===3){const dy=flyerProgress(t)*flyerGeometry().spacing;J.posV.y-=dy;J.lookV.y-=dy;}return}
   // Short velocity ramps only at actual stops; constant speed in the middle.
   const edge=.08, ramp=t<edge?t*t/(2*edge):t>1-edge?1-edge-(1-t)*(1-t)/(2*edge):t-edge/2;
   const e=RM()?(t<.5?0:1):ramp/(1-edge),tr=J.travel[seg.i];tr.pos.getPointAt(e,J.posV);
@@ -514,11 +533,14 @@ function updateJourneyFromScroll(dt){
   J.cam.position.copy(J.posV);J.cam.up.set(0,1,0);
   // Offset projection reserves sky space without raising the viewer above eye level.
   const stage=seg.type==='hold'?seg.i:seg.i+clamp((J.cur-seg.start)/seg.len,0,1);
-  const reserve=Math.max(0,1-Math.abs(stage-0))*0.12+Math.max(0,1-Math.abs(stage-6))*0.12;
-  const w=innerWidth,h=innerHeight;J.cam.setViewOffset(w,h,-reserve*w,-reserve*h,w,h);
+  const reserve=Math.max(0,1-Math.abs(stage))*0.08;const side=innerWidth>700?Math.max(0,1-Math.abs(stage-1))*.25+Math.max(0,1-Math.abs(stage-6))*.20:0;
+  const w=innerWidth,h=innerHeight;const faqSpace=Math.max(0,1-Math.abs(stage-6))*(innerWidth>700?0:.32);
+  const mobileAbout=innerWidth<=700?Math.max(0,1-Math.abs(stage-1))*.2:0;
+  J.cam.setViewOffset(w,h,-(reserve+side)*w,(-reserve-faqSpace+mobileAbout)*h,w,h);
   J.cam.lookAt(J.lookV);const nextDirection=new T.Vector3();J.cam.getWorldDirection(nextDirection);
   if(Math.abs(d)>.25||previous.distanceToSquared(J.cam.position)>1e-9||direction.distanceToSquared(nextDirection)>1e-9)J.dirty=true;
   updateScreenReveal(stage);
+  if(window.updateUI)window.updateUI(stage);
 }
 
 /* Route sanity check against registered obstacles (development aid; results kept in window.__routeReport) */
@@ -573,4 +595,86 @@ function showFallback(msg){document.getElementById('fallback').hidden=false;if(m
       renderer.render(scene,J.cam);if(Math.abs(J.tgt-J.cur)>.25)J.dirty=true})();
     window.__just={JOURNEY,DIM,POS,J,COLLIDERS,crestIsFallback:CREST_IS_FALLBACK};window.campusStages={goTo(name){const s=J.segs.find(s=>s.type==='hold'&&JOURNEY.stages[s.i].id===name);if(s)scrollTo({top:s.start,behavior:'auto'});},anchors:{flyerSurface:{position:[6.84,2.7,-58],width:1.4,height:2.3},videoDisplay:window.campusMedia.display}};
   }catch(err){showFallback(err)}
+})();
+
+;
+
+/* =====================  UI LAYER (content, nav, overlays)  =====================
+   Edit CONFIG to connect real data.  Nothing here is fetched from a server. */
+const CONFIG={
+  videoSrc:'',            // <- put your video URL here, e.g. 'media/just-internships.mp4'
+  videoPoster:'',
+  links:{login:'../Auth/Login.aspx',contact:'../Contact.aspx'},   // <- e.g. login:'Login.aspx', contact:'mailto:...'. Empty = shows a "not connected" note.
+  opportunities:[        // SAMPLE DATA – replace with live data. Company names are fictional.
+   {field:'Software Engineering',company:'Nexora Systems',mono:'N',deadline:'15 Dec 2026',seats:6,hours:'240 hours',accent:'#e4eae4'},
+   {field:'Data & Analytics',company:'Levant Insight',mono:'L',deadline:'22 Dec 2026',seats:4,hours:'200 hours',accent:'#e7e9ef'},
+   {field:'Network & Security',company:'Petra Networks',mono:'P',deadline:'05 Jan 2027',seats:3,hours:'180 hours',accent:'#eee5df'},
+   {field:'Digital Design',company:'Zaytoun Studio',mono:'Z',deadline:'12 Jan 2027',seats:5,hours:'160 hours',accent:'#6b4a12'}],
+  faq:[
+   ['What is this platform for?','It helps JUST students discover internship opportunities and manage their training journey in one place.'],
+   ['How do I find internships?','Open Opportunities. Each announcement lists the field, company, application deadline, available seats and training hours.'],
+   ['How do I apply?','Log in, choose an announcement and follow the application steps shown there. Check the deadline first.'],
+   ['Where do I manage my training?','After logging in, your account is where you follow your training journey from application onwards.'],
+   ['Who can apply for an opportunity?','Eligibility is set by your faculty and by each announcement. Please confirm requirements with your department before applying.'],
+   ['Who do I ask for help?','Use the Contact link. Your department can also advise on training requirements.']]
+};
+(function(){
+ const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
+ const RM=()=>matchMedia('(prefers-reduced-motion:reduce)').matches;
+ /* flyers */
+ $('#flyers').innerHTML=CONFIG.opportunities.slice(0,3).map(o=>`<article class="flyer" role="listitem" tabindex="0" style="--accent:${o.accent}" aria-label="${o.field} at ${o.company}">
+  <div class="fhead"><div class="fco"><span class="mono" aria-hidden="true">${o.mono}</span>${o.company}</div><div class="fkick">Student training opportunity</div><h3>${o.field}</h3></div>
+  <div class="fbody"><p class="flyer-description">${({"Software Engineering":"Develop practical software skills through a structured training placement.","Data & Analytics":"Explore data, reporting and analytical thinking in a professional setting.","Network & Security":"Build practical experience with networks and information security."})[o.field]||"Explore a practical training placement in your field."}</p><dl><div class="row"><dt>Deadline</dt><dd>${o.deadline}</dd></div><div class="row"><dt>Seats</dt><dd>${o.seats} available</dd></div><div class="row"><dt>Training</dt><dd>${o.hours}</dd></div></dl></div>
+  <div class="ffoot"><a class="btn" href="#login" data-link="login">Sign in to explore</a><span class="stamp">SAMPLE</span></div></article>`).join('');
+ $('#faq').innerHTML=CONFIG.faq.map((f,i)=>`<details${i==0?' open':''}><summary>${f[0]}</summary><p>${f[1]}</p></details>`).join('');
+ /* accordion: one open at a time */
+ $$('#faq details').forEach(d=>d.addEventListener('toggle',()=>{if(d.open)$$('#faq details').forEach(o=>{if(o!==d)o.open=false})}));
+ /* stops */
+ const STOPS=[['gateIntro',0,'p0','Welcome'],['gateOverview',1,'p1','About'],['opportunityColumn',3,'p2','Opportunities'],['platformVideo',5,'vid','Video'],['facultyQuestions',6,'p4','Q&A'],['campusFooter',8,'footer','Footer']];
+ const dots=$('.dots');dots.innerHTML=STOPS.map(s=>`<button type="button" data-go="${s[0]}" aria-label="${s[3]}" title="${s[3]}"></button>`).join('');
+ const toast=(m)=>{const t=$('#toast');t.textContent=m;t.classList.add('show');clearTimeout(toast.h);toast.h=setTimeout(()=>t.classList.remove('show'),3200)};
+ function goTo(name){const J=window.__just&&window.__just.J;if(!J)return;const s=J.segs.find(s=>s.type==='hold'&&window.__just.JOURNEY.stages[s.i].id===name);if(s)scrollTo({top:s.start,behavior:RM()?'auto':'smooth'})}
+ document.addEventListener('click',e=>{const a=e.target.closest('[data-go],[data-link]');if(!a)return;e.preventDefault();
+  if(a.dataset.go){goTo(a.dataset.go);if(a.dataset.focus)setTimeout(()=>{const t=document.getElementById(a.dataset.focus);t&&t.focus({preventScroll:true})},900)}
+  else{const u=CONFIG.links[a.dataset.link];if(u)location.href=u;else toast('Prototype: the '+a.dataset.link+' link is not connected yet (CONFIG.links.'+a.dataset.link+').')}});
+ /* video */
+ const vid=$('#vid'),vph=$('#vph');
+ function setVideo(src){vph.hidden=true;let v=vid.querySelector('video');if(!v){v=document.createElement('video');v.controls=true;v.playsInline=true;v.preload='metadata';v.setAttribute('aria-label','Campus video');vid.appendChild(v)}v.src=src;if(CONFIG.videoPoster)v.poster=CONFIG.videoPoster}
+ if(CONFIG.videoSrc)setVideo(CONFIG.videoSrc);
+ $('#vfile').addEventListener('change',e=>{const f=e.target.files[0];if(f)setVideo(URL.createObjectURL(f))});
+ window.campusVideo={set:setVideo};
+ /* per-frame update */
+ const P={p0:$('#p0'),p1:$('#p1'),p2:$('#p2'),vid:vid,p4:$('#p4'),footer:$('#campus-footer'),vcap:$('#vcap')};
+ const cs=[[0,'p0'],[1,'p1'],[3,'p2'],[5,'vid'],[6,'p4'],[8,'footer']];
+ const cornerV=new THREE.Vector3();
+ function op(s,i){const r=i===5?.025:.32;return Math.max(0,Math.min(1,(r-Math.abs(s-i))/(i===5?.02:.2)))}
+ 
+ /* Project a paper layout onto the real pillar face. The homography follows
+    the camera, keeping paper edges and tape attached during the approach. */
+ const papers=[...document.querySelectorAll('.flyer')];
+ function projectFlyers(stage){
+  if(Math.abs(stage-3)>.34)return;const cam=window.__just?.J.cam;if(!cam)return;cam.updateMatrixWorld();
+  const g=flyerGeometry(),width=g.width,height=g.height,ww=g.worldWidth,wh=ww*height/width;
+  papers.forEach((paper,index)=>{const cy=g.top-index*g.spacing;const corners=[[0,0],[width,0],[width,height],[0,height]];const pts=corners.map(([x,y])=>{const v=new THREE.Vector3(6.843,cy+(.5-y/height)*wh,-58+(x/width-.5)*ww).project(cam);return[(v.x+1)*innerWidth/2,(1-v.y)*innerHeight/2]});const A=[],b=[];corners.forEach(([x,y],i)=>{const[u,v]=pts[i];A.push([x,y,1,0,0,0,-u*x,-u*y],[0,0,0,x,y,1,-v*x,-v*y]);b.push(u,v)});for(let i=0;i<8;i++){let p=i;for(let j=i+1;j<8;j++)if(Math.abs(A[j][i])>Math.abs(A[p][i]))p=j;[A[i],A[p]]=[A[p],A[i]];[b[i],b[p]]=[b[p],b[i]];const d=A[i][i];if(Math.abs(d)<1e-10)return;for(let k=i;k<8;k++)A[i][k]/=d;b[i]/=d;for(let j=0;j<8;j++){if(j===i)continue;const t=A[j][i];for(let k=i;k<8;k++)A[j][k]-=t*A[i][k];b[j]-=t*b[i]}}const[a,c,e,bb,d,f,gg,hh]=b;Object.assign(paper.style,{width:width+'px',height:height+'px',transform:'matrix3d('+[a,bb,0,gg,c,d,0,hh,0,0,1,0,e,f,0,1].join(',')+')'});});
+  const seg=window.__just.J.segs.find(s=>s.type==='hold'&&s.i===3);const n=seg?Math.min(2,Math.round(flyerProgress((window.__just.J.cur-seg.start)/seg.len))):0;
+  document.getElementById('flyer-count').textContent=String(n+1).padStart(2,'0')+' / 03';
+  papers.forEach((paper,i)=>{paper.inert=i!==n;paper.setAttribute('aria-hidden',i!==n?'true':'false')});
+ }
+
+ window.updateUI=function(stage){
+  projectFlyers(stage);
+  const header=document.querySelector('.nav');const atFooter=stage>7.25;header.classList.toggle('at-footer',atFooter);header.inert=atFooter;
+  let cur=null,best=0;
+  cs.forEach(([i,k],n)=>{const o=k==='footer'?Math.max(0,Math.min(1,(stage-7.35)/.5)):op(stage,i),el=P[k];el.style.opacity=o;const on=o>0.02;el.style.visibility=on?'visible':'hidden';el.classList.toggle('on',on);
+   if(k!=='vid'){const act=o>.5;if(act!==!el.inert)el.inert=!act;el.setAttribute('aria-hidden',act?'false':'true')}
+   if(o>best){best=o;cur=n}});
+  P.vcap.style.opacity=op(stage,5);P.vcap.style.visibility=op(stage,5)>.02?'visible':'hidden';
+  vid.inert=op(stage,5)<.5;const playback=vid.querySelector('video');if(vid.inert&&playback&&!playback.paused)playback.pause();
+  $$('.dots button').forEach((b,n)=>b.setAttribute('aria-current',n===cur));
+  $$('.nav a.lnk').forEach(a=>a.setAttribute('aria-current',(a.dataset.go==='opportunityColumn'&&cur===2)||(a.dataset.go==='gateOverview'&&cur===1)||(a.dataset.go==='facultyQuestions'&&cur===4)));
+  /* align HTML video to the projected 3D screen */
+  if(op(stage,5)>.02&&window.campusMedia){const J=window.__just.J,m=window.campusMedia.screen,cam=J.cam;cam.updateMatrixWorld();
+   let x0=1e9,x1=-1e9,y0=1e9,y1=-1e9;[[-1,-1],[1,1]].forEach(([a,b])=>{cornerV.set(a*4.175,5+b*2.325,m.position.z+.135);cornerV.project(cam);const X=(cornerV.x+1)/2*innerWidth,Y=(1-cornerV.y)/2*innerHeight;x0=Math.min(x0,X);x1=Math.max(x1,X);y0=Math.min(y0,Y);y1=Math.max(y1,Y)});
+   Object.assign(vid.style,{left:x0+'px',top:y0+'px',width:(x1-x0)+'px',height:(y1-y0)+'px'})}
+ };
 })();
