@@ -1,359 +1,227 @@
-﻿using System;
+﻿using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
+using System;
 using System.Collections.Generic;
-using System.Globalization;
+using System.IO;
 using System.Linq;
-using System.Web;
+using System.Net.Http;
+using System.Text;
+using System.Text.RegularExpressions;
 using System.Web.UI;
-using System.Web.UI.WebControls;
-using UIMS.Models;
-using UIMS.Services;
 
 namespace UIMS.Company
 {
+    // Company: add, edit and close internship opportunities (Firebase: /opportunities)
     public partial class ManageOpportunities : System.Web.UI.Page
     {
-        // Specializations offered by the Faculty of Computer & Information Technology at JUST.
-        // Keep this list in one place so the student "Explore Opportunities" page can match on it.
-        public static readonly string[] Majors =
-        {
-            "Computer Science",
-            "Computer Engineering",
-            "Software Engineering",
-            "Computer Information Systems",
-            "Cybersecurity",
-            "Data Science & AI",
-            "Network Engineering & Security"
-        };
+        private const string DatabaseUrl = "https://just-41ad1-default-rtdb.europe-west1.firebasedatabase.app";
 
-        private const string DateFormat = "yyyy-MM-dd";   // format used by <input type="date">
-
-        private string CompanyId => Session["CompanyId"] as string ?? "orange-jo";
-        private string CompanyName => Session["CompanyName"] as string ?? "Orange Jordan";
-
-        private string CurrentFilter
-        {
-            get { return ViewState["Filter"] as string ?? "All"; }
-            set { ViewState["Filter"] = value; }
-        }
+        HttpClient client = new HttpClient();
+        JObject db;       // the whole database
+        JObject user;     // the signed-in user
+        string userId;
 
         protected void Page_Load(object sender, EventArgs e)
         {
-            // ---- Role guard ----
-            // Enable once Login.aspx stores the role in Session["Role"].
-            // if (Session["Role"] as string != "Company")
-            // {
-            //     Response.Redirect("~/Auth/Login.aspx");
-            //     return;
-            // }
+            db = Get("");
+            userId = Session["UserId"] as string ?? "sup-orange";   // sample account until Login sets Session["UserId"]
+            user = db["users"]?[userId] as JObject;
+            if (user == null || (string)user["role"] != "company") user = null;
 
-            // The current frontend uses client-side inputs, not the legacy server controls.
-            if (txtSearch == null)
-            {
-                return;
-            }
+            // A save sent by the page JavaScript
+            string action = Request.Headers["X-Action"];
+            if (action == null) return;
+            if (user == null) Reply(new { error = "Please sign in again." });
 
-            LoadHeader();
+            JObject data = JObject.Parse(new StreamReader(Request.InputStream).ReadToEnd());
+            if (action == "opportunity") SaveOpportunity(data);
+            if (action == "closeOpportunity") CloseOpportunity((string)data["id"]);
 
-            if (!IsPostBack)
-            {
-                cblMajors.DataSource = Majors;
-                cblMajors.DataBind();
-                BindOpportunities();
-            }
+            db = Get("");          // read again so the page gets the new data
+            Reply(LoadData());
         }
 
-        // =====================================================
-        //  List + stats
-        // =====================================================
-        private void BindOpportunities()
+        // ================= Data for the page =================
+        // This company's opportunities and the applications sent to them
+        JObject LoadData()
         {
-            List<Opportunity> all = OpportunityService.GetByCompany(CompanyId);
-            List<Opportunity> open = all.Where(o => o.IsOpen).ToList();
+            if (user == null) return null;
 
-            // stats
-            lblTotal.Text = all.Count.ToString("00");
-            lblOpen.Text = open.Count.ToString("00");
-            lblSeatsLeft.Text = open.Sum(o => o.SeatsLeft).ToString("00");
-            lblApplicants.Text = open.Sum(o => o.ApplicantsCount).ToString("00");
+            string companyId = (string)user["companyId"];
+            var applications = List("applications").Where(a => (string)a["companyId"] == companyId).ToList();
+            var students = List("users").Where(u => applications.Any(a => (string)a["studentId"] == (string)u["id"]));
 
-            litCountAll.Text = all.Count.ToString();
-            litCountOpen.Text = open.Count.ToString();
-            litCountClosed.Text = (all.Count - open.Count).ToString();
-
-            // filter by tab
-            IEnumerable<Opportunity> list = all;
-            if (CurrentFilter == OpportunityStatus.Open) list = open;
-            else if (CurrentFilter == OpportunityStatus.Closed) list = all.Where(o => !o.IsOpen);
-
-            // filter by search text
-            string q = txtSearch.Text.Trim();
-            if (q.Length > 0)
+            user["mustChangePassword"] = false;
+            return new JObject
             {
-                list = list.Where(o =>
-                    Contains(o.Title, q) || Contains(o.Location, q) ||
-                    o.Majors.Any(m => Contains(m, q)));
+                ["user"] = user,
+                ["users"] = new JArray(students),
+                ["companies"] = new JArray(List("companies")),
+                ["opportunities"] = new JArray(List("opportunities").Where(o => (string)o["companyId"] == companyId)),
+                ["applications"] = new JArray(applications),
+                ["placements"] = new JArray(),
+                ["tasks"] = new JArray(),
+                ["submissions"] = new JArray(),
+                ["progress"] = new JArray(),
+                ["messages"] = new JArray()
+            };
+        }
+
+        // Accepted + confirmed students on an opportunity
+        int AcceptedCount(string opportunityId)
+        {
+            return List("applications").Count(a => (string)a["opportunityId"] == opportunityId &&
+                ((string)a["status"] == "accepted" || (string)a["status"] == "confirmed"));
+        }
+
+        // ================= Add / Edit =================
+        void SaveOpportunity(JObject data)
+        {
+            string id = (string)data["id"];
+            string companyId = (string)user["companyId"];
+            string title = (string)data["title"];
+            string description = (string)data["description"];
+            string location = (string)data["location"];
+            string deadline = (string)data["deadline"];
+            string start = (string)data["start"];
+            int seats, duration, hours;
+            int.TryParse((string)data["seats"], out seats);
+            int.TryParse((string)data["duration"], out duration);
+            int.TryParse((string)data["requiredHours"], out hours);
+
+            if (string.IsNullOrWhiteSpace(title) || string.IsNullOrWhiteSpace(description) ||
+                string.IsNullOrWhiteSpace(location) || string.IsNullOrWhiteSpace(deadline) ||
+                string.IsNullOrWhiteSpace(start) || seats < 1 || duration < 1 || hours < 1)
+            {
+                Reply(new { error = "Please fill in all fields." });
             }
 
-            List<Opportunity> result = list.ToList();
-            rptOpportunities.DataSource = result;
-            rptOpportunities.DataBind();
-            pnlEmpty.Visible = result.Count == 0;
-
-            tabAll.CssClass = CurrentFilter == "All" ? "active" : "";
-            tabOpen.CssClass = CurrentFilter == OpportunityStatus.Open ? "active" : "";
-            tabClosed.CssClass = CurrentFilter == OpportunityStatus.Closed ? "active" : "";
-        }
-
-        protected void Filter_Command(object sender, CommandEventArgs e)
-        {
-            CurrentFilter = e.CommandArgument.ToString();
-            BindOpportunities();
-        }
-
-        protected void txtSearch_TextChanged(object sender, EventArgs e)
-        {
-            BindOpportunities();
-        }
-
-        // =====================================================
-        //  Card buttons (Edit / Close / Reopen)
-        // =====================================================
-        protected void rptOpportunities_ItemCommand(object source, RepeaterCommandEventArgs e)
-        {
-            string id = e.CommandArgument.ToString();
-            Opportunity opp = OpportunityService.GetById(id);
-
-            // A supervisor can only touch their own company's opportunities
-            if (opp == null || opp.CompanyId != CompanyId) return;
-
-            if (e.CommandName == "EditOpp")
+            if (string.Compare(deadline, start) > 0)
             {
-                FillForm(opp);
-                litModalTitle.Text = "Edit opportunity";
-                OpenModal();
+                Reply(new { error = "The application deadline must be on or before the start date." });
             }
-            else if (e.CommandName == "ToggleStatus")
+
+            JObject opportunity;
+            if (string.IsNullOrEmpty(id))
             {
-                if (opp.IsOpen)
+                // New opportunity
+                if (string.Compare(deadline, DateTime.Today.ToString("yyyy-MM-dd")) < 0)
                 {
-                    OpportunityService.SetStatus(id, OpportunityStatus.Closed);
-                    ShowMessage("\"" + Encode(opp.Title) + "\" is closed. Students can no longer apply — you can reopen it anytime.");
+                    Reply(new { error = "The application deadline can't be in the past." });
                 }
-                else
-                {
-                    OpportunityService.SetStatus(id, OpportunityStatus.Open);
-                    ShowMessage("\"" + Encode(opp.Title) + "\" is open again for applications.");
-                }
-            }
 
-            BindOpportunities();
-        }
-
-        // =====================================================
-        //  Add / Edit form
-        // =====================================================
-        protected void btnNew_Click(object sender, EventArgs e)
-        {
-            ClearForm();
-            litModalTitle.Text = "New opportunity";
-            OpenModal();
-            BindOpportunities();
-        }
-
-        protected void btnSave_Click(object sender, EventArgs e)
-        {
-            Page.Validate("opp");
-            if (!Page.IsValid)
-            {
-                OpenModal();            // keep the form open so the errors are visible
-                BindOpportunities();
-                return;
-            }
-
-            bool isNew = string.IsNullOrEmpty(hfOppId.Value);
-            Opportunity opp;
-
-            if (isNew)
-            {
-                opp = new Opportunity
-                {
-                    CompanyId = CompanyId,
-                    CompanyName = CompanyName
-                };
+                id = "opp-" + Guid.NewGuid().ToString("N").Substring(0, 10);
+                opportunity = new JObject();
+                opportunity["id"] = id;
+                opportunity["companyId"] = companyId;
+                opportunity["status"] = "open";
+                opportunity["createdAt"] = DateTime.UtcNow.ToString("o");
             }
             else
             {
-                opp = OpportunityService.GetById(hfOppId.Value);
-                if (opp == null || opp.CompanyId != CompanyId) return;
+                // Edit: only this company's own opportunity
+                opportunity = db["opportunities"]?[id] as JObject;
+                if (opportunity == null || (string)opportunity["companyId"] != companyId)
+                {
+                    Reply(new { error = "Opportunity not found." });
+                }
+
+                int accepted = AcceptedCount(id);
+                if (seats < accepted)
+                {
+                    Reply(new { error = accepted + " students are already accepted — seats can't be lower than that." });
+                }
             }
 
-            opp.Title = txtTitle.Text.Trim();
-            opp.Description = txtDescription.Text.Trim();
-            opp.Requirements = txtRequirements.Text.Trim();
-            opp.Majors = cblMajors.Items.Cast<ListItem>().Where(i => i.Selected).Select(i => i.Value).ToList();
-            opp.Seats = int.Parse(txtSeats.Text);
-            opp.WorkMode = rblWorkMode.SelectedValue;
-            opp.Location = txtLocation.Text.Trim();
-            opp.Deadline = ParseDate(txtDeadline.Text).Value;
-            opp.StartDate = ParseDate(txtStartDate.Text).Value;
-            opp.DurationWeeks = int.Parse(txtDuration.Text);
+            opportunity["title"] = title;
+            opportunity["description"] = description;
+            opportunity["requirements"] = (string)data["requirements"];
+            opportunity["department"] = (string)data["department"];
+            opportunity["location"] = location;
+            opportunity["workMode"] = (string)data["workMode"];
+            opportunity["seats"] = seats;
+            opportunity["duration"] = duration;
+            opportunity["requiredHours"] = hours;
+            opportunity["deadline"] = deadline;
+            opportunity["start"] = start;
 
-            if (isNew)
+            Put("opportunities/" + id, opportunity);
+        }
+
+        // ================= Close =================
+        void CloseOpportunity(string id)
+        {
+            JObject opportunity = db["opportunities"]?[id] as JObject;
+            if (opportunity == null || (string)opportunity["companyId"] != (string)user["companyId"])
             {
-                OpportunityService.Add(opp);
-                ShowMessage("\"" + Encode(opp.Title) + "\" is published. Students in the selected majors can now apply.");
-            }
-            else
-            {
-                OpportunityService.Update(opp);
-                ShowMessage("Changes to \"" + Encode(opp.Title) + "\" are saved.");
+                Reply(new { error = "Opportunity not found." });
             }
 
-            ClearForm();
-            BindOpportunities();
+            Put("opportunities/" + id + "/status", "closed");
         }
 
-        private void FillForm(Opportunity o)
+        // ================= Firebase =================
+        JObject Get(string path)
         {
-            hfOppId.Value = o.Id;
-            txtTitle.Text = o.Title;
-            txtDescription.Text = o.Description;
-            txtRequirements.Text = o.Requirements;
-            foreach (ListItem item in cblMajors.Items)
-                item.Selected = o.Majors.Contains(item.Value);
-            txtSeats.Text = o.Seats.ToString();
-            rblWorkMode.SelectedValue = o.WorkMode;
-            txtLocation.Text = o.Location;
-            txtDeadline.Text = o.Deadline.ToString(DateFormat);
-            txtStartDate.Text = o.StartDate.ToString(DateFormat);
-            txtDuration.Text = o.DurationWeeks.ToString();
+            string json = client.GetStringAsync(DatabaseUrl + "/" + path + ".json").Result;
+            return json == "null" ? new JObject() : JObject.Parse(json);
         }
 
-        private void ClearForm()
+        void Put(string path, object data)
         {
-            hfOppId.Value = "";
-            txtTitle.Text = txtDescription.Text = txtRequirements.Text = txtLocation.Text = "";
-            cblMajors.ClearSelection();
-            txtSeats.Text = "1";
-            rblWorkMode.SelectedIndex = 0;
-            txtDeadline.Text = DateTime.Today.AddDays(14).ToString(DateFormat);
-            txtStartDate.Text = DateTime.Today.AddDays(30).ToString(DateFormat);
-            txtDuration.Text = "8";
+            string body = JsonConvert.SerializeObject(data);
+            client.PutAsync(DatabaseUrl + "/" + path + ".json", new StringContent(body, Encoding.UTF8, "application/json")).Wait();
         }
 
-        // =====================================================
-        //  Server-side validation (business rules)
-        // =====================================================
-        protected void cvMajors_ServerValidate(object source, ServerValidateEventArgs args)
+        // All records under a node, for example List("opportunities")
+        IEnumerable<JObject> List(string node)
         {
-            args.IsValid = cblMajors.Items.Cast<ListItem>().Any(i => i.Selected);
+            JObject records = db[node] as JObject;
+            if (records == null) return new List<JObject>();
+            return records.Properties().Select(p => (JObject)p.Value);
         }
 
-        // Seats cannot be lowered below the number of students already accepted
-        protected void cvSeatsAccepted_ServerValidate(object source, ServerValidateEventArgs args)
+        // Sends JSON back to the page JavaScript and stops the page here
+        void Reply(object data)
         {
-            args.IsValid = true;
-            if (string.IsNullOrEmpty(hfOppId.Value)) return;
-
-            Opportunity existing = OpportunityService.GetById(hfOppId.Value);
-            int seats;
-            if (existing != null && int.TryParse(txtSeats.Text, out seats) && seats < existing.AcceptedCount)
-            {
-                cvSeatsAccepted.ErrorMessage = existing.AcceptedCount + " students are already accepted — seats can't be lower than that.";
-                args.IsValid = false;
-            }
+            Response.Clear();
+            Response.ContentType = "application/json";
+            Response.Write(JsonConvert.SerializeObject(data));
+            Response.End();
         }
 
-        protected void cvDates_ServerValidate(object source, ServerValidateEventArgs args)
+        // ================= Connect the page JavaScript =================
+        // The page JavaScript reads its data from window.UimsDemo (it was demo-store.js).
+        // Here we put a small script in its place that gives the data from Firebase
+        // and sends every save back to this page.
+        protected override void Render(HtmlTextWriter writer)
         {
-            args.IsValid = true;
-            DateTime? deadline = ParseDate(txtDeadline.Text);
-            DateTime? start = ParseDate(txtStartDate.Text);
+            StringWriter html = new StringWriter();
+            base.Render(new HtmlTextWriter(html));
 
-            if (deadline == null || start == null)
-            {
-                cvDates.ErrorMessage = "Enter valid dates.";
-                args.IsValid = false;
-            }
-            else if (string.IsNullOrEmpty(hfOppId.Value) && deadline.Value < DateTime.Today)
-            {
-                cvDates.ErrorMessage = "The application deadline can't be in the past.";
-                args.IsValid = false;
-            }
-            else if (deadline.Value > start.Value)
-            {
-                cvDates.ErrorMessage = "The application deadline must be on or before the start date.";
-                args.IsValid = false;
-            }
+            string data = JsonConvert.SerializeObject(LoadData()).Replace("</", "<\\/");
+            string script = "<script>" + PageScript.Replace("DATA", data) + "</script>";
+
+            writer.Write(Regex.Replace(html.ToString(), @"<script[^>]*demo-store\.js[^>]*></script>", m => script));
         }
 
-        // =====================================================
-        //  Helpers used by the Repeater markup
-        // =====================================================
-        protected string MajorTags(object majors)
-        {
-            var list = majors as IEnumerable<string>;
-            if (list == null) return "";
-            return string.Concat(list.Select(m => "<span class=\"tag\">" + Encode(m) + "</span>"));
-        }
-
-        protected int SeatsPercent(object accepted, object seats)
-        {
-            int a = Convert.ToInt32(accepted), s = Convert.ToInt32(seats);
-            return s <= 0 ? 0 : Math.Min(100, a * 100 / s);
-        }
-
-        protected string SeatsBarCss(object accepted, object seats)
-        {
-            return Convert.ToInt32(accepted) >= Convert.ToInt32(seats) ? "success" : "";
-        }
-
-        // =====================================================
-        //  Misc
-        // =====================================================
-        private void LoadHeader()
-        {
-            string fullName = Session["FullName"] as string ?? "Mohammad Haddad";
-            var parts = fullName.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
-
-            lblUserName.Text = parts.Length > 1 ? parts[0] + " " + parts[parts.Length - 1][0] + "." : fullName;
-            lblInitials.Text = string.Concat(parts.Take(2).Select(p => char.ToUpper(p[0])));
-            lblCompany.Text = Encode(CompanyName);
-        }
-
-        private void OpenModal()
-        {
-            // Runs after the page (and Bootstrap) finish loading
-            ClientScript.RegisterStartupScript(GetType(), "openModal",
-                "document.addEventListener('DOMContentLoaded', showOppModal);", true);
-        }
-
-        private void ShowMessage(string html)
-        {
-            litMessage.Text = html;
-            pnlMessage.Visible = true;
-        }
-
-        private static DateTime? ParseDate(string value)
-        {
-            DateTime d;
-            return DateTime.TryParseExact(value, DateFormat, CultureInfo.InvariantCulture, DateTimeStyles.None, out d)
-                ? d : (DateTime?)null;
-        }
-
-        private static bool Contains(string text, string q)
-        {
-            return text != null && text.IndexOf(q, StringComparison.OrdinalIgnoreCase) >= 0;
-        }
-
-        private static string Encode(string s) => HttpUtility.HtmlEncode(s);
-
-        protected void btnLogout_Click(object sender, EventArgs e)
-        {
-            System.Web.Security.FormsAuthentication.SignOut();
-            Session.Clear();
-            Session.Abandon();
-            Response.Redirect("~/Auth/Login.aspx");
-        }
+        const string PageScript = @"
+var data = DATA;
+window.UimsDemo = {
+    departments: ['Computer Science', 'Computer Engineering', 'Software Engineering', 'Computer Information Systems', 'Cybersecurity', 'Data Science & AI', 'Network Engineering & Security'],
+    enabled: function () { return true; },
+    view: function () { return data; },
+    current: function () { return data && data.user; },
+    logout: function () { data = null; },
+    transaction: function (action, payload) {
+        var request = new XMLHttpRequest();
+        request.open('POST', location.href, false);
+        request.setRequestHeader('X-Action', action);
+        request.send(JSON.stringify(payload));
+        var reply = JSON.parse(request.responseText);
+        if (reply.error) throw new Error(reply.error);
+        data = reply;
+    }
+};";
     }
 }
