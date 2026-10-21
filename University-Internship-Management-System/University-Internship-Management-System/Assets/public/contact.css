@@ -1,0 +1,66 @@
+/* Contact page only. The palette and typography come from colors.css. */
+.contact-page, .contact-page * { box-sizing: border-box; }
+.contact-page { margin: 0; background: var(--background); color: var(--text); font-family: var(--font-body); }
+.contact-main { max-width: 1200px; margin: auto; padding: 64px 32px 72px; }
+.contact-heading { max-width: 720px; margin-bottom: 42px; }
+.contact-eyebrow, .contact-small-label { color: var(--primary); font-size: 11px; font-weight: 700; letter-spacing: 1.8px; }
+.contact-eyebrow { margin: 0 0 18px; }
+.contact-heading h1 { margin: 0 0 20px; font-size: clamp(34px, 4.5vw, 54px); line-height: 1.12; letter-spacing: -1.8px; font-weight: 800; }
+.contact-heading h1 span { color: var(--primary); }
+.contact-heading > p:last-child { max-width: 610px; margin: 0; color: var(--text-secondary); font-size: 15px; line-height: 1.8; }
+.contact-layout { display: grid; grid-template-columns: minmax(0, .85fr) minmax(0, 1.4fr); gap: 28px; align-items: start; }
+.contact-support { background: var(--card-ice); border: 1px solid var(--border); border-radius: 24px; padding: 32px; }
+.contact-page h2 { font-size: 26px; line-height: 1.3; letter-spacing: -.6px; margin: 12px 0; }
+.contact-support-heading > p, .contact-card-heading > p, .contact-faq > div > p { color: var(--text-secondary); font-size: 13px; line-height: 1.8; margin: 0; }
+.contact-support-heading { margin-bottom: 30px; }
+.contact-route { display: flex; gap: 14px; padding: 23px 0; border-top: 1px solid var(--border); }
+.contact-icon { flex: 0 0 42px; height: 42px; border-radius: 12px; display: grid; place-items: center; background: var(--surface); color: var(--primary); }
+.contact-icon svg { width: 23px; height: 23px; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+.contact-route h3 { margin: 0 0 8px; font-size: 14px; line-height: 1.5; }
+.contact-route p { margin: 0; color: var(--text-secondary); font-size: 12px; line-height: 1.85; }
+.contact-availability { display: flex; align-items: start; gap: 12px; background: var(--surface); border-radius: 12px; padding: 16px; margin-top: 8px; }
+.contact-availability > span { flex-shrink: 0; width: 20px; height: 20px; text-align: center; border: 1px solid var(--primary); border-radius: 50%; color: var(--primary); font-size: 12px; line-height: 18px; font-weight: 700; }
+.contact-availability p { margin: 0; font-size: 11px; line-height: 1.8; color: var(--text-secondary); }
+.contact-form-card { min-width: 0; padding: 34px; border-radius: 24px; background: var(--surface); border: 1px solid var(--border); }
+.contact-card-heading { margin-bottom: 28px; }
+.contact-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 22px 20px; }
+.contact-field { display: flex; flex-direction: column; min-width: 0; gap: 9px; }
+.contact-field-wide { grid-column: 1 / -1; }
+.contact-field label { font-size: 12px; font-weight: 600; }
+.contact-field label span { color: var(--primary); }
+.contact-field input, .contact-field select, .contact-field textarea { width: 100%; min-width: 0; max-width: 100%; border: 1px solid var(--border); border-radius: 9px; padding: 13px 12px; background: var(--surface); color: var(--text); font-family: var(--font-body); font-size: 13px; line-height: 1.5; }
+.contact-field input::placeholder, .contact-field textarea::placeholder { color: var(--text-secondary); opacity: 1; }
+.contact-field textarea { resize: vertical; min-height: 140px; }
+.contact-field input:focus, .contact-field select:focus, .contact-field textarea:focus { outline: 2px solid var(--primary); outline-offset: 3px; }
+.contact-field input:user-invalid, .contact-field textarea:user-invalid, .contact-field select:user-invalid { border-color: var(--danger); }
+.contact-help { color: var(--text-secondary); font-size: 11px; line-height: 1.7; }
+.contact-status { margin-top: 24px; border: 1px solid var(--border); border-radius: 10px; padding: 15px; background: var(--surface-alt); color: var(--text-secondary); font-size: 12px; line-height: 1.7; }
+.contact-status strong { color: var(--text); font-weight: 600; }
+.contact-status p { margin: 3px 0 0; }
+.contact-form-footer { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 16px; margin-top: 24px; }
+.contact-form-footer button { display: flex; align-items: center; justify-content: center; gap: 24px; border: 1px solid var(--border); border-radius: 9px; padding: 13px 20px; font-family: var(--font-body); font-size: 12px; font-weight: 600; background: var(--surface-alt); color: var(--text-secondary); cursor: not-allowed; }
+.contact-form-footer button span { font-size: 18px; }
+.contact-faq { display: grid; grid-template-columns: minmax(0, .85fr) minmax(0, 1.4fr); gap: 28px; margin-top: 64px; padding-top: 40px; border-top: 1px solid var(--border); }
+.contact-faq-list { min-width: 0; }
+.contact-faq details { border-bottom: 1px solid var(--border); padding: 18px 0; }
+.contact-faq details:first-child { padding-top: 0; }
+.contact-faq summary { cursor: pointer; font-size: 13px; font-weight: 600; line-height: 1.6; padding: 4px 0; }
+.contact-faq summary:focus-visible { outline: 2px solid var(--primary); outline-offset: 4px; border-radius: 3px; }
+.contact-faq details p { margin: 12px 0 0; color: var(--text-secondary); font-size: 12px; line-height: 1.9; }
+.contact-footer { max-width: 1136px; margin: 0 auto; padding: 24px 0; border-top: 1px solid var(--border); display: flex; flex-wrap: wrap; justify-content: space-between; gap: 12px; color: var(--text-secondary); font-size: 11px; }
+.contact-main, .contact-footer { overflow-wrap: anywhere; }
+@media (max-width: 850px) {
+    .contact-layout, .contact-faq { grid-template-columns: minmax(0, 1fr); }
+    .contact-main { padding-top: 40px; }
+    .contact-faq { margin-top: 40px; }
+    .contact-footer { margin-inline: 32px; }
+}
+@media (max-width: 520px) {
+    .contact-main { padding: 32px 20px 40px; }
+    .contact-heading h1 { letter-spacing: -1px; }
+    .contact-heading { margin-bottom: 28px; }
+    .contact-support, .contact-form-card { padding: 24px 20px; border-radius: 18px; }
+    .contact-fields { grid-template-columns: minmax(0, 1fr); gap: 20px; }
+    .contact-form-footer { align-items: stretch; flex-direction: column; }
+    .contact-footer { margin-inline: 20px; }
+}
