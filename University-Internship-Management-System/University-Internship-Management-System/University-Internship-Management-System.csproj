@@ -130,6 +130,8 @@
     <Content Include="Js_project\Public\navbar.js" />
     <Content Include="Assets\shared\navbar.css" />
     <Content Include="Assets\shared\sidebar.css" />
+    <Content Include="Assets\shared\dashboard-navigation.css" />
+    <Content Include="Js_project\Public\dashboard-navigation.js" />
     <Content Include="Auth\Login.aspx" />
     <Content Include="Assets\auth\auth.css" />
     <Content Include="Js_project\Auth\auth.js" />
@@ -141,6 +143,9 @@
     <Content Include="Assets\coordinator\contact-messages.css" />
     <Content Include="Assets\academic\supervisor-account.css" />
     <Content Include="Academic\test.aspx" />
+    <Content Include="Academic\FinalAcademicEvaluation.aspx" />
+    <Content Include="Assets\academic\final-academic-evaluation.css" />
+    <Content Include="Js_project\Academic\final-academic-evaluation.js" />
     <Content Include="Academic\StudentProgressMonitor.aspx" />
     <Content Include="Assets\academic\progress-monitor.css" />
     <Content Include="Js_project\Academic\progress-monitor.js" />
@@ -165,10 +170,12 @@
     <Content Include="Content\bootstrap.rtl.min.css" />
     <Content Include="Content\Site.css" />
     <Content Include="Coordinator\test.aspx" />
+    <Content Include="Coordinator\ManageStudents.aspx" />
+    <Content Include="Assets\shared\completion.css" />
+    <Content Include="Js_project\Public\completion.js" />
     <Content Include="Coordinator\MonitorPlacementsProgress.aspx" />
     <Content Include="Assets\coordinator\monitor-placements-progress.css" />
     <Content Include="Js_project\Coordinator\monitor-placements-progress.js" />
-    <Content Include="App_Data\placements-progress.json" />
     <Content Include="Coordinator\ManageCompanies.aspx" />
     <Content Include="Assets\coordinator\manage-companies.css" />
     <Content Include="Js_project\Coordinator\manage-companies.js" />
@@ -247,6 +254,8 @@
   <ItemGroup>
     <Compile Include="Academic\StudentProgressMonitor.aspx.cs"><DependentUpon>StudentProgressMonitor.aspx</DependentUpon><SubType>ASPXCodeBehind</SubType></Compile>
     <Compile Include="Academic\StudentProgressMonitor.aspx.designer.cs"><DependentUpon>StudentProgressMonitor.aspx</DependentUpon></Compile>
+    <Compile Include="Academic\FinalAcademicEvaluation.aspx.cs"><DependentUpon>FinalAcademicEvaluation.aspx</DependentUpon><SubType>ASPXCodeBehind</SubType></Compile>
+    <Compile Include="Academic\FinalAcademicEvaluation.aspx.designer.cs"><DependentUpon>FinalAcademicEvaluation.aspx</DependentUpon></Compile>
     <Compile Include="Academic\test.aspx.cs">
       <DependentUpon>test.aspx</DependentUpon>
       <SubType>ASPXCodeBehind</SubType>
@@ -309,6 +318,8 @@
     <Compile Include="Coordinator\ManageCompanies.aspx.designer.cs"><DependentUpon>ManageCompanies.aspx</DependentUpon></Compile>
     <Compile Include="Coordinator\MonitorPlacementsProgress.aspx.cs"><DependentUpon>MonitorPlacementsProgress.aspx</DependentUpon><SubType>ASPXCodeBehind</SubType></Compile>
     <Compile Include="Coordinator\MonitorPlacementsProgress.aspx.designer.cs"><DependentUpon>MonitorPlacementsProgress.aspx</DependentUpon></Compile>
+    <Compile Include="Coordinator\ManageStudents.aspx.cs"><DependentUpon>ManageStudents.aspx</DependentUpon><SubType>ASPXCodeBehind</SubType></Compile>
+    <Compile Include="Coordinator\ManageStudents.aspx.designer.cs"><DependentUpon>ManageStudents.aspx</DependentUpon></Compile>
     <Compile Include="Coordinator\test.aspx.cs">
       <DependentUpon>test.aspx</DependentUpon>
       <SubType>ASPXCodeBehind</SubType>
