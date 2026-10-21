@@ -1,5 +1,15 @@
 <%@ Page Language="C#" %>
 
+
+<script runat="server">
+    protected void btnLogout_Click(object sender, System.EventArgs e)
+    {
+        Session.Clear();
+        Session.Abandon();
+        Response.Redirect("~/Auth/Login.aspx");
+    }
+</script>
+
 <!DOCTYPE html>
 <html lang="en">
 <head runat="server">
@@ -7,12 +17,69 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Explore Opportunities | JUST Internships</title>
     <link href="../Content/bootstrap.min.css" rel="stylesheet" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet" />
     <link href="../Assets/shared/colors.css" rel="stylesheet" />
-    <link href="../Assets/student/explore-opportunities.css" rel="stylesheet" />
+    <link href="../Assets/student/explore-opportunities.css?v=20261021-original-shell" rel="stylesheet" />
 </head>
 <body>
     <form id="exploreForm" runat="server">
-        <!-- المحتوى الرئيسي مستقل حتى يسهل دمجه مع القائمة الجانبية لاحقاً -->
+        <div class="app">
+            <!-- نفس السايد بار المرسل، مكرر داخل الصفحة مع ضبط الروابط المتوفرة -->
+            <aside class="sidebar" id="studentSidebar" aria-label="Student navigation">
+                <button type="button" id="closeSidebar" class="sidebar-close" aria-label="Close navigation">&times;</button>
+                <a href="StudentDashboard.aspx" class="brand">
+                    <img class="brand-logo" src="../Assets/shared/images/JUST-Logo-01.png" alt="Jordan University of Science and Technology logo" width="52" height="52" />
+                    <div class="brand-text"><strong>JUST</strong><span>Internships</span></div>
+                </a>
+
+                <ul class="side-nav">
+                    <li><a href="StudentDashboard.aspx"><i class="bi bi-house-door"></i>Dashboard</a></li>
+                    <li><a href="ExploreOpportunities.aspx" class="active" aria-current="page"><i class="bi bi-compass"></i>Explore Opportunities</a></li>
+                    <li><a href="MyApplications.aspx"><i class="bi bi-file-earmark-text"></i>My Applications</a></li>
+                    <li><a href="MyTasks.aspx"><i class="bi bi-list-check"></i>My Tasks<span class="count">3</span></a></li>
+                    <li><a href="MyProgress.aspx"><i class="bi bi-graph-up-arrow"></i>Progress &amp; Evaluation</a></li>
+                    <li><a href="MyProfile.aspx"><i class="bi bi-person"></i>My Profile</a></li>
+                </ul>
+
+                <div class="side-divider"></div>
+
+                <ul class="side-nav">
+                    <li><a href="ChangePassword.aspx"><i class="bi bi-gear"></i>Settings</a></li>
+                    <li><a href="../Contact.aspx"><i class="bi bi-question-circle"></i>Help</a></li>
+                </ul>
+
+                <div class="side-promo">
+                    <i class="bi bi-mortarboard-fill"></i>
+                    <p>Build your future<br />with real experience.</p>
+                    <a href="ExploreOpportunities.aspx">Explore opportunities &rarr;</a>
+                </div>
+            </aside>
+            <div id="sidebarBackdrop" class="sidebar-backdrop" aria-hidden="true"></div>
+            <div class="main" id="studentMain">
+                <header class="topbar">
+                    <button type="button" class="menu-btn" id="openSidebar" aria-label="Open navigation" aria-controls="studentSidebar" aria-expanded="false"><i class="bi bi-list"></i></button>
+                    <div class="search">
+                        <i class="bi bi-search"></i>
+                        <input id="navbarSearch" type="search" aria-label="Workspace search" placeholder="Search for internships, companies, or skills..." />
+                    </div>
+                    <div class="topbar-actions">
+                        <button type="button" class="icon-btn" id="navbarNotifications" aria-label="Notifications preview"><i class="bi bi-bell"></i><span class="dot"></span></button>
+                        <div class="dropdown">
+                            <button type="button" class="user-chip" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Account menu">
+                                <span class="avatar"><asp:Label ID="lblInitials" runat="server" Text="ST" /></span>
+                                <span class="name"><asp:Label ID="lblUserName" runat="server" Text="Student" /><span class="role">Student</span></span>
+                                <i class="bi bi-chevron-down small"></i>
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-end">
+                                <li><a class="dropdown-item" href="MyProfile.aspx"><i class="bi bi-person me-2"></i>My Profile</a></li>
+                                <li><a class="dropdown-item" href="ChangePassword.aspx"><i class="bi bi-key me-2"></i>Change Password</a></li>
+                                <li><hr class="dropdown-divider" /></li>
+                                <li><asp:LinkButton ID="btnLogout" runat="server" CssClass="dropdown-item text-danger" OnClick="btnLogout_Click" CausesValidation="false"><i class="bi bi-box-arrow-right me-2"></i>Log out</asp:LinkButton></li>
+                            </ul>
+                        </div>
+                    </div>
+                </header>
+                <p id="navbarNotice" class="navbar-notice" role="status" hidden></p>
         <main class="opportunities-page">
             <header class="page-heading">
                 <p class="eyebrow">JUST / STUDENT WORKSPACE</p>
@@ -62,8 +129,13 @@
                         <span class="specialization">Software Engineering</span>
                         <h3>Web Development Intern</h3>
                         <p class="opportunity-description">Build practical web development skills while working with a team on useful digital products.</p>
-                        <dl class="opportunity-facts"><div><dt>Duration</dt><dd>8 weeks</dd></div><div><dt>Available seats</dt><dd>3 students</dd></div></dl>
-                        <div class="opportunity-details" hidden><p>Assist with responsive interfaces, test web pages, and collaborate on small development tasks under a company supervisor.</p><h4>Requirements</h4><ul><li>Basic HTML, CSS, and JavaScript.</li><li>Familiarity with C# and Git.</li><li>Interest in teamwork and learning.</li></ul></div>
+                        <dl class="opportunity-facts">
+                            <div><dt>Duration</dt><dd>8 weeks</dd></div>
+                            <div><dt>Available seats</dt><dd>3 students</dd></div>
+                            <div><dt>Application deadline</dt><dd><time datetime="2026-11-01">01 Nov 2026</time></dd></div>
+                            <div><dt>Training hours</dt><dd>240 hours</dd></div>
+                        </dl>
+                        <div class="opportunity-details" hidden><p>Assist with responsive interfaces, test web pages, and collaborate on small development tasks under a company supervisor.</p><h4>Preferred skills</h4><p>These skills are preferred, not mandatory. Students who are still developing them are welcome to apply.</p><ul><li>Basic HTML, CSS, and JavaScript.</li><li>Familiarity with C# and Git.</li><li>Interest in teamwork and learning.</li></ul></div>
                         <button type="button" class="details-button" data-bs-toggle="modal" data-bs-target="#opportunityModal">View details <span aria-hidden="true">&rarr;</span></button>
                     </article>
                 </div>
@@ -73,8 +145,13 @@
                         <span class="specialization">Computer Science</span>
                         <h3>Data Analysis Intern</h3>
                         <p class="opportunity-description">Explore real-world datasets and learn how to turn information into clear, useful insights.</p>
-                        <dl class="opportunity-facts"><div><dt>Duration</dt><dd>10 weeks</dd></div><div><dt>Available seats</dt><dd>2 students</dd></div></dl>
-                        <div class="opportunity-details" hidden><p>Help prepare datasets, create basic reports, and explain findings with guidance from a data analysis team.</p><h4>Requirements</h4><ul><li>Basic Python and SQL.</li><li>Understanding of data structures.</li><li>Attention to detail.</li></ul></div>
+                        <dl class="opportunity-facts">
+                            <div><dt>Duration</dt><dd>10 weeks</dd></div>
+                            <div><dt>Available seats</dt><dd>2 students</dd></div>
+                            <div><dt>Application deadline</dt><dd><time datetime="2026-11-05">05 Nov 2026</time></dd></div>
+                            <div><dt>Training hours</dt><dd>300 hours</dd></div>
+                        </dl>
+                        <div class="opportunity-details" hidden><p>Help prepare datasets, create basic reports, and explain findings with guidance from a data analysis team.</p><h4>Preferred skills</h4><p>These skills are preferred, not mandatory. Students who are still developing them are welcome to apply.</p><ul><li>Basic Python and SQL.</li><li>Understanding of data structures.</li><li>Attention to detail.</li></ul></div>
                         <button type="button" class="details-button" data-bs-toggle="modal" data-bs-target="#opportunityModal">View details <span aria-hidden="true">&rarr;</span></button>
                     </article>
                 </div>
@@ -84,8 +161,13 @@
                         <span class="specialization">Cybersecurity</span>
                         <h3>Security Operations Intern</h3>
                         <p class="opportunity-description">Develop security fundamentals through guided activities, monitoring, and practical team exercises.</p>
-                        <dl class="opportunity-facts"><div><dt>Duration</dt><dd>8 weeks</dd></div><div><dt>Available seats</dt><dd>2 students</dd></div></dl>
-                        <div class="opportunity-details" hidden><p>Practice reviewing sample security alerts, documenting observations, and applying basic security procedures in a supervised environment.</p><h4>Requirements</h4><ul><li>Basic networking knowledge.</li><li>Familiarity with operating systems.</li><li>Interest in information security.</li></ul></div>
+                        <dl class="opportunity-facts">
+                            <div><dt>Duration</dt><dd>8 weeks</dd></div>
+                            <div><dt>Available seats</dt><dd>2 students</dd></div>
+                            <div><dt>Application deadline</dt><dd><time datetime="2026-11-08">08 Nov 2026</time></dd></div>
+                            <div><dt>Training hours</dt><dd>240 hours</dd></div>
+                        </dl>
+                        <div class="opportunity-details" hidden><p>Practice reviewing sample security alerts, documenting observations, and applying basic security procedures in a supervised environment.</p><h4>Preferred skills</h4><p>These skills are preferred, not mandatory. Students who are still developing them are welcome to apply.</p><ul><li>Basic networking knowledge.</li><li>Familiarity with operating systems.</li><li>Interest in information security.</li></ul></div>
                         <button type="button" class="details-button" data-bs-toggle="modal" data-bs-target="#opportunityModal">View details <span aria-hidden="true">&rarr;</span></button>
                     </article>
                 </div>
@@ -120,8 +202,10 @@
                 </div>
             </div>
         </main>
+            </div>
+        </div>
     </form>
     <script src="../Scripts/bootstrap.bundle.min.js"></script>
-    <script src="../Js_project/Student/explore-opportunities.js"></script>
+    <script src="../Js_project/Student/explore-opportunities.js?v=20261021-original-shell"></script>
 </body>
 </html>
