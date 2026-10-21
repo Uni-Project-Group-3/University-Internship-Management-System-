@@ -12,6 +12,19 @@ namespace University_Internship_Management_System.Shared
         {
             HomeLink.NavigateUrl = HomeUrl;
             RoleLabel.Text = UserRole;
+            ManageStudentsLink.Visible = string.Equals(UserRole, "Coordinator", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(UserRole, "Admin", StringComparison.OrdinalIgnoreCase);
+            if (string.Equals(Page.AppRelativeVirtualPath, "~/Coordinator/ManageStudents.aspx", StringComparison.OrdinalIgnoreCase))
+            {
+                ManageStudentsLink.CssClass = "app-sidebar__link is-active";
+                ManageStudentsLink.Attributes["aria-current"] = "page";
+            }
+            FinalEvaluationLink.Visible = string.Equals(UserRole, "Academic", StringComparison.OrdinalIgnoreCase);
+            if (string.Equals(Page.AppRelativeVirtualPath, "~/Academic/FinalAcademicEvaluation.aspx", StringComparison.OrdinalIgnoreCase))
+            {
+                FinalEvaluationLink.CssClass = "app-sidebar__link is-active";
+                FinalEvaluationLink.Attributes["aria-current"] = "page";
+            }
             PlacementsLink.Visible = string.Equals(UserRole, "Coordinator", StringComparison.OrdinalIgnoreCase)
                 || string.Equals(UserRole, "Admin", StringComparison.OrdinalIgnoreCase);
             if (string.Equals(Page.AppRelativeVirtualPath, "~/Coordinator/MonitorPlacementsProgress.aspx", StringComparison.OrdinalIgnoreCase))

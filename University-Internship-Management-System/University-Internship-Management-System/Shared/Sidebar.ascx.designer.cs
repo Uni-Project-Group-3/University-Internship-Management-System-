@@ -8,5 +8,7 @@ namespace University_Internship_Management_System.Shared
         protected global::System.Web.UI.WebControls.HyperLink ProgressMonitorLink;
         protected global::System.Web.UI.WebControls.HyperLink ManageCompaniesLink;
         protected global::System.Web.UI.WebControls.HyperLink PlacementsLink;
+        protected global::System.Web.UI.WebControls.HyperLink FinalEvaluationLink;
+        protected global::System.Web.UI.WebControls.HyperLink ManageStudentsLink;
     }
 }

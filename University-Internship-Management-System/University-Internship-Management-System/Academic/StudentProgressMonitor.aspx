@@ -1,5 +1,4 @@
 ﻿<%@ Page Language="C#" AutoEventWireup="true" CodeBehind="StudentProgressMonitor.aspx.cs" Inherits="University_Internship_Management_System.Academic.StudentProgressMonitor" %>
-<%@ Register Src="~/Shared/Sidebar.ascx" TagPrefix="shared" TagName="Sidebar" %>
 <!DOCTYPE html>
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en">
 <head runat="server">
@@ -7,18 +6,134 @@
     <title>Student Progress Monitor | JUST UIMS</title>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <link runat="server" href="~/Assets/shared/colors.css" rel="stylesheet" />
-    <link runat="server" href="~/Assets/shared/sidebar.css" rel="stylesheet" />
+
     <link runat="server" href="~/Assets/academic/progress-monitor.css" rel="stylesheet" />
+    <link runat="server" href="~/Assets/shared/dashboard-navigation.css" rel="stylesheet" />
 </head>
-<body class="app-page monitor-page">
+<body class="dashboard-direct app-page monitor-page">
     <form id="form1" runat="server">
         <div class="app-layout">
-            <shared:Sidebar runat="server" HomeUrl="~/Academic/test.aspx" UserRole="Academic" />
+                        <aside class="dash-sidebar" id="dashboardSidebar" aria-label="Academic navigation">
+                <a href="<%= ResolveUrl("~/Academic/test.aspx") %>" class="dash-brand">
+                    <span class="dash-brand-logo">J</span>
+                    <span class="dash-brand-text">
+                        <strong>JUST</strong>
+                        <span>Internships</span>
+                    </span>
+                </a>
+                <button type="button" class="dash-sidebar-close" data-sidebar-close aria-label="Close navigation">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="m6 6 12 12M6 18 18 6"/>
+                    </svg>
+                </button>
+                <nav aria-label="Workspace navigation">
+                    <ul class="dash-side-nav">
+                        <li>
+                            <a href="<%= ResolveUrl("~/Academic/test.aspx") %>">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                    <path d="M3 10 12 3l9 7v13H3V10Z"/>
+                                    <path d="M9 20v-7h6v7"/>
+                                </svg>
+                                <span>Dashboard</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="<%= ResolveUrl("~/Academic/StudentProgressMonitor.aspx") %>" class="active" aria-current="page">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                    <path d="M2 13h5l3-9 4 16 3-9h5"/>
+                                </svg>
+                                <span>Student Progress Monitor</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="<%= ResolveUrl("~/Academic/FinalAcademicEvaluation.aspx") %>">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                    <rect x="5" y="3" width="14" height="18" rx="2"/>
+                                    <path d="m8 12 3 3 5-6"/>
+                                </svg>
+                                <span>Final Academic Evaluation</span>
+                            </a>
+                        </li>
+                    </ul>
+                    <div class="dash-side-divider">
+                    </div>
+                    <ul class="dash-side-nav">
+                        <li>
+                            <span class="dash-nav-disabled" aria-disabled="true" title="Account page is not available yet">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                    <circle cx="12" cy="12" r="4"/>
+                                    <path d="M12 2v3m0 14v3M2 12h3m14 0h3M5 5l2 2m10 10 2 2M5 19l2-2M17 7l2-2"/>
+                                </svg>
+                                <span>My Account</span>
+                            </span>
+                        </li>
+                        <li>
+                            <a href="<%= ResolveUrl("~/Contact.aspx") %>">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                    <circle cx="12" cy="12" r="9"/>
+                                    <path d="M9 8a3 3 0 0 1 6 0c0 2-3 2-3 5m0 3v1"/>
+                                </svg>
+                                <span>Help</span>
+                            </a>
+                        </li>
+                    </ul>
+                </nav>
+                <div class="dash-side-promo">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <rect x="5" y="3" width="14" height="18" rx="2"/>
+                        <path d="m8 12 3 3 5-6"/>
+                    </svg>
+                    <p>Support your students.<br />Review their training journey.</p>
+                    <a href="<%= ResolveUrl("~/Academic/FinalAcademicEvaluation.aspx") %>">Start evaluating &rarr;</a>
+                </div>
+            </aside>
+            <button type="button" class="dash-sidebar-backdrop" data-sidebar-close aria-label="Close navigation" tabindex="-1" hidden>
+            </button>
+            <div class="dash-main">
+                <header class="dash-topbar">
+                    <button type="button" class="dash-menu-btn" id="dashboardMenuToggle" aria-controls="dashboardSidebar" aria-expanded="false" aria-label="Open navigation">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <path d="M4 6h16M4 12h16M4 18h16"/>
+                        </svg>
+                    </button>
+                    <label class="dash-search">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <circle cx="10" cy="10" r="6"/>
+                            <path d="m15 15 6 6"/>
+                        </svg>
+                        <span class="dash-sr-only">Search this page</span>
+                        <input type="search" id="dashboardSearch" data-search-target="studentSearch" placeholder="Search for students or companies..." />
+                    </label>
+                    <div class="dash-topbar-actions">
+                        <button type="button" class="dash-icon-btn" disabled aria-label="Notifications are not connected" title="Notifications are not connected">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <path d="M5 17h14l-2-3V9a5 5 0 0 0-10 0v5l-2 3Zm5 3h4"/>
+                            </svg>
+                        </button>
+                        <details class="dash-profile">
+                            <summary class="dash-user-chip">
+                                <span class="dash-avatar">AS</span>
+                                <span class="dash-user-name">Academic Supervisor<span class="dash-role">Academic workspace</span>
+                            </span>
+                            <span aria-hidden="true">&#8964;</span>
+                        </summary>
+                        <div class="dash-profile-menu">
+                            <a href="<%= ResolveUrl("~/Contact.aspx") %>">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                    <circle cx="12" cy="12" r="9"/>
+                                    <path d="M9 8a3 3 0 0 1 6 0c0 2-3 2-3 5m0 3v1"/>
+                                </svg>Help &amp; contact</a>
+                                <a href="<%= ResolveUrl("~/Auth/Login.aspx") %>">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                        <circle cx="12" cy="8" r="3"/>
+                                        <path d="M5 21v-3a7 7 0 0 1 14 0v3"/>
+                                    </svg>Sign in</a>
+                                </div>
+                            </details>
+                        </div>
+                    </header>
             <main class="app-content monitor-main">
-                <header class="monitor-topbar">
-                    <span>Faculty of Information Technology <span class="monitor-divider">/</span> Academic workspace</span>
-                    <span class="monitor-identity"><img src="<%= ResolveUrl("~/Assets/shared/images/just-logo.png") %>" alt="JUST" /> Academic Supervisor</span>
-                </header>
+
                 <section class="monitor-heading" aria-labelledby="pageTitle">
                     <div><p class="monitor-eyebrow">INTERNSHIP OVERSIGHT</p><h1 id="pageTitle">Student Progress Monitor</h1><p>Track student internships, training hours, tasks, and evaluations.</p></div>
                     <button type="button" class="monitor-button monitor-button--secondary" id="previewDetails">Preview details layout <span aria-hidden="true">&#8599;</span></button>
@@ -49,7 +164,7 @@
                 </section>
                 <div class="monitor-guidance"><span aria-hidden="true">&#9432;</span><p><strong>Progress with context.</strong> Task completion and approved training hours are tracked separately. Risk indicators highlight attention needed and do not change official internship status.</p></div>
                 <footer class="monitor-footer"><span>&#169; 2026 Jordan University of Science and Technology</span><span>University Internship Management System</span></footer>
-            </main>
+            </main></div>
         </div>
         <dialog id="studentDetails" class="monitor-drawer" aria-labelledby="detailsTitle" aria-describedby="detailsPreviewNote">
             <div class="monitor-drawer-heading"><div><p class="monitor-eyebrow">STUDENT OVERVIEW</p><h2 id="detailsTitle">Student details</h2></div><button type="button" class="monitor-close" id="closeDetails" aria-label="Close student details">&#215;</button></div>
@@ -63,5 +178,6 @@
         </dialog>
     </form>
     <script src="<%= ResolveUrl("~/Js_project/Academic/progress-monitor.js") %>"></script>
+    <script src="<%= ResolveUrl("~/Js_project/Public/dashboard-navigation.js") %>"></script>
 </body>
 </html>
