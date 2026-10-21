@@ -101,10 +101,14 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="Assets\academic\academic.css" />
+    <Content Include="Assets\public\contact.css" />
+    <Content Include="Assets\company\my-trainees.css" />
     <Content Include="Assets\company\company.css" />
     <Content Include="Assets\coordinator\coordinator.css" />
     <Content Include="Assets\public\public.css" />
     <Content Include="Assets\student\student.css" />
+    <Content Include="Assets\student\profile.css" />
+    <Content Include="Student\Profile.aspx" />
     <Content Include="Assets\shared\colors.css" />
     <Content Include="Shared\Sidebar.ascx" />
     <Content Include="Shared\HomeNavbar.ascx" />
@@ -117,11 +121,16 @@
     <Content Include="Assets\auth\just-campus.jpg" />
     <Content Include="Assets\shared\images\just-logo.png" />
     <Content Include="About.aspx" />
+    <Content Include="Academic\AcademicSupervisorAccount.aspx" />
+    <Content Include="Coordinator\ContactMessages.aspx" />
+    <Content Include="Assets\coordinator\contact-messages.css" />
+    <Content Include="Assets\academic\supervisor-account.css" />
     <Content Include="Academic\test.aspx" />
     <Content Include="Academic\StudentProgressMonitor.aspx" />
     <Content Include="Assets\academic\progress-monitor.css" />
     <Content Include="Js_project\Academic\progress-monitor.js" />
     <Content Include="Company\test.aspx" />
+    <Content Include="Company\MyTrainees.aspx" />
     <Content Include="Contact.aspx" />
     <Content Include="Content\bootstrap-grid.css" />
     <Content Include="Content\bootstrap-grid.min.css" />
