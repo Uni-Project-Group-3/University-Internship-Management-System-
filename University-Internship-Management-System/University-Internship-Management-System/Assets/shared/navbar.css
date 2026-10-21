@@ -1,5 +1,8 @@
-/* Home navigation only. Colours are defined in colors.css. */
+/* Shared public navigation; colours come from colors.css. */
 .home-header {
+    position: relative;
+    z-index: 10;
+    flex-shrink: 0;
     background: var(--surface);
     border-bottom: 1px solid var(--border);
     font-family: "Segoe UI", Arial, sans-serif;
@@ -13,79 +16,77 @@
     gap: 24px;
     max-width: 1280px;
     margin: 0 auto;
-    padding: 18px 28px;
+    padding: 12px 32px;
 }
 
 .home-navbar__brand {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 11px;
     color: var(--primary);
     text-decoration: none;
 }
 
-.home-navbar__brand strong {
-    font-size: 20px;
-}
-
-.home-navbar__subtitle {
-    display: block;
-    font-size: 12px;
-    color: var(--text);
-}
-
-.home-navbar__mark {
-    display: grid;
-    place-items: center;
-    width: 34px;
-    height: 38px;
-    background: var(--primary);
-    color: var(--surface);
-    border-radius: 7px;
-    font-size: 28px;
-    font-weight: 700;
-}
-
-.home-navbar__links {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    flex-wrap: wrap;
-}
+.home-navbar__logo { display: block; object-fit: contain; }
+.home-navbar__brand strong { display: block; font-size: 19px; line-height: 1.2; letter-spacing: .5px; }
+.home-navbar__subtitle { display: block; margin-top: 3px; color: var(--muted); font-size: 10px; line-height: 1.4; }
+.home-navbar__links { display: flex; align-items: center; gap: 12px; }
 
 .home-navbar__link {
+    box-sizing: border-box;
     padding: 10px 16px;
-    border-radius: 9px;
+    border-radius: 8px;
     color: var(--muted);
     text-decoration: none;
-    font-size: 14px;
+    font-size: 13px;
+    line-height: 20px;
 }
 
 .home-navbar__link:hover, .home-navbar__link.is-active {
-    background: var(--background);
     color: var(--primary);
+    background: var(--background);
 }
 
-.home-navbar__link.is-active {
-    font-weight: 600;
-}
+.home-navbar__link.is-active { font-weight: 600; }
+.home-navbar__sign-in { margin-left: 8px; border: 1px solid var(--border); color: var(--primary); }
+.home-navbar__sign-in.is-active { border-color: var(--primary); color: var(--surface); background: var(--primary); }
+.home-navbar__sign-in.is-active:hover { background: color-mix(in srgb, var(--primary) 85%, var(--text)); }
+.home-navbar__toggle { display: none; }
 
-.home-navbar a:focus-visible {
+.home-navbar a:focus-visible, .home-navbar button:focus-visible {
     outline: 2px solid var(--primary);
     outline-offset: 3px;
 }
 
-@media (max-width: 480px) {
-    .home-navbar {
-        padding: 16px;
-        flex-wrap: wrap;
-        gap: 16px;
+@media (max-width: 700px) {
+    .home-navbar { flex-wrap: wrap; gap: 12px; padding: 12px 20px; }
+    .home-navbar__links { width: 100%; flex-direction: column; align-items: stretch; gap: 4px; }
+    .home-navbar__link { padding: 11px 14px; }
+    .home-navbar__sign-in { margin: 4px 0 0; }
+    .home-navbar.has-menu-toggle .home-navbar__links {
+        display: none;
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        box-sizing: border-box;
+        padding: 12px 20px 18px;
+        border-bottom: 1px solid var(--border);
+        background: var(--surface);
+        box-shadow: 0 10px 20px color-mix(in srgb, var(--primary) 8%, transparent);
     }
-    .home-navbar__links {
-        width: 100%;
+    .home-navbar.has-menu-toggle .home-navbar__links.is-open { display: flex; }
+    .home-navbar__toggle:not([hidden]) {
+        display: grid;
+        place-items: center;
+        width: 44px;
+        height: 44px;
+        padding: 0;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        color: var(--primary);
+        background: var(--surface);
+        cursor: pointer;
     }
-    .home-navbar__link {
-        flex: 1;
-        text-align: center;
-    }
+    .home-navbar__toggle svg { fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; }
 }

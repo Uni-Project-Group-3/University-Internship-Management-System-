@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="..\packages\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.2.0.1\build\net46\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.props" Condition="Exists('..\packages\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.2.0.1\build\net46\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.props')" />
   <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
@@ -53,6 +53,7 @@
     <Reference Include="System" />
     <Reference Include="System.Data" />
     <Reference Include="System.Core" />
+    <Reference Include="System.Net.Http" />
     <Reference Include="System.Data.DataSetExtensions" />
     <Reference Include="System.Web.Extensions" />
     <Reference Include="System.Xml.Linq" />
@@ -110,24 +111,35 @@
     <Content Include="Assets\public\public.css" />
     <Content Include="Assets\student\student-dashboard.css" />
     <Content Include="Assets\student\student.css" />
+    <Content Include="Assets\student\explore-opportunities.css" />
+    <Content Include="Student\ExploreOpportunities.aspx" />
+    <Content Include="Student\ApplicationForm.aspx" />
+    <Content Include="Student\MyApplications.aspx" />
+    <Content Include="Coordinator\FinalCompletionReview.aspx" />
+    <Content Include="Assets\coordinator\final-completion-review.css" />
+    <Content Include="Js_project\Coordinator\final-completion-review.js" />
+    <Content Include="Assets\student\my-applications.css" />
+    <Content Include="Js_project\Student\my-applications.js" />
+    <Content Include="Assets\student\application-form.css" />
+    <Content Include="Js_project\Student\application-form.js" />
+    <Content Include="Js_project\Student\explore-opportunities.js" />
     <Content Include="Assets\shared\colors.css" />
-    <Content Include="Company\ApplicationsReview.aspx" />
-    <Content Include="Company\CompanyDashboard.aspx" />
-    <Content Include="Company\ManageOpportunities.aspx" />
-    <Content Include="Coordinator\CoordinatorDashboard.aspx" />
-    <Content Include="Js_project\Academic\academic-dashboard.js" />
-    <Content Include="Js_project\Company\applications-review.js" />
-    <Content Include="Js_project\Company\company-dashboard.js" />
-    <Content Include="Js_project\Company\manage-opportunities.js" />
-    <Content Include="Js_project\Coordinator\coordinator-dashboard.js" />
-    <Content Include="Js_project\Student\dashboard-core.js" />
-    <Content Include="Js_project\Student\student-dashboard.js" />
+    <Content Include="Assets\shared\images\JUST-Logo-01.png" />
     <Content Include="Shared\Sidebar.ascx" />
     <Content Include="Shared\HomeNavbar.ascx" />
+    <Content Include="Js_project\Public\navbar.js" />
     <Content Include="Assets\shared\navbar.css" />
     <Content Include="Assets\shared\sidebar.css" />
+    <Content Include="Auth\Login.aspx" />
+    <Content Include="Assets\auth\auth.css" />
+    <Content Include="Js_project\Auth\auth.js" />
+    <Content Include="Assets\auth\just-campus.jpg" />
+    <Content Include="Assets\shared\images\just-logo.png" />
     <Content Include="About.aspx" />
     <Content Include="Academic\test.aspx" />
+    <Content Include="Academic\StudentProgressMonitor.aspx" />
+    <Content Include="Assets\academic\progress-monitor.css" />
+    <Content Include="Js_project\Academic\progress-monitor.js" />
     <Content Include="Company\test.aspx" />
     <Content Include="Contact.aspx" />
     <Content Include="Content\bootstrap-grid.css" />
@@ -148,6 +160,13 @@
     <Content Include="Content\bootstrap.rtl.min.css" />
     <Content Include="Content\Site.css" />
     <Content Include="Coordinator\test.aspx" />
+    <Content Include="Coordinator\MonitorPlacementsProgress.aspx" />
+    <Content Include="Assets\coordinator\monitor-placements-progress.css" />
+    <Content Include="Js_project\Coordinator\monitor-placements-progress.js" />
+    <Content Include="App_Data\placements-progress.json" />
+    <Content Include="Coordinator\ManageCompanies.aspx" />
+    <Content Include="Assets\coordinator\manage-companies.css" />
+    <Content Include="Js_project\Coordinator\manage-companies.js" />
     <Content Include="Default.aspx" />
     <Content Include="favicon.ico" />
     <Content Include="Global.asax" />
@@ -221,13 +240,8 @@
     <Content Include="Site.Mobile.Master" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Academic\AcademicDashboard.aspx.cs">
-      <DependentUpon>AcademicDashboard.aspx</DependentUpon>
-      <SubType>ASPXCodeBehind</SubType>
-    </Compile>
-    <Compile Include="Academic\AcademicDashboard.aspx.designer.cs">
-      <DependentUpon>AcademicDashboard.aspx</DependentUpon>
-    </Compile>
+    <Compile Include="Academic\StudentProgressMonitor.aspx.cs"><DependentUpon>StudentProgressMonitor.aspx</DependentUpon><SubType>ASPXCodeBehind</SubType></Compile>
+    <Compile Include="Academic\StudentProgressMonitor.aspx.designer.cs"><DependentUpon>StudentProgressMonitor.aspx</DependentUpon></Compile>
     <Compile Include="Academic\test.aspx.cs">
       <DependentUpon>test.aspx</DependentUpon>
       <SubType>ASPXCodeBehind</SubType>
@@ -236,6 +250,13 @@
       <DependentUpon>test.aspx</DependentUpon>
     </Compile>
     <Compile Include="App_Start\BundleConfig.cs" />
+    <Compile Include="Auth\Login.aspx.cs">
+      <DependentUpon>Login.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="Auth\Login.aspx.designer.cs">
+      <DependentUpon>Login.aspx</DependentUpon>
+    </Compile>
     <Compile Include="About.aspx.cs">
       <DependentUpon>About.aspx</DependentUpon>
       <SubType>ASPXCodeBehind</SubType>
@@ -279,13 +300,10 @@
     <Compile Include="Contact.aspx.designer.cs">
       <DependentUpon>Contact.aspx</DependentUpon>
     </Compile>
-    <Compile Include="Coordinator\CoordinatorDashboard.aspx.cs">
-      <DependentUpon>CoordinatorDashboard.aspx</DependentUpon>
-      <SubType>ASPXCodeBehind</SubType>
-    </Compile>
-    <Compile Include="Coordinator\CoordinatorDashboard.aspx.designer.cs">
-      <DependentUpon>CoordinatorDashboard.aspx</DependentUpon>
-    </Compile>
+    <Compile Include="Coordinator\ManageCompanies.aspx.cs"><DependentUpon>ManageCompanies.aspx</DependentUpon><SubType>ASPXCodeBehind</SubType></Compile>
+    <Compile Include="Coordinator\ManageCompanies.aspx.designer.cs"><DependentUpon>ManageCompanies.aspx</DependentUpon></Compile>
+    <Compile Include="Coordinator\MonitorPlacementsProgress.aspx.cs"><DependentUpon>MonitorPlacementsProgress.aspx</DependentUpon><SubType>ASPXCodeBehind</SubType></Compile>
+    <Compile Include="Coordinator\MonitorPlacementsProgress.aspx.designer.cs"><DependentUpon>MonitorPlacementsProgress.aspx</DependentUpon></Compile>
     <Compile Include="Coordinator\test.aspx.cs">
       <DependentUpon>test.aspx</DependentUpon>
       <SubType>ASPXCodeBehind</SubType>
@@ -341,6 +359,14 @@
     <Compile Include="Student\test.aspx.designer.cs">
       <DependentUpon>test.aspx</DependentUpon>
     </Compile>
+    <Compile Include="Shared\HomeNavbar.ascx.cs">
+      <DependentUpon>HomeNavbar.ascx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="Shared\HomeNavbar.ascx.designer.cs">
+      <DependentUpon>HomeNavbar.ascx</DependentUpon>
+    </Compile>
+    <Compile Include="Shared\FirebaseAuthService.cs" />
     <Compile Include="Shared\Sidebar.ascx.cs">
       <DependentUpon>Sidebar.ascx</DependentUpon>
       <SubType>ASPXCodeBehind</SubType>
@@ -358,7 +384,6 @@
   </ItemGroup>
   <ItemGroup>
     <Folder Include="App_Data\" />
-    <Folder Include="Assets\shared\images\" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
