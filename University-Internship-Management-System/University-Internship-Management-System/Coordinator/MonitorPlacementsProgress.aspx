@@ -7,7 +7,7 @@
     <link runat="server" href="~/Assets/shared/colors.css" rel="stylesheet" />
 
     <link runat="server" href="~/Assets/coordinator/monitor-placements-progress.css" rel="stylesheet" />
-    <link runat="server" href="~/Assets/shared/dashboard-navigation.css" rel="stylesheet" />
+    <link runat="server" href="~/Assets/coordinator/coordinator.css" rel="stylesheet" />
 </head>
 <body class="dashboard-direct app-page placements-page">
     <form id="form1" runat="server">

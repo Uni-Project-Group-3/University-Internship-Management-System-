@@ -8,7 +8,7 @@
     <link runat="server" href="~/Assets/shared/colors.css" rel="stylesheet" />
 
     <link runat="server" href="~/Assets/academic/progress-monitor.css" rel="stylesheet" />
-    <link runat="server" href="~/Assets/shared/dashboard-navigation.css" rel="stylesheet" />
+    <link runat="server" href="~/Assets/academic/academic.css" rel="stylesheet" />
 </head>
 <body class="dashboard-direct app-page monitor-page">
     <form id="form1" runat="server">
