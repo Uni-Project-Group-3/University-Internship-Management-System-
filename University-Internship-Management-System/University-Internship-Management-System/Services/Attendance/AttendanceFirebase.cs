@@ -18,8 +18,18 @@ namespace UIMS.Attendance
     public class AttendanceFirebase
     {
         // رابط واحد فقط يتغير عند دمج مشروع الفريق.
-        public const string DefaultDatabaseUrl = "https://uniproject-96de4-default-rtdb.firebaseio.com/";
-        private static readonly HttpClient Client = new HttpClient(new AttendanceHttpHandler()) { Timeout = TimeSpan.FromSeconds(20) };
+        public static string DefaultDatabaseUrl { get { return new AttendanceConfiguration().DatabaseUrl + "/"; } }
+        private static readonly HttpClient SharedClient = new HttpClient(new AttendanceHttpHandler()) { Timeout = TimeSpan.FromSeconds(20) };
+        private readonly HttpClient client;
+        private readonly AttendanceConfiguration configuration;
+        private readonly Func<bool> localDevelopment;
+        public AttendanceFirebase() : this(SharedClient, new AttendanceConfiguration(), () => AttendanceConfiguration.IsLocalDevelopment(System.Web.HttpContext.Current)) { }
+        public AttendanceFirebase(HttpClient httpClient, AttendanceConfiguration config, Func<bool> isLocalDevelopment)
+        {
+            client = httpClient ?? throw new ArgumentNullException(nameof(httpClient));
+            configuration = config ?? throw new ArgumentNullException(nameof(config));
+            localDevelopment = isLocalDevelopment ?? throw new ArgumentNullException(nameof(isLocalDevelopment));
+        }
 
         public static string Setting(string name)
         {
@@ -36,124 +46,33 @@ namespace UIMS.Attendance
                     throw new InvalidOperationException("Invalid record ID.");
         }
 
-        private static readonly SemaphoreSlim TokenLock = new SemaphoreSlim(1, 1);
-        private static string cachedToken, cachedFile;
-        private static DateTime cachedModified, tokenExpires;
-        private const string TokenEndpoint = "https://oauth2.googleapis.com/token";
-
-        private static string Base64Url(byte[] bytes)
+        private async Task<HttpResponseMessage> Send(string method, string path, JObject data, string etag)
         {
-            return Convert.ToBase64String(bytes).TrimEnd('=').Replace('+', '-').Replace('/', '_');
-        }
-
-        private static async Task<string> AccessToken(AttendanceRequestTiming timing)
-        {
-            string file = Setting("UIMS_ATTENDANCE_SERVICE_ACCOUNT_FILE");
-            if (string.IsNullOrWhiteSpace(file)) return FileAccessToken();
-            var step = Stopwatch.StartNew();
-            await TokenLock.WaitAsync().ConfigureAwait(false);
-            if (timing != null) timing.TokenLockMs = step.Elapsed.TotalMilliseconds;
-            try
+            configuration.EnsureEnabled();
+            if (!localDevelopment())
+                throw new UIMS.Services.FirebaseException(403, "Attendance without sign-in is restricted to explicitly enabled localhost development.");
+            if (method != "GET")
             {
-                step.Restart();
-                DateTime modified = File.GetLastWriteTimeUtc(file);
-                if (timing != null) timing.TokenFileMs = step.Elapsed.TotalMilliseconds;
-                if (cachedFile == file && cachedModified == modified && DateTime.UtcNow < tokenExpires)
-                    return cachedToken;
-                if (timing != null) timing.TokenRefreshed = true;
-                JObject account = JObject.Parse(File.ReadAllText(file));
-                string email = (string)account["client_email"], pem = (string)account["private_key"];
-                if ((string)account["type"] != "service_account" || string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(pem))
-                    throw new InvalidOperationException("Invalid service account configuration.");
-
-                // نوقع طلب اعتماد مؤقت محليًا؛ المفتاح الخاص لا يرسل إلى Google أو المتصفح.
-                long now = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
-                var claims = new JObject
-                {
-                    ["iss"] = email, ["aud"] = TokenEndpoint,
-                    ["scope"] = "https://www.googleapis.com/auth/firebase.database https://www.googleapis.com/auth/userinfo.email",
-                    ["iat"] = now, ["exp"] = now + 3600
-                };
-                string unsigned = Base64Url(Encoding.UTF8.GetBytes("{\"alg\":\"RS256\",\"typ\":\"JWT\"}")) + "." +
-                    Base64Url(Encoding.UTF8.GetBytes(claims.ToString(Newtonsoft.Json.Formatting.None)));
-                byte[] keyBytes = Convert.FromBase64String(pem.Replace("-----BEGIN PRIVATE KEY-----", "").Replace("-----END PRIVATE KEY-----", ""));
-                string assertion;
-                try
-                {
-                    using (var key = CngKey.Import(keyBytes, CngKeyBlobFormat.Pkcs8PrivateBlob))
-                    using (var rsa = new RSACng(key))
-                        assertion = unsigned + "." + Base64Url(rsa.SignData(Encoding.UTF8.GetBytes(unsigned), HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1));
-                }
-                finally { Array.Clear(keyBytes, 0, keyBytes.Length); }
-
-                using (var content = new FormUrlEncodedContent(new Dictionary<string, string>
-                {
-                    { "grant_type", "urn:ietf:params:oauth:grant-type:jwt-bearer" }, { "assertion", assertion }
-                }))
-                using (var response = await Client.PostAsync(TokenEndpoint, content).ConfigureAwait(false))
-                {
-                    if (!response.IsSuccessStatusCode)
-                        throw new InvalidOperationException("Google OAuth rejected server credentials (HTTP " + (int)response.StatusCode + ").");
-                    JObject result = JObject.Parse(await response.Content.ReadAsStringAsync().ConfigureAwait(false));
-                    string token = (string)result["access_token"];
-                    int lifetime = (int?)result["expires_in"] ?? 0;
-                    if (string.IsNullOrWhiteSpace(token) || lifetime <= 60)
-                        throw new InvalidOperationException("Google OAuth returned no usable access token.");
-                    // يبقى التوكن في ذاكرة السيرفر فقط ويجدد قبل انتهاء صلاحيته بدقيقة.
-                    cachedToken = token; cachedFile = file; cachedModified = modified;
-                    tokenExpires = DateTime.UtcNow.AddSeconds(lifetime - 60);
-                    return token;
-                }
+                configuration.EnsureWritesAllowed();
+                var parts = path.Split('/');
+                if (parts.Length < 2 || !parts[1].StartsWith("att_demo_", StringComparison.Ordinal) ||
+                    (parts[0] != "attendance" && parts[0] != "earlyCheckoutRequests"))
+                    throw new UIMS.Services.FirebaseException(403, "Development writes are limited to existing test attendance and early-departure records.");
             }
-            catch (Exception ex) when (ex is IOException || ex is UnauthorizedAccessException || ex is Newtonsoft.Json.JsonException || ex is CryptographicException || ex is FormatException)
-            {
-                throw new InvalidOperationException("Cannot load or sign with the server service account. Check file access and key format.");
-            }
-            finally { TokenLock.Release(); }
-        }
-
-        private static string FileAccessToken()
-        {
-            // الملف السري خارج المشروع، ولا يرسل محتواه للمتصفح.
-            string file = Setting("UIMS_ATTENDANCE_ACCESS_TOKEN_FILE");
-            if (string.IsNullOrWhiteSpace(file) || !File.Exists(file))
-                throw new InvalidOperationException("Configure UIMS_ATTENDANCE_SERVICE_ACCOUNT_FILE with the server-only service account JSON path.");
-            string token = File.ReadAllText(file).Trim();
-            if (token.Length < 20 || token.StartsWith("{") || token.Contains("\n") || token.Contains("\r"))
-                throw new InvalidOperationException("The server Firebase access token file is invalid.");
-            return token;
-        }
-
-        private static async Task<HttpResponseMessage> Send(string method, string path, JObject data, string etag)
-        {
             foreach (string key in path.Split('/')) CheckKey(key);
-            string database = Setting("UIMS_ATTENDANCE_DATABASE_URL") ?? DefaultDatabaseUrl;
-            Uri address;
-            if (!Uri.TryCreate(database, UriKind.Absolute, out address) || address.Scheme != "https" ||
-                !(address.Host.EndsWith(".firebaseio.com", StringComparison.OrdinalIgnoreCase) ||
-                  address.Host.EndsWith(".firebasedatabase.app", StringComparison.OrdinalIgnoreCase)) ||
-                address.AbsolutePath != "/" || address.Query != "" || address.UserInfo != "")
-                throw new InvalidOperationException("Configure a valid HTTPS Firebase Realtime Database root URL.");
+            string database = configuration.DatabaseUrl;
             using (var request = new HttpRequestMessage(new HttpMethod(method), database.TrimEnd('/') + "/uimsAttendance/" + path + ".json"))
             {
                 var metrics = AttendanceTiming.Current.Value;
                 var timing = metrics == null ? null : metrics.Begin(method, path);
                 if (timing != null) request.Properties[AttendanceHttpHandler.TimingKey] = timing;
-                double authStarted = metrics == null ? 0 : metrics.Elapsed;
-                string token;
-                try { token = await AccessToken(timing).ConfigureAwait(false); }
-                finally
-                {
-                    if (metrics != null) metrics.RecordAuth(authStarted, metrics.Elapsed);
-                    if (timing != null) timing.TokenMs = metrics.Elapsed - authStarted;
-                }
-                request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+                // Explicit local development mode: no Firebase Authentication or server OAuth credential.
                 if (method == "GET") request.Headers.Add("X-Firebase-ETag", "true");
                 if (etag != null) request.Headers.TryAddWithoutValidation("if-match", etag);
                 if (data != null) request.Content = new StringContent(data.ToString(), Encoding.UTF8, "application/json");
                 HttpResponseMessage response;
                 double started = metrics == null ? 0 : metrics.Elapsed;
-                try { response = await Client.SendAsync(request).ConfigureAwait(false); }
+                try { response = await client.SendAsync(request).ConfigureAwait(false); }
                 finally
                 {
                     if (metrics != null) metrics.Record(started, metrics.Elapsed, path.Split('/')[0]);
@@ -167,7 +86,7 @@ namespace UIMS.Attendance
                 if (response.StatusCode == HttpStatusCode.Unauthorized || response.StatusCode == HttpStatusCode.Forbidden)
                 {
                     response.Dispose();
-                    throw new InvalidOperationException("Firebase refused access. Renew the server OAuth access token and check its permissions; do not open public database rules.");
+                    throw new InvalidOperationException("Firebase denied access at /uimsAttendance/" + path + ". Current Rules do not permit this request. No Authentication or server-credential fallback was attempted.");
                 }
                 return response;
             }
@@ -215,13 +134,45 @@ namespace UIMS.Attendance
         }
     }
 
+    public sealed class AttendanceConfiguration
+    {
+        private readonly Func<string, string> readSetting;
+        public AttendanceConfiguration() : this(key => System.Configuration.ConfigurationManager.AppSettings[key]) { }
+        public AttendanceConfiguration(Func<string, string> settings) { readSetting = settings ?? throw new ArgumentNullException(nameof(settings)); }
+        private string Setting(string key) { return readSetting(key); }
+        public string DatabaseUrl { get { return (Setting("AttendanceDatabaseUrl") ?? "").TrimEnd('/'); } }
+        public bool Enabled { get { return Setting("AttendanceEnabled") == "true"; } }
+        public bool LiveWritesEnabled { get { return Setting("AttendanceLiveWritesEnabled") == "true"; } }
+        public static bool IsLocalDevelopment(System.Web.HttpContext context)
+        {
+            return context != null && System.Configuration.ConfigurationManager.AppSettings["AttendanceLocalDevelopmentEnabled"] == "true" && context.Request.IsLocal && context.Request.Url.IsLoopback &&
+                string.IsNullOrEmpty(context.Request.Headers["X-Forwarded-For"]) && string.IsNullOrEmpty(context.Request.Headers["Forwarded"]);
+        }
+        public void EnsureEnabled()
+        {
+            if (!Enabled) throw new UIMS.Services.FirebaseException(503, "Attendance Firebase connection is disabled.");
+            if (Setting("AttendanceSchemaValidated") != "true") throw new UIMS.Services.FirebaseException(503, "The configured attendance schema has not been validated.");
+            Uri url;
+            if (!Uri.TryCreate(DatabaseUrl, UriKind.Absolute, out url) || url.Scheme != "https" || !url.IsDefaultPort || url.AbsolutePath != "/" || url.UserInfo != "" || url.Query != "" || url.Fragment != "" ||
+                !(url.Host.EndsWith(".firebaseio.com", StringComparison.OrdinalIgnoreCase) || url.Host.EndsWith(".firebasedatabase.app", StringComparison.OrdinalIgnoreCase)))
+                throw new UIMS.Services.FirebaseException(503, "Configure a valid HTTPS AttendanceDatabaseUrl in Web.config.");
+        }
+        public void EnsureWritesAllowed()
+        {
+            EnsureEnabled();
+            if (!LiveWritesEnabled) throw new UIMS.Services.FirebaseException(503, "Attendance live writes are disabled pending explicit development-test approval. No record was changed.");
+        }
+    }
+
     // نسجل أزمنة فقط؛ لا نسجل هيدر Authorization أو محتوى الرد أو معرّفات الأشخاص.
     internal sealed class AttendanceRequestTiming
     {
         public int Id;
         public string Branch, Method;
-        public double StartMs, EndMs, TokenMs, TokenLockMs, TokenFileMs, HeadersMs, BufferMs, ParseMs;
-        public bool TokenRefreshed;
+        public double StartMs, EndMs, HeadersMs, BufferMs, ParseMs;
+        public double TokenLockMs = 0, TokenFileMs = 0;
+        public double TokenMs = 0; // End-user ID token is already verified by the route.
+        public bool TokenRefreshed = false;
         public int ConnectionsBefore, ConnectionsAfter;
     }
     internal sealed class AttendanceHttpHandler : DelegatingHandler

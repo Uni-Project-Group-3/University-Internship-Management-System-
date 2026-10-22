@@ -1,0 +1,10 @@
+<Project ToolsVersion="Current" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup><OutputType>Exe</OutputType><TargetFrameworkVersion>v4.7.2</TargetFrameworkVersion><OutputPath>test-bin\</OutputPath><IntermediateOutputPath>test-obj\</IntermediateOutputPath><AssemblyName>WorkflowTests</AssemblyName><LangVersion>latest</LangVersion></PropertyGroup>
+  <ItemGroup><Reference Include="System"/><Reference Include="System.Net.Http"/><Reference Include="System.Core"/><Reference Include="System.Web"/>
+    <Reference Include="Newtonsoft.Json"><HintPath>..\..\University-Internship-Management-System\University-Internship-Management-System\bin\Newtonsoft.Json.dll</HintPath></Reference>
+  </ItemGroup>
+  <ItemGroup><Compile Include="WorkflowTests.cs"/><Compile Include="CompanyWorkflowTests.cs"/><Compile Include="AcademicWorkflowTests.cs"/><Compile Include="LoginRouteTests.cs"/><Compile Include="..\..\University-Internship-Management-System\University-Internship-Management-System\Shared\LoginRedirectPolicy.cs"/><Compile Include="..\..\University-Internship-Management-System\University-Internship-Management-System\Shared\AcademicSupervisorService.cs"/><Compile Include="..\..\University-Internship-Management-System\University-Internship-Management-System\Shared\CompanyManagementService.cs"/><Compile Include="..\..\University-Internship-Management-System\University-Internship-Management-System\Shared\FirebaseDatabaseVersion.cs"/><Compile Include="..\..\University-Internship-Management-System\University-Internship-Management-System\Shared\StudentManagementService.cs"/>
+    <Compile Include="..\..\University-Internship-Management-System\University-Internship-Management-System\UniversityStudentRecord.cs"/>
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets"/>
+</Project>

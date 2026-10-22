@@ -31,7 +31,7 @@ namespace University_Internship_Management_System.Company
                     throw new InvalidOperationException("Local test setup requires the local student page.");
 
                 string supervisorId = attendanceRequest.ResolveIdentity("company", action);
-                string uid = Session["Uims.VerifiedFirebaseUid"] as string ?? "";
+                string uid = "";
                 var supervisor = await attendanceService.Identity("company", supervisorId, uid, LocalDemoAllowed);
                 await attendanceRequest.StartLoad("company", supervisorId, supervisor);
 

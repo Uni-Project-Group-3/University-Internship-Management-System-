@@ -1,44 +1,18 @@
-﻿<%@ Page Title="Home Page" Language="C#" MasterPageFile="~/Site.Master" AutoEventWireup="true" CodeBehind="Default.aspx.cs" Inherits="University_Internship_Management_System._Default" %>
-
-<asp:Content ID="BodyContent" ContentPlaceHolderID="MainContent" runat="server">
-
-    <main>
-        <section class="row" aria-labelledby="aspnetTitle">
-            <h1 id="aspnetTitle">ASP.NET</h1>
-            <p class="lead">ASP.NET is a free web framework for building great Web sites and Web applications using HTML, CSS, and JavaScript.</p>
-            <p><a href="http://www.asp.net" class="btn btn-primary btn-md">Learn more &raquo;</a></p>
-        </section>
-
-        <div class="row">
-            <section class="col-md-4" aria-labelledby="gettingStartedTitle">
-                <h2 id="gettingStartedTitle">Getting started</h2>
-                <p>
-                    ASP.NET Web Forms lets you build dynamic websites using a familiar drag-and-drop, event-driven model.
-                A design surface and hundreds of controls and components let you rapidly build sophisticated, powerful UI-driven sites with data access.
-                </p>
-                <p>
-                    <a class="btn btn-default" href="https://go.microsoft.com/fwlink/?LinkId=301948">Learn more &raquo;</a>
-                </p>
-            </section>
-            <section class="col-md-4" aria-labelledby="librariesTitle">
-                <h2 id="librariesTitle">Get more libraries</h2>
-                <p>
-                    NuGet is a free Visual Studio extension that makes it easy to add, remove, and update libraries and tools in Visual Studio projects.
-                </p>
-                <p>
-                    <a class="btn btn-default" href="https://go.microsoft.com/fwlink/?LinkId=301949">Learn more &raquo;</a>
-                </p>
-            </section>
-            <section class="col-md-4" aria-labelledby="hostingTitle">
-                <h2 id="hostingTitle">Web Hosting</h2>
-                <p>
-                    You can easily find a web hosting company that offers the right mix of features and price for your applications.
-                </p>
-                <p>
-                    <a class="btn btn-default" href="https://go.microsoft.com/fwlink/?LinkId=301950">Learn more &raquo;</a>
-                </p>
-            </section>
+<%@ Page Title="UIMS | JUST Internships" Language="C#" AutoEventWireup="true" CodeBehind="Default.aspx.cs" Inherits="University_Internship_Management_System._Default" %>
+<!DOCTYPE html><html lang="en"><head runat="server"><meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" /><title>UIMS | JUST Internships</title><link href="Assets/shared/colors.css" rel="stylesheet" /><link href="Assets/public/home-public.css" rel="stylesheet" /></head><body><form id="form1" runat="server"><header class="home-header">
+    <nav class="home-navbar" aria-label="Public navigation">
+        <a class="home-navbar__brand" href="<%= ResolveUrl("~/Default.aspx") %>">
+            <img class="home-navbar__logo" src="<%= ResolveUrl("~/Assets/shared/images/just-logo.png") %>" width="40" height="40" alt="Official JUST emblem" />
+            <span><strong>UIMS</strong><span class="home-navbar__subtitle">JUST Internships</span></span>
+        </a>
+        <button class="home-navbar__toggle" type="button" aria-label="Open navigation menu" aria-expanded="false" aria-controls="publicNavigationLinks" hidden="hidden">
+            <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16" /></svg>
+        </button>
+        <div id="publicNavigationLinks" class="home-navbar__links">
+            <a id="HomeLink" aria-current="page" class="home-navbar__link is-active" href="<%= ResolveUrl("~/Default.aspx") %>">Home</a>
+            <a id="AboutLink" class="home-navbar__link" href="<%= ResolveUrl("~/About.aspx") %>">About Us</a>
+            <a id="ContactLink" class="home-navbar__link" href="<%= ResolveUrl("~/Contact.aspx") %>">Contact Us</a>
+            <a id="LoginLink" class="home-navbar__link home-navbar__sign-in" href="<%= ResolveUrl("~/Auth/Login.aspx") %>">Sign In</a>
         </div>
-    </main>
-
-</asp:Content>
+    </nav>
+</header><main><section class="public-hero"><div><span class="public-eyebrow">JUST · Faculty of Information Technology</span><h1>Your next chapter starts with experience.</h1><p>University Internship Management System brings students, company supervisors, academic supervisors and the Internship Coordinator together through one connected training journey.</p><a class="public-action" href="Auth/Login.aspx">Sign in to UIMS</a><a class="public-action secondary" href="About.aspx">About the system</a></div><figure><img src="Assets/auth/just-campus.jpg" alt="Jordan University of Science and Technology campus library" /><figcaption class="public-credit">Photo: Fawwaz Dawod, 2013 · <a href="https://commons.wikimedia.org/wiki/File:Jordan_University_of_Science_and_Technology%27s_Library.jpg">Source</a> · <a href="https://creativecommons.org/licenses/by-sa/3.0/">CC BY-SA 3.0</a></figcaption></figure></section><section class="public-grid" aria-label="Internship journey"><article class="public-card"><h2>Find your placement</h2><p>Explore opportunities, apply and follow company decisions through your student workspace.</p></article><article class="public-card"><h2>Build and reflect</h2><p>Track assigned tasks, submissions, revisions and explicitly approved training hours.</p></article><article class="public-card"><h2>Complete your journey</h2><p>Company and academic evaluations support the Coordinator's separate final completion review.</p></article></section><p class="public-note">Frontend demonstration only. Test identities and records are stored locally in your browser. Firebase and real authentication are postponed. No public registration is available.</p></main><footer class="public-footer">&copy; 2026 Jordan University of Science and Technology · University Internship Management System</footer></form><script src="Js_project/Public/navbar.js" defer="defer"></script></body></html>

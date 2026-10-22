@@ -1,5 +1,4 @@
-﻿<%@ Page Title="Sign In | UIMS" Language="C#" AutoEventWireup="true" Async="true" EnableViewState="false" CodeBehind="Login.aspx.cs" Inherits="University_Internship_Management_System.Auth.Login" %>
-<%@ Register Src="~/Shared/HomeNavbar.ascx" TagPrefix="shared" TagName="PublicNavbar" %>
+<%@ Page Title="Sign In | UIMS" Language="C#" AutoEventWireup="true" Async="true" EnableViewState="false" CodeBehind="Login.aspx.cs" Inherits="University_Internship_Management_System.Auth.Login" %>
 <!DOCTYPE html>
 <html lang="en">
 <head id="Head1" runat="server">
@@ -8,7 +7,6 @@
     <meta name="robots" content="noindex, nofollow" />
     <title>Sign In | UIMS</title>
     <link runat="server" href="~/Assets/shared/colors.css" rel="stylesheet" />
-    <link runat="server" href="~/Assets/shared/navbar.css" rel="stylesheet" />
     <link runat="server" href="~/Assets/auth/auth.css" rel="stylesheet" />
 </head>
 <body class="auth-page">
@@ -19,7 +17,23 @@
         <symbol id="icon-arrow" viewBox="0 0 24 24"><path d="M4 12h15m-6-6 6 6-6 6" /></symbol>
         <symbol id="icon-shield" viewBox="0 0 24 24"><path d="m12 3 8 3v6c0 5-8 9-8 9s-8-4-8-9V6l8-3Z" /><path d="m8 12 3 3 5-6" /></symbol>
     </svg>
-    <shared:PublicNavbar runat="server" EnableViewState="false" />
+    <header class="home-header">
+    <nav class="home-navbar" aria-label="Public navigation">
+        <a class="home-navbar__brand" href="<%= ResolveUrl("~/Default.aspx") %>">
+            <img class="home-navbar__logo" src="<%= ResolveUrl("~/Assets/shared/images/just-logo.png") %>" width="40" height="40" alt="Official JUST emblem" />
+            <span><strong>UIMS</strong><span class="home-navbar__subtitle">JUST Internships</span></span>
+        </a>
+        <button class="home-navbar__toggle" type="button" aria-label="Open navigation menu" aria-expanded="false" aria-controls="publicNavigationLinks" hidden="hidden">
+            <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16" /></svg>
+        </button>
+        <div id="publicNavigationLinks" class="home-navbar__links">
+            <a id="HomeLink" class="home-navbar__link" href="<%= ResolveUrl("~/Default.aspx") %>">Home</a>
+            <a id="AboutLink" class="home-navbar__link" href="<%= ResolveUrl("~/About.aspx") %>">About Us</a>
+            <a id="ContactLink" class="home-navbar__link" href="<%= ResolveUrl("~/Contact.aspx") %>">Contact Us</a>
+            <a id="LoginLink" aria-current="page" class="home-navbar__link home-navbar__sign-in is-active" href="<%= ResolveUrl("~/Auth/Login.aspx") %>">Sign In</a>
+        </div>
+    </nav>
+</header>
     <form id="form1" runat="server" class="auth-layout" novalidate="novalidate">
         <asp:HiddenField ID="CsrfToken" runat="server" ClientIDMode="Static" />
         <div class="auth-shell">
@@ -131,6 +145,7 @@
         <noscript><p class="auth-noscript">Enable JavaScript for password visibility controls and the secure first-login dialog.</p></noscript>
     </form>
     <footer class="auth-public-footer"><span>&copy; <%= DateTime.Now.Year %> Jordan University of Science and Technology.</span><span>University Internship Management System.</span></footer>
-    <script src="../Js_project/Auth/auth.js" defer="defer"></script>
+
+    <script src="../Js_project/Auth/auth.js?v=20261022-real-login" defer="defer"></script>
 </body>
 </html>

@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="..\packages\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.2.0.1\build\net46\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.props" Condition="Exists('..\packages\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.2.0.1\build\net46\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.props')" />
   <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
@@ -44,13 +44,41 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="FirebaseAdmin, Version=3.7.0.0, Culture=neutral, PublicKeyToken=97c8d00c348326ed, processorArchitecture=MSIL">
+      <HintPath>..\packages\FirebaseAdmin.3.7.0\lib\net462\FirebaseAdmin.dll</HintPath>
+    </Reference>
+    <Reference Include="Google.Api.Gax, Version=4.13.1.0, Culture=neutral, PublicKeyToken=3ec5ea7f18953e47, processorArchitecture=MSIL">
+      <HintPath>..\packages\Google.Api.Gax.4.13.1\lib\net462\Google.Api.Gax.dll</HintPath>
+    </Reference>
+    <Reference Include="Google.Api.Gax.Rest, Version=4.13.1.0, Culture=neutral, PublicKeyToken=3ec5ea7f18953e47, processorArchitecture=MSIL">
+      <HintPath>..\packages\Google.Api.Gax.Rest.4.13.1\lib\net462\Google.Api.Gax.Rest.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.CodeDom.Providers.DotNetCompilerPlatform, Version=2.0.1.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
+      <HintPath>..\packages\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.2.0.1\lib\net45\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
     <Reference Include="Microsoft.CSharp" />
+    <Reference Include="System.Collections.Immutable, Version=8.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
+      <HintPath>..\packages\System.Collections.Immutable.8.0.0\lib\net462\System.Collections.Immutable.dll</HintPath>
+    </Reference>
+    <Reference Include="Newtonsoft.Json, Version=13.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
+      <HintPath>..\packages\Newtonsoft.Json.13.0.4\lib\net45\Newtonsoft.Json.dll</HintPath>
+    </Reference>
     <Reference Include="System.ComponentModel.DataAnnotations" />
     <Reference Include="System" />
     <Reference Include="System.Data" />
     <Reference Include="System.Core" />
+    <Reference Include="System.Diagnostics.DiagnosticSource, Version=6.0.0.2, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
+      <HintPath>..\packages\System.Diagnostics.DiagnosticSource.6.0.2\lib\net461\System.Diagnostics.DiagnosticSource.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Management" />
     <Reference Include="System.Net.Http" />
     <Reference Include="System.Data.DataSetExtensions" />
+    <Reference Include="System.Numerics" />
+    <Reference Include="System.Runtime.CompilerServices.Unsafe, Version=6.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
+      <HintPath>..\packages\System.Runtime.CompilerServices.Unsafe.6.0.0\lib\net461\System.Runtime.CompilerServices.Unsafe.dll</HintPath>
+    </Reference>
+    <Reference Include="System.ValueTuple" />
     <Reference Include="System.Web.Extensions" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Drawing" />
@@ -75,9 +103,6 @@
     <Reference Include="System.Web.Optimization, Version=1.1.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35">
       <HintPath>..\packages\Microsoft.AspNet.Web.Optimization.1.1.3\lib\net40\System.Web.Optimization.dll</HintPath>
     </Reference>
-    <Reference Include="Newtonsoft.Json">
-      <HintPath>..\packages\Newtonsoft.Json.13.0.3\lib\net45\Newtonsoft.Json.dll</HintPath>
-    </Reference>
     <Reference Include="WebGrease">
       <Private>True</Private>
       <HintPath>..\packages\WebGrease.1.6.0\lib\WebGrease.dll</HintPath>
@@ -95,15 +120,17 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Reference Include="Microsoft.CodeDom.Providers.DotNetCompilerPlatform">
-      <HintPath>..\packages\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.2.0.1\lib\net45\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.dll</HintPath>
-    </Reference>
-  </ItemGroup>
-  <ItemGroup>
+    <Content Include="Academic\AcademicDashboard.aspx" />
+    <Content Include="Assets\academic\academic-dashboard.css" />
     <Content Include="Assets\academic\academic.css" />
+    <Content Include="Assets\company\applications-review.css" />
+    <Content Include="Assets\company\company-dashboard.css" />
     <Content Include="Assets\company\company.css" />
+    <Content Include="Assets\company\manage-opportunities.css" />
+    <Content Include="Assets\coordinator\coordinator-dashboard.css" />
     <Content Include="Assets\coordinator\coordinator.css" />
     <Content Include="Assets\public\public.css" />
+    <Content Include="Assets\student\student-dashboard.css" />
     <Content Include="Assets\student\student.css" />
     <Content Include="Assets\student\explore-opportunities.css" />
     <Content Include="Student\ExploreOpportunities.aspx" />
@@ -124,17 +151,26 @@
     <Content Include="Js_project\Public\navbar.js" />
     <Content Include="Assets\shared\navbar.css" />
     <Content Include="Assets\shared\sidebar.css" />
+    <Content Include="Js_project\Public\dashboard-navigation.js" />
     <Content Include="Auth\Login.aspx" />
     <Content Include="Assets\auth\auth.css" />
     <Content Include="Js_project\Auth\auth.js" />
     <Content Include="Assets\auth\just-campus.jpg" />
     <Content Include="Assets\shared\images\just-logo.png" />
     <Content Include="About.aspx" />
+    <Content Include="Academic\AcademicSupervisorAccount.aspx" />
+    <Content Include="Coordinator\ContactMessages.aspx" />
+    <Content Include="Assets\coordinator\contact-messages.css" />
+    <Content Include="Assets\academic\supervisor-account.css" />
     <Content Include="Academic\test.aspx" />
+    <Content Include="Academic\FinalAcademicEvaluation.aspx" />
+    <Content Include="Assets\academic\final-academic-evaluation.css" />
+    <Content Include="Js_project\Academic\final-academic-evaluation.js" />
     <Content Include="Academic\StudentProgressMonitor.aspx" />
     <Content Include="Assets\academic\progress-monitor.css" />
     <Content Include="Js_project\Academic\progress-monitor.js" />
     <Content Include="Company\test.aspx" />
+    <Content Include="Company\MyTrainees.aspx" />
     <Content Include="Contact.aspx" />
     <Content Include="Content\bootstrap-grid.css" />
     <Content Include="Content\bootstrap-grid.min.css" />
@@ -154,6 +190,12 @@
     <Content Include="Content\bootstrap.rtl.min.css" />
     <Content Include="Content\Site.css" />
     <Content Include="Coordinator\test.aspx" />
+    <Content Include="Coordinator\ManageStudents.aspx" />
+    <Content Include="Assets\shared\completion.css" />
+    <Content Include="Js_project\Public\completion.js" />
+    <Content Include="Coordinator\MonitorPlacementsProgress.aspx" />
+    <Content Include="Assets\coordinator\monitor-placements-progress.css" />
+    <Content Include="Js_project\Coordinator\monitor-placements-progress.js" />
     <Content Include="Coordinator\ManageCompanies.aspx" />
     <Content Include="Assets\coordinator\manage-companies.css" />
     <Content Include="Js_project\Coordinator\manage-companies.js" />
@@ -222,6 +264,7 @@
     <Content Include="Scripts\WebForms\WebParts.js" />
     <Content Include="Scripts\WebForms\WebUIValidation.js" />
     <Content Include="Site.Master" />
+    <Content Include="Student\StudentDashboard.aspx" />
     <Content Include="Student\test.aspx" />
     <Content Include="ViewSwitcher.ascx" />
     <Content Include="Web.config" />
@@ -229,8 +272,20 @@
     <Content Include="Site.Mobile.Master" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Academic\StudentProgressMonitor.aspx.cs"><DependentUpon>StudentProgressMonitor.aspx</DependentUpon><SubType>ASPXCodeBehind</SubType></Compile>
-    <Compile Include="Academic\StudentProgressMonitor.aspx.designer.cs"><DependentUpon>StudentProgressMonitor.aspx</DependentUpon></Compile>
+    <Compile Include="Academic\StudentProgressMonitor.aspx.cs">
+      <DependentUpon>StudentProgressMonitor.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="Academic\StudentProgressMonitor.aspx.designer.cs">
+      <DependentUpon>StudentProgressMonitor.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="Academic\FinalAcademicEvaluation.aspx.cs">
+      <DependentUpon>FinalAcademicEvaluation.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="Academic\FinalAcademicEvaluation.aspx.designer.cs">
+      <DependentUpon>FinalAcademicEvaluation.aspx</DependentUpon>
+    </Compile>
     <Compile Include="Academic\test.aspx.cs">
       <DependentUpon>test.aspx</DependentUpon>
       <SubType>ASPXCodeBehind</SubType>
@@ -254,6 +309,27 @@
       <DependentUpon>About.aspx</DependentUpon>
     </Compile>
     <Compile Include="App_Start\RouteConfig.cs" />
+    <Compile Include="Company\ApplicationsReview.aspx.cs">
+      <DependentUpon>ApplicationsReview.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="Company\ApplicationsReview.aspx.designer.cs">
+      <DependentUpon>ApplicationsReview.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="Company\CompanyDashboard.aspx.cs">
+      <DependentUpon>CompanyDashboard.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="Company\CompanyDashboard.aspx.designer.cs">
+      <DependentUpon>CompanyDashboard.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="Company\ManageOpportunities.aspx.cs">
+      <DependentUpon>ManageOpportunities.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="Company\ManageOpportunities.aspx.designer.cs">
+      <DependentUpon>ManageOpportunities.aspx</DependentUpon>
+    </Compile>
     <Compile Include="Company\test.aspx.cs">
       <DependentUpon>test.aspx</DependentUpon>
       <SubType>ASPXCodeBehind</SubType>
@@ -268,8 +344,27 @@
     <Compile Include="Contact.aspx.designer.cs">
       <DependentUpon>Contact.aspx</DependentUpon>
     </Compile>
-    <Compile Include="Coordinator\ManageCompanies.aspx.cs"><DependentUpon>ManageCompanies.aspx</DependentUpon><SubType>ASPXCodeBehind</SubType></Compile>
-    <Compile Include="Coordinator\ManageCompanies.aspx.designer.cs"><DependentUpon>ManageCompanies.aspx</DependentUpon></Compile>
+    <Compile Include="Coordinator\ManageCompanies.aspx.cs">
+      <DependentUpon>ManageCompanies.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="Coordinator\ManageCompanies.aspx.designer.cs">
+      <DependentUpon>ManageCompanies.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="Coordinator\MonitorPlacementsProgress.aspx.cs">
+      <DependentUpon>MonitorPlacementsProgress.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="Coordinator\MonitorPlacementsProgress.aspx.designer.cs">
+      <DependentUpon>MonitorPlacementsProgress.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="Coordinator\ManageStudents.aspx.cs">
+      <DependentUpon>ManageStudents.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="Coordinator\ManageStudents.aspx.designer.cs">
+      <DependentUpon>ManageStudents.aspx</DependentUpon>
+    </Compile>
     <Compile Include="Coordinator\test.aspx.cs">
       <DependentUpon>test.aspx</DependentUpon>
       <SubType>ASPXCodeBehind</SubType>
@@ -287,6 +382,7 @@
     <Compile Include="Global.asax.cs">
       <DependentUpon>Global.asax</DependentUpon>
     </Compile>
+    <Compile Include="Models\Opportunity.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Public\test.aspx.cs">
       <DependentUpon>test.aspx</DependentUpon>
@@ -295,6 +391,7 @@
     <Compile Include="Public\test.aspx.designer.cs">
       <DependentUpon>test.aspx</DependentUpon>
     </Compile>
+    <Compile Include="Services\OpportunityService.cs" />
     <Compile Include="Site.Master.cs">
       <DependentUpon>Site.Master</DependentUpon>
       <SubType>ASPXCodeBehind</SubType>
@@ -308,6 +405,13 @@
     </Compile>
     <Compile Include="Site.Mobile.Master.designer.cs">
       <DependentUpon>Site.Mobile.Master</DependentUpon>
+    </Compile>
+    <Compile Include="Student\StudentDashboard.aspx.cs">
+      <DependentUpon>StudentDashboard.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="Student\StudentDashboard.aspx.designer.cs">
+      <DependentUpon>StudentDashboard.aspx</DependentUpon>
     </Compile>
     <Compile Include="Student\test.aspx.cs">
       <DependentUpon>test.aspx</DependentUpon>
@@ -324,6 +428,14 @@
       <DependentUpon>HomeNavbar.ascx</DependentUpon>
     </Compile>
     <Compile Include="Shared\FirebaseAuthService.cs" />
+    <Compile Include="Shared\FirebaseSignInService.cs" />
+    <Compile Include="Shared\LoginRedirectPolicy.cs" />
+    <Compile Include="Shared\StudentCredentialMailer.cs" />
+    <Compile Include="Shared\FirebaseDatabaseVersion.cs" />
+    <Compile Include="Shared\StudentFirebaseGateway.cs" />
+    <Compile Include="Shared\StudentManagementService.cs" />
+    <Compile Include="Shared\CompanyManagementService.cs" />
+    <Compile Include="Shared\AcademicSupervisorService.cs" />
     <Compile Include="Shared\Sidebar.ascx.cs">
       <DependentUpon>Sidebar.ascx</DependentUpon>
       <SubType>ASPXCodeBehind</SubType>
@@ -331,6 +443,7 @@
     <Compile Include="Shared\Sidebar.ascx.designer.cs">
       <DependentUpon>Sidebar.ascx</DependentUpon>
     </Compile>
+    <Compile Include="UniversityStudentRecord.cs" />
     <Compile Include="ViewSwitcher.ascx.cs">
       <DependentUpon>ViewSwitcher.ascx</DependentUpon>
       <SubType>ASPXCodeBehind</SubType>
@@ -413,5 +526,367 @@
       <ErrorText>This project references NuGet package(s) that are missing on this computer. Use NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
     </PropertyGroup>
     <Error Condition="!Exists('..\packages\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.2.0.1\build\net46\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.props')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.2.0.1\build\net46\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.props'))" />
+    <Error Condition="!Exists('..\packages\System.ValueTuple.4.6.2\build\net471\System.ValueTuple.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\System.ValueTuple.4.6.2\build\net471\System.ValueTuple.targets'))" />
   </Target>
+  <ItemGroup>
+    <Content Include="Public\home.aspx" />
+    <Content Include="Assets\public\home.css" />
+    <Content Include="Js_project\Public\home.js" />
+    <Compile Include="Public\home.aspx.cs">
+      <DependentUpon>home.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="Public\home.aspx.designer.cs">
+      <DependentUpon>home.aspx</DependentUpon>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Academic\AcademicDashboard.aspx.cs">
+      <DependentUpon>AcademicDashboard.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="Academic\AcademicDashboard.aspx.designer.cs">
+      <DependentUpon>AcademicDashboard.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="Academic\AcademicSupervisorAccount.aspx.cs">
+      <DependentUpon>AcademicSupervisorAccount.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="Academic\AcademicSupervisorAccount.aspx.designer.cs">
+      <DependentUpon>AcademicSupervisorAccount.aspx</DependentUpon>
+    </Compile>
+    <Content Include="Assets\company\my-trainees.css" />
+    <Content Include="Assets\public\contact.css" />
+    <Content Include="Assets\student\profile.css" />
+    <Content Include="Company\ApplicationsReview.aspx" />
+    <Content Include="Company\CompanyDashboard.aspx" />
+    <Content Include="Company\ManageOpportunities.aspx" />
+    <Compile Include="Company\MyTrainees.aspx.cs">
+      <DependentUpon>MyTrainees.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="Company\MyTrainees.aspx.designer.cs">
+      <DependentUpon>MyTrainees.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="Coordinator\ContactMessages.aspx.cs">
+      <DependentUpon>ContactMessages.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="Coordinator\ContactMessages.aspx.designer.cs">
+      <DependentUpon>ContactMessages.aspx</DependentUpon>
+    </Compile>
+    <Content Include="Coordinator\CoordinatorDashboard.aspx" />
+    <Compile Include="Coordinator\CoordinatorDashboard.aspx.cs">
+      <DependentUpon>CoordinatorDashboard.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="Coordinator\CoordinatorDashboard.aspx.designer.cs">
+      <DependentUpon>CoordinatorDashboard.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="Coordinator\FinalCompletionReview.aspx.cs">
+      <DependentUpon>FinalCompletionReview.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="Coordinator\FinalCompletionReview.aspx.designer.cs">
+      <DependentUpon>FinalCompletionReview.aspx</DependentUpon>
+    </Compile>
+    <Content Include="Js_project\Academic\academic-dashboard.js" />
+    <Content Include="Js_project\Company\applications-review.js" />
+    <Content Include="Js_project\Company\company-dashboard.js" />
+    <Content Include="Js_project\Company\manage-opportunities.js" />
+    <Content Include="Js_project\Coordinator\coordinator-dashboard.js" />
+    <Content Include="Js_project\Student\dashboard-core.js" />
+    <Content Include="Js_project\Student\student-dashboard.js" />
+    <Compile Include="Student\ApplicationForm.aspx.cs">
+      <DependentUpon>ApplicationForm.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="Student\ApplicationForm.aspx.designer.cs">
+      <DependentUpon>ApplicationForm.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="Student\ExploreOpportunities.aspx.cs">
+      <DependentUpon>ExploreOpportunities.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="Student\ExploreOpportunities.aspx.designer.cs">
+      <DependentUpon>ExploreOpportunities.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="Student\MyApplications.aspx.cs">
+      <DependentUpon>MyApplications.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="Student\MyApplications.aspx.designer.cs">
+      <DependentUpon>MyApplications.aspx</DependentUpon>
+    </Compile>
+    <Content Include="Student\Profile.aspx" />
+    <Compile Include="Student\Profile.aspx.cs">
+      <DependentUpon>Profile.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="Student\Profile.aspx.designer.cs">
+      <DependentUpon>Profile.aspx</DependentUpon>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="Debug.aspx" />
+    <Compile Include="Debug.aspx.cs">
+      <DependentUpon>Debug.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="Coordinator\Manage_Academic_Supervisor.aspx" />
+    <Compile Include="Coordinator\Manage_Academic_Supervisor.aspx.cs">
+      <DependentUpon>Manage_Academic_Supervisor.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="Coordinator\Manage_Academic_Supervisor.aspx.designer.cs">
+      <DependentUpon>Manage_Academic_Supervisor.aspx</DependentUpon>
+    </Compile>
+    <Content Include="Assets\coordinator\Manage_Academic_Supervisor.css" />
+    <Content Include="Js_project\Coordinator\Manage_Academic_Supervisor.js" />
+    <Content Include="Coordinator\Assign_Supervisors.aspx" />
+    <Compile Include="Coordinator\Assign_Supervisors.aspx.cs">
+      <DependentUpon>Assign_Supervisors.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="Coordinator\Assign_Supervisors.aspx.designer.cs">
+      <DependentUpon>Assign_Supervisors.aspx</DependentUpon>
+    </Compile>
+    <Content Include="Assets\coordinator\Assign_Supervisors.css" />
+    <Content Include="Js_project\Coordinator\Assign_Supervisors.js" />
+    <Content Include="Company\ManageTasks.aspx" />
+    <Compile Include="Company\ManageTasks.aspx.cs">
+      <DependentUpon>ManageTasks.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="Company\ManageTasks.aspx.designer.cs">
+      <DependentUpon>ManageTasks.aspx</DependentUpon>
+    </Compile>
+    <Content Include="Assets\company\ManageTasks.css" />
+    <Content Include="Js_project\Company\ManageTasks.js" />
+    <Content Include="Student\MyTasks.aspx" />
+    <Compile Include="Student\MyTasks.aspx.cs">
+      <DependentUpon>MyTasks.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="Student\MyTasks.aspx.designer.cs">
+      <DependentUpon>MyTasks.aspx</DependentUpon>
+    </Compile>
+    <Content Include="Assets\student\MyTasks.css" />
+    <Content Include="Js_project\Student\MyTasks.js" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="Company\CompanySupervisorAccount.aspx" />
+    <Compile Include="Company\CompanySupervisorAccount.aspx.cs">
+      <DependentUpon>CompanySupervisorAccount.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="Company\CompanySupervisorAccount.aspx.designer.cs">
+      <DependentUpon>CompanySupervisorAccount.aspx</DependentUpon>
+    </Compile>
+    <Content Include="Assets\company\company-supervisor-account.css" />
+    <Content Include="Js_project\Company\company-supervisor-account.js" />
+    <Content Include="Coordinator\CoordinatorAccountProfile.aspx" />
+    <Compile Include="Coordinator\CoordinatorAccountProfile.aspx.cs">
+      <DependentUpon>CoordinatorAccountProfile.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="Coordinator\CoordinatorAccountProfile.aspx.designer.cs">
+      <DependentUpon>CoordinatorAccountProfile.aspx</DependentUpon>
+    </Compile>
+    <Content Include="Assets\coordinator\coordinator-account-profile.css" />
+    <Content Include="Js_project\Coordinator\coordinator-account-profile.js" />
+    <Content Include="Student\MyProgressEvaluation.aspx" />
+    <Compile Include="Student\MyProgressEvaluation.aspx.cs">
+      <DependentUpon>MyProgressEvaluation.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="Student\MyProgressEvaluation.aspx.designer.cs">
+      <DependentUpon>MyProgressEvaluation.aspx</DependentUpon>
+    </Compile>
+    <Content Include="Assets\student\my-progress-evaluation.css" />
+    <Content Include="Js_project\Student\my-progress-evaluation.js" />
+    <Content Include="Company\ReportsFinalEvaluation.aspx" />
+    <Compile Include="Company\ReportsFinalEvaluation.aspx.cs">
+      <DependentUpon>ReportsFinalEvaluation.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="Company\ReportsFinalEvaluation.aspx.designer.cs">
+      <DependentUpon>ReportsFinalEvaluation.aspx</DependentUpon>
+    </Compile>
+    <Content Include="Assets\company\reports-final-evaluation.css" />
+    <Content Include="Js_project\Company\reports-final-evaluation.js" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="Js_project\Demo\demo-store.js" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="Js_project\Coordinator\manage-students.js" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="Js_project\Student\profile.js" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="Js_project\Company\my-trainees.js" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="Js_project\Academic\academic-supervisor-account.js" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="Assets\coordinator\manage-students.css" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="Js_project\Coordinator\contact-messages.js" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="Js_project\Public\contact-demo.js" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="Assets\public\home-public.css" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="Assets\public\about.css" />
+  </ItemGroup>
+  <Import Project="..\packages\System.ValueTuple.4.6.2\build\net471\System.ValueTuple.targets" Condition="Exists('..\packages\System.ValueTuple.4.6.2\build\net471\System.ValueTuple.targets')" />
+  <ItemGroup>
+    <Content Include="TasksApi.ashx" />
+    <Content Include="Js_project\firebase-client.js" />
+    <Compile Include="Services\FirebaseConfiguration.cs" />
+    <Compile Include="Services\TaskService.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Reference Include="PdfSharp-gdi, Version=6.2.4.0, Culture=neutral, PublicKeyToken=f94615aa0424f9eb">
+      <HintPath>..\packages\PDFsharp-GDI.6.2.4\lib\net462\PdfSharp-gdi.dll</HintPath>
+      <SpecificVersion>True</SpecificVersion>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="PdfSharp.Charting-gdi, Version=6.2.4.0, Culture=neutral, PublicKeyToken=f94615aa0424f9eb">
+      <HintPath>..\packages\PDFsharp-GDI.6.2.4\lib\net462\PdfSharp.Charting-gdi.dll</HintPath>
+      <SpecificVersion>True</SpecificVersion>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="PdfSharp.Cryptography, Version=6.2.4.0, Culture=neutral, PublicKeyToken=f94615aa0424f9eb">
+      <HintPath>..\packages\PDFsharp-GDI.6.2.4\lib\net462\PdfSharp.Cryptography.dll</HintPath>
+      <SpecificVersion>True</SpecificVersion>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="PdfSharp.Shared, Version=6.2.4.0, Culture=neutral, PublicKeyToken=f94615aa0424f9eb">
+      <HintPath>..\packages\PDFsharp-GDI.6.2.4\lib\net462\PdfSharp.Shared.dll</HintPath>
+      <SpecificVersion>True</SpecificVersion>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="PdfSharp.System, Version=6.2.4.0, Culture=neutral, PublicKeyToken=f94615aa0424f9eb">
+      <HintPath>..\packages\PDFsharp-GDI.6.2.4\lib\net462\PdfSharp.System.dll</HintPath>
+      <SpecificVersion>True</SpecificVersion>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="PdfSharp.WPFonts, Version=6.2.4.0, Culture=neutral, PublicKeyToken=f94615aa0424f9eb">
+      <HintPath>..\packages\PDFsharp-GDI.6.2.4\lib\net462\PdfSharp.WPFonts.dll</HintPath>
+      <SpecificVersion>True</SpecificVersion>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="MigraDoc.DocumentObjectModel, Version=6.2.4.0, Culture=neutral, PublicKeyToken=f94615aa0424f9eb">
+      <HintPath>..\packages\PDFsharp-MigraDoc-GDI.6.2.4\lib\net462\MigraDoc.DocumentObjectModel.dll</HintPath>
+      <SpecificVersion>True</SpecificVersion>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="MigraDoc.Rendering-gdi, Version=6.2.4.0, Culture=neutral, PublicKeyToken=f94615aa0424f9eb">
+      <HintPath>..\packages\PDFsharp-MigraDoc-GDI.6.2.4\lib\net462\MigraDoc.Rendering-gdi.dll</HintPath>
+      <SpecificVersion>True</SpecificVersion>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="Microsoft.Extensions.Logging.Abstractions, Version=8.0.0.3, Culture=neutral, PublicKeyToken=adb9793829ddae60">
+      <HintPath>..\packages\Microsoft.Extensions.Logging.Abstractions.8.0.3\lib\net462\Microsoft.Extensions.Logging.Abstractions.dll</HintPath>
+      <SpecificVersion>True</SpecificVersion>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="Microsoft.Extensions.DependencyInjection.Abstractions, Version=8.0.0.2, Culture=neutral, PublicKeyToken=adb9793829ddae60">
+      <HintPath>..\packages\Microsoft.Extensions.DependencyInjection.Abstractions.8.0.2\lib\net462\Microsoft.Extensions.DependencyInjection.Abstractions.dll</HintPath>
+      <SpecificVersion>True</SpecificVersion>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="Microsoft.Bcl.AsyncInterfaces, Version=8.0.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51">
+      <HintPath>..\packages\Microsoft.Bcl.AsyncInterfaces.8.0.0\lib\net462\Microsoft.Bcl.AsyncInterfaces.dll</HintPath>
+      <SpecificVersion>True</SpecificVersion>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="System.Security.Cryptography.Pkcs, Version=8.0.0.1, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
+      <HintPath>..\packages\System.Security.Cryptography.Pkcs.8.0.2\lib\net462\System.Security.Cryptography.Pkcs.dll</HintPath>
+      <SpecificVersion>True</SpecificVersion>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="System.Memory, Version=4.0.1.2, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51">
+      <HintPath>..\packages\System.Memory.4.5.5\lib\net461\System.Memory.dll</HintPath>
+      <SpecificVersion>True</SpecificVersion>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="System.Buffers, Version=4.0.3.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51">
+      <HintPath>..\packages\System.Buffers.4.5.1\lib\net461\System.Buffers.dll</HintPath>
+      <SpecificVersion>True</SpecificVersion>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="System.Threading.Tasks.Extensions, Version=4.2.0.1, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51">
+      <HintPath>..\packages\System.Threading.Tasks.Extensions.4.5.4\lib\net461\System.Threading.Tasks.Extensions.dll</HintPath>
+      <SpecificVersion>True</SpecificVersion>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="System.Numerics.Vectors, Version=4.1.4.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
+      <HintPath>..\packages\System.Numerics.Vectors.4.5.0\lib\net46\System.Numerics.Vectors.dll</HintPath>
+      <SpecificVersion>True</SpecificVersion>
+      <Private>True</Private>
+    </Reference>
+    <Content Include="Js_project\final-evaluation-v2.js" />
+    <Compile Include="Models\FinalEvaluation\AcademicFinalEvaluation.cs" />
+    <Compile Include="Models\FinalEvaluation\CompanyFinalEvaluation.cs" />
+    <Compile Include="Models\FinalEvaluation\CompletionDocument.cs" />
+    <Compile Include="Models\FinalEvaluation\CompletionReview.cs" />
+    <Compile Include="Models\FinalEvaluation\EvaluationPolicy.cs" />
+    <Compile Include="Services\FinalEvaluation\Contracts.cs" />
+    <Compile Include="Services\FinalEvaluation\FinalEvaluationServices.cs" />
+    <Compile Include="Services\FinalEvaluation\FinalEvaluationValidation.cs" />
+    <Compile Include="Services\FinalEvaluation\FirebaseConfiguration.cs" />
+    <Compile Include="Services\FinalEvaluation\FirebaseFinalEvaluationRepository.cs" />
+    <Compile Include="Services\FinalEvaluation\InMemoryFinalEvaluationRepository.cs" />
+    <Compile Include="Services\FinalEvaluation\AcademicSubmissionService.cs" />
+    <Compile Include="Services\FinalEvaluation\CoordinatorEvaluationReader.cs" />
+    <Compile Include="Services\FinalEvaluation\CoordinatorReadinessWorkflow.cs" />
+    <Compile Include="Services\FinalEvaluation\CompletionDecisionWorkflow.cs" />
+    <Compile Include="Services\FinalEvaluation\CompletionReportService.cs" />
+    <Compile Include="Services\FinalEvaluation\StudentCompletionWorkflow.cs" />
+    <Compile Include="Services\FinalEvaluation\StudentCompletionPageIntegration.cs" />
+    <Compile Include="Services\FinalEvaluation\CompletionReportPdfRenderer.cs" />
+    <Compile Include="Services\FinalEvaluation\InMemoryPrivateCompletionReportStorage.cs" />
+    <Compile Include="Services\FinalEvaluation\CoordinatorReviewPageIntegration.cs" />
+    <Compile Include="Services\FinalEvaluation\AcademicDraftWorkflow.cs" />
+    <Compile Include="Services\FinalEvaluation\AcademicDraftPageIntegration.cs" />
+    <Compile Include="Services\FinalEvaluation\CompanySubmissionService.cs" />
+    <Compile Include="Services\FinalEvaluation\CompanyDraftWorkflow.cs" />
+    <Compile Include="Services\FinalEvaluation\CompanyDraftPageIntegration.cs" />
+    <Compile Include="Services\FinalEvaluation\PercentagePageIntegration.cs" />
+    <Compile Include="Services\FinalEvaluation\PercentageEvaluationPage.cs">
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="Models\FinalEvaluation\PercentageEvaluation.cs" />
+    <Compile Include="Services\FinalEvaluation\PercentageEvaluationWorkflow.cs" />
+    <Compile Include="Services\FinalEvaluation\PercentageEvaluationRepositories.cs" />
+    <Compile Include="Services\FinalEvaluation\FirebaseDevelopmentDemoRepository.cs" />
+    <Compile Include="Services\FinalEvaluation\DevelopmentDemoSeed.cs" />
+    <None Include="Services\FinalEvaluation\README.md" />
+    <Reference Include="Google.Apis, Version=1.77.0.0, Culture=neutral, PublicKeyToken=4b01fa6e34db77ab">
+      <HintPath>..\packages\Google.Apis.1.77.0\lib\net462\Google.Apis.dll</HintPath>
+      <SpecificVersion>True</SpecificVersion>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="Google.Apis.Auth, Version=1.77.0.0, Culture=neutral, PublicKeyToken=4b01fa6e34db77ab">
+      <HintPath>..\packages\Google.Apis.Auth.1.77.0\lib\net462\Google.Apis.Auth.dll</HintPath>
+      <SpecificVersion>True</SpecificVersion>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="Google.Apis.Core, Version=1.77.0.0, Culture=neutral, PublicKeyToken=4b01fa6e34db77ab">
+      <HintPath>..\packages\Google.Apis.Core.1.77.0\lib\net462\Google.Apis.Core.dll</HintPath>
+      <SpecificVersion>True</SpecificVersion>
+      <Private>True</Private>
+    </Reference>
+  </ItemGroup>
 </Project>

@@ -1,5 +1,14 @@
 # University Internship Management System
 
+## Current integration status (21 October 2026)
+
+Completed portal pages keep sidebar/navbar markup in their ASPX files. New deayy and roaa pages keep their layout CSS in their own stylesheets; colors.css remains the token source. Older role test pages and public template pages still have legacy shared-layout dependencies and are not evidence of a completed standalone migration.
+
+The checkout contains 38 ASPX files. Local route/asset and JavaScript syntax audits pass, but this is not an end-to-end authenticated system. Firebase sign-in, trusted roles, database CRUD and rules, cross-role synchronization, official grading, PDF certificates and durable deactivation scheduling remain unavailable. The owner confirmed there is currently no Firebase database or schema. Password-recovery dispatch requires configuration; it does not provide login authorization. Do not deploy the preview portals as protected production pages.
+
+The final QA pass could build the solution and statically inspect routes, IDs and handlers. Live browser verification was unavailable because local browser use was disabled in Work settings. Prior per-page UI results do not establish cross-role or Firebase functionality.
+
+
 ASP.NET Web Forms application targeting .NET Framework 4.7.2. Open
 `University-Internship-Management-System/University-Internship-Management-System.slnx`
 in Visual Studio with the ASP.NET and web development workload installed.
@@ -211,3 +220,10 @@ live password-strength and match feedback, and a Save button disabled until
 all displayed requirements pass. Escape is prevented; the preview-only Back to
 Login link provides an exit. This is presentation work only. Firebase password
 updates, profile flags, provisioning and route authorization remain future work.
+
+
+### Connected local frontend demo (Firebase deferred)
+
+Open `Auth/Login.aspx` and select an identity under **Local frontend demo**. Browser `localStorage` key `uims.demo.v1` is the authoritative demo state; sessionStorage selects the current identity. No password is stored and this is not secure authentication. Connected workspaces on 27 role pages persist cross-role applications, tasks, evaluations and completion simulations. Original independent layout previews are retained outside demo mode. Public contact can save a local demo message; no mail is sent.
+
+The solution builds and isolated data-provider tests pass. Live browser interactions, responsive layouts and the full original UI migration remain unverified/incomplete. Certificate output is demonstration HTML, not an official PDF; file selections retain names only. Account expiry is a persisted test-clock simulation evaluated on access, not a background worker. Firebase, official grading, secure authorization and durable account deactivation remain intentionally pending.

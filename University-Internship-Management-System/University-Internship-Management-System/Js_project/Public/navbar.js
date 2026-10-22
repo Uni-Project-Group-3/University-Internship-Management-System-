@@ -6,6 +6,7 @@
         const links = nav.querySelector(".home-navbar__links");
         const mobile = window.matchMedia("(max-width: 700px)");
 
+        /** @param {boolean} open */
         function setOpen(open) {
             toggle.setAttribute("aria-expanded", String(open));
             toggle.setAttribute("aria-label", open ? "Close navigation menu" : "Open navigation menu");

@@ -30,7 +30,7 @@ namespace University_Internship_Management_System.Student
                 string action = attendanceRequest.Action;
 
                 string studentId = attendanceRequest.ResolveIdentity("student", action);
-                string uid = Session["Uims.VerifiedFirebaseUid"] as string ?? "";
+                string uid = "";
                 var student = await attendanceService.Identity("student", studentId, uid, LocalDemoAllowed);
                 await attendanceRequest.StartLoad("student", studentId, student);
 

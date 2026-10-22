@@ -76,62 +76,9 @@ namespace UIMS.Attendance
             return saved;
         }
 
-        public async Task<JObject> CreateLocalDemoSession(string scenario, bool localDemo)
+        public Task<JObject> CreateLocalDemoSession(string scenario, bool localDemo)
         {
-            if (!localDemo) throw new InvalidOperationException("Training test creation is available on localhost test mode only.");
-            if (scenario != "early" && scenario != "normal" && scenario != "local") throw new InvalidOperationException("Choose a supported training test scenario.");
-            await CheckEnabled(); // نقرأ الإعداد فقط؛ لا نفعّل Firebase من زر التجربة.
-            var zone = TimeZoneInfo.FindSystemTimeZoneById("Jordan Standard Time");
-            var localNow = TimeZoneInfo.ConvertTime(DateTimeOffset.UtcNow, zone);
-            string date = localNow.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
-            long start = localNow.ToUnixTimeMilliseconds();
-            long midnight = new DateTimeOffset(localNow.Date.AddDays(1), localNow.Offset).ToUnixTimeMilliseconds();
-            // الجلسة الجديدة تنتهي قبل منتصف الليل؛ لا نغير ساعة السيرفر أو جدول جلسة سابقة.
-            long end = Math.Min(start + (scenario == "normal" ? 5 : scenario == "local" ? 240 : 20) * 60000, midnight - 1);
-            string prefix = "att_local_run_" + Guid.NewGuid().ToString("N");
-            string student = prefix + "_student", supervisor = prefix + "_supervisor", company = prefix + "_company";
-            string assignment = prefix + "_assignment", academic = prefix + "_academic";
-            string label = localNow.ToString("MM-dd HH:mm:ss") + (scenario == "early" ? " Early (20 min)" : scenario == "local" ? " Local test (4 hours)" : " Normal (5 min)");
-            var nodes = new Dictionary<string, JObject>
-            {
-                ["companies/" + company] = new JObject { ["name"] = "Local Test Company", ["status"] = "active", ["isTestData"] = true },
-                ["academicSupervisors/" + academic] = new JObject { ["name"] = "Local Test Academic", ["status"] = "active", ["isTestData"] = true },
-                ["companySupervisors/" + supervisor] = new JObject { ["name"] = "Test Supervisor " + label, ["companyId"] = company, ["status"] = "active", ["isTestData"] = true },
-                ["trainingAssignments/" + assignment] = new JObject
-                {
-                    ["studentId"] = student, ["companyId"] = company, ["companySupervisorId"] = supervisor, ["academicSupervisorId"] = academic,
-                    ["status"] = "active", ["isTestData"] = true, ["requiredHours"] = scenario == "early" ? 120 : 240,
-                    ["startDate"] = date, ["endDate"] = date, ["timeZone"] = "Asia/Amman", ["trainingTitle"] = "Local training test - " + label
-                },
-                ["students/" + student] = new JObject { ["name"] = "Test Student " + label, ["studentNumber"] = prefix, ["major"] = "Software Engineering", ["status"] = "active", ["isTestData"] = true, ["activeAssignmentId"] = assignment },
-                ["schedules/" + assignment + "/" + date] = new JObject
-                {
-                    ["assignmentId"] = assignment, ["attendanceDate"] = date, ["isTestData"] = true, ["isTrainingDay"] = true,
-                    ["version"] = 1, ["timeZone"] = "Asia/Amman", ["scheduledStartAt"] = start, ["scheduledEndAt"] = end,
-                    ["scheduledStart"] = localNow.ToString("HH:mm"), ["scheduledEnd"] = TimeZoneInfo.ConvertTime(DateTimeOffset.FromUnixTimeMilliseconds(end), zone).ToString("HH:mm")
-                }
-            };
-            // طالب ثانٍ لنفس الشركة والمشرف حتى نجرب تحديد الكل برمزين مختلفين.
-            string secondStudent = prefix + "_student2", secondAssignment = prefix + "_assignment2";
-            var secondAccount = (JObject)nodes["students/" + student].DeepClone();
-            secondAccount["name"] = "Test Student 2 " + label;
-            secondAccount["studentNumber"] = secondStudent;
-            secondAccount["activeAssignmentId"] = secondAssignment;
-            nodes["students/" + secondStudent] = secondAccount;
-            var secondTraining = (JObject)nodes["trainingAssignments/" + assignment].DeepClone();
-            secondTraining["studentId"] = secondStudent;
-            nodes["trainingAssignments/" + secondAssignment] = secondTraining;
-            var secondSchedule = (JObject)nodes["schedules/" + assignment + "/" + date].DeepClone();
-            secondSchedule["assignmentId"] = secondAssignment;
-            nodes["schedules/" + secondAssignment + "/" + date] = secondSchedule;
-            // هذه سجلات جديدة مستقلة؛ نحفظها معًا لتقليل انتظار التجهيز، ولا نكتب أي حضور.
-            await Task.WhenAll(nodes.Select(async node =>
-            {
-                // null_etag يضمن الإنشاء فقط؛ لا نستبدل أي سجل سابق حتى عند التصادم.
-                if (!await Save(node.Key, node.Value, "null_etag"))
-                    throw new InvalidOperationException("Test ID conflict. No existing record was replaced. Create a new test.");
-            }));
-            return new JObject { ["studentId"] = student, ["studentIds"] = new JArray(student, secondStudent), ["secondAssignmentId"] = secondAssignment, ["supervisorId"] = supervisor, ["assignmentId"] = assignment, ["label"] = label, ["date"] = date, ["startAt"] = start, ["endAt"] = end };
+            throw new UIMS.Services.FirebaseException(501, "New sample identities are disabled. Use the existing attendance records in Firebase.");
         }
 
         public async Task<JObject> Identity(string role, string id, string verifiedUid, bool localDemo)
@@ -167,6 +114,8 @@ namespace UIMS.Attendance
             try
             {
                 c.Assignment = await assignmentRead;
+                if (AttendanceConfiguration.IsLocalDevelopment(HttpContext.Current) && !Flag(c.Assignment, "isTestData"))
+                    throw new UIMS.Services.FirebaseException(403, "Local attendance testing only permits labelled test assignments.");
                 if (Text(c.Assignment, "status") != "active" || Text(c.Assignment, "studentId") != studentId)
                     throw new InvalidOperationException("The student's training assignment is not active or does not match.");
                 string companyId = Text(c.Assignment, "companyId");
@@ -601,6 +550,8 @@ namespace UIMS.Attendance
             await Task.WhenAll(assignmentRead, supervisorRead);
             var assignment = await assignmentRead;
             var supervisor = await supervisorRead;
+            if (AttendanceConfiguration.IsLocalDevelopment(HttpContext.Current) && (!Flag(assignment, "isTestData") || !Flag(supervisor, "isTestData")))
+                throw new UIMS.Services.FirebaseException(403, "Local attendance testing only permits labelled test assignments and supervisors.");
             if (Text(supervisor, "status") != "active" || Text(assignment, "status") != "active" ||
                 Text(assignment, "companySupervisorId") != supervisorId || Text(assignment, "companyId") != Text(supervisor, "companyId"))
                 throw new InvalidOperationException("This assignment is not authorized for your supervisor account.");
@@ -632,7 +583,7 @@ namespace UIMS.Attendance
             // نحدد التكليفات المسموحة أولاً، ونحمّل أربعة طلاب كحد أقصى بالتوازي.
             var allowed = assignments.Properties().Where(entry =>
                 Text(entry.Value, "companySupervisorId") == id && Text(entry.Value, "companyId") == Text(supervisor, "companyId") &&
-                Text(entry.Value, "status") == "active").ToList();
+                Text(entry.Value, "status") == "active" && (!AttendanceConfiguration.IsLocalDevelopment(HttpContext.Current) || Flag(entry.Value, "isTestData"))).ToList();
             using (var slots = new System.Threading.SemaphoreSlim(4))
             {
                 var groups = await Task.WhenAll(allowed.Select(async entry =>
@@ -642,7 +593,7 @@ namespace UIMS.Attendance
                     {
                         var groupStudents = new JArray(); var groupRequests = new JArray(); var groupRecords = new JArray();
                         var student = await Get("students/" + Text(entry.Value, "studentId"));
-                        if (Text(student, "activeAssignmentId") != entry.Name || Text(student, "status") != "active")
+                        if (Text(student, "activeAssignmentId") != entry.Name || Text(student, "status") != "active" || AttendanceConfiguration.IsLocalDevelopment(HttpContext.Current) && !Flag(student, "isTestData"))
                             return new[] { groupStudents, groupRequests, groupRecords };
                         groupStudents.Add(new JObject { ["id"] = Text(entry.Value, "studentId"), ["name"] = Text(student, "name"), ["assignmentId"] = entry.Name, ["requiredHours"] = Number(entry.Value, "requiredHours") });
                         var historyRead = History(entry.Name, Text(entry.Value, "studentId"));

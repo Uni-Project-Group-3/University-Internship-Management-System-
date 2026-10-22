@@ -24,3 +24,8 @@ TestResults/
 
 # Publish
 publish/
+
+# Final evaluation server credentials must be kept outside the checkout.
+.final-evaluation-secrets/
+*service-account*.json
+*service_account*.json
