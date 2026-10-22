@@ -1,4 +1,4 @@
-﻿<%@ Page Language="C#" AutoEventWireup="true" CodeBehind="MyProgressEvaluation.aspx.cs" Inherits="University_Internship_Management_System.Student.MyProgressEvaluation" %>
+﻿<%@ Page Language="C#" AutoEventWireup="true" Async="true" EnableViewState="false" CodeBehind="MyProgressEvaluation.aspx.cs" Inherits="University_Internship_Management_System.Student.MyProgressEvaluation" %>
 <!DOCTYPE html>
 <html lang="en">
 <head runat="server">
@@ -10,7 +10,7 @@
     <link runat="server" href="~/Assets/student/my-progress-evaluation.css?v=20261021-original-ui" rel="stylesheet" />
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet" />
 </head>
-<body class="app-page uims-workspace student-progress" data-demo-role="student">
+<body class="app-page uims-workspace student-progress">
     <form id="form1" runat="server">
         <div class="app-layout">
             <aside class="sidebar" id="sidebar" aria-label="Student navigation">
@@ -25,43 +25,44 @@
 <li><a href="Profile.aspx"><i class="bi bi-person" aria-hidden="true"></i><span>My Profile</span></a></li></ul>
     <div class="side-divider"></div><ul class="side-nav"><li><a href="../Contact.aspx"><i class="bi bi-question-circle" aria-hidden="true"></i><span>Help &amp; contact</span></a></li><li><asp:LinkButton ID="btnLogout" runat="server" OnClick="btnLogout_Click" CausesValidation="false"><i class="bi bi-box-arrow-right" aria-hidden="true"></i><span>Logout</span></asp:LinkButton></li></ul>
 </aside><div class="sidebar-backdrop" aria-hidden="true"></div>
-            <div class="main"><header class="topbar"><button type="button" class="menu-btn d-lg-none" aria-label="Open navigation" aria-controls="sidebar" aria-expanded="false"><i class="bi bi-list" aria-hidden="true"></i></button><span class="topbar-label">University Internship Management System</span><div class="topbar-actions ms-auto"><span class="avatar" aria-hidden="true">U</span><span class="user-chip"><span class="name"><asp:Literal ID="NavName" runat="server" Mode="Encode"/><span class="role">UIMS workspace · frontend preview</span></span></span></div></header>
+            <div class="main"><header class="topbar"><button type="button" class="menu-btn d-lg-none" aria-label="Open navigation" aria-controls="sidebar" aria-expanded="false"><i class="bi bi-list" aria-hidden="true"></i></button><span class="topbar-label">University Internship Management System</span><div class="topbar-actions ms-auto"><span class="avatar" aria-hidden="true">U</span><span class="user-chip"><span class="name"><asp:Literal ID="NavName" runat="server" Mode="Encode"/><span class="role">Student workspace</span></span></span></div></header>
             <main class="app-content" id="mainContent">
                 <header class="workspace-header">
                     <span class="workspace-eyebrow">Student workspace / Your internship</span>
                     <h1>My Progress &amp; Evaluation</h1>
-                    <p class="workspace-muted">Review published exam results, supervisor feedback, and approved training progress.</p>
+                    <p class="workspace-muted">Review published task grades, supervisor feedback, and approved training progress.</p>
                 </header>
-                <div class="workspace-note"><strong>Read-only frontend demonstration.</strong> Training hours and tasks are sample data, not your account. Firebase and authentication are not connected. Exam layout examples are separate from real published results.</div>
+                <div class="workspace-note" role="status"><asp:Literal ID="StudentAccessMessage" runat="server" Mode="Encode" Text="Loading authorized completion information..." /></div>
+                <asp:Panel ID="DemoStudentPanel" runat="server" Visible="false" CssClass="workspace-note"><asp:Label runat="server" AssociatedControlID="DemoStudentChoice" Text="LOCAL DEMO Student (this dataset only)" /><asp:DropDownList ID="DemoStudentChoice" runat="server" AutoPostBack="true" OnSelectedIndexChanged="DemoStudentChoice_Changed" CssClass="workspace-input"><asp:ListItem Value="0">Student A — Lina (fictional)</asp:ListItem><asp:ListItem Value="1">Student B — Omar (fictional)</asp:ListItem><asp:ListItem Value="2">Student C — Noor (fictional)</asp:ListItem></asp:DropDownList></asp:Panel>
                 <dl class="workspace-stats">
-                    <div class="workspace-stat"><dt>Approved training hours</dt><dd><span data-uims-progress="ApprovedHours"><asp:Literal ID="ApprovedHours" runat="server" /></span></dd><small>Explicitly approved sample time entries</small></div>
-                    <div class="workspace-stat"><dt>Required hours · demo</dt><dd><span data-uims-progress="RequiredHours"><asp:Literal ID="RequiredHours" runat="server" /></span></dd><small>Sample internship requirement</small></div>
+                    <div class="workspace-stat"><dt>Approved training hours</dt><dd><span data-uims-progress="ApprovedHours"><asp:Literal ID="ApprovedHours" runat="server" /></span></dd><small>Verified approved time entries</small></div>
+                    <div class="workspace-stat"><dt>Required training hours</dt><dd><span data-uims-progress="RequiredHours"><asp:Literal ID="RequiredHours" runat="server" /></span></dd><small>Trusted internship requirement</small></div>
                     <div class="workspace-stat"><dt>Hours remaining</dt><dd><span data-uims-progress="RemainingHours"><asp:Literal ID="RemainingHours" runat="server" /></span></dd><small>Required minus approved hours</small></div>
-                    <div class="workspace-stat"><dt>Published exam results</dt><dd><span data-uims-progress="EvaluatedExams"><asp:Literal ID="EvaluatedExams" runat="server" /></span></dd><small>Evaluated assessments released to the student</small></div>
+                    <div class="workspace-stat"><dt>Published Task Grades</dt><dd><span data-uims-progress="EvaluatedExams"><asp:Literal ID="EvaluatedExams" runat="server" /></span></dd><small>Published grades from authorized task records</small></div>
                 </dl>
                 <div class="workspace-columns">
                     <section class="workspace-card" aria-labelledby="trainingTitle">
                         <h2 id="trainingTitle">Training progress</h2>
-                        <p class="workspace-muted">Sample placement · Northstar Software · Software Engineering</p>
-                        <div class="progress-summary"><span>Approved hours toward requirement</span><strong><span data-uims-progress="HoursPercent"><asp:Literal ID="HoursPercent" runat="server" /></span>%</strong></div>
+                        <p class="workspace-muted">Read-only progress from authorized internship integrations.</p>
+                        <div class="progress-summary"><span>Approved hours toward requirement</span><strong><span data-uims-progress="HoursPercent"><asp:Literal ID="HoursPercent" runat="server" /></span></strong></div>
                         <progress id="HoursProgress" runat="server" max="100" value="0" aria-label="Approved training hours progress"></progress>
                         <p class="workspace-hint">Task completion does not approve training hours. Only approved time entries count.</p>
-                        <span class="workspace-badge success"><span data-uims-progress="HoursApprovalStatus"><asp:Literal ID="HoursApprovalStatus" runat="server" Mode="Encode" /></span> hours approved · demo</span>
-                        <span class="workspace-badge warning"><span data-uims-progress="PendingHours"><asp:Literal ID="PendingHours" runat="server" Mode="Encode" /></span> hours awaiting approval · demo</span>
+                        <span class="workspace-badge success"><span data-uims-progress="HoursApprovalStatus"><asp:Literal ID="HoursApprovalStatus" runat="server" Mode="Encode" /></span> approved hours</span>
+                        <span class="workspace-badge warning"><span data-uims-progress="PendingHours"><asp:Literal ID="PendingHours" runat="server" Mode="Encode" /></span> pending hours (integration unavailable)</span>
                     </section>
                     <section class="workspace-card" aria-labelledby="completionTitle">
-                        <div class="workspace-heading"><h2 id="completionTitle">Completion status</h2><span class="workspace-badge warning">In progress · demo</span></div>
-                        <p>Coordinator approval has not been recorded.</p><ol class="workspace-hint"><li>Coordinator approves completion.</li><li>The student confirms completion in the Student Dashboard.</li><li>The certificate is issued and the one-hour grace period begins.</li><li>A trusted scheduled worker disables account access after the deadline.</li></ol><a class="workspace-button secondary" href="StudentDashboard.aspx">Open Student Dashboard</a>
+                        <div class="workspace-heading"><h2 id="completionTitle">Completion status</h2><span class="workspace-badge warning"><asp:Literal ID="CompletionStatusText" runat="server" Mode="Encode" /></span></div>
+                        <p><asp:Literal ID="CompletionStatusMessage" runat="server" Mode="Encode" /></p><p class="workspace-hint">Approval date (UTC): <asp:Literal ID="CompletionApprovalDate" runat="server" Mode="Encode" /></p><p class="workspace-hint">Overall completion progress: <asp:Literal ID="OverallCompletionProgress" runat="server" Mode="Encode" /></p><a class="workspace-button secondary" href="StudentDashboard.aspx">Open Student Dashboard</a>
                         <p class="workspace-hint">Reaching the hour requirement alone does not approve internship completion.</p>
                     </section>
                 </div>
-                <section class="workspace-card" aria-labelledby="examsTitle">
+                <section class="workspace-card" aria-labelledby="examsTitle" runat="server" visible="false">
                     <div class="workspace-heading">
                         <div><h2 id="examsTitle">Exam results</h2><p>Company Supervisors assign and publish grades. Academic Supervisors may add feedback; they cannot replace the company grade.</p></div>
                         <asp:Button ID="ToggleExamDemo" runat="server" Text="Preview illustrative exam results" CssClass="workspace-button secondary" OnClick="ToggleExamDemo_Click" CausesValidation="false" />
                     </div>
                     <asp:Panel ID="ExamDemoNotice" runat="server" CssClass="workspace-note" Visible="false"><strong>Illustrative exam layout only.</strong> These fictional examples are not student records, official criteria, or a university grading scale. The example maximum belongs to each example assessment.</asp:Panel>
-                    <asp:Panel ID="NoExams" runat="server" CssClass="workspace-empty" role="status">No published exam results are available. Unpublished grades are not displayed. Use the separate illustrative preview to try exam selection.</asp:Panel>
+                    <asp:Panel ID="NoExams" runat="server" CssClass="workspace-empty" role="status">Trusted published exam integration is not connected. No exam records or private final evaluations are displayed.</asp:Panel>
                     <asp:Panel ID="ExamList" runat="server" Visible="false">
                         <div class="workspace-table-scroll" tabindex="0" role="region" aria-label="Published exam results table">
                             <table class="workspace-table exam-table">
@@ -117,7 +118,7 @@
                     <p id="myTasksNote" class="workspace-hint">Open My Tasks to review the separate task-submission interface. Training-hour approval remains independent.</p>
                     <div class="workspace-table-scroll" tabindex="0" role="region" aria-label="Task evaluations table">
                         <table class="workspace-table">
-                            <caption>Demonstration task records. Exam results above are separate from task progress.</caption>
+                            <caption>Authorized published task grades and feedback. Final evaluation results remain separate.</caption>
                             <thead><tr><th scope="col">Task / history</th><th scope="col">Status</th><th scope="col">Company supervisor feedback</th></tr></thead>
                             <tbody>
                                 <asp:Repeater ID="Tasks" runat="server" EnableViewState="false">
@@ -134,18 +135,20 @@
                             </tbody>
                         </table>
                     </div>
-                    <p id="taskFilterStatus" class="workspace-hint" role="status" aria-live="polite"></p>
+                    <p id="taskFilterStatus" runat="server" ClientIDMode="Static" class="workspace-hint" role="status" aria-live="polite"></p>
                 </section>
                 <section class="workspace-card" aria-labelledby="reportTitle">
-                    <div class="workspace-heading"><div><h2 id="reportTitle">Official Internship Completion Report</h2><p>Your approved completion document, when issued by the university.</p></div><span class="workspace-badge warning">Awaiting Coordinator approval</span></div>
-                    <div class="report-status"><strong>No official PDF is available.</strong><p class="workspace-muted">Download and print will become available only after Coordinator approval and an authorized report is supplied.</p></div>
-                    <div class="workspace-actions"><button type="button" class="workspace-button" disabled="disabled" aria-describedby="reportAccessNote">Download PDF</button><button type="button" class="workspace-button secondary" disabled="disabled" aria-describedby="reportAccessNote">Print report</button></div>
-                    <p id="reportAccessNote" class="workspace-hint">Report access is unavailable in this frontend prototype. No official report is generated.</p>
+                    <div class="workspace-heading"><div><h2 id="reportTitle">Official Internship Completion Report</h2><p>Your approved completion document, when issued by the university.</p></div><span class="workspace-badge warning"><asp:Literal ID="ReportStatusText" runat="server" Mode="Encode" /></span></div>
+                    <div class="report-status"><strong><asp:Literal ID="ReportAvailabilityText" runat="server" Mode="Encode" /></strong><p class="workspace-muted">Download requires Coordinator approval and a verified private report. To print, download the PDF and use your PDF reader.</p></div>
+                    <div class="workspace-actions"><asp:Button ID="DownloadCompletionReport" runat="server" ClientIDMode="Static" Text="Download Completion Report" CssClass="workspace-button" OnClick="DownloadCompletionReport_Click" CausesValidation="false" Visible="false" aria-describedby="reportAccessNote" /><button type="button" class="workspace-button secondary" disabled="disabled" aria-describedby="reportAccessNote">Print report</button></div>
+                    <p id="reportAccessNote" class="workspace-hint">Downloads are verified on the server for the authenticated internship owner. Availability is separate from completion approval.</p>
                 </section>
             </main>
             </div>
         </div>
     </form>
-   <script src="../Scripts/bootstrap.bundle.min.js"></script>
+
+<script src="../Scripts/bootstrap.bundle.min.js"></script>
+    <script src="<%= ResolveUrl("~/Js_project/Student/my-progress-evaluation.js?v=20261022-task-filter-v2") %>" defer="defer"></script>
 </body>
 </html>

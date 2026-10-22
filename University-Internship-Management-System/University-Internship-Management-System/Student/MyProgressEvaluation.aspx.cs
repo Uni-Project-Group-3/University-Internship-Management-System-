@@ -1,271 +1,116 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Net;
-using System.Web.Script.Serialization;
-using System.Web.Security;
+using System;
+using System.Globalization;
+using System.Linq;
+using System.Threading.Tasks;
+using System.Web;
 using System.Web.UI;
 using System.Web.UI.WebControls;
+using University_Internship_Management_System.Models.FinalEvaluation;
+using University_Internship_Management_System.Services.FinalEvaluation;
 
 namespace University_Internship_Management_System.Student
 {
     public partial class MyProgressEvaluation : Page
     {
-        // رابط قاعدة البيانات الخاص بكِ
-        private const string FirebaseUrl = "https://unviersity-data-default-rtdb.firebaseio.com/";
-
-        // سنفترض أننا نعرض بيانات الطالب أحمد (ST001) لتجربة الصفحة
-        private string currentStudentId = "ST001";
-
-        protected void Page_Load(object sender, EventArgs e)
+        private bool downloadRequested, fileResponse;
+        private bool demoSelectionChanged;
+        protected void Page_Init(object sender, EventArgs e)
         {
-            if (!IsPostBack)
-            {
-                LoadStudentProgress();
-            }
+            Session["FinalEvaluation.StudentCompletion.PostbackBinding"] = true;
+            ViewStateUserKey = Session.SessionID;
+            Response.Cache.SetNoStore(); Response.Cache.SetCacheability(HttpCacheability.NoCache);
+            Response.Headers["X-Content-Type-Options"] = "nosniff";
         }
-
-        private void LoadStudentProgress()
+        protected void Page_Load(object sender, EventArgs e) { RegisterAsyncTask(new PageAsyncTask(LoadCompletionAsync)); }
+        protected void DownloadCompletionReport_Click(object sender, EventArgs e) { downloadRequested = true; }
+        protected void DemoStudentChoice_Changed(object sender, EventArgs e) { demoSelectionChanged = true; }
+        protected void ToggleExamDemo_Click(object sender, EventArgs e) { }
+        protected void Exams_ItemCommand(object source, RepeaterCommandEventArgs e) { }
+        protected void btnLogout_Click(object sender, EventArgs e)
+        { System.Web.Security.FormsAuthentication.SignOut(); Session.Clear(); Session.Abandon(); Response.Redirect("~/Auth/Login.aspx", false); Context.ApplicationInstance.CompleteRequest(); }
+        protected override void Render(HtmlTextWriter writer)
         {
+            if (fileResponse) return; // CompleteRequest alone does not stop the Web Forms renderer.
+            ClientScript.RegisterForEventValidation(DownloadCompletionReport.UniqueID, "");
+            base.Render(writer);
+        }
+        private void Empty()
+        {
+            NavName.Text = "Student Portal";
+            foreach (var literal in new[] { ApprovedHours, RequiredHours, RemainingHours, HoursPercent, HoursApprovalStatus, PendingHours, AssignedTasks, SubmittedTasks, EvaluatedTasks, RevisionTasks, EvaluatedExams }) literal.Text = "Unknown";
+            CompletionStatusText.Text = "Not available"; CompletionStatusMessage.Text = "Trusted student completion integration is unavailable.";
+            CompletionApprovalDate.Text = "Not available"; OverallCompletionProgress.Text = "Not supplied";
+            ReportStatusText.Text = "Unavailable"; ReportAvailabilityText.Text = "Report access is not connected.";
+            DownloadCompletionReport.Visible = false; HoursProgress.Attributes.Remove("value");
+            Tasks.DataSource = new StudentVisibleTask[0]; Tasks.DataBind();
+            taskFilterStatus.InnerText = "Trusted task information is unavailable.";
+            EvaluatedExams.Text = "No published task grades available";
+            ToggleExamDemo.Enabled = false; ToggleExamDemo.Text = "Exam integration unavailable";
+            ExamDemoNotice.Visible = false; ExamList.Visible = false; ExamDetails.Visible = false; NoExams.Visible = true;
+            Exams.DataSource = new object[0]; Exams.DataBind();
+        }
+        private async Task LoadCompletionAsync()
+        {
+            Empty();
             try
             {
-                using (WebClient client = new WebClient())
+                var context = await StudentCompletionPageIntegration.ResolveAsync(Context);
+                if (context == null)
                 {
-                    client.Encoding = System.Text.Encoding.UTF8;
-                    JavaScriptSerializer serializer = new JavaScriptSerializer();
-
-                    // 1. جلب البيانات من Firebase
-                    string usersJson = client.DownloadString(FirebaseUrl + "users.json");
-                    string hoursJson = client.DownloadString(FirebaseUrl + "trainingHours.json");
-                    string tasksJson = client.DownloadString(FirebaseUrl + "tasks.json");
-
-                    var users = serializer.Deserialize<Dictionary<string, Dictionary<string, string>>>(usersJson ?? "{}");
-                    var allHours = serializer.Deserialize<Dictionary<string, Dictionary<string, string>>>(hoursJson ?? "{}");
-                    var allTasks = serializer.Deserialize<Dictionary<string, Dictionary<string, string>>>(tasksJson ?? "{}");
-
-                    // 2. عرض اسم الطالب والساعات المطلوبة منه
-                    int requiredHours = 300; // قيمة افتراضية
-                    if (users != null && users.ContainsKey(currentStudentId))
-                    {
-                        var studentData = users[currentStudentId];
-                        NavName.Text = studentData.ContainsKey("fullName") ? studentData["fullName"] : "Student";
-
-                        if (studentData.ContainsKey("requiredTrainingHours"))
-                        {
-                            int.TryParse(studentData["requiredTrainingHours"], out requiredHours);
-                        }
-                    }
-
-                    RequiredHours.Text = requiredHours.ToString();
-
-                    // ================= 3. حساب ساعات التدريب =================
-                    int approvedHours = 0;
-                    int pendingHours = 0;
-
-                    if (allHours != null)
-                    {
-                        foreach (var record in allHours)
-                        {
-                            var hourData = record.Value;
-                            if (hourData != null && hourData.ContainsKey("studentId") && hourData["studentId"] == currentStudentId)
-                            {
-                                int hours = 0;
-                                if (hourData.ContainsKey("hours"))
-                                {
-                                    int.TryParse(hourData["hours"], out hours);
-                                }
-
-                                string status = hourData.ContainsKey("status") ? hourData["status"] : "";
-
-                                if (status == "Approved")
-                                {
-                                    approvedHours = approvedHours + hours;
-                                }
-                                else if (status == "Pending")
-                                {
-                                    pendingHours = pendingHours + hours;
-                                }
-                            }
-                        }
-                    }
-
-                    // حساب الساعات المتبقية والنسبة المئوية
-                    int remainingHours = requiredHours - approvedHours;
-                    if (remainingHours < 0) remainingHours = 0; // حتى لا يظهر رقم بالسالب
-
-                    int hoursPercentage = 0;
-                    if (requiredHours > 0)
-                    {
-                        hoursPercentage = (approvedHours * 100) / requiredHours;
-                        if (hoursPercentage > 100) hoursPercentage = 100;
-                    }
-
-                    // ربط أرقام الساعات بواجهة الـ HTML
-                    ApprovedHours.Text = approvedHours.ToString();
-                    RemainingHours.Text = remainingHours.ToString();
-                    HoursApprovalStatus.Text = approvedHours.ToString();
-                    PendingHours.Text = pendingHours.ToString();
-
-                    HoursPercent.Text = hoursPercentage.ToString();
-                    HoursProgress.Attributes["value"] = hoursPercentage.ToString(); // شريط التقدم
-
-                    // ================= 4. حساب وتصنيف المهام =================
-                    int totalAssigned = 0;
-                    int totalSubmitted = 0;
-                    int totalEvaluated = 0;
-                    int totalRevision = 0;
-
-                    List<TaskDisplay> studentTasks = new List<TaskDisplay>();
-
-                    if (allTasks != null)
-                    {
-                        foreach (var t in allTasks)
-                        {
-                            var taskData = t.Value;
-                            if (taskData != null && taskData.ContainsKey("studentId") && taskData["studentId"] == currentStudentId)
-                            {
-                                totalAssigned++; // عداد إجمالي المهام
-
-                                string status = taskData.ContainsKey("status") ? taskData["status"] : "Assigned";
-
-                                // تصنيف المهام للإحصائيات العلوية
-                                if (status == "Submitted") totalSubmitted++;
-                                else if (status == "Evaluated" || status == "Completed") totalEvaluated++;
-                                else if (status == "Revision Needed") totalRevision++;
-
-                                // تجهيز المهمة لعرضها في الجدول السفلي
-                                TaskDisplay newTask = new TaskDisplay();
-                                newTask.Title = taskData.ContainsKey("title") ? taskData["title"] : "Untitled Task";
-                                newTask.Reference = t.Key;
-                                newTask.Status = status;
-                                newTask.History = "Deadline: " + (taskData.ContainsKey("deadline") ? taskData["deadline"] : "N/A");
-
-                                // تحديد لون الشارة (Badge) بناءً على الحالة
-                                if (status == "Completed" || status == "Evaluated") newTask.Badge = "success";
-                                else if (status == "Revision Needed" || status == "Overdue") newTask.Badge = "danger";
-                                else newTask.Badge = "warning";
-
-                                newTask.Feedback = "Pending supervisor review.";
-                                newTask.NextStep = " Keep up the good work.";
-                                newTask.NoteClass = "text-muted";
-
-                                studentTasks.Add(newTask);
-                            }
-                        }
-                    }
-
-                    // عرض إحصائيات المهام
-                    AssignedTasks.Text = totalAssigned.ToString();
-                    SubmittedTasks.Text = totalSubmitted.ToString();
-                    EvaluatedTasks.Text = totalEvaluated.ToString();
-                    RevisionTasks.Text = totalRevision.ToString();
-
-                    // عرض جدول المهام
-                    Tasks.DataSource = studentTasks;
-                    Tasks.DataBind();
-
-                    // ================= 5. تجهيز قسم الامتحانات (التقييمات) =================
-                    // في هذه المرحلة سنضع قيماً مبدئية للامتحانات لتشغيل الواجهة
-                    EvaluatedExams.Text = "0";
-                    NoExams.Visible = true;
-                    ExamList.Visible = false;
+                    StudentAccessMessage.Text = "Official Firebase student access is disabled until trusted authentication, ownership, hours, tasks and policy integrations are connected.";
+                    if (downloadRequested) SendError(503, "Trusted student report access is not connected.");
+                    return;
                 }
+                DemoStudentPanel.Visible = context.IsDevelopment && context.DevelopmentDatasetPath != null;
+                if (DemoStudentPanel.Visible) DemoStudentChoice.SelectedValue = context.DemoStudentIndex.ToString(CultureInfo.InvariantCulture);
+                string id = (demoSelectionChanged ? null : Request.QueryString["internshipId"]) ?? context.DefaultInternshipId;
+                if (string.IsNullOrWhiteSpace(id)) { StudentAccessMessage.Text = "No authorized internship is assigned to this student."; if (downloadRequested) SendError(404, "No authorized internship is available."); return; }
+                if (downloadRequested)
+                {
+                    var report = await context.Workflow.DownloadAsync(id);
+                    fileResponse = true; Response.Clear(); Response.BufferOutput = true;
+                    Response.ContentType = report.ContentType;
+                    Response.Charset = "";
+                    Response.AddHeader("Content-Disposition", "attachment; filename=\"" + report.FileName + "\"");
+                    Response.AddHeader("Content-Length", report.Content.LongLength.ToString(CultureInfo.InvariantCulture));
+                    Response.Headers["X-Content-Type-Options"] = "nosniff";
+                    Response.Cache.SetNoStore(); Response.Cache.SetCacheability(HttpCacheability.Private);
+                    Response.BinaryWrite(report.Content); Context.ApplicationInstance.CompleteRequest(); return;
+                }
+                var view = await context.Workflow.LoadAsync(id);
+                NavName.Text = context.DisplayName ?? "Student Portal";
+                StudentAccessMessage.Text = (context.DevelopmentDatasetPath != null ? "LOCAL-ONLY Firebase DEMO: " + context.DevelopmentDatasetPath + ". Fictional Student " + (char)('A' + context.DemoStudentIndex) + ". " : context.IsDevelopment ? "Isolated in-memory student test mode. Fictional records only. " : "Authorized read-only student completion information. ") + string.Join(" ", view.Notices);
+                ApprovedHours.Text = HoursApprovalStatus.Text = Number(view.ApprovedHours); RequiredHours.Text = Number(view.RequiredHours);
+                RemainingHours.Text = view.ApprovedHours.HasValue && view.RequiredHours.HasValue ? Number(Math.Max(0, view.RequiredHours.Value - view.ApprovedHours.Value)) : "Unknown";
+                HoursPercent.Text = view.HoursPercent.HasValue ? Number(view.HoursPercent) + "%" : "Not supplied";
+                if (view.HoursPercent.HasValue) HoursProgress.Attributes["value"] = view.HoursPercent.Value.ToString(CultureInfo.InvariantCulture);
+                OverallCompletionProgress.Text = view.OverallPercent.HasValue ? Number(view.OverallPercent) + "%" : "Not supplied";
+                CompletionStatusText.Text = view.Status.HasValue ? (view.Status == CompletionStatus.ChangesRequested ? "Changes requested" : view.Status.Value.ToString()) : "Not recorded";
+                CompletionStatusMessage.Text = view.Status == CompletionStatus.Approved ? "Your internship completion is Approved. PDF availability is shown separately below." : "Completion is not approved, or no completion decision has been recorded.";
+                CompletionApprovalDate.Text = view.ApprovedAtUtc.HasValue ? view.ApprovedAtUtc.Value.ToString("u") : "Not recorded";
+                Tasks.DataSource = view.Tasks; Tasks.DataBind();
+                EvaluatedExams.Text = view.PublishedTaskGradeCount > 0 ? view.PublishedTaskGradeCount.ToString(CultureInfo.InvariantCulture) : "No published task grades available";
+                if (view.TasksVerified) {
+                    AssignedTasks.Text = view.Tasks.Length.ToString(CultureInfo.InvariantCulture);
+                    SubmittedTasks.Text = view.Tasks.Count(t => t.StatusKey == "submitted").ToString(CultureInfo.InvariantCulture);
+                    EvaluatedTasks.Text = view.Tasks.Count(t => t.StatusKey == "evaluated").ToString(CultureInfo.InvariantCulture);
+                    RevisionTasks.Text = view.Tasks.Count(t => t.StatusKey == "revision").ToString(CultureInfo.InvariantCulture);
+                }
+                taskFilterStatus.InnerText = view.TasksVerified ? (view.Tasks.Length == 0 ? "No student-visible tasks are available." : view.Tasks.Length + " student-visible tasks.") : "Trusted task information is unavailable.";
+                ReportStatusText.Text = view.Status == CompletionStatus.Approved ? "Completion Approved" : "Not approved";
+                ReportAvailabilityText.Text = view.ReportMessage + " Final evaluation outcome: " + view.FinalOutcome + "."; DownloadCompletionReport.Visible = view.ReportAvailable;
             }
-            catch (Exception)
-            {
-                // في حال وجود خطأ، نضع قيماً صفرية لحماية الصفحة من الانهيار
-                ApprovedHours.Text = "0";
-                RequiredHours.Text = "0";
-                RemainingHours.Text = "0";
-                HoursPercent.Text = "0";
-            }
+            catch (UnauthorizedAccessException) { Empty(); StudentAccessMessage.Text = "Access denied. A verified student and ownership of this internship are required."; if (downloadRequested) SendError(403, "Access denied."); else { Response.StatusCode = 403; Response.TrySkipIisCustomErrors = true; } }
+            catch (StudentReportUnavailableException error) { SendError(error.HttpStatus, error.Message); }
+            catch (ArgumentException) { if (downloadRequested) SendError(400, "Invalid report request."); else { Response.StatusCode = 400; Response.TrySkipIisCustomErrors = true; StudentAccessMessage.Text = "Invalid completion request."; } }
+            catch (Exception) { if (downloadRequested) SendError(503, "Report access is temporarily unavailable."); else { Response.StatusCode = 503; Response.TrySkipIisCustomErrors = true; StudentAccessMessage.Text = "Completion information could not be verified. Please try again later."; } }
         }
-
-        // ================= زر عرض وتجربة تفاصيل الامتحانات (Demo) =================
-        protected void ToggleExamDemo_Click(object sender, EventArgs e)
+        private static string Number(decimal? value) { return value.HasValue ? value.Value.ToString("0.##", CultureInfo.InvariantCulture) : "Unknown"; }
+        private void SendError(int status, string message)
         {
-            // هذا الزر مبرمج في تصميمك لإظهار إخفاء قائمة الامتحانات التجريبية
-            if (ExamList.Visible == false)
-            {
-                NoExams.Visible = false;
-                ExamList.Visible = true;
-                ExamDemoNotice.Visible = true;
-
-                // إنشاء امتحان تجريبي واحد لعرضه
-                List<ExamDisplay> demoExams = new List<ExamDisplay>();
-                ExamDisplay exam1 = new ExamDisplay();
-                exam1.Id = "EXAM1";
-                exam1.Title = "Midterm Technical Evaluation";
-                exam1.ExamDate = DateTime.Now.AddDays(-10);
-                exam1.CompanySupervisor = "Khaled Company Sup";
-                exam1.Grade = 95.5;
-                exam1.MaximumGrade = 100;
-                demoExams.Add(exam1);
-
-                Exams.DataSource = demoExams;
-                Exams.DataBind();
-                EvaluatedExams.Text = "1";
-            }
-            else
-            {
-                NoExams.Visible = true;
-                ExamList.Visible = false;
-                ExamDemoNotice.Visible = false;
-                EvaluatedExams.Text = "0";
-            }
-        }
-
-        // فتح النافذة المنبثقة لتفاصيل الامتحان
-        protected void Exams_ItemCommand(object source, RepeaterCommandEventArgs e)
-        {
-            if (e.CommandName == "ViewExam")
-            {
-                // تعبئة البيانات الوهمية في النافذة المنبثقة
-                ExamTitle.Text = "Midterm Technical Evaluation";
-                ExamDescription.Text = "General evaluation of frontend skills and commitment.";
-                ExamDate.Text = DateTime.Now.AddDays(-10).ToString("dd MMM yyyy");
-                ExamSupervisor.Text = "Khaled Company Sup";
-                ExamGrade.Text = "95.5 / 100";
-                CompanyFeedback.Text = "Excellent performance during the first half of the internship.";
-                AcademicFeedbackStatus.Text = "Feedback added";
-                AcademicFeedbackStatus.CssClass = "workspace-badge success";
-                AcademicFeedback.Text = "Great job, keep it up!";
-
-                ExamDetails.Visible = true;
-
-                // أمر جافاسكربت لفتح النافذة
-                ScriptManager.RegisterStartupScript(this, this.GetType(), "ShowExamModal", "document.getElementById('examDialog').showModal();", true);
-            }
-        }
-
-        protected void btnLogout_Click(object sender, EventArgs e)
-        {
-            FormsAuthentication.SignOut();
-            Session.Clear();
-            Response.Redirect("~/Auth/Login.aspx", false);
-        }
-
-        // ================= كلاسات مساعدة لتنظيم بيانات الجدول =================
-        public class TaskDisplay
-        {
-            public string Title { get; set; }
-            public string Reference { get; set; }
-            public string Status { get; set; }
-            public string StatusKey { get; set; }
-            public string History { get; set; }
-            public string Badge { get; set; }
-            public string Feedback { get; set; }
-            public string NextStep { get; set; }
-            public string NoteClass { get; set; }
-        }
-
-        public class ExamDisplay
-        {
-            public string Id { get; set; }
-            public string Title { get; set; }
-            public DateTime ExamDate { get; set; }
-            public string CompanySupervisor { get; set; }
-            public double Grade { get; set; }
-            public double MaximumGrade { get; set; }
+            fileResponse = true; Response.Clear(); Response.StatusCode = status; Response.TrySkipIisCustomErrors = true; Response.SuppressFormsAuthenticationRedirect = true;
+            Response.ContentType = "text/plain; charset=utf-8"; Response.Cache.SetNoStore(); Response.Cache.SetCacheability(HttpCacheability.NoCache);
+            Response.Write(message); Context.ApplicationInstance.CompleteRequest();
         }
     }
 }
