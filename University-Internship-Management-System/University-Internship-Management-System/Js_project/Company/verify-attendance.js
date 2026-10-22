@@ -529,3 +529,17 @@ document.getElementById("confirmIssueQr").addEventListener("click", async functi
     } catch (error) { status.textContent = error.message; }
     finally { saving = false; this.disabled = false; }
 });
+
+// زر واحد يعيد تجهيز حسابات الاختبار؛ لا يظهر خارج localhost.
+const newLocalTest = document.getElementById("newLocalTest");
+if (newLocalTest) newLocalTest.addEventListener("click", async function () {
+    if (saving || loading) return;
+    saving = true; this.disabled = true; dataVersion++;
+    try {
+        await api("newTest");
+        stopCamera(); saving = false;
+        await loadSupervisor();
+        showNotice("New session ready. Student: Refresh, then Show check-in QR within 120 seconds.");
+    } catch (error) { showNotice(error.message, true); }
+    finally { saving = false; this.disabled = false; }
+});

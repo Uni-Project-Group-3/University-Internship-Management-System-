@@ -79,7 +79,7 @@
 <main class="content attendance-content">
     <div class="page-heading"><div><p class="eyebrow">COMPANY WORKSPACE</p><h1>Verify Attendance</h1><p>Scan attendance and review your trainees.</p></div><span class="date-chip" id="connectionStatus">Connecting…</span></div>
     <span id="modeMessage" class="visually-hidden"></span>
-    <div class="panel-heading"><span id="assignedStudents" class="section-note">Loading assigned students…</span><div class="attendance-actions"><button id="issueQrButton" type="button" class="primary-action" disabled>Issue student QR codes</button><button id="refreshAttendance" type="button" class="text-action">Refresh records</button></div></div>
+    <div class="panel-heading"><span id="assignedStudents" class="section-note">Loading assigned students…</span><div class="attendance-actions"><button id="issueQrButton" type="button" class="primary-action" disabled>Issue student QR codes</button><% if (LocalDemoAllowed) { %><button id="newLocalTest" type="button" class="text-action">New test session</button><% } %><button id="refreshAttendance" type="button" class="text-action">Refresh records</button></div></div>
     <div id="pageNotice" class="page-notice" role="status" hidden></div>
     <div class="row g-4 align-items-start">
         <div class="col-xl-6"><section class="attendance-panel" aria-labelledby="scannerHeading"><div class="panel-heading"><h2 id="scannerHeading">Scan QR</h2><span class="attendance-badge">Live QR scanner</span></div>

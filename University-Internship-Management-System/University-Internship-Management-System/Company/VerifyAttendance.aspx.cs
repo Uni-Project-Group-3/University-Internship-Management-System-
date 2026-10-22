@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Linq;
+using System.IO;
 using System.Threading.Tasks;
 using System.Web.UI;
 using Newtonsoft.Json.Linq;
@@ -27,14 +28,41 @@ namespace University_Internship_Management_System.Company
             using (attendanceService.ReuseRequestReads())
             {
                 string action = attendanceRequest.Action;
-                if (action == "newTest")
-                    throw new InvalidOperationException("Local test setup requires the local student page.");
+
 
                 string supervisorId = attendanceRequest.ResolveIdentity("company", action);
                 string uid = "";
                 var supervisor = await attendanceService.Identity("company", supervisorId, uid, LocalDemoAllowed);
                 await attendanceRequest.StartLoad("company", supervisorId, supervisor);
 
+                // إنشاء تجربة محلية فقط، بعد التحقق من المشرف وCSRF؛ لا نغيّر أي سجل سابق.
+                if (action == "newTest")
+                {
+                    if (!LocalDemoAllowed) throw new InvalidOperationException("Local testing only.");
+                    string file = AttendanceFirebase.Setting("UIMS_ATTENDANCE_TEST_SESSION_FILE");
+                    if (string.IsNullOrWhiteSpace(file) || !File.Exists(file))
+                        throw new InvalidOperationException("The local test-session file is not configured.");
+                    file = Path.GetFullPath(file);
+                    if (file.StartsWith(Path.GetFullPath(Server.MapPath("~/")), StringComparison.OrdinalIgnoreCase))
+                        throw new InvalidOperationException("The test-session file must stay outside the website.");
+                    var session = await attendanceService.CreateLocalDemoSession("local", true);
+                    string temporary = file + "." + Guid.NewGuid().ToString("N") + ".tmp";
+                    try
+                    {
+                        File.WriteAllText(temporary, session.ToString());
+                        // استبدال ذري حتى لا يقرأ الطالب ملفًا ناقصًا أثناء التحديث.
+                        File.Replace(temporary, file, null);
+                    }
+                    finally { if (File.Exists(temporary)) File.Delete(temporary); }
+                    supervisorId = (string)session["supervisorId"];
+                    supervisor = await attendanceService.Identity("company", supervisorId, "", true);
+                    // التجربة الجديدة تكون جاهزة للطالب مباشرة، مع نفس صلاحية الرمز والتحقق المعتاد.
+                    var issued = await attendanceService.IssueStudentQrs(supervisorId,
+                        (JArray)session["studentIds"], "checkIn", true);
+                    if (((JArray)issued["issued"]).Count == 0)
+                        throw new InvalidOperationException("Test accounts created, but QR issuance failed. Use Issue student QR codes.");
+                    return attendanceRequest.CompleteData(await LoadAttendance(supervisorId, supervisor), supervisorId);
+                }
                 JObject data;
                 switch (action)
                 {
