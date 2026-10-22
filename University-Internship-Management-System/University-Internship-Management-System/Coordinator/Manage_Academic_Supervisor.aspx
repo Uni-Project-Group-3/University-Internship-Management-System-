@@ -1,4 +1,4 @@
-﻿<%@ Page Language="C#" AutoEventWireup="true" CodeBehind="Manage_Academic_Supervisor.aspx.cs" Inherits="University_Internship_Management_System.Coordinator.Manage_Academic_Supervisor" %>
+<%@ Page Language="C#" AutoEventWireup="true" Async="true" CodeBehind="Manage_Academic_Supervisor.aspx.cs" Inherits="University_Internship_Management_System.Coordinator.Manage_Academic_Supervisor" %>
 
 <!DOCTYPE html>
 <html lang="en">
@@ -10,10 +10,10 @@
         <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet" />
 
         <link href="../Assets/shared/colors.css" rel="stylesheet" />
-        <link href="../Assets/coordinator/Manage_Academic_Supervisor.css?v=20261021-original-ui" rel="stylesheet" />
+        <link href="../Assets/coordinator/Manage_Academic_Supervisor.css?v=20261022-firebase-2" rel="stylesheet" />
     </head>
-    <body data-demo-role="admin">
-        <form id="form1" runat="server">
+    <body data-page="manage-academic-supervisors">
+        <form id="form1" runat="server" novalidate="novalidate"><asp:HiddenField ID="academicCsrf" runat="server" ClientIDMode="Static" />
             <div class="app">
 
                 <!-- ============ SIDEBAR (Coordinator) ============ -->
@@ -53,7 +53,7 @@
                             </a>
                         </li>
                         <li>
-                            <a href="Manage_Academic_Supervisor.aspx" class="active" aria-current="page">
+                            <a href='<%= ResolveUrl("~/Coordinator/Manage_Academic_Supervisor.aspx") %>' class="active" aria-current="page">
                                 <i class="bi bi-person-badge" aria-hidden="true">
                                 </i>
                                 <span>Manage Academic Supervisors</span>
@@ -136,7 +136,7 @@
 
                             <div class="user-chip">
                                 <span class="avatar" aria-hidden="true">CO</span>
-                                <span class="name">Coordinator Portal<span class="role">Interface preview</span>
+                                <span class="name">Coordinator Portal<span class="role">Internship Coordinator</span>
                                 </span>
                             </div>
                         </div>
@@ -144,7 +144,7 @@
 
                     <!-- ============ CONTENT ============ -->
                     <div class="content">
-                        <p class="preview-note">Interface preview · Sample data. Changes last until this page is reloaded; no Firebase updates.</p>
+                        <p class="preview-note">Look up an official staff ID before creating an account. No email is sent.</p>
                         <div id="pageNotice" class="page-notice" role="status" aria-live="polite" hidden>
                         </div>
                         <div class="page-header d-flex justify-content-between align-items-center animate-fade-up template-style-1">
@@ -152,7 +152,7 @@
                                 <h1 class="greeting">Academic Supervisors</h1>
                                 <p class="subtitle mb-0">Create and manage academic supervisor accounts and departments.</p>
                             </div>
-                            <button type="button" class="btn custom-btn-primary" data-bs-toggle="modal" data-bs-target="#addSupervisorModal">
+                            <button type="button" class="btn custom-btn-primary" id="addAcademicButton">
                                 <i class="bi bi-plus-lg me-2" aria-hidden="true">
                                 </i>Add New Supervisor
                             </button>
@@ -166,7 +166,7 @@
                                     </i>
                                 </div>
                                 <div class="stat-details">
-                                    <h3>24</h3>
+                                    <h3>0</h3>
                                     <span>Total Supervisors</span>
                                 </div>
                             </div>
@@ -176,7 +176,7 @@
                                     </i>
                                 </div>
                                 <div class="stat-details">
-                                    <h3>22</h3>
+                                    <h3>0</h3>
                                     <span>Active Accounts</span>
                                 </div>
                             </div>
@@ -186,7 +186,7 @@
                                     </i>
                                 </div>
                                 <div class="stat-details">
-                                    <h3>5</h3>
+                                    <h3>0</h3>
                                     <span>Departments</span>
                                 </div>
                             </div>
@@ -195,16 +195,8 @@
                         <!-- SUPERVISORS TABLE -->
                         <div class="panel animate-fade-up template-style-8">
                             <div class="d-flex justify-content-between align-items-center mb-3">
-                                <h3 class="panel-title m-0">Supervisors Directory</h3>
-                                <select id="deptFilter" aria-label="Filter by department" class="form-select w-auto custom-input py-1 px-3">
-                                    <option value="all">All Departments</option>
-                                    <option value="Computer Science">Computer Science</option>
-                                    <option value="Software Engineering">Software Engineering</option>
-                                    <option value="Network Engineering">Network Engineering</option>
-                                    <option>Artificial Intelligence</option>
-                                    <option>Cybersecurity</option>
-                                    <option>Computer Information Systems</option>
-                                </select>
+                                <h3 class="panel-title m-0">Supervisors Directory</h3><button type="button" id="refreshAcademic" class="btn custom-btn-light">Refresh</button>
+                                <select id="deptFilter" aria-label="Filter by department" class="form-select w-auto custom-input py-1 px-3"><option value="all">All Departments</option></select>
                             </div>
 
                             <div class="table-responsive">
@@ -218,110 +210,10 @@
                                             <th class="text-end">Actions</th>
                                         </tr>
                                     </thead>
-                                    <tbody>
-                                        <!-- Row 1 -->
-                                        <tr data-dept="Computer Science">
-                                            <td>
-                                                <div class="d-flex align-items-center gap-3">
-                                                    <div class="table-avatar">RK</div>
-                                                    <div>
-                                                        <div class="fw-bold text-dark supervisor-name">Dr. Rami Al-Khatib</div>
-                                                        <div class="text-muted small">ID: SUP-9012 • rami.k@just.edu.jo</div>
-                                                    </div>
-                                                </div>
-                                            </td>
-                                            <td>
-                                                <span class="dept-badge">Computer Science</span>
-                                            </td>
-                                            <td>
-                                                <span class="badge bg-light text-dark border">3 Groups</span>
-                                            </td>
-                                            <td>
-                                                <span class="status-badge success">Active</span>
-                                            </td>
-                                            <td class="text-end">
-                                                <div class="action-buttons">
-                                                    <button type="button" class="action-btn edit-btn" title="Edit" data-bs-toggle="modal" data-bs-target="#addSupervisorModal">
-                                                        <i class="bi bi-pencil-square" aria-hidden="true">
-                                                        </i>
-                                                    </button>
-                                                    <button type="button" class="action-btn delete-btn" title="Deactivate" data-bs-toggle="modal" data-bs-target="#deleteModal">
-                                                        <i class="bi bi-person-x" aria-hidden="true">
-                                                        </i>
-                                                    </button>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                        <!-- Row 2 -->
-                                        <tr data-dept="Software Engineering">
-                                            <td>
-                                                <div class="d-flex align-items-center gap-3">
-                                                    <div class="table-avatar alt-1">SO</div>
-                                                    <div>
-                                                        <div class="fw-bold text-dark supervisor-name">Dr. Samah Obeid</div>
-                                                        <div class="text-muted small">ID: SUP-8834 • samah.o@just.edu.jo</div>
-                                                    </div>
-                                                </div>
-                                            </td>
-                                            <td>
-                                                <span class="dept-badge">Software Engineering</span>
-                                            </td>
-                                            <td>
-                                                <span class="badge bg-light text-dark border">2 Groups</span>
-                                            </td>
-                                            <td>
-                                                <span class="status-badge success">Active</span>
-                                            </td>
-                                            <td class="text-end">
-                                                <div class="action-buttons">
-                                                    <button type="button" class="action-btn edit-btn" title="Edit" data-bs-toggle="modal" data-bs-target="#addSupervisorModal">
-                                                        <i class="bi bi-pencil-square" aria-hidden="true">
-                                                        </i>
-                                                    </button>
-                                                    <button type="button" class="action-btn delete-btn" title="Deactivate" data-bs-toggle="modal" data-bs-target="#deleteModal">
-                                                        <i class="bi bi-person-x" aria-hidden="true">
-                                                        </i>
-                                                    </button>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                        <!-- Row 3 -->
-                                        <tr data-dept="Network Engineering">
-                                            <td>
-                                                <div class="d-flex align-items-center gap-3">
-                                                    <div class="table-avatar alt-2">MA</div>
-                                                    <div>
-                                                        <div class="fw-bold text-dark supervisor-name">Eng. Mahmoud Ali</div>
-                                                        <div class="text-muted small">ID: SUP-7710 • m.ali@just.edu.jo</div>
-                                                    </div>
-                                                </div>
-                                            </td>
-                                            <td>
-                                                <span class="dept-badge">Network Engineering</span>
-                                            </td>
-                                            <td>
-                                                <span class="text-muted small">No Groups Yet</span>
-                                            </td>
-                                            <td>
-                                                <span class="status-badge danger">Inactive</span>
-                                            </td>
-                                            <td class="text-end">
-                                                <div class="action-buttons">
-                                                    <button type="button" class="action-btn edit-btn" title="Edit" data-bs-toggle="modal" data-bs-target="#addSupervisorModal">
-                                                        <i class="bi bi-pencil-square" aria-hidden="true">
-                                                        </i>
-                                                    </button>
-                                                    <button type="button" class="action-btn text-success" title="Activate">
-                                                        <i class="bi bi-person-check" aria-hidden="true">
-                                                        </i>
-                                                    </button>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    </tbody>
+                                    <tbody id="academicRows"></tbody>
                                 </table>
                                 <!-- Empty Search Message -->
-                                <div id="noResultsMsg" class="text-center py-4 template-style-9">No supervisors match your search.</div>
+                                <div id="noResultsMsg" class="text-center py-4">No supervisors match your search.</div>
                             </div>
                         </div>
                     </div>
@@ -336,33 +228,28 @@
                             </button>
                         </div>
                         <div class="modal-body">
-                            <p class="text-muted">Preview profile only. No authentication account will be created.</p>
+                            <p class="text-muted">Find an official university staff record. Name, email and department cannot be entered manually.</p>
+<div class="mb-3"><label for="academicStaffId" class="form-label custom-label">Staff ID</label><div class="d-flex gap-2"><input id="academicStaffId" type="text" class="form-control custom-input" maxlength="40" placeholder="For example A1001" /><button type="button" id="findAcademic" class="btn custom-btn-primary">Find supervisor</button></div><p id="academicLookupMessage" role="status" class="mt-2"></p></div>
                             <div id="modalError" class="alert alert-danger" role="alert" hidden>
                             </div>
                             <div class="mb-3">
                                 <label for="supName" class="form-label custom-label">Full name</label>
-                                <input id="supName" type="text" class="form-control custom-input" required maxlength="100" />
+                                <input id="supName" type="text" class="form-control custom-input" readonly />
                             </div>
                             <div class="mb-3">
                                 <label for="supEmail" class="form-label custom-label">Email address</label>
-                                <input id="supEmail" type="email" class="form-control custom-input" required maxlength="254" />
+                                <input id="supEmail" type="email" class="form-control custom-input" readonly />
                             </div>
                             <div class="mb-3">
                                 <label for="supDept" class="form-label custom-label">Department</label>
-                                <select id="supDept" class="form-select custom-input" required>
-                                    <option value="">Select department</option>
-                                    <option>Computer Science</option>
-                                    <option>Software Engineering</option>
-                                    <option>Network Engineering</option>
-                                    <option>Artificial Intelligence</option>
-                                    <option>Cybersecurity</option>
-                                    <option>Computer Information Systems</option>
-                                </select>
+                                <input id="supDept" type="text" class="form-control custom-input" readonly />
                             </div>
-                        </div>
+<div class="mb-3"><label for="supUniversity" class="form-label custom-label">University</label><input id="supUniversity" class="form-control custom-input" readonly /></div>
+<div class="mb-3"><label for="supCollege" class="form-label custom-label">College</label><input id="supCollege" class="form-control custom-input" readonly /></div>
+<div class="mb-3"><label for="academicPassword" class="form-label custom-label">Temporary password</label><input id="academicPassword" class="form-control custom-input" readonly autocomplete="off" /><div class="d-flex gap-2 mt-2"><button type="button" id="generateAcademicPassword" class="btn custom-btn-light" disabled>Generate password</button><button type="button" id="copyAcademicPassword" class="btn custom-btn-light">Copy password</button></div><span id="academicCopyStatus" role="status"></span></div>                        </div>
                         <div class="modal-footer">
                             <button type="button" class="btn custom-btn-light" data-bs-dismiss="modal">Cancel</button>
-                            <button type="button" id="saveSupBtn" class="btn custom-btn-primary">Save Preview Profile</button>
+                            <button type="button" id="saveSupBtn" class="btn custom-btn-primary" disabled>Confirm</button>
                         </div>
                     </div>
                 </div>
@@ -371,14 +258,14 @@
                 <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
                     <div class="modal-content custom-modal">
                         <div class="modal-header">
-                            <h2 class="modal-title fs-5" id="deleteModalTitle">Change Preview Account Status</h2>
+                            <h2 class="modal-title fs-5" id="deleteModalTitle">Academic supervisor account</h2>
                             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
                             </button>
                         </div>
                         <div class="modal-body">
                             <p id="statusTarget">
                             </p>
-                            <p class="text-muted">This changes the preview only. Firebase Authentication is unaffected.</p>
+                            <p id="academicActionDescription" class="text-muted"></p><p id="academicActionError" role="alert" class="text-danger"></p>
                         </div>
                         <div class="modal-footer">
                             <button type="button" class="btn custom-btn-light" data-bs-dismiss="modal">Cancel</button>
@@ -387,11 +274,11 @@
                     </div>
                 </div>
             </div>
+<div class="modal" id="academicDetailsModal" tabindex="-1" aria-labelledby="academicDetailsTitle" aria-hidden="true"><div class="modal-dialog modal-dialog-centered modal-dialog-scrollable"><div class="modal-content custom-modal"><div class="modal-header"><h2 id="academicDetailsTitle" class="modal-title fs-5">Supervisor details</h2><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close details"></button></div><div class="modal-body"><p id="academicDetailsText" style="white-space:pre-line"></p></div><div class="modal-footer"><button type="button" class="btn custom-btn-light" data-bs-dismiss="modal">Close</button></div></div></div></div>
         </form>
-        <script src="../Js_project/Demo/demo-store.js?v=20261021-original-ui"></script>
 <script src="../Scripts/bootstrap.bundle.min.js">
         </script>
-        <script src="../Js_project/Coordinator/Manage_Academic_Supervisor.js?v=20261021-original-ui">
+        <script src="../Js_project/Coordinator/Manage_Academic_Supervisor.js?v=20261022-auth-navigation-final">
         </script>
     </body>
 </html>

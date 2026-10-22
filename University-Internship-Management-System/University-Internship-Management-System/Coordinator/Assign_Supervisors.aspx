@@ -1,4 +1,4 @@
-﻿<%@ Page Language="C#" AutoEventWireup="true" CodeBehind="Assign_Supervisors.aspx.cs" Inherits="University_Internship_Management_System.Coordinator.Assign_Supervisors" %>
+<%@ Page Language="C#" AutoEventWireup="true" CodeBehind="Assign_Supervisors.aspx.cs" Inherits="University_Internship_Management_System.Coordinator.Assign_Supervisors" %>
 
 <!DOCTYPE html>
 <html lang="en">
@@ -53,7 +53,7 @@
                             </a>
                         </li>
                         <li>
-                            <a href="Manage_Academic_Supervisor.aspx">
+                            <a href='<%= ResolveUrl("~/Coordinator/Manage_Academic_Supervisor.aspx") %>'>
                                 <i class="bi bi-person-badge" aria-hidden="true">
                                 </i>
                                 <span>Manage Academic Supervisors</span>

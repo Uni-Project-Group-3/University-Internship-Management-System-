@@ -5,6 +5,9 @@ using System.Security.Cryptography;
 using System.Threading.Tasks;
 using System.Web;
 using System.Web.UI;
+using System.Web.Security;
+using FirebaseAdmin.Auth;
+using System.Linq;
 using Newtonsoft.Json;
 using University_Internship_Management_System.Shared;
 
@@ -32,7 +35,7 @@ namespace University_Internship_Management_System.Auth
                 return;
             }
 
-            PasswordChangeRequired = Session["Uims.PasswordChangeRequired"] as bool? == true;
+            PasswordChangeRequired = PendingTicket() != null;
             form1.Attributes["data-password-required"] = PasswordChangeRequired ? "true" : "false";
             form1.DefaultButton = PasswordChangeRequired ? SaveChanges.ID : SignIn.ID;
 
@@ -54,47 +57,148 @@ namespace University_Internship_Management_System.Auth
             CsrfToken.Value = (string)Session["Uims.CsrfToken"];
         }
 
-        protected void SignIn_Click(object sender, EventArgs e)
+        protected override void OnInit(EventArgs e)
         {
-            if (!ValidateRequest() || !ValidateEmail())
-            {
-                return;
-            }
+            base.OnInit(e);
+            ViewStateUserKey = Session.SessionID;
+        }
 
+        protected async void SignIn_Click(object sender, EventArgs e)
+        {
+            if (!ValidateRequest() || !ValidateEmail()) return;
             if (string.IsNullOrEmpty(Password.Text))
             {
                 PasswordError.Text = "Enter your password.";
-                Password.Attributes["aria-invalid"] = "true";
                 return;
             }
-
-            // No authentication session is issued without the project's authorization service.
-            AuthMessage.Text = ConfigurationMessage;
+            try
+            {
+                EnsureSecureTransport();
+                var blockedUntil = Session["Uims.LoginBlockedUntil"] as DateTime?;
+                if (blockedUntil.HasValue && blockedUntil.Value > DateTime.UtcNow)
+                    throw new FirebaseLoginException("Wait a minute before trying to sign in again.");
+                var result = await new FirebaseSignInService().SignInAsync(Email.Text, Password.Text);
+                FormsAuthentication.SignOut();
+                if (result.MustChangePassword)
+                {
+                    WriteCookie(".UIMS.FirstLogin", result.Uid, "password-change", 10);
+                    Session.Clear();
+                    Session.Abandon();
+                    RedirectTo("~/Auth/Login.aspx?change=required");
+                    return;
+                }
+                CompleteSignIn(result);
+            }
+            catch (Exception error)
+            {
+                int attempts = (Session["Uims.LoginAttempts"] as int? ?? 0) + 1;
+                Session["Uims.LoginAttempts"] = attempts;
+                if (attempts >= 5)
+                {
+                    Session["Uims.LoginBlockedUntil"] = DateTime.UtcNow.AddMinutes(1);
+                    Session["Uims.LoginAttempts"] = 0;
+                }
+                AuthMessage.Text = error is FirebaseLoginException ? error.Message :
+                    "Sign-in could not be completed. Check the connection and Firebase server configuration.";
+                Trace.Warn("Login", error.GetType().Name);
+            }
+            finally { Password.Text = ""; }
         }
 
-        protected void SaveChanges_Click(object sender, EventArgs e)
+        protected async void SaveChanges_Click(object sender, EventArgs e)
         {
-            if (!ValidateRequest() || !PasswordChangeRequired)
+            if (!ValidateRequest()) return;
+            var pending = PendingTicket();
+            if (pending == null)
             {
-                AuthMessage.Text = "Please sign in before changing your password.";
+                ChangeError.Text = "Please sign in again before changing your password.";
                 return;
             }
-
             string password = NewPassword.Text;
-            if (!System.Text.RegularExpressions.Regex.IsMatch(password,
-                @"\A(?=.{12,})(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[^a-zA-Z0-9\s]).*\z"))
+            if (password.Length < 12 || !password.Any(char.IsUpper) || !password.Any(char.IsLower) ||
+                !password.Any(char.IsDigit) || !password.Any(c => !char.IsLetterOrDigit(c) && !char.IsWhiteSpace(c)))
             {
                 ChangeError.Text = "Use at least 12 characters, uppercase and lowercase letters, a number, and a symbol.";
                 return;
             }
-
             if (password != ConfirmPassword.Text)
             {
                 ChangeError.Text = "Passwords do not match.";
                 return;
             }
+            try
+            {
+                EnsureSecureTransport();
+                var profile = await FirebaseSignInService.ReadProfileAsync(pending.Name);
+                var result = FirebaseSignInService.ProfileResult(pending.Name, profile);
+                var account = await FirebaseAuth.DefaultInstance.GetUserAsync(pending.Name);
+                if (account.Disabled) throw new FirebaseLoginException("This account is disabled. Contact your coordinator.");
+                if (result.MustChangePassword)
+                {
+                    await FirebaseAuth.DefaultInstance.UpdateUserAsync(new UserRecordArgs { Uid = pending.Name, Password = password });
+                    await new StudentFirebaseGateway().PatchAsync("users/" + StudentManagementService.Key(pending.Name),
+                        new { mustChangePassword = false });
+                }
+                result.MustChangePassword = false;
+                CompleteSignIn(result);
+            }
+            catch (Exception error)
+            {
+                ChangeError.Text = error is FirebaseLoginException ? error.Message :
+                    "The password change could not be completed. Retry before leaving this page.";
+                Trace.Warn("FirstLogin", error.GetType().Name);
+            }
+            finally { NewPassword.Text = ""; ConfirmPassword.Text = ""; }
+        }
 
-            ChangeError.Text = ConfigurationMessage;
+        private FormsAuthenticationTicket PendingTicket()
+        {
+            try
+            {
+                string value = Request.Cookies[".UIMS.FirstLogin"]?.Value;
+                if (string.IsNullOrEmpty(value)) return null;
+                var ticket = FormsAuthentication.Decrypt(value);
+                return ticket != null && !ticket.Expired && ticket.UserData == "password-change" ? ticket : null;
+            }
+            catch { return null; }
+        }
+
+        private void WriteCookie(string name, string uid, string data, int minutes)
+        {
+            var ticket = new FormsAuthenticationTicket(2, uid, DateTime.Now,
+                DateTime.Now.AddMinutes(minutes), false, data, FormsAuthentication.FormsCookiePath);
+            Response.Cookies.Add(new HttpCookie(name, FormsAuthentication.Encrypt(ticket))
+            {
+                HttpOnly = true, Secure = Request.IsSecureConnection, SameSite = SameSiteMode.Lax,
+                Path = FormsAuthentication.FormsCookiePath
+            });
+        }
+
+        private void CompleteSignIn(FirebaseLoginResult result)
+        {
+            WriteCookie(FormsAuthentication.FormsCookieName, result.Uid, result.Role, 30);
+            Response.Cookies.Add(new HttpCookie(".UIMS.FirstLogin", "")
+            {
+                Expires = DateTime.UtcNow.AddDays(-1), HttpOnly = true, Secure = Request.IsSecureConnection,
+                SameSite = SameSiteMode.Lax, Path = FormsAuthentication.FormsCookiePath
+            });
+            Session.Clear();
+            Session.Abandon();
+            string destination = LoginRedirectPolicy.CoordinatorPage(result.Role, Request.QueryString["ReturnUrl"]) ?? FirebaseSignInService.Destination(result.Role);
+            RedirectTo(destination);
+        }
+
+        private void RedirectTo(string path)
+        {
+            // Only fixed application routes are used; never redirect to a supplied URL.
+            Response.Redirect(ResolveUrl(path), false);
+            Context.ApplicationInstance.CompleteRequest();
+        }
+
+        private void EnsureSecureTransport()
+        {
+            if (!Request.IsSecureConnection && !Request.IsLocal)
+                throw new FirebaseLoginException("Use HTTPS to sign in. HTTP is allowed only on this development computer.");
         }
 
         private async Task SendResetLinkAsync()

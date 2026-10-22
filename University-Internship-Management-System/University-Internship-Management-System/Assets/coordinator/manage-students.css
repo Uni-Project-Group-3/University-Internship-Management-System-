@@ -136,3 +136,58 @@ body:has(.completion-dialog[open]) { overflow: hidden; }
 .uims-notifications,.uims-completion-dialog{width:min(560px,calc(100% - 24px));max-height:88dvh;overflow:auto;padding:22px;border:1px solid var(--border);border-radius:14px;background:var(--surface);color:var(--text)}.uims-notifications::backdrop,.uims-completion-dialog::backdrop{background:color-mix(in srgb,var(--text) 45%,transparent)}.uims-notifications h2,.uims-completion-dialog h2{font-size:1.2rem}.uims-notifications button,.uims-completion-dialog button{padding:9px 14px;margin:5px;border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--primary)}.uims-completion-dialog header{display:flex;justify-content:space-between;align-items:center}.uims-notifications input{padding:8px;border:1px solid var(--border);border-radius:6px;max-width:100%}#companyTraineeDialog{width:min(780px,calc(100% - 24px));max-height:88dvh;overflow:auto;border:1px solid var(--border);border-radius:14px;background:var(--surface);color:var(--text);padding:20px}#companyTraineeDialog::backdrop{background:color-mix(in srgb,var(--text) 45%,transparent)}#companyTraineeDialog input{padding:8px;border:1px solid var(--border);border-radius:6px;max-width:100%}
 
 .completion-row-completed{color:var(--text-secondary);background:var(--surface-alt)}
+
+/* Student account form */
+#studentEditor { width: min(600px, calc(100% - 32px)); max-height: 90dvh; overflow: auto; border-radius: 16px; }
+#studentEditor .completion-dialog-header { padding: 24px 28px 0; border-bottom: 0; }
+#studentEditor .completion-dialog-header h2 { font-size: 22px; font-weight: 500; }
+#studentEditor .completion-dialog-body { padding: 18px 28px 26px; text-align: left; }
+#studentEditor .student-intro { margin: 0 0 22px; color: #667085; font-size: 14px; line-height: 1.6; }
+#studentEditor .student-label { display: block; margin: 0 0 8px; color: #475467; font-size: 12px; font-weight: 400; line-height: 1.5; }
+#studentEditor input:not([type=submit]) { box-sizing: border-box; width: 100%; min-width: 0; height: 46px; margin: 6px 0 0; padding: 11px 13px; border: 1px solid #d0d5dd; border-radius: 9px; background: #fff; color: #243047; font: inherit; font-size: 14px; font-weight: 400; }
+#studentEditor input::placeholder { color: #8490a3; font-weight: 400; }
+#studentEditor input:disabled { opacity: 1; background: #f8fafc; border-color: #e4e8ef; color: #667085; -webkit-text-fill-color: #667085; font-weight: 400; cursor: default; }
+#studentEditor .student-input-action { display: flex; align-items: stretch; gap: 10px; }
+#studentEditor .student-input-action input { flex: 1; margin: 0; }
+#studentEditor .student-input-action .completion-button { flex: 0 0 auto; margin: 0; white-space: nowrap; border-radius: 9px; padding: 10px 16px; font-size: 13px; font-weight: 500; }
+#studentEditor .student-find { background: var(--primary); color: #fff; border-color: var(--primary); }
+#studentEditor .student-lookup-status { display: block; margin-top: 9px; color: #475467; font-size: 12px; line-height: 1.5; }
+#studentEditor .student-lookup-status:empty { display: none; }
+#studentEditor .student-record { margin: 24px 0; padding: 0; background: transparent; border: 0; border-radius: 0; }
+#studentEditor .student-section-heading { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; margin-bottom: 16px; }
+#studentEditor h3 { margin: 0; color: #243047; font-size: 13px; font-weight: 500; }
+#studentEditor .student-section-heading span { color: #667085; font-size: 11px; }
+#studentEditor .student-detail-grid { display: grid; grid-template-columns: 1fr; gap: 16px; }
+#studentEditor .student-detail-grid label { margin: 0; }
+#studentEditor .student-email { grid-column: 1 / -1; }
+#studentEditor .student-password-section { padding-top: 0; border-top: 0; }
+#studentEditor .student-password-section h3 { margin-bottom: 14px; }
+#studentEditor #studentTemporaryPassword { font-family: Consolas, monospace; letter-spacing: .6px; }
+#studentEditor .student-field-help { display: block; color: #667085; font-size: 12px; line-height: 1.6; margin: 8px 0 0; }
+#studentEditor .student-form-actions { display: flex; justify-content: flex-start; gap: 10px; margin-top: 24px; padding-top: 20px; border-top: 1px solid #e4e8ef; }
+#studentEditor .student-form-actions button { margin: 0; min-width: 92px; }
+#studentEditor button:disabled { opacity: .5; cursor: not-allowed; }
+@media(max-width: 540px) {
+    #studentEditor .completion-dialog-header, #studentEditor .completion-dialog-body { padding: 20px; }
+    #studentEditor .student-detail-grid { grid-template-columns: 1fr; }
+    #studentEditor .student-input-action { flex-wrap: wrap; }
+    #studentEditor .student-input-action input { flex-basis: 100%; }
+    #studentEditor .student-input-action .completion-button { width: 100%; }
+}
+#studentEditor .student-section-heading,
+#studentEditor .student-password-section h3,
+#studentEditor #studentPasswordHelp,
+#studentEditor .student-lookup-status[data-lookup-success] { display: none; }
+#studentEditor:has(#studentFields:not([hidden])) #studentActionDescription { display: none; }
+/* Connected student accounts */
+.student-page-message {display:block;margin:12px 0;color:var(--text);font-size:14px}
+.student-page-message:empty {display:none}
+.student-list-actions {display:flex;gap:8px;align-items:center}
+.student-filter-summary {margin:12px 22px;font-size:12px;color:var(--text-secondary)}
+#studentsGrid [hidden] {display:none!important}
+#studentsGrid a {display:inline-block;margin:3px 8px 3px 0;color:var(--primary);font-size:12px}
+#studentsGrid .student-delete-action {color:#a52b36;background:none;border:0;padding:0;font:inherit;text-decoration:underline;cursor:pointer}
+#studentEditor .student-supervisor-select {width:100%;height:46px;border:1px solid #d0d5dd;border-radius:9px;background:white;color:#344054;padding:10px 12px;margin-bottom:20px;font:inherit;font-size:14px}
+#studentDetailsDialog .completion-dialog-body {padding:24px}
+#studentDetailsDialog .completion-info {margin:0 0 24px}
+@media(max-width:540px){.student-list-actions{flex-wrap:wrap}#studentEditor .student-input-action{gap:8px}}

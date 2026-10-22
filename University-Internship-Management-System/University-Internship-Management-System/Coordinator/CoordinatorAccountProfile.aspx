@@ -1,4 +1,4 @@
-﻿<%@ Page Language="C#" AutoEventWireup="true" ViewStateEncryptionMode="Always" CodeBehind="CoordinatorAccountProfile.aspx.cs" Inherits="University_Internship_Management_System.Coordinator.CoordinatorAccountProfile" %>
+<%@ Page Language="C#" AutoEventWireup="true" ViewStateEncryptionMode="Always" CodeBehind="CoordinatorAccountProfile.aspx.cs" Inherits="University_Internship_Management_System.Coordinator.CoordinatorAccountProfile" %>
 <!DOCTYPE html>
 <html lang="en">
 <head runat="server">
@@ -19,7 +19,7 @@
     <ul class="side-nav"><li><a href="CoordinatorDashboard.aspx"><i class="bi bi-house-door" aria-hidden="true"></i><span>Dashboard</span></a></li>
 <li><a href="ManageStudents.aspx"><i class="bi bi-mortarboard" aria-hidden="true"></i><span>Manage Students</span></a></li>
 <li><a href="ManageCompanies.aspx"><i class="bi bi-building" aria-hidden="true"></i><span>Manage Companies</span></a></li>
-<li><a href="Manage_Academic_Supervisor.aspx"><i class="bi bi-person-badge" aria-hidden="true"></i><span>Manage Academic Supervisors</span></a></li>
+<li><a href='<%= ResolveUrl("~/Coordinator/Manage_Academic_Supervisor.aspx") %>'><i class="bi bi-person-badge" aria-hidden="true"></i><span>Manage Academic Supervisors</span></a></li>
 <li><a href="Assign_Supervisors.aspx"><i class="bi bi-diagram-3" aria-hidden="true"></i><span>Assign Academic Supervisors</span></a></li>
 <li><a href="MonitorPlacementsProgress.aspx"><i class="bi bi-activity" aria-hidden="true"></i><span>Monitor Placements &amp; Progress</span></a></li>
 <li><a href="FinalCompletionReview.aspx"><i class="bi bi-patch-check" aria-hidden="true"></i><span>Final Completion Review</span></a></li>

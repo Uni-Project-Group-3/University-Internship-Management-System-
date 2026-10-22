@@ -1,216 +1,156 @@
-
-/* Original-page demo bindings. Layout and server controls remain in the ASPX. */
-(function () {
+/* Firebase-backed coordinator company directory. No browser demo data or passwords in storage. */
+(() => {
     'use strict';
-    if (!window.UimsDemo?.enabled()) { location.replace('../Auth/Login.aspx?demo=1'); return; }
-    let binding;
-    function initialize() {
-        binding?.abort();
-        binding = new AbortController();
-        const signal = binding.signal, demo = window.UimsDemo;
-        let view = demo.view(), selected = null, render = () => {};
-        if (!view || view.user.mustChangePassword || view.user.role !== document.body.dataset.demoRole) {
-            location.href = '../Auth/Login.aspx?demo=1';
-            return;
-        }
-        const by = id => document.getElementById(id) || document.querySelector('[id$="_' + id + '"]');
-        const all = selector => [...document.querySelectorAll(selector)];
-        const escape = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-        const text = (id, value) => { const element = by(id); if (element) element.textContent = value ?? '—'; };
-        const value = id => by(id)?.value?.trim() || '';
-        const set = (id, value) => { if (by(id)) by(id).value = value ?? ''; };
-        const options = (id, records, placeholder = 'All') => {
-            const element = by(id); if (!element) return;
-            const previous = element.value;
-            element.innerHTML = '<option value="">' + escape(placeholder) + '</option>' + records.map(record => '<option value="' + escape(record.id) + '">' + escape(record.name) + '</option>').join('');
-            if (records.some(record => record.id === previous)) element.value = previous;
-        };
-        const on = (id, type, handler) => by(id)?.addEventListener(type, handler, {signal});
-        const click = (id, handler) => on(id, 'click', event => { event.preventDefault(); try { handler(event); } catch(exception) { error(exception,event.currentTarget.closest('dialog,.modal,.offcanvas')); } });
-        const button = (label, action, id, className = 'row-action') => {
-            const paths={edit:'M4 16v4h4L20 8l-4-4L4 16Z',delete:'M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13',reset:'M13 7a5 5 0 1 0 0 10 5 5 0 0 0 0-10ZM8 12H2m2 0v4',status:'M12 2v10M6 5a9 9 0 1 0 12 0',assign:'M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 3a4 4 0 1 0 0 8 4 4 0 0 0 0-8M20 8v6m-3-3h6'};
-            const icon=className.includes('action-btn')&&paths[action];
-            const content=icon?'<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="'+paths[action]+'"/></svg>':escape(label);
-            return '<button type="button" title="'+escape(label)+'" aria-label="'+escape(label)+'" class="' + className + '" data-uims="' + action + '" data-record="' + escape(id) + '">' + content + '</button>';
-        };
-        const cells = values => '<tr>' + values.map(cell => '<td>' + cell + '</td>').join('') + '</tr>';
-        const fill = (selector, records, row) => {
-            const element = document.querySelector(selector);
-            if(!element)return;
-            const emptyState=element.id==='taskList'?element.querySelector('#noTasksMsg'):null;
-            element.innerHTML=records.map(row).join('');
-            if(emptyState)element.append(emptyState);
-        };
-        const messageElement = () => by('uimsPageNotice') || document.querySelector('main .preview-note,main .completion-notice,main .companies-notice,main .evaluation-notice,main .monitor-notice,main .workspace-note,#messagesAvailability,#traineesAvailability,#accountAvailability') || by('pageNotice') || by('profileMessage') || by('pnlMessage');
-        function notice(message) {
-            let element = messageElement();
-            if (!element) { element = document.createElement('p'); element.id='uimsPageNotice'; element.className = 'uims-feedback'; element.setAttribute('role','status'); (document.querySelector('main') || document.querySelector('.content')).prepend(element); }
-            element.hidden = false; element.textContent = message;
-        }
-        function error(error, scope) {
-            let element = scope?.querySelector('[data-uims-error]');
-            if (scope && !element) { element = document.createElement('p'); element.dataset.uimsError = ''; element.className = 'uims-error'; element.setAttribute('role','alert'); (scope.querySelector('.modal-body') || scope).append(element); }
-            if (element) element.textContent = error.message; else notice(error.message);
-        }
-        const dirty = new WeakSet(), openers = new WeakMap();
-        let beforeClose=null;
-        function open(id) {
-            const dialog = by(id); if (!dialog) throw Error('Missing original popup: ' + id);
-            const alreadyOpen=dialog.tagName==='DIALOG'?dialog.open:dialog.classList.contains('show');
-            if(!alreadyOpen){openers.set(dialog, document.activeElement);dirty.delete(dialog);}
-            dialog.querySelectorAll('[data-uims-error],.uims-discard').forEach(el => el.remove());
-            if (dialog.tagName === 'DIALOG') { if (!dialog.open) dialog.showModal(); }
-            else if (dialog.classList.contains('offcanvas')) bootstrap.Offcanvas.getOrCreateInstance(dialog).show();
-            else bootstrap.Modal.getOrCreateInstance(dialog).show();
-            dialog.querySelector('input:not([readonly]):not([disabled]),textarea:not([disabled]),select:not([disabled])')?.focus();
-        }
-        function close(id, force = false) {
-            const dialog = by(id); if (!dialog) return;
-            if(!force&&beforeClose?.(id)===false)return;
-            if (dirty.has(dialog) && !force) {
-                if (dialog.querySelector('.uims-discard')) return;
-                const prompt = document.createElement('div'); prompt.className = 'uims-discard'; prompt.setAttribute('role','alert');
-                prompt.innerHTML = '<p>Discard unsaved changes?</p><button type="button" data-keep>Keep editing</button><button type="button" data-discard>Discard changes</button>';
-                (dialog.querySelector('.modal-footer') || dialog).append(prompt);
-                prompt.querySelector('[data-keep]').onclick = () => prompt.remove();
-                prompt.querySelector('[data-discard]').onclick = () => { prompt.remove(); close(id, true); };
-                prompt.querySelector('button').focus(); return;
-            }
-            dirty.delete(dialog);
-            if (dialog.tagName === 'DIALOG') dialog.close();
-            else if (dialog.classList.contains('offcanvas')) bootstrap.Offcanvas.getInstance(dialog)?.hide();
-            else bootstrap.Modal.getInstance(dialog)?.hide();
-            openers.get(dialog)?.focus();
-        }
-        function transact(action, payload, popup) {
-            try {
-                const result = demo.transaction(action, payload); view = demo.view();
-                if (popup) close(popup, true);
-                render(); notice('Saved in local demo storage. No Firebase operation or email was sent.');
-                return {ok:true, result};
-            } catch (exception) { error(exception, popup ? by(popup) : null); return {ok:false}; }
-        }
-        function valid(ids, popup) {
-            const invalid = ids.map(by).find(field => field && (!field.checkValidity() || field.required && !field.value.trim()));
-            if (!invalid) return true;
-            invalid.reportValidity(); error(Error('Check the highlighted field.'), by(popup)); return false;
-        }
-        const actions = {};
-        document.addEventListener('click', event => {
-            const control = event.target.closest('[data-uims]'); if (!control) return;
-            event.preventDefault();
-            try { actions[control.dataset.uims]?.(control.dataset.record, control); } catch (exception) { error(exception); }
-        }, {signal});
-        all('dialog,.modal,.offcanvas').forEach(dialog => {
-            const changed = () => dirty.add(dialog);
-            dialog.addEventListener('input', changed, {signal}); dialog.addEventListener('change', changed, {signal});
-            dialog.addEventListener('cancel', event => { event.preventDefault(); close(dialog.id); }, {signal});
-            dialog.addEventListener('hide.bs.modal', event => { if (dirty.has(dialog)) { event.preventDefault(); close(dialog.id); } }, {signal});
-            dialog.addEventListener('hidden.bs.modal', () => openers.get(dialog)?.focus(), {signal});
-            dialog.addEventListener('click', event => {
-                if(event.defaultPrevented)return;
-                if (event.target.closest('[data-bs-dismiss], [data-close], [data-completion-close], [data-profile-cancel], .popup-close, .monitor-close, .evaluation-close, .companies-close, .placements-close, [data-close-exam]')) {
-                    event.preventDefault(); event.stopPropagation(); close(dialog.id);
-                } else if (event.target === dialog && dialog.tagName === 'DIALOG') {
-                    const rect = dialog.getBoundingClientRect();
-                    if (event.clientX < rect.left || event.clientX > rect.right || event.clientY < rect.top || event.clientY > rect.bottom) close(dialog.id);
-                }
-            }, {signal});
-        });
-        function detail(student, id, selector) {
-            const progress = view.progress.find(item => item.id === student); if (!progress) throw Error('This student is not available to this demo identity.');
-            const target = document.querySelector(selector);
-            if (target) target.innerHTML = '<h3>' + escape(progress.name) + '</h3><dl>' + [['University ID',progress.universityId],['Department',progress.department],['Company',progress.company?.name],['Company Supervisor',progress.companySupervisor?.name],['Academic Supervisor',progress.supervisor?.name],['Training status',progress.placement?.completionStatus || 'Not placed'],['Approved / Required hours',progress.approvedHours + ' / ' + progress.requiredHours],['Tasks completed',progress.completedTasks + ' / ' + progress.tasks.length],['Risk indicators',progress.risks.join(', ') || 'None'],['Confirmed at UTC',progress.placement?.studentConfirmedAt],['Disable deadline UTC',progress.placement?.accountDisableAt],['Certificate',progress.placement?.certificateId]].map(([label,content]) => '<dt>' + escape(label) + '</dt><dd>' + escape(content || '—') + '</dd>').join('') + '</dl>' + progress.tasks.map(task => '<article><h4>' + escape(task.title) + '</h4><p>' + escape(task.description) + '</p><p>' + escape(task.deadline) + ' · ' + escape(task.status) + '</p><p>' + escape(task.feedback) + '</p>' + view.submissions.filter(sub => sub.taskId === task.id).map(sub => '<p>Submitted ' + escape(sub.createdAt) + ': ' + escape(sub.description) + ' · ' + escape(sub.fileName) + '</p>').join('') + '</article>').join('') + progress.evaluations.map(evaluation => '<article><h4>' + escape(evaluation.kind) + ' evaluation · ' + escape(evaluation.status) + '</h4><p>' + escape(evaluation.comments) + '</p></article>').join('');
-            selected = student; open(id);
-        }
-        function shell() {
-            all('[id$="lblUserName"],[id$="NavName"]').forEach(el => el.textContent = view.user.name);
-            document.addEventListener('click', event => {
-                const element = event.target.closest('a,button,input');
-                if (element && (/log\s*out/i.test(element.textContent) || /logout/i.test(element.id))) {
-                    event.preventDefault(); event.stopImmediatePropagation(); demo.logout(); location.href = '../Auth/Login.aspx?demo=1';
-                }
-            }, {signal,capture:true});
-            all('[id*=Logout],[id*=logout]').forEach(el => el.disabled = false);
-            if (!document.querySelector('script[src*="dashboard-navigation.js"]')) {
-                const sidebar = document.querySelector('aside.sidebar,aside.dash-sidebar,aside[id$="Sidebar"]');
-                const toggle = document.querySelector('.menu-btn,.dash-menu-btn');
-                const main = document.querySelector('.main,.dash-main');
-                const media = matchMedia('(max-width:991.98px)');
-                const setOpen = show => {
-                    const active = media.matches && show;
-                    document.body.classList.toggle('sidebar-open',active); toggle?.setAttribute('aria-expanded',String(active));
-                    if (sidebar) sidebar.inert = media.matches && !active;
-                    if (main) main.inert = active;
-                    document.querySelector('.sidebar-backdrop,.dash-sidebar-backdrop')?.toggleAttribute('hidden',!active);
-                    if (active) sidebar?.querySelector('button,a[href]')?.focus();
-                };
-                window.toggleSidebar = () => setOpen(!document.body.classList.contains('sidebar-open'));
-                if (toggle) { toggle.onclick = null; toggle.addEventListener('click',window.toggleSidebar,{signal}); }
-                all('.sidebar-close,.dash-sidebar-close,.legacy-sidebar-close,.sidebar-backdrop,.dash-sidebar-backdrop').forEach(el => el.addEventListener('click',()=>{setOpen(false);toggle?.focus();},{signal}));
-                document.addEventListener('keydown',event=>{if(event.key==='Escape'&&document.body.classList.contains('sidebar-open')){setOpen(false);toggle?.focus();}},{signal});
-                media.addEventListener('change',()=>setOpen(false),{signal}); setOpen(false);
-            }
-            const topSearch = document.querySelector('.topbar input,.dash-topbar input');
-            const search = document.querySelector('main input[type="search"],.content input[type="search"],#taskSearch,#searchInput');
-            if(topSearch&&!search){topSearch.disabled=false;topSearch.addEventListener('keydown',event=>{if(event.key!=='Enter')return;event.preventDefault();const route={admin:'MonitorPlacementsProgress.aspx',student:'ExploreOpportunities.aspx',company:'MyTrainees.aspx',academic:'StudentProgressMonitor.aspx'}[view.user.role];location.href=route+'?search='+encodeURIComponent(topSearch.value.trim());},{signal});}
-            if (topSearch && search && topSearch !== search) { topSearch.disabled=false;topSearch.addEventListener('input',()=>{search.value=topSearch.value;search.dispatchEvent(new Event('input'));},{signal}); }
-        }
-
-        function notifications() {
-            const items=[];
-            if(view.user.role==='student'){view.applications.forEach(a=>items.push('Application: '+a.status));view.placements.filter(p=>p.completionStatus==='PendingStudentConfirmation').forEach(()=>items.push('Coordinator approval received. Confirm completion in the Student Dashboard.'));}
-            if(view.user.role==='company')items.push(view.applications.filter(a=>a.status==='pending').length+' pending applications',view.tasks.filter(t=>t.status==='submitted').length+' task submissions awaiting review');
-            if(view.user.role==='academic')items.push(view.progress.filter(s=>s.evaluations.some(e=>e.kind==='company'&&e.status==='submitted')&&!s.evaluations.some(e=>e.kind==='academic'&&e.status==='submitted')).length+' assigned students awaiting academic evaluation');
-            if(view.user.role==='admin')items.push(view.messages.filter(m=>m.status==='unread').length+' unread contact messages',view.progress.filter(s=>s.placement?.completionStatus==='PendingStudentConfirmation').length+' pending student confirmations');
-            let dialog=by('originalNotifications');
-            if(!dialog){dialog=document.createElement('dialog');dialog.id='originalNotifications';dialog.className='uims-notifications';dialog.setAttribute('aria-label','Demo notifications');document.forms[0].append(dialog);}
-            dialog.innerHTML='<h2>Notifications · local demo</h2>'+items.map(item=>'<p>'+escape(item)+'</p>').join('')+(items.length?'':'<p>No notifications.</p>')+'<button type="button" data-notification-close>Close</button>';
-            dialog.querySelector('button').onclick=()=>dialog.close();dialog.showModal();
-        }
-        all('.topbar button,.dash-topbar button').forEach(el=>{if(!/notification/i.test(el.getAttribute('aria-label')||'')&&!el.querySelector('.bi-bell'))return;el.disabled=false;el.title='Local demo notifications';el.addEventListener('click',event=>{event.preventDefault();event.stopImmediatePropagation();view=demo.view();if(view)notifications();},{signal,capture:true});});
-        shell();
-        
-        let supervisorId=null, pendingAction='',page=0;
-        function editor(companyId,userId){selected=companyId;supervisorId=userId;const company=view.companies.find(company=>company.id===companyId),supervisor=view.users.find(user=>user.id===userId);const map={companyName:company?.name,industry:company?.industry,officialEmail:company?.email,companyPhone:company?.phone,companyWebsite:company?.website,companyAddress:company?.address,companyDescription:company?.description,supervisorName:supervisor?.name,supervisorEmail:supervisor?.email,supervisorPhone:supervisor?.phone};Object.entries(map).forEach(([id,content])=>set(id,content));text('editorTitle',companyId?'Edit company & supervisor':'Add company & supervisor');text('editorNotice','Local demo records persist across pages. No real credential is created.');by('saveCompany').disabled=false;open('companyEditor');}
-        render=()=>{
-            const supervisors=view.users.filter(user=>user.role==='company'&&user.status!=='deleted');
-            const records=view.companies.flatMap(company=>{const linked=supervisors.filter(user=>user.companyId===company.id);return(linked.length?linked:[null]).map(supervisor=>({company,supervisor}));}).filter(({company,supervisor})=>(!value('companySearch')||[company.name,company.email,supervisor?.name,supervisor?.email].join(' ').toLowerCase().includes(value('companySearch').toLowerCase()))&&(!value('companyStatus')||company.status===value('companyStatus').toLowerCase())&&(!value('accountStatus')||(value('accountStatus')==='password'?supervisor?.mustChangePassword:supervisor?.status===value('accountStatus').toLowerCase())));
-            records.sort((a,b)=>value('companySort').includes('Industry')?String(a.company.industry||'').localeCompare(String(b.company.industry||'')):a.company.name.localeCompare(b.company.name)*(value('companySort').includes('Z to A')?-1:1));
-            const size=Number(value('companyPageSize'))||10,pages=Math.max(1,Math.ceil(records.length/size));page=Math.min(page,pages-1);const pagination=document.querySelector('.companies-pagination');pagination.querySelector('span').textContent=records.length+' records · Page '+(page+1)+' / '+pages;const buttons=pagination.querySelectorAll('button');buttons[0].disabled=page===0;buttons[1].disabled=page===pages-1;
-            fill('.companies-table-wrap tbody',records.slice(page*size,page*size+size),({company,supervisor})=>cells([escape(company.name),escape(company.industry||'—'),escape(company.email),escape(supervisor?.name||'No supervisor'),escape(supervisor?.email||'—'),escape(supervisor?.status||'Unassigned')+' · Company '+escape(company.status),button(supervisor?'Actions':'Add supervisor',supervisor?'actions':'addSupervisor',supervisor?.id||company.id,'companies-text-button')]));
-            const stats=[view.companies.length,view.companies.filter(company=>company.status==='active').length,view.companies.filter(company=>company.status!=='active').length,supervisors.length];all('.companies-stats strong').forEach((el,index)=>el.textContent=stats[index]);
-            const empty=document.querySelector('.companies-empty');if(empty)empty.hidden=records.length>0;
-        };
-        document.querySelectorAll('[data-open="addCompany"]').forEach(el=>el.addEventListener('click',()=>editor(null,null),{signal}));
-        actions.addSupervisor=id=>editor(id,null);
-        actions.actions=id=>{supervisorId=id;selected=view.users.find(user=>user.id===id)?.companyId;text('accountTitle',view.users.find(user=>user.id===id)?.name);open('accountPreview');};
-        document.querySelector('[data-open="accountPreview"]')?.addEventListener('click',()=>notice('Select a supervisor from the directory first.'),{signal});
-        all('[data-account-action]').forEach(el=>el.addEventListener('click',()=>{
-            if(!supervisorId)return;const action=el.dataset.accountAction;close('accountPreview',true);
-            if(action==='edit'){editor(selected,supervisorId);return;}
-            pendingAction={reset:'resetUser',disable:'statusUser',enable:'statusUser',delete:'deleteUser'}[action];
-            const supervisor=view.users.find(user=>user.id===supervisorId);
-            if(action==='details'){text('confirmationTitle',supervisor.name);text('confirmationDescription',supervisor.email+' · '+supervisor.status+' · First-login change: '+supervisor.mustChangePassword);by('confirmAccountAction').hidden=true;}
-            else {text('confirmationTitle',action+' supervisor account?');text('confirmationDescription',supervisor.name+' — '+supervisor.email+'. Demonstration only; preserves company and internship history.');by('confirmAccountAction').hidden=false;by('confirmAccountAction').disabled=false;by('confirmAccountAction').dataset.requestedStatus=action==='enable'?'active':action==='disable'?'disabled':'';}
-            open('accountConfirmation');
-        },{signal}));
-        click('backToActions',()=>close('accountConfirmation'));
-        click('confirmAccountAction',()=>{const requested=by('confirmAccountAction').dataset.requestedStatus,current=view.users.find(user=>user.id===supervisorId);if(pendingAction==='statusUser'&&requested===current.status){close('accountConfirmation',true);return;}transact(pendingAction,{id:supervisorId},'accountConfirmation');});
-        const fields=['companyName','supervisorName','supervisorEmail','officialEmail','companyWebsite'];
-        click('validateCompany',()=>{if(valid(fields,'companyEditor'))text('companyValidation','Fields are valid. Save to update local demo records.');});
-        click('saveCompany',()=>{if(valid(fields,'companyEditor'))transact('saveCompanySupervisor',{id:selected,supervisorId,name:value('companyName'),email:value('officialEmail'),industry:value('industry'),phone:value('companyPhone'),website:value('companyWebsite'),address:value('companyAddress'),description:value('companyDescription'),supervisorName:value('supervisorName'),supervisorEmail:value('supervisorEmail'),supervisorPhone:value('supervisorPhone')},'companyEditor');});
-        for(const id of ['companySearch','companyStatus','accountStatus','companySort','companyPageSize'])on(id,id==='companySearch'?'input':'change',render);
-        click('resetCompanyFilters',()=>{['companySearch','companyStatus','accountStatus'].forEach(id=>set(id,''));render();});
-
-        all('.companies-pagination button').forEach((el,index)=>el.addEventListener('click',()=>{page+=index?1:-1;render();},{signal}));
-
-        render();
-        notice('DEMO — original interface connected to local browser storage. No Firebase or real authentication.');
-        window.addEventListener('storage', event => { if (event.key === 'uims.demo.v1') { view=demo.view(); if(view&&!view.user.mustChangePassword&&view.user.role===document.body.dataset.demoRole)render();else location.href='../Auth/Login.aspx?demo=1'; } }, {signal});
-        window.addEventListener('focus',()=>{const current=demo.current();if(!current||current.mustChangePassword)location.href='../Auth/Login.aspx?demo=1';},{signal});
-        window.addEventListener('pageshow',()=>{const current=demo.current();if(!current||current.mustChangePassword)location.href='../Auth/Login.aspx?demo=1';},{signal});
+    const by = id => document.getElementById(id);
+    const all = selector => [...document.querySelectorAll(selector)];
+    const text = (id, value) => { if (by(id)) by(id).textContent = value || ''; };
+    const escape = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    const value = id => by(id)?.value.trim() || '';
+    const guid = () => crypto.randomUUID().replaceAll('-', '');
+    let companies = [], selected = null, supervisor = null, formId = '', requestId = '', formVersion = '', editingUid = '', page = 0, pending = '', busy = false;
+    const openers = new WeakMap();
+    function working(active) {
+        busy=active;
+        all('[data-company-action], [data-open="addCompany"], #saveCompany, #confirmAccountAction, #refreshCompanies').forEach(button=>button.disabled=active);
     }
-    if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',initialize,{once:true});else initialize();
-    if(window.Sys?.WebForms?.PageRequestManager)Sys.WebForms.PageRequestManager.getInstance().add_endRequest(initialize);
+    function open(id) {
+        const dialog = by(id);
+        if (!dialog.open) { openers.set(dialog, document.activeElement); dialog.showModal(); }
+    }
+    function close(id) { if (by(id).open) by(id).close(); }
+    function notice(message, error = false) {
+        const element = by('companyPageNotice'); element.textContent = message; element.setAttribute('role', error ? 'alert' : 'status');
+    }
+    all('dialog').forEach(dialog => {
+        dialog.querySelectorAll('[data-close]').forEach(button => button.addEventListener('click', () => dialog.close()));
+        dialog.addEventListener('close', () => {
+            if (dialog.id === 'accountConfirmation') { by('companyCredentialPassword').value = ''; by('companyCredentialEmail').value = ''; }
+            openers.get(dialog)?.focus();
+        });
+    });
+    async function api(action, fields = {}) {
+        const response = await fetch(location.pathname + '?api=1', {
+            method: 'POST', credentials: 'same-origin', headers: {'Content-Type':'application/json', 'X-UIMS-CSRF': by('companyCsrf').value},
+            body: JSON.stringify({action, ...fields})
+        });
+        if (response.status === 403) throw Error('Your coordinator sign-in expired. Sign in again.');
+        const data = await response.json();
+        if (!response.ok || data.error) throw Error(data.error || 'The request failed. Refresh and retry.');
+        return data;
+    }
+    async function load() {
+        const data = await api('list'); companies = data.companies || []; render();
+    }
+    function accountStatus(user) {
+        if (!user) return 'Unassigned';
+        if (user.deletionStatus === 'pending') return 'Deletion pending';
+        if (user.accountSetupStatus === 'pending') return 'Setup pending';
+        return user.isActive ? 'Active' : 'Disabled';
+    }
+    const button = (label, action, id, uid = '') => `<button type="button" class="companies-text-button" data-company-action="${action}" data-company="${escape(id)}" data-uid="${escape(uid)}">${escape(label)}</button>`;
+    function render() {
+        const query = value('companySearch').toLowerCase(), status = value('companyStatus'), account = value('accountStatus');
+        let rows = companies.flatMap(c => (c.supervisors.length ? c.supervisors : [null]).map(u => ({c,u}))).filter(({c,u}) => {
+            const search = [c.name,c.industry,c.email,u?.fullName,u?.email].join(' ').toLowerCase();
+            return (!query || search.includes(query)) && (status === 'archived' ? c.isArchived : !c.isArchived && (!status || c.isActive === (status === 'active'))) &&
+                (!account || (account === 'password' ? u?.mustChangePassword : account === 'active' ? u?.isActive && accountStatus(u) === 'Active' : u && !u.isActive));
+        });
+        const sort = by('companySort').selectedIndex;
+        rows.sort((a,b) => sort === 2 ? a.c.industry.localeCompare(b.c.industry) || a.c.name.localeCompare(b.c.name) : a.c.name.localeCompare(b.c.name) * (sort === 1 ? -1 : 1));
+        const size = Number(value('companyPageSize')) || 10, pages = Math.max(1, Math.ceil(rows.length/size)); page = Math.min(page,pages-1);
+        by('companyRows').innerHTML = rows.slice(page*size,(page+1)*size).map(({c,u}) => `<tr><td><strong>${escape(c.name)}</strong><br><small>${escape(c.industry || '—')}</small></td><td>${escape(c.email || '—')}</td><td><span class="companies-badge">${c.isArchived ? 'Archived' : c.accountSetupStatus === 'pending' ? 'Setup pending' : c.isActive ? 'Active' : 'Inactive'}</span></td><td>${escape(u?.fullName || 'No supervisor')}</td><td>${escape(u?.email || '—')}</td><td>${escape(accountStatus(u))}${u?.mustChangePassword ? '<br><small>Password change required</small>' : ''}</td><td>${c.isArchived ? button('Restore company','restoreCompany',c.id) : c.pendingForm ? button('Resume setup','resume',c.id) : (u ? button('Actions','actions',c.id,u.uid) : button('Add supervisor','addSupervisor',c.id)) + button('Edit company','edit',c.id,u?.uid) + button(c.isActive?'Deactivate company':'Activate company',c.isActive?'deactivateCompany':'activateCompany',c.id) + (u ? button('Add supervisor','addSupervisor',c.id) : '') + button('Archive company','archiveCompany',c.id)}</td></tr>`).join('');
+        const counts = [companies.length,companies.filter(c=>c.isActive).length,companies.filter(c=>!c.isActive).length,companies.reduce((sum,c)=>sum+c.supervisors.length,0)];
+        all('.companies-stats article > strong').forEach((element,i)=>element.textContent=counts[i]);
+        const archived=companies.filter(c=>c.isArchived).length;
+        document.querySelector('.companies-stats article small').textContent=archived ? `${archived} archived / ${companies.length-archived} current` : 'All university partners';
+        document.querySelector('.companies-empty').hidden = rows.length > 0;
+        text('companyEmptyTitle',companies.length ? 'No matching companies' : 'Your next partnership starts here');
+        text('companyEmptyMessage',companies.length ? 'Change the filters or add a company.' : 'Add a company and its first supervisor to get started.');
+        text('companyPageSummary',`${rows.length} records · Page ${page+1} / ${pages}`);
+        text('companyPageNumber',`${page+1} / ${pages}`);
+        by('companyPrevious').disabled = page === 0; by('companyNext').disabled = page >= pages-1;
+        working(busy);
+    }
+    const fields = {name:'companyName',industry:'industry',email:'officialEmail',phone:'companyPhone',website:'companyWebsite',address:'companyAddress',description:'companyDescription',supervisorName:'supervisorName',supervisorEmail:'supervisorEmail',supervisorPhone:'supervisorPhone'};
+    function editor(c = null, u = null, resume = false) {
+        selected=c; supervisor=u;
+        let initial = {...(c || {}),supervisorName:u?.fullName,supervisorEmail:u?.email,supervisorPhone:u?.phone};
+        if (resume && c.pendingForm) initial = Object.fromEntries(Object.entries(c.pendingForm).map(([key,v])=>[key[0].toLowerCase()+key.slice(1),v]));
+        formId = c?.id || guid(); requestId = resume ? initial.requestId : guid(); formVersion=c?.revision || ''; editingUid = resume ? initial.supervisorUid || '' : u?.uid || '';
+        Object.entries(fields).forEach(([key,id])=>by(id).value=initial[key] || '');
+        text('editorTitle',resume ? 'Resume company setup' : c ? u ? 'Edit company & supervisor' : 'Add company supervisor' : 'Add company & supervisor');
+        text('editorNotice','Enter company details manually. New supervisors receive a temporary password here; no email is sent.');
+        text('companyValidation',''); by('saveCompany').disabled=false; by('saveCompany').textContent=c ? 'Save changes' : 'Create company'; open('companyEditor');
+    }
+    function valid() { return [...by('companyEditor').querySelectorAll('input,textarea,select')].every(field=>field.reportValidity()); }
+    async function save() {
+        if (busy || !valid()) return;
+        working(true); text('companyValidation','Saving…');
+        try {
+            const form={id:formId,requestId,version:formVersion,supervisorUid:editingUid}; Object.entries(fields).forEach(([key,id])=>form[key]=value(id));
+            const result=await api('save',{form}); close('companyEditor'); notice(result.message); if(result.temporaryPassword) credentials(result); await load();
+        } catch(error) { text('companyValidation',error.message); }
+        finally {working(false);}
+    }
+    function target(c,u) {
+        document.querySelectorAll('.companies-account-target').forEach(element=>{
+            element.querySelector('strong').textContent=u?.fullName || c.name;
+            element.querySelector('p').textContent=u?.email || c.email || 'Company record';
+            const badge=element.querySelector('.companies-badge'); if(badge)badge.textContent=accountStatus(u);
+        });
+    }
+    function actions(c,u) {
+        selected=c;supervisor=u;target(c,u);text('accountTitle',u.fullName);
+        const pendingSetup=u.accountSetupStatus==='pending'||u.deletionStatus==='pending';
+        by('accountPreview').querySelector('[data-account-action="enable"]').disabled=u.isActive||pendingSetup;
+        by('accountPreview').querySelector('[data-account-action="disable"]').disabled=!u.isActive||pendingSetup;
+        open('accountPreview');
+    }
+    function confirmation(action,c,u) {
+        selected=c;supervisor=u;pending=action;target(c,u);by('companyCredentials').hidden=true;
+        const labels={disable:'Disable supervisor?',enable:'Enable supervisor?',delete:'Delete supervisor account?',activateCompany:'Activate company?',deactivateCompany:'Deactivate company?',archiveCompany:'Archive company?',restoreCompany:'Restore company?'};
+        text('confirmationTitle',labels[action]||'Company details');
+        let message={disable:'Disable this supervisor login in Firebase. The company and other supervisors stay unchanged.',enable:'Enable this supervisor login in Firebase.',delete:'Permanently delete this supervisor login and users profile. The company, other supervisors and internship history will remain.',activateCompany:'Mark the company as active. Supervisor login statuses stay unchanged.',deactivateCompany:'Mark the company as inactive. Supervisor login statuses stay unchanged.',archiveCompany:'Archive this company and disable all its linked supervisor logins. Company records and internship history will be retained. You can restore the company later.',restoreCompany:'Restore this company as inactive. Supervisor accounts stay disabled until you enable them individually.'}[action];
+        if(action==='details') message=[c.name,c.industry,c.email,c.phone,c.website,c.address,c.description,`Supervisor: ${u.fullName}`,u.email,u.phone,`Account: ${accountStatus(u)}`,`First-login password change: ${u.mustChangePassword?'Required':'No'}`].filter(Boolean).join('\n');
+        text('confirmationDescription',message);by('confirmAccountAction').hidden=action==='details';by('confirmAccountAction').disabled=false;
+        by('confirmAccountAction').textContent=action==='delete'?'Delete account':'Confirm';open('accountConfirmation');
+    }
+    function credentials(result) {
+        pending='';text('confirmationTitle','Sign-in details');text('confirmationDescription',result.message+' Copy the password before closing; it cannot be viewed again.');by('confirmAccountAction').hidden=true;
+        document.querySelector('#accountConfirmation .companies-account-target strong').textContent='Supervisor sign-in';
+        document.querySelector('#accountConfirmation .companies-account-target p').textContent=result.email;
+        text('companyCopyStatus','');
+        by('companyCredentialEmail').value=result.email;by('companyCredentialPassword').value=result.temporaryPassword;by('companyCredentials').hidden=false;open('accountConfirmation');
+    }
+    all('[data-open="addCompany"]').forEach(button=>button.addEventListener('click',()=>editor()));
+    document.querySelector('[data-open="accountPreview"]').addEventListener('click',()=>notice('Choose Actions beside a supervisor in the directory.'));
+    by('companyRows').addEventListener('click',event=>{
+        const button=event.target.closest('[data-company-action]');if(!button||busy)return;
+        const c=companies.find(c=>c.id===button.dataset.company),u=c?.supervisors.find(u=>u.uid===button.dataset.uid);if(!c)return;
+        switch(button.dataset.companyAction){case 'resume':editor(c,u,true);break;case 'edit':editor(c,u);break;case 'addSupervisor':editor(c);break;case 'actions':actions(c,u);break;default:confirmation(button.dataset.companyAction,c,null);}
+    });
+    all('[data-account-action]').forEach(button=>button.addEventListener('click',()=>{
+        close('accountPreview'); if(button.dataset.accountAction==='edit')editor(selected,supervisor);else confirmation(button.dataset.accountAction,selected,supervisor);
+    }));
+    by('confirmAccountAction').addEventListener('click',async()=>{
+        if(busy||!pending)return;working(true);
+        try{const result=await api(pending,{companyId:selected.id,uid:supervisor?.uid||''});close('accountConfirmation');notice(result.message);if(result.temporaryPassword)credentials(result);await load();}
+        catch(error){text('confirmationDescription',error.message);}
+        finally{working(false);}
+    });
+    by('backToActions').addEventListener('click',()=>close('accountConfirmation'));
+    by('copyCompanyPassword').addEventListener('click',async()=>{
+        try{await navigator.clipboard.writeText(by('companyCredentialPassword').value);text('companyCopyStatus','Copied.');}
+        catch{by('companyCredentialPassword').select();text('companyCopyStatus','Press Ctrl+C to copy.');}
+    });
+    by('saveCompany').addEventListener('click',save);
+    by('validateCompany').addEventListener('click',()=>{if(valid())text('companyValidation','Fields look valid. Save to create or update the company.');});
+    ['companySearch','companyStatus','accountStatus','companySort','companyPageSize'].forEach(id=>by(id).addEventListener(id==='companySearch'?'input':'change',()=>{page=0;render();}));
+    by('resetCompanyFilters').addEventListener('click',()=>{['companySearch','companyStatus','accountStatus','dashboardSearch'].forEach(id=>by(id).value='');by('companySort').selectedIndex=0;page=0;render();});
+    by('companyPrevious').addEventListener('click',()=>{page--;render();});by('companyNext').addEventListener('click',()=>{page++;render();});
+    by('refreshCompanies').addEventListener('click',()=>load().then(()=>notice('Directory refreshed.')).catch(error=>notice(error.message,true)));
+    const search=by('dashboardSearch');search.dataset.searchTarget='companySearch';
+    search.addEventListener('input',()=>{by('companySearch').value=search.value;page=0;render();});
+    document.forms[0].addEventListener('submit',event=>{event.preventDefault();if(by('companyEditor').open)save();});
+    load().then(()=>notice('Directory connected. Add companies manually; temporary passwords are shown here and no email is sent.')).catch(error=>notice(error.message,true));
 })();

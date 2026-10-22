@@ -17,7 +17,7 @@ namespace University_Internship_Management_System.Shared
         private readonly string apiKey;
 
         public FirebaseAuthService()
-            : this(SharedClient, Environment.GetEnvironmentVariable("FIREBASE_API_KEY"))
+            : this(SharedClient, FirebaseSignInService.ApiKey())
         {
         }
 
