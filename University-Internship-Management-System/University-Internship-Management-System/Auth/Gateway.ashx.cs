@@ -53,6 +53,36 @@ namespace University_Internship_Management_System.Auth
                     Write(context, new { success = true });
                     return;
                 }
+
+
+
+                if(action=="trainingData"){Write(context,await new TrainingWorkflowService(new FirebaseRealtimeDatabaseRepository(session.IdToken)).LoadAsync(account));return;}
+                if(action=="trainingAction"||action=="trainingImage"){
+                    int limit=action=="trainingImage"?3*1024*1024:512*1024;if(context.Request.ContentLength>limit)throw new ArgumentException("The training request is too large.");
+                    JObject input;using(var reader=new StreamReader(context.Request.InputStream))input=JObject.Parse(await reader.ReadToEndAsync());
+                    var service=new TrainingWorkflowService(new FirebaseRealtimeDatabaseRepository(session.IdToken));
+                    if(action=="trainingImage"){Write(context,await service.ImageAsync(account,(string)input["operation"],input["payload"] as JObject));return;}
+                    var result=await service.ExecuteAsync(account,(string)input["operation"],input["payload"] as JObject);
+                    Write(context,new JObject{["result"]=result,["view"]=await service.LoadAsync(account)});return;
+                }
+                if (action == "applicationSubmit" || action == "applicationReview" || action == "placementConfirm")
+                {
+                    if(context.Request.ContentLength>32768)throw new ArgumentException("The request is too large.");
+                    JObject input;using(var reader=new StreamReader(context.Request.InputStream))input=JObject.Parse(await reader.ReadToEndAsync());
+                    var workflow=new ApplicationWorkflowService(new FirebaseRealtimeDatabaseRepository(session.IdToken));
+                    Write(context,action=="applicationSubmit"?await workflow.ApplyAsync(account,input):
+                        action=="applicationReview"?await workflow.ReviewAsync(account,input):await workflow.ConfirmAsync(account,input));
+                    return;
+                }
+                if (action == "companyOpportunitySave")
+                {
+                    if (account.Role != "company") throw new UnauthorizedAccessException();
+                    if (context.Request.ContentLength > 32768) throw new ArgumentException("The request is too large.");
+                    JObject input;
+                    using (var reader = new StreamReader(context.Request.InputStream)) input = JObject.Parse(await reader.ReadToEndAsync());
+                    Write(context, await new RolePortalService(new FirebaseRealtimeDatabaseRepository(session.IdToken)).SaveOpportunityAsync(account, input));
+                    return;
+                }
                 // Account administration is not exposed through this end-user endpoint.
                 context.Response.StatusCode = 503;
                 Write(context, new { message = "This operation is not available. No account or database changes were made." });
@@ -66,6 +96,12 @@ namespace University_Internship_Management_System.Auth
             {
                 context.Response.StatusCode = 403;
                 Write(context, new { message = "Firebase has not permitted this student operation. The coordinator must review the scoped permissions; no local fallback is used." });
+            }
+
+            catch (AccountConflictException)
+            {
+                context.Response.StatusCode = 409;
+                Write(context, new { message = "This record changed. Reload it before saving again." });
             }
             catch (ArgumentException error)
             {

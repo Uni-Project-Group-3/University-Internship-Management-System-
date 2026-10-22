@@ -2,13 +2,30 @@
 /* Original-page demo bindings. Layout and server controls remain in the ASPX. */
 (function () {
     'use strict';
-    if (!window.UimsLive?.enabled()) return;
+
     let binding;
-    function initialize() {
+    async function initialize() {
         binding?.abort();
         binding = new AbortController();
-        const signal = binding.signal, demo = window.UimsLive;
-        let view = demo.view(), selected = null, render = () => {};
+        const signal=binding.signal;
+        const createButton=document.getElementById('c3Create');
+        const loadingNotice=document.getElementById('pageNotice');
+        if(createButton){createButton.disabled=true;createButton.setAttribute('aria-busy','true');}
+        let view;
+        try{view=await UimsTab.request('trainingData');}
+        catch(error){
+            if(signal.aborted)return;
+            if(loadingNotice){loadingNotice.hidden=false;loadingNotice.textContent=error.message+' Click Create Task to retry loading your authorized workspace.';document.getElementById('cycle3Workspace')?.prepend(loadingNotice);}
+            createButton?.addEventListener('click',event=>{event.preventDefault();initialize();},{once:true,signal});
+            return;
+        }finally{if(!signal.aborted&&createButton){createButton.disabled=false;createButton.removeAttribute('aria-busy');}}
+        if(loadingNotice){loadingNotice.hidden=true;loadingNotice.textContent='';}
+        if(signal.aborted)return;
+        let serverBase=Date.parse(view.serverUtc),clockBase=performance.now();
+        const provider={view:()=>view,current:()=>view.user,now:()=>new Date(serverBase+performance.now()-clockBase).toISOString(),logout:()=>UimsTab.logout(),
+            transaction:async(operation,payload)=>{const response=await UimsTab.request('trainingAction',{operation,payload});view=response.view;serverBase=Date.parse(view.serverUtc);clockBase=performance.now();return response.result;}};
+        let selected=null,render=()=>{};
+        UimsTab.disposeOnIdentityChange(()=>binding.abort());
         if (!view || view.user.mustChangePassword || view.user.role !== document.body.dataset.portal) {
             location.href = '../Auth/Login.aspx';
             return;
@@ -44,7 +61,7 @@
             document.addEventListener('click', event => {
                 const element = event.target.closest('a,button,input');
                 if (element && (/log\s*out/i.test(element.textContent) || /logout/i.test(element.id))) {
-                    event.preventDefault(); event.stopImmediatePropagation(); demo.logout(); location.href = '../Auth/Login.aspx';
+                    event.preventDefault(); event.stopImmediatePropagation(); provider.logout(); location.href = '../Auth/Login.aspx';
                 }
             }, {signal,capture:true});
             all('[id*=Logout],[id*=logout]').forEach(el => el.disabled = false);
@@ -81,10 +98,10 @@
             if(view.user.role==='admin')items.push(view.messages.filter(m=>m.status==='unread').length+' unread contact messages',view.progress.filter(s=>s.placement?.completionStatus==='PendingStudentConfirmation').length+' pending student confirmations');
             let dialog=by('originalNotifications');
             if(!dialog){dialog=document.createElement('dialog');dialog.id='originalNotifications';dialog.className='uims-notifications';dialog.setAttribute('aria-label','Demo notifications');document.forms[0].append(dialog);}
-            dialog.innerHTML='<h2>Notifications · local demo</h2>'+items.map(item=>'<p>'+escape(item)+'</p>').join('')+(items.length?'':'<p>No notifications.</p>')+'<button type="button" data-notification-close>Close</button>';
+            dialog.innerHTML='<h2>Account notifications</h2>'+items.map(item=>'<p>'+escape(item)+'</p>').join('')+(items.length?'':'<p>No notifications.</p>')+'<button type="button" data-notification-close>Close</button>';
             dialog.querySelector('button').onclick=()=>dialog.close();dialog.showModal();
         }
-        all('.topbar button,.dash-topbar button').forEach(el=>{if(!/notification/i.test(el.getAttribute('aria-label')||'')&&!el.querySelector('.bi-bell'))return;el.disabled=false;el.title='Local demo notifications';el.addEventListener('click',event=>{event.preventDefault();event.stopImmediatePropagation();view=demo.view();if(view)notifications();},{signal,capture:true});});
+        all('.topbar button,.dash-topbar button').forEach(el=>{if(!/notification/i.test(el.getAttribute('aria-label')||'')&&!el.querySelector('.bi-bell'))return;el.disabled=false;el.title='Account notifications';el.addEventListener('click',event=>{event.preventDefault();event.stopImmediatePropagation();view=provider.view();if(view)notifications();},{signal,capture:true});});
         shell();
         const company=view.user.role==='company';
         const rich=text=>escape(text).replace(/\*\*([^*]+)\*\*/g,'<strong>$1</strong>').replace(/_([^_]+)_/g,'<em>$1</em>').replace(/\n/g,'<br>');
@@ -183,7 +200,7 @@
     "pending": "Result pending Company review",
     "startExam": "Start Exam",
     "locked": "Exam locked until scheduled start",
-    "ready": "Exam ready · demo clock",
+    "ready": "Exam ready",
     "expired": "Exam availability expired",
     "hidden": "Hidden",
     "published": "Published",
@@ -218,7 +235,7 @@
     "assignedMarks": "Assigned Marks",
     "remainingMarks": "Remaining Marks",
     "image": "Question image (optional)",
-    "imageHint": "Drop JPEG, PNG or WebP here, or choose an image. Maximum 2 MB. Local demo storage only.",
+    "imageHint": "Drop JPEG, PNG or WebP here, or choose an image. Maximum 2 MB. Stored in your authorized Firebase task workspace.",
     "chooseImage": "Choose image",
     "replaceImage": "Replace image",
     "removeImage": "Remove image",
@@ -239,8 +256,10 @@
         const workspaceTimezone='Asia/Amman';
         const validQuestion=q=>!!q.text?.trim()&&q.choices?.length>=2&&q.choices.every(c=>c.trim())&&Number.isInteger(q.correct)&&q.correct>=0&&q.correct<q.choices.length&&Number.isFinite(Number(q.marks))&&Number(q.marks)>0;
         const imageUrlCache=new Map();let imageUploads=0;
-        function imageDatabase(){return new Promise((resolve,reject)=>{const request=indexedDB.open('uims.cycle3.images',1);request.onupgradeneeded=()=>request.result.createObjectStore('images');request.onsuccess=()=>resolve(request.result);request.onerror=()=>reject(Error('Image storage unavailable.'));});}
-        async function imageBlob(id,blob){const db=await imageDatabase();try{return await new Promise((resolve,reject)=>{const tx=db.transaction('images',blob?'readwrite':'readonly'),store=tx.objectStore('images'),request=blob?store.put(blob,id):store.get(id);let result;request.onsuccess=()=>result=request.result;tx.oncomplete=()=>resolve(result);tx.onerror=()=>reject(tx.error);tx.onabort=()=>reject(tx.error);});}finally{db.close();}}
+        const uploadBlobs=new Map();
+        async function imageBlob(id,blob){if(blob){uploadBlobs.set(id,blob);return blob;}if(uploadBlobs.has(id))return uploadBlobs.get(id);
+            const image=await UimsTab.request('trainingImage',{operation:'c3Image',payload:{id}});
+            const bytes=Uint8Array.from(atob(image.data),c=>c.charCodeAt(0));return new Blob([bytes],{type:image.mime});}
         async function hydrateImages(){for(const img of by('c3DialogBody').querySelectorAll('img[data-image-id]')){try{let url=imageUrlCache.get(img.dataset.imageId);if(!url){const blob=await imageBlob(img.dataset.imageId);if(!blob){img.alt='Image not available in this browser';continue;}url=URL.createObjectURL(blob);imageUrlCache.set(img.dataset.imageId,url);}if(img.isConnected)img.src=url;}catch(err){if(img.isConnected)img.alt=err.message;}}}
         function questionImage(q,editable=false){return '<div class="c3-question-media" '+(editable?'data-image-drop="'+q.id+'"':'')+'>'+(q.image?'<img data-image-id="'+escape(q.image.id)+'" alt="'+escape(ui('image'))+'" loading="lazy" /><div class="c3-actions">'+cbutton(ui('viewImage'),'viewImage',q.image.id)+(editable?cbutton(ui('replaceImage'),'pickImage',q.id)+cbutton(ui('removeImage'),'removeImage',q.id):'')+'</div>':editable?'<div class="c3-image-empty"><i class="bi bi-image" aria-hidden="true"></i><p>'+escape(ui('imageHint'))+'</p>'+cbutton(ui('chooseImage'),'pickImage',q.id)+'</div>':'')+(editable?'<input type="file" accept="image/jpeg,image/png,image/webp" data-image-file="'+q.id+'" hidden /><p data-image-error role="alert"></p>':'')+'</div>';}
         async function uploadQuestionImage(file,questionId){
@@ -256,7 +275,8 @@
                 const scale=Math.min(1,1600/Math.max(bitmap.width,bitmap.height)),canvas=document.createElement('canvas');canvas.width=Math.round(bitmap.width*scale);canvas.height=Math.round(bitmap.height*scale);canvas.getContext('2d').drawImage(bitmap,0,0,canvas.width,canvas.height);bitmap.close();
                 const blob=await new Promise(resolve=>canvas.toBlob(resolve,'image/webp',.86));if(!blob)throw Error(ui('imageInvalid'));
                 
-                const image=demo.transaction('c3RegisterImage',{mime:blob.type,size:blob.size,width:canvas.width,height:canvas.height});
+                const dataUrl=await new Promise((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(reader.result);reader.onerror=reject;reader.readAsDataURL(blob);});
+                const image=await UimsTab.request('trainingImage',{operation:'c3RegisterImage',payload:{requestId:wizard.requestId,data:String(dataUrl).split(',')[1]}});
                 await imageBlob(image.id,blob);syncWizard();wizard.exam.questions.find(item=>item.id===questionId).image=image;wizardScreen();modified=true;
             }catch(err){status.textContent=err.message;}finally{imageUploads--;by('c3DialogActions').querySelectorAll('button').forEach(el=>el.disabled=imageUploads>0);}
         }
@@ -274,8 +294,9 @@
         const initials=name=>(name||'?').split(' ').slice(0,2).map(x=>x[0]).join('');
         const getValue=name=>by('c3DialogBody').querySelector('[name="'+name+'"]')?.value||'';
         const lines=text=>text.split('\n').map(s=>s.trim()).filter(Boolean);
-        function refresh(){view=demo.view();if(!view||view.user.mustChangePassword){location.href='../Auth/Login.aspx';return false;}return true;}
-        function act(action,payload){const result=demo.transaction(action,payload);refresh();render();return result;}
+        function refresh(){view=provider.view();if(!view||view.user.mustChangePassword){location.href='../Auth/Login.aspx';return false;}return true;}
+        let actionQueue=Promise.resolve();
+        function act(action,payload){const operation=async()=>{const result=await provider.transaction(action,payload);refresh();render();return result;};const pending=actionQueue.then(operation);actionQueue=pending.catch(()=>{});return pending;}
         function showError(err){by('c3Error').hidden=false;by('c3Error').textContent=err.message;by('c3Error').scrollIntoView({block:'nearest'});}
         function modal(title,html,buttons,newMode=mode){
             const dialog=by('c3Dialog');if(!dialog.open)opener=document.activeElement;
@@ -312,8 +333,8 @@
             if(company&&by('c3Group').checked){const groups=new Map();tasks.forEach(t=>{const key=(t.groupId||t.id)+':'+t.status;if(!groups.has(key))groups.set(key,[]);groups.get(key).push(t);});tasks=[...groups.values()].map(items=>({...items[0],members:items}));}
             by('taskList').classList.toggle('c3-list',list);
             by('taskList').innerHTML=labels().map(([status,label])=>{const records=tasks.filter(t=>t.status===status);return '<section class="c3-column" data-status="'+status+'" aria-label="'+escape(label)+'"><h2>'+escape(label)+' '+badge(records.length)+'</h2>'+records.map(t=>{
-                const g=groupOf(t),overdue=t.status!=='completed'&&Date.parse(t.deadline)<Date.parse(demo.now()),completed=t.checklist?.filter(c=>c.done).length||0;
-                return '<article class="c3-card" draggable="'+(!t.members&&['assigned','in-progress'].includes(t.status))+'" data-task="'+t.id+'"><div class="c3-actions">'+badge(ui(t.priority||'medium'),t.priority||'medium')+badge(ui('week')+' '+(t.week||1))+'</div><h3>'+escape(t.title)+'</h3><p>'+escape(date(t.deadline))+'</p>'+(overdue?badge(ui('overdue'),'high'):'')+(g?.exam?' '+badge(ui('exam')):'')+(g?.attachments.length?' '+badge('↗ '+g.attachments.length):'')+(t.status==='completed'?' '+badge(ui(t.gradePublished||!t.groupId?'published':'hidden')):'')+'<p>'+escape(t.members?t.members.length+' '+ui('student'):studentName(t.studentId))+'</p><p>☑ '+completed+' / '+(t.checklist?.length||0)+(t.readAt||company?'':' · '+ui('unread'))+'</p><div class="c3-actions"><span class="c3-initials">'+escape(initials(studentName(t.studentId)))+'</span>'+cbutton(ui('view'),'details',t.id)+ (company?cbutton(ui('results'),'results',t.groupId||t.id):'')+'</div></article>';
+                const g=groupOf(t),overdue=t.status!=='completed'&&Date.parse(t.deadline)<Date.parse(provider.now()),completed=t.checklist?.filter(c=>c.done).length||0;
+                return '<article class="c3-card" draggable="'+(!t.members&&['assigned','in-progress'].includes(t.status))+'" data-task="'+t.id+'"><div class="c3-actions">'+badge(ui(t.priority||'medium'),t.priority||'medium')+badge(ui('week')+' '+(t.week||1))+'</div><h3>'+escape(t.title)+'</h3><p>'+escape(date(t.deadline))+'</p>'+(overdue?badge(ui('overdue'),'high'):'')+(g?.exam?' '+badge(ui('exam')):'')+(g?.attachments?.length?' '+badge('↗ '+g.attachments.length):'')+(t.status==='completed'?' '+badge(ui(t.gradePublished||!t.groupId?'published':'hidden')):'')+'<p>'+escape(t.members?t.members.length+' '+ui('student'):studentName(t.studentId))+'</p><p>☑ '+completed+' / '+(t.checklist?.length||0)+(t.readAt||company?'':' · '+ui('unread'))+'</p><div class="c3-actions"><span class="c3-initials">'+escape(initials(studentName(t.studentId)))+'</span>'+cbutton(ui('view'),'details',t.id)+ (company?cbutton(ui('results'),'results',t.groupId||t.id):'')+'</div></article>';
             }).join('')+(!records.length?'<p class="c3-empty">'+escape(ui('empty'))+'</p>':'')+'</section>';}).join('');
             by('noTasksMsg').hidden=tasks.length>0;
         };
@@ -342,16 +363,23 @@
                 }
             }
             if(step===3&&wizard.exam){wizard.exam.questions=[...by('c3DialogBody').querySelectorAll('[data-question]')].map(el=>({id:el.dataset.question,type:el.querySelector('[data-qtype]').value,text:el.querySelector('[data-qtext]').value,marks:Number(el.querySelector('[data-qmarks]').value),choices:[...el.querySelectorAll('[data-choice]')].map(c=>c.value),correct:Number(el.querySelector('input[type=radio]:checked')?.value??-1),image:wizard.exam.questions.find(q=>q.id===el.dataset.question)?.image||null}));}
+            syncExamTotals();
+        }
+        function syncExamTotals(){
+            if(!wizard?.exam)return;
+            wizard.exam.questionCount=wizard.exam.questions.length;
+            wizard.exam.totalMarks=Number(wizard.exam.questions.reduce((sum,q)=>sum+(Number(q.marks)||0),0).toFixed(6));
         }
         const ammanInput=iso=>iso?new Intl.DateTimeFormat('sv-SE',{timeZone:'Asia/Amman',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hour12:false}).format(new Date(iso)).replace(' ','T'):'';
         const selectField=(name,label,val,records)=>'<label class="c3-field">'+escape(ui(label))+'<select name="'+name+'">'+records.map(([id,label])=>'<option value="'+id+'"'+(String(val)===id?' selected':'')+'>'+escape(label)+'</option>').join('')+'</select></label>';
         function wizardScreen(){
+            syncExamTotals();
             const activeSteps=wizard.exam?[0,1,2,3,4]:[0,1,2,4];
             let body='<nav class="c3-steps" aria-label="'+escape(ui('newTask'))+'">'+['info','assign','settings','questions','summary'].map((key,index)=>'<span class="'+(index===step?'active':'')+(index===3&&!wizard.exam?' optional':'')+'" '+(index===step?'aria-current="step"':'')+'><b>'+(index+1)+'</b>'+escape(ui(key))+'</span>').join('')+'</nav>';
             const dates=(prefix,stamp,opening)=>{const local=ammanInput(stamp).split('T');return field(prefix+'_date',opening?'openingDate':'closingDate',local[0]||'','date','required')+field(prefix+'_time',opening?'openingTime':'closingTime',local[1]||'','time','required');};
             if(step===0)body+='<div class="c3-studio-intro"><span class="c3-studio-icon"><i class="bi bi-clipboard-check" aria-hidden="true"></i></span><div><h3>'+escape(ui('info'))+'</h3><p>'+escape('A clear brief and a focused availability window.')+'</p></div></div><div class="c3-grid c3-task-fields">'+field('title','title',wizard.title,'text','required maxlength="160"')+field('description','description',wizard.description,'textarea','maxlength="3000"')+'<div class="c3-window-group">'+dates('open',wizard.opensAt,true)+dates('close',wizard.closesAt,false)+'</div></div>';
             if(step===1)body+='<input id="c3TraineeSearch" type="search" placeholder="'+escape(ui('allStudents'))+'" aria-label="'+escape(ui('student'))+'" /><div class="c3-actions">'+cbutton(ui('selectAll'),'selectAll')+cbutton(ui('clearSelection'),'clearSelection')+'</div><div id="c3SelectedChips" class="c3-chips"></div><div class="c3-trainees">'+available.map(p=>'<label data-trainee-label="'+escape((p.name+' '+p.universityId).toLowerCase())+'"><input type="checkbox" data-student="'+p.id+'" '+(wizard.studentIds.includes(p.id)?'checked':'')+' /><span class="c3-initials">'+escape(initials(p.name))+'</span><span>'+escape(p.name)+'<small>'+escape(p.universityId+' · '+p.department)+'</small></span></label>').join('')+'</div>'+(!available.length?'<p>'+escape(ui('noData'))+'</p>':'');
-            if(step===2){const e=wizard.exam||wizard.examDraft||{title:'',questionCount:1,totalMarks:100,passing:50,duration:30,attempts:1,questions:[]},local=ammanInput(e.startsAt).split('T');body+='<label class="c3-exam-toggle"><input type="checkbox" id="c3IncludeExam" '+(wizard.exam?'checked':'')+' /><span><strong>'+escape(ui('includeExam'))+'</strong><small>'+escape(ui('examPolicyNote'))+'</small></span></label><div id="c3ExamFields" '+(!wizard.exam?'hidden':'')+'><div class="c3-grid">'+field('exam_title','examTitle',e.title,'text','required')+field('exam_duration','duration',e.duration,'number','min="1" max="240" required')+field('exam_date','openingDate',local[0]||'','date','required')+field('exam_time','openingTime',local[1]||'','time','required')+field('exam_questionCount','count',e.questionCount,'number','min="1" max="100" required')+field('exam_totalMarks','marks',e.totalMarks,'number','min="1" required')+field('exam_passing','passing',e.passing,'number','min="1" max="100" required')+field('exam_attempts','attempts',e.attempts,'number','min="1" max="5" required')+'</div><label class="c3-extend"><input type="checkbox" id="c3ExtendExam" '+(wizard.allowExamAfterClosing?'checked':'')+' />'+escape(ui('extendExam'))+'</label></div>';}
+            if(step===2){const e=wizard.exam||wizard.examDraft||{title:'',questionCount:1,totalMarks:100,passing:50,duration:30,attempts:1,questions:[]},local=ammanInput(e.startsAt).split('T');body+='<label class="c3-exam-toggle"><input type="checkbox" id="c3IncludeExam" '+(wizard.exam?'checked':'')+' /><span><strong>'+escape(ui('includeExam'))+'</strong><small>'+escape(ui('examPolicyNote'))+'</small></span></label><div id="c3ExamFields" '+(!wizard.exam?'hidden':'')+'><div class="c3-grid">'+field('exam_title','examTitle',e.title,'text','required')+field('exam_duration','duration',e.duration,'number','min="1" max="240" required')+field('exam_date','openingDate',local[0]||'','date','required')+field('exam_time','openingTime',local[1]||'','time','required')+field('exam_questionCount','count',e.questions.length,'number','readonly aria-label="Question count calculated from questions"')+field('exam_totalMarks','marks',e.totalMarks,'number','readonly aria-label="Total marks calculated from questions"')+field('exam_passing','passing',e.passing,'number','min="1" max="100" required')+field('exam_attempts','attempts',e.attempts,'number','min="1" max="5" required')+'</div><label class="c3-extend"><input type="checkbox" id="c3ExtendExam" '+(wizard.allowExamAfterClosing?'checked':'')+' />'+escape(ui('extendExam'))+'</label></div>';}
             if(step===3)body+=questionBuilder();
             if(step===4)body+=summaryHtml(wizard);
             body='<div class="c3-studio-meta"><span>'+escape(company?view.user.name:'')+'</span><span>Jordan Time (UTC+3)</span></div>'+body;
@@ -361,25 +389,25 @@
         function updateChips(){by('c3SelectedChips').innerHTML=[...by('c3DialogBody').querySelectorAll('[data-student]:checked')].map(el=>badge(studentName(el.dataset.student))).join('');}
         function questionBuilder(){
             const e=wizard.exam,completed=e.questions.filter(validQuestion).length,assigned=e.questions.reduce((sum,q)=>sum+(Number(q.marks)||0),0);
-            const metrics=[[ui('completedQuestions'),completed],[ui('remainingQuestions'),Math.max(0,Number(e.questionCount)-completed)],[ui('assignedMarks'),assigned],[ui('remainingMarks'),Number(e.totalMarks)-assigned]];
+            const metrics=[[ui('count'),e.questions.length],[ui('completedQuestions'),completed],['Incomplete Questions',e.questions.length-completed],[ui('assignedMarks'),assigned]];
             return '<div class="c3-builder-summary">'+metrics.map(([label,n])=>'<div><small>'+escape(label)+'</small><strong>'+n+'</strong></div>').join('')+'</div><div class="c3-builder-tools">'+cbutton(ui('addQuestion'),'addQuestion')+cbutton(ui('preview'),'previewExam')+'</div>'+e.questions.map((q,index)=>'<article class="c3-question" data-question="'+q.id+'"><div class="c3-question-top"><span class="c3-question-number">'+(index+1)+'</span><strong>'+escape(ui('questionOf'))+' '+(index+1)+' '+escape(ui('of'))+' '+e.questionCount+'</strong><div class="c3-actions">'+cbutton(ui('duplicate'),'duplicateQuestion',q.id)+cbutton('↑','questionUp',q.id)+cbutton('↓','questionDown',q.id)+cbutton(ui('delete'),'deleteQuestion',q.id)+'</div></div><div class="c3-question-layout"><div><label class="c3-field">'+escape(ui('type'))+'<select data-qtype><option value="mcq" '+(q.type==='mcq'?'selected':'')+'>'+escape(ui('mcq'))+'</option><option value="tf" '+(q.type==='tf'?'selected':'')+'>'+escape(ui('tf'))+'</option></select></label><label class="c3-field">'+escape(ui('questionText'))+'<textarea data-qtext required placeholder="'+escape(ui('questionText'))+'">'+escape(q.text)+'</textarea></label><label class="c3-field">'+escape(ui('questionMarks'))+'<input data-qmarks type="number" min="0.01" step="0.01" value="'+q.marks+'" required /></label></div>'+questionImage(q,true)+'</div><div class="c3-options"><small>'+escape(ui('correct'))+'</small>'+q.choices.map((c,i)=>'<div class="c3-choice-row"><label class="c3-choice"><input type="radio" name="correct_'+q.id+'" aria-label="'+escape(ui('correct'))+' '+(i+1)+'" value="'+i+'" '+(q.correct===i?'checked':'')+' /><span>'+String.fromCharCode(65+i)+'</span><input type="text" data-choice value="'+escape(c)+'" '+(q.type==='tf'?'readonly':'')+' aria-label="'+escape(ui('choice'))+' '+(i+1)+'" required /></label>'+(q.type==='mcq'?'<button type="button" data-c3="removeChoice" data-id="'+q.id+':'+i+'" aria-label="'+escape(ui('removeOption'))+'" '+(q.choices.length<=2?'disabled':'')+'>×</button>':'')+'</div>').join('')+(q.type==='mcq'?cbutton(ui('addChoice'),'addChoice',q.id):'')+'</div><p class="c3-question-error" data-question-error role="status">'+(!validQuestion(q)?escape(ui('questionInvalid')):'')+'</p></article>').join('');
         }
         function updateBuilderMetrics(){
             if(mode!=='wizard'||step!==3)return;syncWizard();const e=wizard.exam,done=e.questions.filter(validQuestion).length,marks=e.questions.reduce((sum,q)=>sum+(Number(q.marks)||0),0);
-            const values=[done,Math.max(0,Number(e.questionCount)-done),marks,Number(e.totalMarks)-marks];by('c3DialogBody').querySelectorAll('.c3-builder-summary strong').forEach((el,index)=>el.textContent=values[index]);
+            const values=[e.questions.length,done,e.questions.length-done,marks];by('c3DialogBody').querySelectorAll('.c3-builder-summary strong').forEach((el,index)=>el.textContent=values[index]);
             by('c3DialogBody').querySelectorAll('[data-question]').forEach(el=>{const q=e.questions.find(q=>q.id===el.dataset.question);el.querySelector('[data-question-error]').textContent=validQuestion(q)?'':ui('questionInvalid');});
         }
         function validateStudio(){
             if(!wizard.opensAt||!wizard.closesAt||Date.parse(wizard.opensAt)>=Date.parse(wizard.closesAt))throw Error(ui('windowInvalid'));
             if(wizard.exam&&step>=2){const e=wizard.exam;if(!e.startsAt||Date.parse(e.startsAt)<Date.parse(wizard.opensAt)||Date.parse(e.startsAt)>=Date.parse(wizard.closesAt)||!wizard.allowExamAfterClosing&&Date.parse(e.endsAt)>Date.parse(wizard.closesAt))throw Error(ui('examWindowInvalid'));
-                if(step>=3&&(e.questions.length!==Number(e.questionCount)||e.questions.some(q=>!validQuestion(q))||Math.abs(e.questions.reduce((sum,q)=>sum+Number(q.marks),0)-Number(e.totalMarks))>0.00001)){
-                    by('c3DialogBody').querySelectorAll('[data-question]').forEach(el=>{const q=e.questions.find(q=>q.id===el.dataset.question);el.querySelector('[data-question-error]').textContent=validQuestion(q)?'':ui('questionInvalid');});throw Error(ui('marksInvalid'));
+                if(step>=3&&(!e.questions.length||e.questions.length>100||e.questions.some(q=>!validQuestion(q)))){
+                    by('c3DialogBody').querySelectorAll('[data-question]').forEach(el=>{const q=e.questions.find(q=>q.id===el.dataset.question);el.querySelector('[data-question-error]').textContent=validQuestion(q)?'':ui('questionInvalid');});throw Error(!e.questions.length?'Add at least one question.':e.questions.length>100?'An exam supports up to 100 questions.':'Complete each question, enter positive marks and select one correct answer.');
                 }
             }
         }
         function summaryHtml(g){return '<div class="c3-publish-summary"><span class="c3-studio-icon"><i class="bi bi-check2-circle" aria-hidden="true"></i></span><h3>'+escape(g.title)+'</h3><p>'+escape(g.description||'')+'</p><dl><div><dt>'+escape(ui('student'))+'</dt><dd>'+g.studentIds.length+'</dd></div><div><dt>'+escape(ui('openingDate'))+'</dt><dd>'+escape(date(g.opensAt))+'</dd></div><div><dt>'+escape(ui('closingDate'))+'</dt><dd>'+escape(date(g.closesAt))+'</dd></div></dl></div>'+(g.exam?'<div class="c3-panel"><h3>'+escape(g.exam.title)+'</h3><p>'+g.exam.questions.length+' '+escape(ui('questions'))+' · '+g.exam.totalMarks+' '+escape(ui('marks'))+' · '+g.exam.duration+' '+escape(ui('duration'))+'</p><p>'+escape(date(g.exam.startsAt))+' — '+escape(date(g.exam.endsAt))+' · '+g.exam.passing+'%</p>'+(g.allowExamAfterClosing?'<p>'+escape(ui('extendExam'))+'</p>':'')+'</div>':'<p>'+escape(ui('noExam'))+'</p>');}
-        function openDetails(id,selectedTab='overview'){
-            refresh();targetId=id;tab=selectedTab;const t=currentTask();if(!t)throw Error('Assignment unavailable.');if(!company)act('c3Read',{id});const g=groupOf(t),attempt=view.examAttempts.filter(a=>a.taskId===id).at(-1);
+        async function openDetails(id,selectedTab='overview'){
+            refresh();targetId=id;tab=selectedTab;const t=currentTask();if(!t)throw Error('Assignment unavailable.');if(!company)await act('c3Read',{id});const g=groupOf(t),attempt=view.examAttempts.filter(a=>a.taskId===id).at(-1);
             let content='';
             if(tab==='overview')content='<div class="c3-panel">'+(t.opensAt?'<p>'+escape(ui('openingDate'))+': '+escape(date(t.opensAt))+' · '+escape(ui('closingDate'))+': '+escape(date(t.closesAt))+'</p>':'')+'<p>'+rich(t.description)+'</p><p>'+escape(ui('student'))+': '+escape(studentName(t.studentId))+'</p><p>'+escape(view.companies.find(c=>c.id===t.companyId)?.name)+' · '+escape(studentName(t.assignedBy||view.users.find(u=>u.role==='company'&&u.companyId===t.companyId)?.id))+'</p><p>'+escape(ui('deadline'))+': '+escape(date(t.deadline))+' · '+escape(ui('week'))+' '+(t.week||1)+'</p><p>'+escape(t.criteria)+'</p><p>'+escape(ui('practical'))+': '+(t.score===undefined?'—':escape(t.score)+' / '+t.maximum)+'</p><p>'+escape(t.feedback||'')+'</p></div>'+submissionHistory(t);
             if(tab==='checklist')content=(t.checklist||[]).map((c,index)=>'<label class="c3-answer"><input type="checkbox" data-check-index="'+index+'" '+(c.done?'checked':'')+' '+(company?'disabled':'')+' />'+escape(c.text)+'</label>').join('')||'<p>'+escape(ui('noData'))+'</p>';
@@ -387,8 +415,8 @@
             if(tab==='comments')content='<ol class="c3-history">'+view.taskActivity.filter(a=>a.taskId===id&&a.message).map(a=>'<li><strong>'+escape(studentName(a.authorId))+'</strong> · '+escape(date(a.at))+'<p>'+escape(a.message)+'</p></li>').join('')+'</ol>'+field('comment','comments','','textarea')+cbutton(ui('saveComment'),'comment');
             if(tab==='activity')content='<ol class="c3-history">'+view.taskActivity.filter(a=>a.taskId===id).map(a=>'<li>'+escape(date(a.at))+' · '+escape(a.message)+'</li>').join('')+'</ol>';
             if(tab==='exam')content=examPanel(t,g,attempt);
-            if(!company&&(t.opensAt&&Date.parse(demo.now())<Date.parse(t.opensAt)||t.closesAt&&Date.parse(demo.now())>=Date.parse(t.closesAt)))content+='<p class="c3-window-notice">'+escape(ui('taskLocked'))+'</p>';
-            const tools=!company&&(!t.opensAt||Date.parse(demo.now())>=Date.parse(t.opensAt))&&(!t.closesAt||Date.parse(demo.now())<Date.parse(t.closesAt))&&['assigned','in-progress','revision'].includes(t.status)?(t.status==='assigned'?cbutton(ui('start'),'startWork',id):'')+cbutton(ui('submitWork'),'submission',id,true):company&&t.status==='submitted'?cbutton(ui('reviewWork'),'review',id,true):'';
+            if(!company&&(t.opensAt&&Date.parse(provider.now())<Date.parse(t.opensAt)||t.closesAt&&Date.parse(provider.now())>=Date.parse(t.closesAt)))content+='<p class="c3-window-notice">'+escape(ui('taskLocked'))+'</p>';
+            const tools=!company&&(!t.opensAt||Date.parse(provider.now())>=Date.parse(t.opensAt))&&(!t.closesAt||Date.parse(provider.now())<Date.parse(t.closesAt))&&['assigned','in-progress','revision'].includes(t.status)?(t.status==='assigned'?cbutton(ui('start'),'startWork',id):'')+cbutton(ui('submitWork'),'submission',id,true):company&&t.status==='submitted'?cbutton(ui('reviewWork'),'review',id,true):'';
             modal(t.title,'<div class="c3-tabs">'+['overview','checklist','attachments','exam','comments','activity'].map(key=>'<button type="button" class="'+(tab===key?'active':'')+'" data-c3="tab" data-id="'+key+'">'+escape(ui(key))+'</button>').join('')+'</div>'+content,cbutton(ui('cancel'),'dismiss')+tools,'details');
         }
         function submissionHistory(t){return '<h3>'+escape(ui('history'))+'</h3>'+view.submissions.filter(s=>s.taskId===t.id).map(s=>'<div class="c3-panel"><small>'+escape(date(s.createdAt))+'</small><p>'+escape(s.description)+'</p><p>'+escape(s.fileName)+'</p>'+(s.link&&/^https?:\/\//i.test(s.link)?'<a href="'+escape(s.link)+'" target="_blank" rel="noopener noreferrer">'+escape(s.link)+'</a>':'')+'</div>').join('');}
@@ -397,7 +425,7 @@
             refresh();const t=currentTask(),attempt=view.examAttempts.filter(a=>a.taskId===t.id&&a.status==='active').at(-1);
             if(!attempt){openDetails(t.id,'exam');return;}
             const questions=attempt.questions;questionIndex=Math.max(0,Math.min(questionIndex,questions.length-1));const q=questions[questionIndex];
-            modal(groupOf(t).exam.title,'<div class="c3-actions"><span>'+escape(ui('question'))+' '+(questionIndex+1)+' / '+questions.length+'</span><strong class="c3-countdown" id="c3AttemptTimer"></strong></div><div class="c3-exam-layout"><nav class="c3-navigator" aria-label="Questions">'+questions.map((q,i)=>'<button type="button" data-c3="goQuestion" data-id="'+i+'" class="'+(attempt.answers[q.id]!==undefined?'answered ':'')+(i===questionIndex?'active':'')+'">'+(i+1)+'</button>').join('')+'</nav><section><h3>'+escape(q.text)+'</h3>'+questionImage(q)+badge(q.marks+' '+ui('marks'))+q.choices.map((choice,i)=>'<label class="c3-answer"><input type="radio" name="examAnswer" data-answer="'+i+'" data-question-id="'+q.id+'" '+(attempt.answers[q.id]===i?'checked':'')+' />'+escape(choice)+'</label>').join('')+'<p class="c3-muted">'+('Answers are saved to local demo storage as you select them.')+'</p></section></div>',cbutton(ui('back'),'prevQuestion')+cbutton(ui('next'),'nextQuestion')+cbutton(ui('submit'),'submitExam','',true),'exam');
+            modal(groupOf(t).exam.title,'<div class="c3-actions"><span>'+escape(ui('question'))+' '+(questionIndex+1)+' / '+questions.length+'</span><strong class="c3-countdown" id="c3AttemptTimer"></strong></div><div class="c3-exam-layout"><nav class="c3-navigator" aria-label="Questions">'+questions.map((q,i)=>'<button type="button" data-c3="goQuestion" data-id="'+i+'" class="'+(attempt.answers[q.id]!==undefined?'answered ':'')+(i===questionIndex?'active':'')+'">'+(i+1)+'</button>').join('')+'</nav><section><h3>'+escape(q.text)+'</h3>'+questionImage(q)+badge(q.marks+' '+ui('marks'))+q.choices.map((choice,i)=>'<label class="c3-answer"><input type="radio" name="examAnswer" data-answer="'+i+'" data-question-id="'+q.id+'" '+(attempt.answers[q.id]===i?'checked':'')+' />'+escape(choice)+'</label>').join('')+'<p class="c3-muted">'+('Answers are saved to Firebase as you select them.')+'</p></section></div>',cbutton(ui('back'),'prevQuestion')+cbutton(ui('next'),'nextQuestion')+cbutton(ui('submit'),'submitExam','',true),'exam');
         }
         function results(id){refresh();const tasks=view.tasks.filter(t=>t.groupId===id||t.id===id);modal(ui('results'),'<div class="c3-results">'+tasks.map(t=>{const attempts=view.examAttempts.filter(a=>a.taskId===t.id&&a.status==='submitted');return '<article class="c3-result"><span class="c3-initials">'+escape(initials(studentName(t.studentId)))+'</span><h3>'+escape(studentName(t.studentId))+'</h3><p>'+escape(labels().find(([s])=>s===t.status)?.[1])+'</p><p>'+escape(ui('practical'))+': '+(t.score??'—')+' / '+t.maximum+'</p>'+attempts.map(a=>'<p>'+escape(ui('exam'))+': '+a.score+' / '+a.maximum+' · '+a.percentage.toFixed(1)+'% · '+escape(ui(a.passed?'pass':'fail'))+'</p>').join('')+badge(ui(t.gradePublished?'published':'hidden'))+'<div class="c3-actions">'+cbutton(ui('reviewWork'),'review',t.id)+cbutton(ui('publish'),'publish',t.id)+'</div></article>';}).join('')+'</div>',cbutton(ui('cancel'),'dismiss'),'results');}
         function review(id){targetId=id;const t=currentTask(),g=groupOf(t);const attempts=view.examAttempts.filter(a=>a.taskId===id&&a.status==='submitted');modal(ui('reviewWork')+' · '+studentName(t.studentId),submissionHistory(t)+'<div class="c3-panel">'+(t.status==='submitted'?field('score','score',t.score??'','number','min="0" max="'+t.maximum+'" required')+field('feedback','feedback',t.feedback||'','textarea','required'):'<p>'+escape(ui('practical'))+': '+(t.score??'—')+' / '+t.maximum+'</p><p>'+escape(t.feedback||'')+'</p>')+'</div>'+attempts.map(a=>'<div class="c3-panel"><h3>'+escape(g?.exam?.title)+' · '+a.score+' / '+a.maximum+' · '+escape(ui(a.passed?'pass':'fail'))+'</h3><p>'+escape(date(a.submittedAt))+'</p>'+(g?.exam?.questions||[]).map(q=>'<p><strong>'+escape(q.text)+'</strong><br>'+escape(ui('choice'))+': '+escape(q.choices[a.answers[q.id]]??'—')+' · '+escape(ui('correct'))+': '+escape(q.choices[q.correct])+'</p>').join('')+'</div>').join(''),cbutton(ui('cancel'),'dismiss')+(t.status==='submitted'?cbutton(ui('revisionAction'),'requestRevision',id)+cbutton(ui('grade'),'grade',id,true):'')+cbutton(ui('publish'),'publish',id),'review');}
@@ -408,15 +436,15 @@
             pickImage:id=>by('c3DialogBody').querySelector('[data-image-file="'+id+'"]').click(),removeImage:id=>{syncWizard();wizard.exam.questions.find(q=>q.id===id).image=null;wizardScreen();},viewImage:async id=>{const blob=await imageBlob(id);if(!blob)throw Error('Image unavailable.');const image=by('c3ImageViewer');image.querySelector('img').src=URL.createObjectURL(blob);image.showModal();},
             formatBold:()=>formatDescription('**','**'),formatItalic:()=>formatDescription('_','_'),formatBullet:()=>formatDescription('\n- ',''),
             dismiss,details:id=>openDetails(id),tab:key=>openDetails(targetId,key),results,review,
-            startWork:id=>{act('c3Move',{id,status:'in-progress'});openDetails(id);},
+            startWork:async id=>{await act('c3Move',{id,status:'in-progress'});openDetails(id);},
             submission:id=>{targetId=id;const t=currentTask();modal(ui('submitWork')+' · '+t.title,field('work','work','','textarea','required')+field('link','link','','url')+'<label class="c3-field">'+escape(ui('file'))+'<input type="file" id="c3WorkFile" /></label>',cbutton(ui('cancel'),'dismiss')+cbutton(ui('submit'),'submitWork',id,true),'submission');},
-            submitWork:async id=>{if(!getValue('work').trim())throw Error('Describe your submitted work.');if(!await confirmAction(ui('submitWork')+'?'))return;act('submitTask',{id,description:getValue('work'),link:getValue('link'),fileName:by('c3WorkFile').files[0]?.name||''});modified=false;openDetails(id);},
-            comment:()=>{act('c3Comment',{id:targetId,message:getValue('comment')});openDetails(targetId,'comments');},
+            submitWork:async id=>{if(!getValue('work').trim())throw Error('Describe your submitted work.');if(!await confirmAction(ui('submitWork')+'?'))return;await act('submitTask',{id,description:getValue('work'),link:getValue('link'),fileName:by('c3WorkFile').files[0]?.name||''});modified=false;openDetails(id);},
+            comment:async ()=>{await act('c3Comment',{id:targetId,message:getValue('comment')});openDetails(targetId,'comments');},
             previousStep:()=>{syncWizard();step=step===4&&!wizard.exam?2:step-1;wizardScreen();},
             nextStep:()=>{syncWizard();const fields=[...by('c3DialogBody').querySelectorAll('input[required],textarea[required]')].filter(el=>!el.closest('[hidden]'));if(fields.some(el=>!el.reportValidity()))return;if(step===1&&!wizard.studentIds.length)throw Error('Select at least one trainee.');if(step===0||step===2||step===3)validateStudio();step=step===2&&!wizard.exam?4:step+1;wizardScreen();},
             selectAll:()=>{by('c3DialogBody').querySelectorAll('[data-student]').forEach(el=>{if(!el.closest('[hidden]'))el.checked=true;});updateChips();modified=true;},clearSelection:()=>{by('c3DialogBody').querySelectorAll('[data-student]').forEach(el=>el.checked=false);updateChips();modified=true;},
-            saveDraft:()=>{syncWizard();act('c3Create',{...wizard,draft:true});modified=false;by('c3Dialog').close();mode='';},
-            createTask:async()=>{syncWizard();validateStudio();if(!await confirmAction(ui('createAssign')+'?'))return;act('c3Create',{...wizard,draft:false});modified=false;by('c3Dialog').close();mode='';},
+            saveDraft:async ()=>{syncWizard();await act('c3Create',{...wizard,draft:true});modified=false;by('c3Dialog').close();mode='';},
+            createTask:async()=>{syncWizard();validateStudio();if(!await confirmAction(ui('createAssign')+'?'))return;await act('c3Create',{...wizard,draft:false});notice('Task published to Firebase for: '+wizard.studentIds.join(', ')+'.');modified=false;by('c3Dialog').close();mode='';},
             editDraft:id=>beginWizard(view.taskGroups.find(g=>g.id===id)),
             addQuestion:()=>{syncWizard();wizard.exam.questions.push({id:crypto.randomUUID(),type:'mcq',text:'',marks:1,choices:['',''],correct:0});wizardScreen();modified=true;},
             duplicateQuestion:id=>{syncWizard();const q=wizard.exam.questions.find(q=>q.id===id);wizard.exam.questions.push({...JSON.parse(JSON.stringify(q)),id:crypto.randomUUID()});wizardScreen();modified=true;},
@@ -424,18 +452,18 @@
             questionUp:id=>moveQuestion(id,-1),questionDown:id=>moveQuestion(id,1),
             addChoice:id=>{syncWizard();wizard.exam.questions.find(q=>q.id===id).choices.push('');wizardScreen();modified=true;},
             previewExam:()=>{syncWizard();previewBack=step;modal(ui('preview'),'<p class="c3-muted">'+escape('Supervisor preview; this does not create an attempt.')+'</p>'+wizard.exam.questions.map((q,i)=>'<article class="c3-question"><h3>'+(i+1)+'. '+escape(q.text)+'</h3>'+questionImage(q)+q.choices.map(c=>'<p>○ '+escape(c)+'</p>').join('')+'</article>').join(''),cbutton(ui('back'),'backToWizard'),'preview');},backToWizard:()=>{step=previewBack;wizardScreen();modified=true;},
-            startExam:()=>{act('c3StartExam',{id:targetId});questionIndex=0;examScreen();},
+            startExam:async ()=>{await act('c3StartExam',{id:targetId});questionIndex=0;examScreen();},
             goQuestion:id=>{questionIndex=Number(id);examScreen();},prevQuestion:()=>{questionIndex--;examScreen();},nextQuestion:()=>{questionIndex++;examScreen();},
-            submitExam:async()=>{if(!await confirmAction(ui('confirmSubmit')))return;const attempt=view.examAttempts.find(a=>a.taskId===targetId&&a.status==='active');if(!attempt){openDetails(targetId,'exam');return;}act('c3SubmitExam',{id:targetId,attemptId:attempt.id});modified=false;openDetails(targetId,'exam');},
-            requestRevision:async id=>{if(!await confirmAction(ui('revisionAction')+'?'))return;act('reviewTask',{id,status:'revision',feedback:getValue('feedback')});modified=false;openDetails(id);},
-            grade:async id=>{if(!await confirmAction(ui('grade')+'?'))return;act('reviewTask',{id,status:'completed',score:getValue('score'),feedback:getValue('feedback')});modified=false;review(id);},
-            publish:async id=>{if(!await confirmAction(ui('publish')+' · '+studentName(view.tasks.find(t=>t.id===id)?.studentId)+'?'))return;act('c3Publish',{id});modified=false;review(id);},
-            reportPreview:()=>{by('c3ReportPreview').innerHTML=reportPreview();},sendReport:async()=>{if(!getValue('reportFeedback').trim())throw Error('Feedback is required.');by('c3ReportPreview').innerHTML=reportPreview();if(!await confirmAction(ui('send')+'?'))return;act('c3Weekly',{studentId:getValue('reportStudent'),week:Number(getValue('reportWeek')),feedback:getValue('reportFeedback')});modified=false;reportScreen();}
+            submitExam:async()=>{if(!await confirmAction(ui('confirmSubmit')))return;const attempt=view.examAttempts.find(a=>a.taskId===targetId&&a.status==='active');if(!attempt){openDetails(targetId,'exam');return;}await act('c3SubmitExam',{id:targetId,attemptId:attempt.id});modified=false;openDetails(targetId,'exam');},
+            requestRevision:async id=>{if(!await confirmAction(ui('revisionAction')+'?'))return;await act('reviewTask',{id,status:'revision',feedback:getValue('feedback')});modified=false;openDetails(id);},
+            grade:async id=>{if(!await confirmAction(ui('grade')+'?'))return;await act('reviewTask',{id,status:'completed',score:getValue('score'),feedback:getValue('feedback')});modified=false;review(id);},
+            publish:async id=>{if(!await confirmAction(ui('publish')+' · '+studentName(view.tasks.find(t=>t.id===id)?.studentId)+'?'))return;await act('c3Publish',{id});modified=false;review(id);},
+            reportPreview:()=>{by('c3ReportPreview').innerHTML=reportPreview();},sendReport:async()=>{if(!getValue('reportFeedback').trim())throw Error('Feedback is required.');by('c3ReportPreview').innerHTML=reportPreview();if(!await confirmAction(ui('send')+'?'))return;await act('c3Weekly',{studentId:getValue('reportStudent'),week:Number(getValue('reportWeek')),feedback:getValue('reportFeedback')});modified=false;reportScreen();}
         };
         function formatDescription(before,after){const field=by('c3DialogBody').querySelector('[name="description"]'),start=field.selectionStart,end=field.selectionEnd;field.setRangeText(before+field.value.slice(start,end)+after,start,end,'select');field.focus();modified=true;}
         function moveQuestion(id,delta){syncWizard();const list=wizard.exam.questions,index=list.findIndex(q=>q.id===id),next=index+delta;if(next<0||next>=list.length)return;[list[index],list[next]]=[list[next],list[index]];wizardScreen();modified=true;}
         document.addEventListener('click',async event=>{const control=event.target.closest('[data-c3]');if(!control)return;event.preventDefault();if(control.disabled)return;if(imageUploads){showError(Error(ui('imageLoading')));return;}control.disabled=true;try{await handlers[control.dataset.c3]?.(control.dataset.id);}catch(err){if(by('c3Dialog').open)showError(err);else notice(err.message);}finally{if(control.isConnected)control.disabled=false;}},{signal});
-        on('c3DialogBody','change',event=>{
+        on('c3DialogBody','change',async event=>{
             const el=event.target;
             try{
                 if(el.dataset.imageFile){uploadQuestionImage(el.files[0],el.dataset.imageFile);return;}
@@ -443,9 +471,9 @@
                 if(el.id==='c3IncludeExam')by('c3ExamFields').hidden=!el.checked;
                 if(el.dataset.student)updateChips();
                 if(el.hasAttribute('data-qtype')){syncWizard();const q=wizard.exam.questions.find(q=>q.id===el.closest('[data-question]').dataset.question);q.choices=q.type==='tf'?['True','False']:['',''];q.correct=0;wizardScreen();modified=true;}
-                if(el.hasAttribute('data-check-index')){act('c3Checklist',{id:targetId,index:Number(el.dataset.checkIndex),done:el.checked});modified=false;}
+                if(el.hasAttribute('data-check-index')){await act('c3Checklist',{id:targetId,index:Number(el.dataset.checkIndex),done:el.checked});modified=false;}
                 if(mode==='wizard'&&step===3&&!el.hasAttribute('data-qtype'))updateBuilderMetrics();
-                if(el.hasAttribute('data-answer')){const attempt=view.examAttempts.find(a=>a.taskId===targetId&&a.status==='active');act('c3SaveAnswer',{id:targetId,attemptId:attempt.id,questionId:el.dataset.questionId,answer:Number(el.dataset.answer)});modified=false;examScreen();}
+                if(el.hasAttribute('data-answer')){const attempt=view.examAttempts.find(a=>a.taskId===targetId&&a.status==='active');await act('c3SaveAnswer',{id:targetId,attemptId:attempt.id,questionId:el.dataset.questionId,answer:Number(el.dataset.answer)});modified=false;examScreen();}
             }catch(err){showError(err);}
         });
         on('c3DialogBody','input',event=>{if(mode==='wizard'&&step===3)updateBuilderMetrics();if(event.target.id==='c3TraineeSearch'){const q=event.target.value.toLowerCase();by('c3DialogBody').querySelectorAll('[data-trainee-label]').forEach(el=>el.hidden=!el.dataset.traineeLabel.includes(q));}});
@@ -456,9 +484,9 @@
         let dragged='';on('taskList','dragstart',event=>{const card=event.target.closest('[data-task]');if(card){dragged=card.dataset.task;event.dataTransfer.setData('text/plain',dragged);}});
         on('taskList','dragover',event=>{const column=event.target.closest('[data-status]');if(column&&['assigned','in-progress'].includes(column.dataset.status)){event.preventDefault();column.classList.add('c3-drop');}});
         on('taskList','dragleave',event=>event.target.closest('[data-status]')?.classList.remove('c3-drop'));
-        on('taskList','drop',event=>{event.preventDefault();const column=event.target.closest('[data-status]');all('.c3-drop').forEach(el=>el.classList.remove('c3-drop'));if(!column)return;try{act('c3Move',{id:dragged||event.dataTransfer.getData('text/plain'),status:column.dataset.status});}catch(err){notice(err.message);}});
-        function tick(){
-            if(!by('c3Dialog').open)return;const now=Date.parse(demo.now());
+        on('taskList','drop',async event=>{event.preventDefault();const column=event.target.closest('[data-status]');all('.c3-drop').forEach(el=>el.classList.remove('c3-drop'));if(!column)return;try{await act('c3Move',{id:dragged||event.dataTransfer.getData('text/plain'),status:column.dataset.status});}catch(err){notice(err.message);}});
+        let finalizing=false;async function tick(){
+            if(!by('c3Dialog').open)return;const now=Date.parse(provider.now());
             if(mode==='details'){const t=currentTask(),open=(!t?.opensAt||now>=Date.parse(t.opensAt))&&(!t?.closesAt||now<Date.parse(t.closesAt));by('c3DialogActions').querySelectorAll('[data-c3="submission"],[data-c3="startWork"]').forEach(el=>el.disabled=!open);}
             if(mode==='details'&&tab==='exam'){
                 const t=currentTask(),e=groupOf(t)?.exam;if(!e)return;
@@ -470,7 +498,7 @@
             if(mode==='exam'){
                 const attempt=view.examAttempts.find(a=>a.taskId===targetId&&a.status==='active');if(!attempt)return;
                 const ms=Math.max(0,Date.parse(attempt.expiresAt)-now);text('c3AttemptTimer',Math.floor(ms/60000)+':'+String(Math.floor(ms/1000)%60).padStart(2,'0'));
-                if(!ms){refresh();modified=false;openDetails(targetId,'exam');}
+                if(!ms&&!finalizing){finalizing=true;try{await act('c3SubmitExam',{id:targetId,attemptId:attempt.id});modified=false;await openDetails(targetId,'exam');}catch(error){showError(error);}finally{finalizing=false;}}
             }
         }
         document.forms[0].addEventListener('submit',event=>{if(by('c3Dialog').open){event.preventDefault();event.stopPropagation();}},{signal});
@@ -478,23 +506,13 @@
         on('c3DialogBody','dragover',event=>{if(event.target.closest('[data-image-drop]'))event.preventDefault();});
         on('c3DialogBody','drop',event=>{const zone=event.target.closest('[data-image-drop]');if(zone){event.preventDefault();uploadQuestionImage(event.dataTransfer.files[0],zone.dataset.imageDrop);}});
         signal.addEventListener('abort',()=>imageUrlCache.forEach(url=>URL.revokeObjectURL(url)),{once:true});
+        const poll=setInterval(async()=>{if(by('c3Dialog').open||signal.aborted)return;try{view=await UimsTab.request('trainingData');serverBase=Date.parse(view.serverUtc);clockBase=performance.now();render();}catch(error){notice(error.message);}},15000);signal.addEventListener('abort',()=>clearInterval(poll),{once:true});
         const timer=setInterval(tick,1000);signal.addEventListener('abort',()=>clearInterval(timer),{once:true});
         render();tick();
-        notice('Live data integration is pending. No local fallback is enabled.');
-        window.addEventListener('focus',()=>{const current=demo.current();if(!current||current.mustChangePassword)location.href='../Auth/Login.aspx';},{signal});
-        window.addEventListener('pageshow',()=>{const current=demo.current();if(!current||current.mustChangePassword)location.href='../Auth/Login.aspx';},{signal});
+        notice('Live Firebase training workspace. Actions use your verified account and organization.');
+        window.addEventListener('focus',()=>{const current=provider.current();if(!current||current.mustChangePassword)location.href='../Auth/Login.aspx';},{signal});
+        window.addEventListener('pageshow',()=>{const current=provider.current();if(!current||current.mustChangePassword)location.href='../Auth/Login.aspx';},{signal});
     }
     if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',initialize,{once:true});else initialize();
     if(window.Sys?.WebForms?.PageRequestManager)Sys.WebForms.PageRequestManager.getInstance().add_endRequest(initialize);
 })();
-
-/* Live main-UIMS placement tasks. Separate Cycle 3 seed IDs are never guessed or joined. */
-(()=>{'use strict';let binding;async function init(){if(!window.UimsTab)return;binding?.abort();binding=new AbortController();const signal=binding.signal,by=id=>document.getElementById(id),safe=v=>String(v??'Not recorded').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));let list=false;
- const notice=by('pageNotice');notice.hidden=false;notice.textContent='Loading company-owned Firebase tasks…';['c3Create','c3Drafts','c3Group','c3Week'].forEach(id=>{by(id).disabled=true;by(id).title='Live task creation/exams need explicit Cycle 3 identity mapping and scoped write authorization.';});by('c3Reports').addEventListener('click',()=>UimsTab.navigate('ReportsFinalEvaluation.aspx'),{signal});
- try{const d=await UimsTab.request('roleData',{}, {page:'Company/ManageTasks'});if(signal.aborted)return;if(d.states.tasks!=='ready')throw Error('Owned task reads are unavailable. No local fallback is enabled.');if(by('taskAccountName'))by('taskAccountName').textContent=d.user.name;if(by('taskAccountInitials'))by('taskAccountInitials').textContent=d.user.name.split(/\s+/).slice(0,2).map(s=>s[0]).join('');const tasks=d.tasks,placements=d.placements;const student=t=>placements.find(p=>p.id===t.placementId)?.studentId||'Not recorded';
- const options=(id,values)=>{by(id).replaceChildren(new Option('All',''));[...new Set(values.filter(Boolean))].sort().forEach(v=>by(id).add(new Option(v,v)));};options('c3Student',tasks.map(student));options('c3Priority',tasks.map(t=>t.priority));options('c3Status',tasks.map(t=>t.status));by('c3Week').replaceChildren(new Option('Week not recorded',''));
- const columns=[['todo','New'],['in_progress','In Progress'],['submitted','In Review'],['revision','Revision Requested'],['completed','Completed']];const column=t=>t.status==='reviewed'?'submitted':t.status;
- function render(){const q=by('taskSearch').value.toLowerCase();const rows=tasks.filter(t=>(!q||[t.title,t.description,student(t)].join(' ').toLowerCase().includes(q))&&(!by('c3Student').value||student(t)===by('c3Student').value)&&(!by('c3Priority').value||t.priority===by('c3Priority').value)&&(!by('c3Status').value||t.status===by('c3Status').value)).sort((a,b)=>String(a.dueDate||'').localeCompare(String(b.dueDate||''))*(by('c3Sort').value==='desc'?-1:1));by('taskList').classList.toggle('c3-list',list);by('taskList').innerHTML=columns.map(([status,label])=>{const group=rows.filter(t=>column(t)===status);return '<section class="c3-column"><h2>'+label+' <span>'+group.length+'</span></h2>'+group.map(t=>'<article class="c3-card"><h3>'+safe(t.title)+'</h3><p>'+safe(student(t))+'</p><p>Deadline: '+safe(t.dueDate)+'</p><p>'+safe(t.priority)+' · '+safe(t.status)+'</p><button type="button" class="c3-primary" data-live-task="'+safe(t.id)+'">View task</button></article>').join('')+(!group.length?'<p class="c3-empty">No matching records.</p>':'')+'</section>';}).join('');by('noTasksMsg').hidden=rows.length>0;by('c3Stats').textContent=tasks.length+' company-owned task records. Reviewed work does not grant final internship completion.';}
- by('taskList').addEventListener('click',e=>{const b=e.target.closest('[data-live-task]');if(!b)return;const task=tasks.find(t=>t.id===b.dataset.liveTask);if(!task)return;by('c3DialogTitle').textContent=task.title;const body=by('c3DialogBody');body.replaceChildren();Object.entries({...task,studentId:student(task)}).forEach(([key,value])=>{const p=document.createElement('p'),strong=document.createElement('strong');strong.textContent=key.replace(/([A-Z])/g,' $1')+': ';p.append(strong,document.createTextNode(String(value)));body.append(p);});by('c3DialogActions').replaceChildren();const note=document.createElement('p');note.textContent='Read-only task. Attached exams and submissions in the separate Cycle 3 dataset are not linked to these records.';body.append(note);by('c3Dialog').showModal();by('c3Close').focus();},{signal});by('c3Close').addEventListener('click',()=>by('c3Dialog').close(),{signal});['taskSearch','c3Student','c3Priority','c3Status','c3Sort'].forEach(id=>by(id).addEventListener('input',render,{signal}));by('c3View').addEventListener('click',()=>{list=!list;by('c3View').textContent=list?'Board view':'List view';render();},{signal});by('c3Clear').addEventListener('click',()=>{['taskSearch','c3Student','c3Priority','c3Status'].forEach(id=>by(id).value='');render();},{signal});notice.textContent='Live Firebase placement tasks. Creation, grading and exam workflows remain unavailable until their records and write permissions are mapped.';render();
- }catch(error){notice.textContent=error.message;by('taskList').replaceChildren();}}
- if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();})();

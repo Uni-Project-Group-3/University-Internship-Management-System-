@@ -32,8 +32,8 @@ namespace University_Internship_Management_System.Services
             { "companySupervisors", "id fullName email companyId accountStatus" },
             { "students", "id fullName studentNumber programId academicSupervisorId placementId accountStatus" },
             { "companies", "id name city industry email accountStatus isVerified" },
-            { "opportunities", "id companyId title description location workMode capacity status applicationDeadline eligibleProgramIds publishedAt requirements" },
-            { "applications", "id studentId opportunityId companyId status submittedAt appliedAt reviewNotes studentStatement" },
+            { "opportunities", "id companyId title description location workMode capacity status applicationDeadline eligibleProgramIds publishedAt requirements startDate durationWeeks requiredHours updatedAt" },
+            { "applications", "id studentId opportunityId companyId status submittedAt appliedAt reviewNotes studentStatement lastUpdatedAt attachments applicantProgramId reviewedBy placementId confirmedAt" },
             { "placements", "id studentId companyId opportunityId academicSupervisorId companySupervisorId status startDate endDate requiredHours approvedHours" },
             { "progressReports", "id placementId studentId period summary status submittedAt hoursReported mentorComments" },
             { "tasks", "id placementId title description status dueDate assignedAt priority" },
@@ -64,9 +64,91 @@ namespace University_Internship_Management_System.Services
             if (page == "ReportsFinalEvaluation" && (string)output["states"]["placements"] == "ready") await ReadReportsAsync(account, output);
             if (account.Role == "academic") await ReadAcademicPlacementsAsync(account, output);
             if ((account.Role == "academic" || page == "ManageTasks") && (string)output["states"]["placements"] == "ready") await ReadTasksAsync(account, output);
+            if (page == "ManageOpportunities")
+            {
+                var catalog = await database.ReadAsync("academicCatalog", "programs") as JToken;
+                output["programs"] = catalog is JArray list ? list : new JArray((catalog as JObject)?.Properties().Select(p => p.Value) ?? Enumerable.Empty<JToken>());
+            }
+            if(account.Role=="academic"){
+                try{output["weeklyReports"]=new JArray((await database.ReadTrainingQueryAsync(account,"weeklyReports")).Properties().Select(p=>p.Value.DeepClone()));output["states"]["weeklyReports"]="ready";}
+                catch(Exception error) when(ReadFailure(error)){output["weeklyReports"]=new JArray();output["states"]["weeklyReports"]=error is StudentDataReadException?"permission_denied":"unavailable";}
+            }
             // Coordinator task bulk reads and private evaluation/grade records are deliberately absent.
             return output;
         }
+
+        // Identity and organization always come from the verified server-side account.
+        public async Task<JObject> SaveOpportunityAsync(UimsAccount account, JObject input)
+        {
+            if (account == null || account.Role != "company" || account.MustChangePassword ||
+                string.IsNullOrWhiteSpace(account.Uid) || string.IsNullOrWhiteSpace(account.CompanyId))
+                throw new UnauthorizedAccessException();
+            ValidateOpportunityInput(input);
+            bool creating = string.IsNullOrEmpty((string)input["id"]);
+            string id = creating ? "OPP-" + (string)input["requestId"] : (string)input["id"];
+            FirebaseRealtimeDatabaseRepository.ValidateSegment(id);
+            var version = await database.ReadVersionAsync("opportunities", id).ConfigureAwait(false);
+            var existing = version.Value as JObject;
+            if (existing != null && (string)existing["companyId"] != account.CompanyId) throw new UnauthorizedAccessException();
+            if (creating && existing != null)
+            {
+                if ((string)existing["creationRequestId"] == (string)input["requestId"] && (string)existing["createdBy"] == account.ProfileId)
+                    return new JObject { ["id"] = id, ["success"] = true, ["alreadySaved"] = true };
+                throw new AccountConflictException();
+            }
+            if (!creating && existing == null) throw new ArgumentException("The opportunity no longer exists.");
+            if (!creating && (string)input["expectedUpdatedAt"] != (string)existing["updatedAt"])
+                throw new AccountConflictException();
+            var catalog = await database.ReadAsync("academicCatalog", "programs").ConfigureAwait(false);
+            var programs = catalog is JArray a ? a.OfType<JObject>() : (catalog as JObject)?.Properties().Select(p => p.Value).OfType<JObject>();
+            var valid = programs?.Select(p => (string)p["id"]).ToArray() ?? new string[0];
+            if (((JArray)input["eligibleProgramIds"]).Any(p => !valid.Contains((string)p)))
+                throw new ArgumentException("Choose existing university programs.");
+            var record = existing == null ? new JObject {
+                ["id"] = id, ["companyId"] = account.CompanyId, ["createdBy"] = account.ProfileId,
+                ["creationRequestId"] = (string)input["requestId"], ["publishedAt"] = DateTime.UtcNow.ToString("o"),
+                ["applicationPolicy"] = "eligible_students", ["canApply"] = true
+            } : (JObject)existing.DeepClone();
+            foreach (string field in new[] { "title", "description", "requirements", "location", "workMode", "capacity",
+                "eligibleProgramIds", "applicationDeadline", "startDate", "durationWeeks", "requiredHours", "status" })
+                record[field] = input[field].DeepClone();
+            record["applicationClosesAt"] = new DateTimeOffset(JordanTime.ParseInput((string)input["applicationDeadline"], "23:59")).ToUnixTimeMilliseconds();
+            record["updatedAt"] = DateTime.UtcNow.ToString("o");
+            await database.WriteCompanyOpportunityAsync(account, id, record, version.ETag).ConfigureAwait(false);
+            return new JObject { ["id"] = id, ["success"] = true };
+        }
+
+        public static void ValidateOpportunityInput(JObject input)
+        {
+            string[] fields = { "id", "requestId", "expectedUpdatedAt", "title", "description", "requirements", "location",
+                "workMode", "capacity", "eligibleProgramIds", "applicationDeadline", "startDate", "durationWeeks", "requiredHours", "status" };
+            if (input == null || input.Properties().Any(p => !fields.Contains(p.Name)))
+                throw new ArgumentException("Unexpected opportunity fields.");
+            foreach (var limit in new[] { new { Field = "title", Max = 100 }, new { Field = "description", Max = 1000 },
+                new { Field = "requirements", Max = 600 }, new { Field = "location", Max = 60 } })
+                if (input[limit.Field]?.Type != JTokenType.String || string.IsNullOrWhiteSpace((string)input[limit.Field]) ||
+                    ((string)input[limit.Field]).Length > limit.Max) throw new ArgumentException("Enter valid " + limit.Field + ".");
+            foreach (var range in new[] { new { Field = "capacity", Min = 1, Max = 50 }, new { Field = "durationWeeks", Min = 1, Max = 52 },
+                new { Field = "requiredHours", Min = 1, Max = 5000 } })
+                if (input[range.Field]?.Type != JTokenType.Integer || (long)input[range.Field] < range.Min ||
+                    (long)input[range.Field] > range.Max) throw new ArgumentException("Enter valid " + range.Field + ".");
+            if (!(input["eligibleProgramIds"] is JArray ids) || ids.Count == 0 || ids.Count > 100 ||
+                ids.Any(p => p.Type != JTokenType.String || string.IsNullOrWhiteSpace((string)p)) ||
+                ids.Select(p => (string)p).Distinct().Count() != ids.Count) throw new ArgumentException("Choose at least one valid specialization.");
+            if (!new[] { "onsite", "hybrid", "remote" }.Contains((string)input["workMode"]) ||
+                !new[] { "published", "closed" }.Contains((string)input["status"])) throw new ArgumentException("Invalid opportunity mode or status.");
+            if (!System.Text.RegularExpressions.Regex.IsMatch((string)input["requestId"] ?? "", "^[a-f0-9]{32}$"))
+                throw new ArgumentException("Reload the opportunity form.");
+            DateTime deadline, start;
+            if (!DateTime.TryParseExact((string)input["applicationDeadline"], "yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture,
+                System.Globalization.DateTimeStyles.None, out deadline) ||
+                !DateTime.TryParseExact((string)input["startDate"], "yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture,
+                System.Globalization.DateTimeStyles.None, out start) || start < deadline)
+                throw new ArgumentException("Use valid dates; training cannot start before the application deadline.");
+            if ((string)input["status"] == "published" && JordanTime.ParseInput((string)input["applicationDeadline"], "23:59") <= DateTime.UtcNow)
+                throw new ArgumentException("A published opportunity needs a future Jordan Time deadline.");
+        }
+
         private async Task ReadCollectionAsync(UimsAccount account, JObject output, string collection)
         {
             try {

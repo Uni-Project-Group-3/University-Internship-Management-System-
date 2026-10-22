@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Contact Us | JUST Internships</title>
     <link runat="server" href="~/Assets/shared/colors.css" rel="stylesheet" />
-    <link runat="server" href="~/Assets/public/contact.css" rel="stylesheet" />
+    <link runat="server" href="~/Assets/public/contact.css?v=2" rel="stylesheet" />
 </head>
 <body class="contact-page">
     <header class="home-header">
@@ -78,6 +78,7 @@
     </main>
     <footer class="contact-footer"><span>UIMS &middot; JUST Internships</span><span>Supporting your next chapter.</span></footer>
 <script>
+// @ts-nocheck
 (() => {
     "use strict";
 

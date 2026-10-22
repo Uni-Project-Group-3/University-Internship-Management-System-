@@ -148,7 +148,7 @@
         </form>
         <script src="../Scripts/bootstrap.bundle.min.js">
         </script>
-        <script src="../Js_project/Student/MyTasks.js?v=20261021-studio2">
+        <script src="../Js_project/Student/MyTasks.js?v=20261022-student-refresh-4">
         </script>
     <script src="../Js_project/Public/tab-session.js" defer="defer"></script>
 </body>

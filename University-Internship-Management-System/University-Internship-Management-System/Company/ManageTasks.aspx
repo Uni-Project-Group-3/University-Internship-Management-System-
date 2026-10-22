@@ -141,7 +141,7 @@
         </form>
         <script src="../Scripts/bootstrap.bundle.min.js">
         </script>
-        <script src="../Js_project/Company/ManageTasks.js?v=20261021-live-placement-tasks-final">
+        <script src="../Js_project/Company/ManageTasks.js?v=20261022-assignment-confirmation-4">
         </script>
     <script src="../Js_project/Public/tab-session.js" defer="defer"></script>
 </body>

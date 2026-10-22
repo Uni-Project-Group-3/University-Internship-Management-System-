@@ -252,7 +252,7 @@ async function init(){
  const sort=by(config.sort)?.value||'';return list.sort((a,b)=>sort==='hours'?(placement(b)?.approvedHours??-1)-(placement(a)?.approvedHours??-1):sort==='applicants'?rows('applications').filter(r=>r.opportunityId===b.id).length-rows('applications').filter(r=>r.opportunityId===a.id).length:sort.includes('deadline')?String(a.applicationDeadline||'').localeCompare(String(b.applicationDeadline||'')):/newest|oldest/i.test(sort)?String(a.submittedAt||a.createdAt||a.publishedAt||'').localeCompare(String(b.submittedAt||b.createdAt||b.publishedAt||''))*(/newest/i.test(sort)?-1:1):String(a.fullName||a.name||a.title||a.studentId||a.id).localeCompare(String(b.fullName||b.name||b.title||b.studentId||b.id))*(sort.includes('desc')||sort.includes('Z to A')?-1:1));}
  let dialog=by('roleLiveDetails');if(!dialog){dialog=document.createElement('dialog');dialog.id='roleLiveDetails';dialog.className='role-live-details';dialog.setAttribute('aria-label','Record details');dialog.innerHTML='<header><h2>Record details</h2><button type="button" aria-label="Close record details">×</button></header><div></div>';document.forms[0].append(dialog);}
  dialog.querySelector('button').addEventListener('click',()=>dialog.close(),{signal});
- function details(r){const body=dialog.querySelector('div');body.replaceChildren();const dl=document.createElement('dl');Object.entries(r).forEach(([key,v])=>{const dt=document.createElement('dt'),dd=document.createElement('dd');dt.textContent=key.replace(/([A-Z])/g,' $1');dd.textContent=/At$/.test(key)?date(v):Array.isArray(v)?v.join(', '):String(v);dl.append(dt,dd);});body.append(dl);dialog.showModal();dialog.querySelector('button').focus();}
+ function details(r){if(by('appDrawer')){text('drawerName',r.studentId);text('drawerAvatar',r.studentId.slice(-2));text('drawerSub',opportunity(r)?.title||r.opportunityId);by('drawerBody').innerHTML='<p>Status: '+escape(r.status)+'</p><p>'+escape(r.studentStatement||'No statement recorded.')+'</p><p>'+escape(r.reviewNotes||'No review recorded.')+'</p>';by('drawerFooter').innerHTML=['submitted','under_review'].includes(r.status)?'<button type="button" class="btn-primary-pill success" data-review-action="accepted" data-review-id="'+escape(r.id)+'">Accept</button> <button type="button" class="btn-primary-pill danger" data-review-action="rejected" data-review-id="'+escape(r.id)+'">Reject</button>':'';bootstrap.Offcanvas.getOrCreateInstance(by('appDrawer')).show();return;}const body=dialog.querySelector('div');body.replaceChildren();const dl=document.createElement('dl');Object.entries(r).forEach(([key,v])=>{const dt=document.createElement('dt'),dd=document.createElement('dd');dt.textContent=key.replace(/([A-Z])/g,' $1');dd.textContent=/At$/.test(key)?date(v):Array.isArray(v)?v.join(', '):String(v);dl.append(dt,dd);});body.append(dl);dialog.showModal();dialog.querySelector('button').focus();}
  function render(){const list=filtered(),hasPaging=all('[aria-label="Next page"],#nextPlacements').length>0,size=hasPaging?(Number(by(config.pageSize)?.value)||10):Math.max(1,list.length);page=Math.min(page,Math.max(0,Math.ceil(list.length/size)-1));const visible=list.slice(page*size,(page+1)*size);
  host.innerHTML=visible.map(r=>config.cards?'<div class="col-md-6 col-xl-4"><article class="opp-card"><h3>'+escape(r.title)+'</h3><p>'+escape(r.description)+'</p><p>'+escape(r.location)+' · '+escape(r.status)+'</p><p>Apply by '+escape(date(r.applicationDeadline))+'</p><button type="button" data-live-record="'+escape(r.id)+'" class="row-action">View details</button></article></div>':'<tr>'+config.cells.map(k=>'<td>'+escape(value(r,k))+'</td>').join('')+'<td><button type="button" class="row-action" data-live-record="'+escape(r.id)+'">View details</button></td></tr>').join('')|| (config.cards?'<p>No matching records.</p>':'<tr><td colspan="'+(config.cells.length+1)+'">No matching records.</td></tr>');
  const result=list.length+' matching records · Page '+(page+1)+' of '+Math.max(1,Math.ceil(list.length/size));['resultsStatus','placementResults','recordCount'].forEach(id=>text(id,result));all('.trainees-card-footer > span,.messages-card-footer > span,.companies-pagination > span').forEach(el=>el.textContent=result);all('.trainees-pagination > span,.companies-pagination > div > span,.monitor-pagination > div > span').forEach(el=>{el.textContent='Page '+(page+1)+' / '+Math.max(1,Math.ceil(list.length/size));el.removeAttribute('aria-label');});
@@ -277,6 +277,31 @@ async function init(){
  all('.trainees-notice,.messages-notice,.completion-notice,.companies-notice,.evaluation-notice,.demo-note,.preview-note,#placementMessage,#pageNotice').filter(el=>!el.closest('dialog')).forEach(el=>el.textContent='Live Firebase records. Management writes and private evaluations are not enabled in this read-only integration.');
  all('.monitor-chip,.trainees-data-badge,.messages-disconnected').forEach(el=>el.textContent='Live Firebase');
  notice.textContent='Live Firebase records loaded for '+data.user.name+'. '+(Object.values(data.states).some(v=>v!=='ready')?'Some related reads are unavailable. ':'')+'Changes requiring additional permissions remain unavailable.';
+
+ let selected=null,saving=false;
+ function reviewMessage(id,message){let el=by(id).querySelector('[data-review-feedback]');if(!el){el=document.createElement('p');el.dataset.reviewFeedback='';el.setAttribute('role','status');by(id).querySelector('.modal-body').append(el);}el.textContent=message;}
+ document.addEventListener('click',event=>{
+  const b=event.target.closest('[data-review-action]');if(!b)return;
+  event.preventDefault();selected=rows('applications').find(a=>a.id===b.dataset.reviewId);if(!selected)return;
+  bootstrap.Offcanvas.getOrCreateInstance(by('appDrawer')).hide();
+  const id=b.dataset.reviewAction==='accepted'?'acceptModal':'rejectModal';
+  text(id==='acceptModal'?'acceptSub':'rejectSub',selected.studentId+' · '+(opportunity(selected)?.title||selected.opportunityId));
+  reviewMessage(id,'');if(id==='acceptModal')text('acceptSeats','The offer becomes a placement only after student confirmation and an available seat.');
+  all('#'+id+' button').forEach(el=>{el.disabled=false;el.removeAttribute('title');});
+  bootstrap.Modal.getOrCreateInstance(by(id)).show();
+ },{signal});
+ async function decide(status){
+  if(!selected||saving)return;const modalId=status==='accepted'?'acceptModal':'rejectModal',button=by(status==='accepted'?'confirmAccept':'confirmReject');
+  const reason=document.querySelector('[name="rejectReason"]:checked')?.value||'',message=by('rejectMessage').value.trim();
+  if(status==='rejected'&&(!reason||message.length<15)){reviewMessage(modalId,'Choose a reason and write at least 15 characters of feedback.');return;}
+  saving=true;button.disabled=true;reviewMessage(modalId,'Saving the decision to Firebase…');
+  try{await UimsTab.request('applicationReview',{id:selected.id,status,feedback:status==='rejected'?reason+': '+message:'',expectedUpdatedAt:selected.lastUpdatedAt||null});bootstrap.Modal.getOrCreateInstance(by(modalId)).hide();await init();}
+  catch(error){reviewMessage(modalId,error.message);button.disabled=false;}
+  finally{saving=false;}
+ }
+ by('confirmAccept').addEventListener('click',()=>decide('accepted'),{signal});
+ by('confirmReject').addEventListener('click',()=>decide('rejected'),{signal});
+
  render();
  }catch(error){notice.textContent=error.message;host.replaceChildren();const p=document.createElement(config.cards?'p':'tr');p.textContent='Records unavailable. Please retry after signing in.';host.append(p);}
 }

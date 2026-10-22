@@ -198,6 +198,175 @@ namespace University_Internship_Management_System.Services
             }
         }
 
+
+
+
+        public async Task<JObject> ReadActiveTrainingStudentAsync(UimsAccount account,JObject placement)
+        {
+            RequireTraining(account);
+            if(account.Role!="company"||placement==null||(string)placement["companyId"]!=account.CompanyId||(string)placement["status"]!="active")throw new UnauthorizedAccessException();
+            string studentId=(string)placement["studentId"];ValidateSegment(studentId);
+            var profile=new JObject();
+            foreach(string field in new[]{"accountStatus","role","firebaseUid","displayName"})
+            {
+                string url=FirebaseConfiguration.DatabaseUrl+"/users/"+Uri.EscapeDataString(studentId)+"/"+field+".json?auth="+Uri.EscapeDataString(idToken);
+                using(var response=await client.GetAsync(url).ConfigureAwait(false))
+                {
+                    if(response.StatusCode==HttpStatusCode.Unauthorized||response.StatusCode==HttpStatusCode.Forbidden)return null;
+                    if(!response.IsSuccessStatusCode)throw new StudentDataReadException((int)response.StatusCode);
+                    profile[field]=JToken.Parse(await response.Content.ReadAsStringAsync().ConfigureAwait(false));
+                }
+            }
+            string uid=(string)profile["firebaseUid"];
+            if((string)profile["accountStatus"]!="active"||(string)profile["role"]!="student"||string.IsNullOrWhiteSpace(uid))return null;
+            ValidateSegment(uid);
+            try{var mapping=await ReadAsync("usersByUid",uid).ConfigureAwait(false);if(mapping.Type!=JTokenType.String||(string)mapping!=studentId)return null;}
+            catch(StudentDataReadException ex)when(ex.HttpStatus==401||ex.HttpStatus==403){return null;}
+            profile["id"]=studentId;return profile;
+        }
+
+        private void RequireTraining(UimsAccount account)
+        {
+            if(string.IsNullOrEmpty(idToken)||account==null||account.MustChangePassword||string.IsNullOrEmpty(account.Uid)||
+                !new[]{"student","company","academic"}.Contains(account.Role))throw new UnauthorizedAccessException();
+        }
+        private static readonly string[] TrainingNodes={"taskGroups","taskAssignments","taskSubmissions","examAttempts","examResults","taskGrades","weeklyReports","examKeys","examQuestions","questionImages","taskActivity","weeklyReportIndex"};
+        private string TrainingUrl(string node,string id=null)
+        {
+            if(!TrainingNodes.Contains(node))throw new UnauthorizedAccessException();
+            ValidateSegment(node);if(id!=null)ValidateSegment(id);
+            return FirebaseConfiguration.DatabaseUrl+"/cycle3Demo/"+node+(id==null?"":"/"+Uri.EscapeDataString(id))+".json?auth="+Uri.EscapeDataString(idToken);
+        }
+        public async Task<FirebaseRecord> ReadTrainingVersionAsync(UimsAccount account,string node,string id)
+        {
+            RequireTraining(account);
+            using(var request=new HttpRequestMessage(HttpMethod.Get,TrainingUrl(node,id)))
+            {
+                request.Headers.Add("X-Firebase-ETag","true");
+                using(var response=await client.SendAsync(request))
+                {
+                    if(!response.IsSuccessStatusCode)throw new StudentDataReadException((int)response.StatusCode);
+                    return new FirebaseRecord{ETag=response.Headers.ETag?.ToString(),Value=JToken.Parse(await response.Content.ReadAsStringAsync())};
+                }
+            }
+        }
+        public async Task<JObject> ReadTrainingQueryAsync(UimsAccount account,string node)
+        {
+            RequireTraining(account);
+            if(!new[]{"taskGroups","taskAssignments","taskSubmissions","examAttempts","examResults","taskGrades","weeklyReports","taskActivity"}.Contains(node))throw new UnauthorizedAccessException();
+            if(account.Role=="academic"){
+                if(node!="weeklyReports")throw new UnauthorizedAccessException();
+                var assigned=await ReadRoleDashboardRecordsAsync(account,"students");
+                var index=(await ReadTrainingVersionAsync(account,"weeklyReportIndex",account.ProfileId)).Value as JObject;
+                var reports=new JObject();if(index==null)return reports;
+                foreach(var student in assigned.Properties()){
+                    var ids=index[student.Name] as JObject;if(ids==null)continue;
+                    foreach(var item in ids.Properties()){
+                        var report=(await ReadTrainingVersionAsync(account,"weeklyReports",item.Name)).Value as JObject;
+                        if(report==null||(string)report["studentId"]!=student.Name||(string)report["academicSupervisorId"]!=account.ProfileId)throw new UnauthorizedAccessException();
+                        reports[item.Name]=report;
+                    }
+                }
+                return reports;
+            }
+            string field=account.Role=="company"?"companyId":"studentId";
+            string owner=account.Role=="company"?account.CompanyId:account.ProfileId;ValidateSegment(owner);
+            using(var response=await client.GetAsync(TrainingUrl(node)+"&orderBy="+Uri.EscapeDataString(JsonConvert.SerializeObject(field))+"&equalTo="+Uri.EscapeDataString(JsonConvert.SerializeObject(owner))))
+            {
+                if(!response.IsSuccessStatusCode)throw new StudentDataReadException((int)response.StatusCode);
+                var parsed=JToken.Parse(await response.Content.ReadAsStringAsync());
+                var rows=parsed as JObject??(parsed.Type==JTokenType.Null?new JObject():throw new System.IO.InvalidDataException("Invalid training records."));
+                if(rows.Count>500)throw new System.IO.InvalidDataException("The training query needs pagination.");
+                foreach(var p in rows.Properties())if(!(p.Value is JObject row)||(string)row[field]!=owner)throw new UnauthorizedAccessException();
+                return rows;
+            }
+        }
+        public async Task CommitTrainingAsync(UimsAccount account,JObject patch)
+        {
+            RequireTraining(account);
+            if(patch==null||patch.Count==0||patch.Count>300)throw new ArgumentException("Invalid training operation.");
+            foreach(var p in patch.Properties())
+            {
+                var parts=p.Name.Split('/');if(parts.Length<2||!TrainingNodes.Contains(parts[0]))throw new UnauthorizedAccessException();
+                foreach(string part in parts)ValidateSegment(part);
+            }
+            using(var request=new HttpRequestMessage(new HttpMethod("PATCH"),FirebaseConfiguration.DatabaseUrl+"/cycle3Demo/.json?auth="+Uri.EscapeDataString(idToken)))
+            {
+                request.Content=new StringContent(patch.ToString(Formatting.None),Encoding.UTF8,"application/json");
+                using(var response=await client.SendAsync(request))if(!response.IsSuccessStatusCode)throw new StudentDataReadException((int)response.StatusCode);
+            }
+        }
+        public async Task WriteTrainingVersionAsync(UimsAccount account,string node,string id,JObject record,string etag)
+        {
+            RequireTraining(account);if(string.IsNullOrEmpty(etag))throw new AccountConflictException();
+            using(var request=new HttpRequestMessage(HttpMethod.Put,TrainingUrl(node,id)))
+            {
+                request.Headers.TryAddWithoutValidation("If-Match",etag);
+                request.Content=new StringContent(record.ToString(Formatting.None),Encoding.UTF8,"application/json");
+                using(var response=await client.SendAsync(request))
+                {
+                    if(response.StatusCode==HttpStatusCode.PreconditionFailed)throw new AccountConflictException();
+                    if(!response.IsSuccessStatusCode)throw new StudentDataReadException((int)response.StatusCode);
+                }
+            }
+        }
+
+        public async Task CommitApplicationAsync(UimsAccount account, JObject patch)
+        {
+            RequireStudent(account);
+            if(patch==null||patch.Count==0||patch.Count>6)throw new UnauthorizedAccessException();
+            foreach(var item in patch.Properties())
+            {
+                var segments=item.Name.Split('/');foreach(string segment in segments)ValidateSegment(segment);
+                if(!new[]{"applications","applicationIndex","placements","students","opportunitySeats"}.Contains(segments[0]))throw new UnauthorizedAccessException();
+                if(segments[0]=="students"&&(segments.Length!=3||segments[1]!=account.ProfileId||segments[2]!="placementId"))throw new UnauthorizedAccessException();
+                if(segments[0]=="applicationIndex"&&(segments.Length!=3||segments[1]!=account.ProfileId))throw new UnauthorizedAccessException();
+            }
+            using(var request=new HttpRequestMessage(new HttpMethod("PATCH"),FirebaseConfiguration.DatabaseUrl+"/.json?auth="+Uri.EscapeDataString(idToken)))
+            {
+                request.Content=new StringContent(patch.ToString(Formatting.None),Encoding.UTF8,"application/json");
+                using(var response=await client.SendAsync(request).ConfigureAwait(false))
+                    if(!response.IsSuccessStatusCode)throw new StudentDataReadException((int)response.StatusCode);
+            }
+        }
+        public async Task WriteApplicationReviewAsync(UimsAccount account,string id,JObject record,string etag)
+        {
+            if(string.IsNullOrEmpty(idToken)||account==null||account.MustChangePassword||account.Role!="company"||
+                string.IsNullOrEmpty(account.Uid)||(string)record?["companyId"]!=account.CompanyId||(string)record?["id"]!=id)
+                throw new UnauthorizedAccessException();
+            if(string.IsNullOrEmpty(etag))throw new AccountConflictException();
+            using(var request=await RequestAsync(HttpMethod.Put,"applications",id))
+            {
+                request.Headers.TryAddWithoutValidation("If-Match",etag);
+                request.Content=new StringContent(record.ToString(Formatting.None),Encoding.UTF8,"application/json");
+                using(var response=await client.SendAsync(request).ConfigureAwait(false))
+                {
+                    if(response.StatusCode==HttpStatusCode.PreconditionFailed)throw new AccountConflictException();
+                    if(!response.IsSuccessStatusCode)throw new StudentDataReadException((int)response.StatusCode);
+                }
+            }
+        }
+
+        public async Task WriteCompanyOpportunityAsync(UimsAccount account, string id, JObject value, string etag)
+        {
+            if (string.IsNullOrEmpty(idToken) || account == null || account.MustChangePassword || account.Role != "company" ||
+                string.IsNullOrWhiteSpace(account.Uid) || string.IsNullOrWhiteSpace(account.CompanyId) ||
+                value == null || (string)value["companyId"] != account.CompanyId || (string)value["id"] != id)
+                throw new UnauthorizedAccessException();
+            ValidateSegment(id);
+            if (string.IsNullOrEmpty(etag)) throw new ArgumentException("Reload this opportunity before saving.");
+            using (var request = await RequestAsync(HttpMethod.Put, "opportunities", id).ConfigureAwait(false))
+            {
+                request.Headers.TryAddWithoutValidation("If-Match", etag);
+                request.Content = new StringContent(value.ToString(Formatting.None), Encoding.UTF8, "application/json");
+                using (var response = await client.SendAsync(request).ConfigureAwait(false))
+                {
+                    if (response.StatusCode == HttpStatusCode.PreconditionFailed) throw new AccountConflictException();
+                    if (!response.IsSuccessStatusCode) throw new StudentDataReadException((int)response.StatusCode);
+                }
+            }
+        }
+
         public async Task UpdateStudentContactAsync(UimsAccount account, JObject changes)
         {
             RequireStudent(account);

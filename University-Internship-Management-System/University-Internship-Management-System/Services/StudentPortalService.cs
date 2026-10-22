@@ -47,7 +47,7 @@ namespace University_Internship_Management_System.Services
                 else { states["placement"] = "not_placed"; states["tasks"] = "not_placed"; }
             }
             var applications = await OptionalAsync(async () => await database.ReadStudentRecordsAsync("applications", account), states, "applications") as JObject;
-            if (applications != null) result["applications"] = Rows(applications, "id", "opportunityId", "companyId", "status", "submittedAt", "appliedAt", "reviewNotes", "studentStatement", "attachments");
+            if (applications != null) result["applications"] = Rows(applications, "id", "opportunityId", "companyId", "status", "submittedAt", "appliedAt", "reviewNotes", "studentStatement", "attachments", "lastUpdatedAt", "placementId", "confirmedAt");
             if (section == "opportunities" || section == "application")
             {
                 var opportunities = await OptionalAsync(async () => await database.ReadPublishedOpportunitiesAsync(account), states, "opportunities") as JObject;

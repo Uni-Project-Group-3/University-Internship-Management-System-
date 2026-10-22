@@ -23,7 +23,7 @@
  window.UimsTab={request,navigate,logout,studentData:section=>request('studentData',{}, {section}),disposeOnIdentityChange:dispose=>listeners.add(dispose)};
  document.addEventListener('click',event=>{
   const link=event.target.closest('a,button,input');if(!link)return;
-  if(/logout/i.test(link.id)){event.preventDefault();event.stopImmediatePropagation();logout();return;}
+  if(/logout/i.test(link.id)||link.hasAttribute?.('data-uims-logout')||/\b(?:log\s*out|sign\s*out)\s*$/i.test((link.textContent||'').trim())){event.preventDefault();event.stopImmediatePropagation();logout();return;}
   if(link.tagName!=='A'||event.ctrlKey||event.metaKey||event.shiftKey||link.target==='_blank')return;
   const target=new URL(link.getAttribute('href')||'#',location.href);
   if(target.origin===root.origin&&/\/(Student|Company|Academic|Coordinator)\//i.test(target.pathname)){event.preventDefault();event.stopImmediatePropagation();navigate(target);}
@@ -36,7 +36,7 @@
   if(!field){field=document.createElement('input');field.type='hidden';field.name='UimsTabTicket';form.append(field);}
   field.value=sessionStorage.getItem(key);
  }
- function bindForms(){document.querySelectorAll('form').forEach(bindTicket);}
+ function bindForms(){document.querySelectorAll('form').forEach(bindTicket);document.querySelectorAll('a,button').forEach(el=>{if(/\b(?:log\s*out|sign\s*out)\s*$/i.test((el.textContent||'').trim())){el.dataset.uimsLogout='';el.removeAttribute('aria-disabled');el.removeAttribute('disabled');el.removeAttribute('title');if(el.tagName==='A'&&!el.getAttribute('href'))el.href=login.href;}});}
  document.addEventListener('submit',event=>bindTicket(event.target));
  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',bindForms);else bindForms();
  if(window.Sys?.Application)window.Sys.Application.add_load(bindForms);

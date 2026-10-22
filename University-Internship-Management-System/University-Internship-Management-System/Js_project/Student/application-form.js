@@ -215,12 +215,30 @@
  const sidebar=document.querySelector('aside.sidebar,aside[id="sidebar"]'),toggle=document.querySelector('.menu-btn,.dash-menu-btn');
  if(toggle&&!location.pathname.toLowerCase().includes('/profile')){toggle.removeAttribute('onclick');window.toggleSidebar=()=>{const isOpen=!document.body.classList.contains('sidebar-open');document.body.classList.toggle('sidebar-open',isOpen);sidebar?.classList.toggle('open',isOpen);toggle.setAttribute('aria-expanded',String(isOpen));};toggle.addEventListener('click',window.toggleSidebar);document.querySelectorAll('.sidebar-close,.sidebar-backdrop').forEach(el=>el.addEventListener('click',()=>{document.body.classList.remove('sidebar-open');sidebar?.classList.remove('open');toggle.setAttribute('aria-expanded','false');}));}
  document.querySelectorAll('[data-live-close]').forEach(el=>el.addEventListener('click',()=>el.closest('dialog')?.close()));
- by('applicationFields').disabled=true;document.forms[0].addEventListener('submit',event=>event.preventDefault());
+ by('applicationFields').disabled=true;
  try {
  const data=await window.UimsTab.studentData('application');
  document.querySelectorAll('[id$="lblUserName"],[id$="NavName"],.user-chip .name').forEach(el=>{el.textContent=data.user.name||data.user.email;});
  
  const id=new URLSearchParams(location.search).get('opportunity'),o=data.opportunities.find(row=>row.id===id),st=data.student||{};by('invalidOpportunity').hidden=!!o;set('fullName',st.fullName||data.user.name);set('studentNumber',st.studentNumber);set('email',data.user.email);set('phone',st.phone);opts('major',[st.department||st.programId],'Your program');set('major',st.department||st.programId);['fullName','studentNumber','email'].forEach(id=>by(id).readOnly=true);if(o){text('opportunityHeading',o.title);text('companyName',o.companyNameSnapshot||o.companyId);text('opportunityLocation',o.location);text('opportunityMajor',st.department||st.programId);text('opportunityDuration','Application deadline: '+fmt(o.applicationDeadline));}by('editApplication').addEventListener('click',()=>UimsTab.navigate('MyApplications.aspx'));note(data.states.opportunities!=='ready'?state(data,'opportunities'):data.placement?'Your account already has a placement. Existing applications and placement are preserved.':'Your identity and opportunity are loaded. Submission remains blocked until the student-only create permission and duplicate-request checks are approved.');
+
+ const fields=by('applicationFields'),form=document.forms[0],submit=fields.querySelector('[type="submit"]');let busy=false;
+ const eligible=!!o&&data.states.opportunities==='ready'&&data.states.profile==='ready'&&!data.placement&&o.canApply===true&&(o.eligibleProgramIds||[]).includes(st.programId)&&!data.applications.some(a=>a.opportunityId===o.id);
+ fields.disabled=!eligible;if(submit)submit.textContent='Submit application';
+ by('motivation').addEventListener('input',()=>text('characterCount',by('motivation').value.length+' / 1000'));
+ form.addEventListener('submit',async event=>{
+  event.preventDefault();if(!eligible||busy)return;if(!form.reportValidity())return;
+  busy=true;submit.disabled=true;note('Submitting your application securely…');
+  try{
+   await UimsTab.request('applicationSubmit',{opportunityId:o.id,phone:by('phone').value,cvLink:by('cvLink').value,portfolioLink:by('portfolioLink').value,motivation:by('motivation').value,confirmed:by('confirmInformation').checked});
+   fields.disabled=true;by('previewResult').hidden=false;by('previewResult').querySelector('h2').textContent='Application submitted';
+   text('previewSummary','Your application was saved in Firebase and is available to the company supervisor.');
+   by('previewResult').querySelector('p:not([id])').textContent='Applying does not confirm an internship offer.';
+   text('editApplication','View My Applications');by('previewResult').focus();note('Application submitted successfully.');
+  }catch(error){note(error.message||'Submission failed. Your entries were preserved.');submit.disabled=false;}
+  finally{busy=false;}
+ });
+ if(eligible)note('Your verified account is ready. Submit this application to the company for review.');if(!eligible&&!data.placement)note('This opportunity is unavailable for your program, or you already applied. Existing records have been preserved.');
 
  }catch(exception){error();}
  };

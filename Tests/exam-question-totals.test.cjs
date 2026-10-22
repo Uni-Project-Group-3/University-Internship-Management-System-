@@ -1,0 +1,13 @@
+'use strict';
+const fs=require('node:fs'),path=require('node:path'),vm=require('node:vm'),assert=require('node:assert/strict');
+const source=fs.readFileSync(path.join(__dirname,'../University-Internship-Management-System/University-Internship-Management-System/Js_project/Company/ManageTasks.js'),'utf8');
+new vm.Script(source);
+const totals=source.slice(source.indexOf('function syncExamTotals(){'),source.indexOf('const ammanInput='));
+const validation=source.slice(source.indexOf('function validateStudio(){'),source.indexOf('function summaryHtml('));
+const validity=source.match(/const validQuestion=q=>[^;]+;/)[0];
+const context={wizard:{opensAt:'2026-10-22T00:00:00Z',closesAt:'2026-10-23T00:00:00Z',exam:{startsAt:'2026-10-22T01:00:00Z',endsAt:'2026-10-22T02:00:00Z',questionCount:1,totalMarks:100,questions:Array.from({length:4},(_,i)=>({id:'q'+i,text:'Question '+i,choices:['A','B'],correct:0,marks:50}))}},step:3,ui:key=>key,by:()=>({querySelectorAll:()=>[]})};vm.createContext(context);vm.runInContext(validity+totals+validation,context);
+context.syncExamTotals();assert.equal(context.wizard.exam.questionCount,4);assert.equal(context.wizard.exam.totalMarks,200);context.validateStudio();console.log('PASS four questions of 50 total 200');
+context.wizard.exam.questions.push({id:'extra',text:'Extra',choices:['True','False'],correct:1,marks:25});context.syncExamTotals();assert.equal(context.wizard.exam.questionCount,5);assert.equal(context.wizard.exam.totalMarks,225);context.validateStudio();console.log('PASS additional question recalculates count and marks');
+context.wizard.exam.questions.pop();context.syncExamTotals();assert.equal(context.wizard.exam.totalMarks,200);console.log('PASS deletion recalculates totals');
+context.wizard.exam.questions[0].correct=-1;assert.throws(()=>context.validateStudio());console.log('PASS missing correct answer remains blocked');
+context.wizard.exam.questions=[];context.syncExamTotals();assert.throws(()=>context.validateStudio());console.log('PASS empty exam remains blocked');

@@ -256,7 +256,7 @@ async function init(){
  dialog.querySelector('button').addEventListener('click',()=>dialog.close(),{signal});
  function details(r){const body=dialog.querySelector('div');body.replaceChildren();const dl=document.createElement('dl');Object.entries(r).forEach(([key,v])=>{const dt=document.createElement('dt'),dd=document.createElement('dd');dt.textContent=key.replace(/([A-Z])/g,' $1');dd.textContent=/At$/.test(key)?date(v):Array.isArray(v)?v.join(', '):String(v);dl.append(dt,dd);});body.append(dl);dialog.showModal();dialog.querySelector('button').focus();}
  function render(){const list=filtered(),hasPaging=all('[aria-label="Next page"],#nextPlacements').length>0,size=hasPaging?(Number(by(config.pageSize)?.value)||10):Math.max(1,list.length);page=Math.min(page,Math.max(0,Math.ceil(list.length/size)-1));const visible=list.slice(page*size,(page+1)*size);
- host.innerHTML=visible.map(r=>config.cards?'<div class="col-md-6 col-xl-4"><article class="opp-card"><h3>'+escape(r.title)+'</h3><p>'+escape(r.description)+'</p><p>'+escape(r.location)+' · '+escape(r.status)+'</p><p>Apply by '+escape(date(r.applicationDeadline))+'</p><button type="button" data-live-record="'+escape(r.id)+'" class="row-action">View details</button></article></div>':'<tr>'+config.cells.map(k=>'<td>'+escape(value(r,k))+'</td>').join('')+'<td><button type="button" class="row-action" data-live-record="'+escape(r.id)+'">View details</button></td></tr>').join('')|| (config.cards?'<p>No matching records.</p>':'<tr><td colspan="'+(config.cells.length+1)+'">No matching records.</td></tr>');
+ host.innerHTML=visible.map(r=>config.cards?'<div class="col-md-6 col-xl-4"><article class="opp-card"><h3>'+escape(r.title)+'</h3><p>'+escape(r.description)+'</p><p>'+escape(r.location)+' · '+escape(r.status)+'</p><p>Apply by '+escape(date(r.applicationDeadline))+'</p><button type="button" data-live-record="'+escape(r.id)+'" class="row-action">View details</button> <button type="button" data-edit-opportunity="'+escape(r.id)+'" class="row-action">Edit</button></article></div>':'<tr>'+config.cells.map(k=>'<td>'+escape(value(r,k))+'</td>').join('')+'<td><button type="button" class="row-action" data-live-record="'+escape(r.id)+'">View details</button></td></tr>').join('')|| (config.cards?'<p>No matching records.</p>':'<tr><td colspan="'+(config.cells.length+1)+'">No matching records.</td></tr>');
  const result=list.length+' matching records · Page '+(page+1)+' of '+Math.max(1,Math.ceil(list.length/size));['resultsStatus','placementResults','recordCount'].forEach(id=>text(id,result));all('.trainees-card-footer > span,.messages-card-footer > span,.companies-pagination > span').forEach(el=>el.textContent=result);all('.trainees-pagination > span,.companies-pagination > div > span,.monitor-pagination > div > span').forEach(el=>{el.textContent='Page '+(page+1)+' / '+Math.max(1,Math.ceil(list.length/size));el.removeAttribute('aria-label');});
  all('[aria-label="Previous page"],#previousPlacements').forEach(b=>b.disabled=page===0);all('[aria-label="Next page"],#nextPlacements').forEach(b=>b.disabled=(page+1)*size>=list.length);
  if(by('emptyState'))by('emptyState').hidden=true;if(by('noResultsMsg'))by('noResultsMsg').hidden=true;all('.completion-empty,.companies-empty,.monitor-empty').filter(el=>!el.closest('dialog')).forEach(el=>el.hidden=true);
@@ -279,6 +279,47 @@ async function init(){
  all('.trainees-notice,.messages-notice,.completion-notice,.companies-notice,.evaluation-notice,.demo-note,.preview-note,#placementMessage,#pageNotice').filter(el=>!el.closest('dialog')).forEach(el=>el.textContent='Live Firebase records. Management writes and private evaluations are not enabled in this read-only integration.');
  all('.monitor-chip,.trainees-data-badge,.messages-disconnected').forEach(el=>el.textContent='Live Firebase');
  notice.textContent='Live Firebase records loaded for '+data.user.name+'. '+(Object.values(data.states).some(v=>v!=='ready')?'Some related reads are unavailable. ':'')+'Changes requiring additional permissions remain unavailable.';
+
+ // Bind the existing Bootstrap studio; no second form or local provider.
+ const modalEl=by('oppModal'),saveButton=by('saveOpp');
+ if(modalEl&&saveButton&&window.bootstrap){
+  const modal=bootstrap.Modal.getOrCreateInstance(modalEl);
+  let editing=null,dirty=false,saving=false,requestId='';
+  let feedback=modalEl.querySelector('[data-live-save-feedback]');
+  if(!feedback){feedback=document.createElement('p');feedback.dataset.liveSaveFeedback='';feedback.setAttribute('role','status');modalEl.querySelector('.modal-body').prepend(feedback);}
+  const fields={title:'oppTitle',description:'oppDescription',requirements:'oppRequirements',location:'oppLocation',capacity:'oppSeats',applicationDeadline:'oppDeadline',startDate:'oppStart',durationWeeks:'oppDuration',requiredHours:'oppRequiredHours'};
+  const uuid=()=>crypto.randomUUID().replace(/-/g,'');
+  const programs=Array.isArray(data.programs)?data.programs:[];
+  by('majorPicker').innerHTML=programs.map(p=>'<li><input type="checkbox" id="program-'+escape(p.id)+'" value="'+escape(p.id)+'"><label for="program-'+escape(p.id)+'">'+escape(p.nameEn||p.id)+'</label></li>').join('');
+  const selected=()=>all('#majorPicker input:checked').map(el=>el.value);
+  const preview=()=>{text('pvTitle',by('oppTitle').value||'Opportunity title');text('pvDesc',by('oppDescription').value||'Internship description');text('pvLocation',by('oppLocation').value||'Location');text('pvDeadline',by('oppDeadline').value||'—');text('pvSeats',by('oppSeats').value||'1');text('pvDuration',by('oppDuration').value||'8');text('pvMode',modalEl.querySelector('[name="workMode"]:checked')?.value||'On-site');text('pvAccepted','0');text('pvApplicants',editing?rows('applications').filter(a=>a.opportunityId===editing.id).length:0);by('pvMajors').textContent=selected().map(id=>programs.find(p=>p.id===id)?.nameEn||id).join(', ')||'No majors selected';};
+  const open=r=>{editing=r||null;requestId=uuid();dirty=false;feedback.textContent='';discard.hidden=true;
+   Object.entries(fields).forEach(([key,id])=>{by(id).value=r?.[key]??({capacity:1,durationWeeks:8,requiredHours:160}[key]??'');});
+   all('#majorPicker input').forEach(el=>el.checked=(r?.eligibleProgramIds||[]).includes(el.value));
+   all('#workMode input').forEach(el=>el.checked=el.value===({onsite:'On-site',hybrid:'Hybrid',remote:'Remote'}[r?.workMode]||'On-site'));
+   text('oppModalTitle',r?'Edit opportunity':'New opportunity');text('saveOppText',r?'Save changes':'Publish opportunity');
+   all('#oppModal button,#oppModal input,#oppModal textarea').forEach(el=>{el.disabled=false;el.removeAttribute('title');});
+   preview();modal.show();};
+  let discard=modalEl.querySelector('[data-live-discard]');if(!discard){discard=document.createElement('button');discard.dataset.liveDiscard='';discard.type='button';discard.className='btn-ghost lg';discard.textContent='Discard changes';modalEl.querySelector('.modal-footer').prepend(discard);}discard.hidden=true;
+  discard.addEventListener('click',()=>{dirty=false;modal.hide();},{signal});
+  modalEl.addEventListener('hide.bs.modal',e=>{if(saving||dirty){e.preventDefault();feedback.textContent=saving?'Saving to Firebase. Please wait.':'You have unsaved changes. Continue editing or choose Discard changes.';discard.hidden=saving;}},{signal});
+  modalEl.addEventListener('shown.bs.modal',()=>by('oppTitle').focus(),{signal});
+  modalEl.addEventListener('input',()=>{dirty=true;preview();},{signal});
+  modalEl.addEventListener('click',e=>{const step=e.target.closest('[data-step]');if(step){const input=by(step.dataset.target);input.value=Math.min(Number(input.max)||5000,Math.max(Number(input.min)||1,(Number(input.value)||0)+Number(step.dataset.step)));dirty=true;preview();}},{signal});
+  all('[data-action="new"]').forEach(b=>{b.disabled=false;b.removeAttribute('title');b.addEventListener('click',()=>open(null),{signal});});
+  host.addEventListener('click',e=>{const b=e.target.closest('[data-edit-opportunity]');if(b){e.preventDefault();const r=rows('opportunities').find(r=>r.id===b.dataset.editOpportunity);if(r)open(r);}},{signal});
+  saveButton.addEventListener('click',async()=>{
+   if(saving)return;
+   const input={id:editing?.id||'',requestId,expectedUpdatedAt:editing?.updatedAt||null,status:editing?.status==='closed'?'closed':'published',eligibleProgramIds:selected(),workMode:({'On-site':'onsite',Hybrid:'hybrid',Remote:'remote'}[modalEl.querySelector('[name="workMode"]:checked')?.value])};
+   Object.entries(fields).forEach(([key,id])=>input[key]=['capacity','durationWeeks','requiredHours'].includes(key)?Number(by(id).value):by(id).value.trim());
+   if(!input.title||!input.description||!input.requirements||!input.location||!input.applicationDeadline||!input.startDate||!input.eligibleProgramIds.length){feedback.textContent='Complete the required fields and choose at least one specialization.';return;}
+   if(input.startDate<input.applicationDeadline){feedback.textContent='Training cannot start before the application deadline.';by('oppStart').focus();return;}
+   saving=true;saveButton.disabled=true;feedback.textContent='Saving securely to Firebase…';
+   try{await UimsTab.request('companyOpportunitySave',input);dirty=false;saving=false;modal.hide();await init();}
+   catch(error){feedback.textContent=error.message||'Save failed. Your entries have been preserved. No local fallback was used.';saving=false;saveButton.disabled=false;}
+  },{signal});
+ }
+
  render();
  }catch(error){notice.textContent=error.message;host.replaceChildren();const p=document.createElement(config.cards?'p':'tr');p.textContent='Records unavailable. Please retry after signing in.';host.append(p);}
 }
