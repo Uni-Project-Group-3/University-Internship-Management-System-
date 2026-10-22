@@ -1,15 +1,8 @@
-using System;
-using System.Web;
-using System.Web.UI;
-
+using University_Internship_Management_System.Services.FinalEvaluation;
 namespace University_Internship_Management_System.Academic
 {
-    public partial class FinalAcademicEvaluation : Page
+    public partial class FinalAcademicEvaluation : PercentageEvaluationPage
     {
-        protected void Page_Load(object sender, EventArgs e)
-        {
-            Response.Cache.SetCacheability(HttpCacheability.NoCache);
-            Response.Cache.SetNoStore();
-        }
+        protected override bool Academic { get { return true; } }
     }
 }

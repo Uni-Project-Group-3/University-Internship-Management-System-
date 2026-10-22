@@ -1,7 +1,19 @@
-﻿namespace University_Internship_Management_System.Student
+namespace University_Internship_Management_System.Student
 {
     public partial class MyProgressEvaluation
     {
+        protected global::System.Web.UI.WebControls.Panel DemoStudentPanel;
+        protected global::System.Web.UI.WebControls.DropDownList DemoStudentChoice;
+
+        protected global::System.Web.UI.WebControls.Literal StudentAccessMessage;
+        protected global::System.Web.UI.WebControls.Literal CompletionStatusText;
+        protected global::System.Web.UI.WebControls.Literal CompletionStatusMessage;
+        protected global::System.Web.UI.WebControls.Literal CompletionApprovalDate;
+        protected global::System.Web.UI.WebControls.Literal OverallCompletionProgress;
+        protected global::System.Web.UI.WebControls.Literal ReportStatusText;
+        protected global::System.Web.UI.WebControls.Literal ReportAvailabilityText;
+        protected global::System.Web.UI.WebControls.Button DownloadCompletionReport;
+        protected global::System.Web.UI.HtmlControls.HtmlGenericControl taskFilterStatus;
         protected global::System.Web.UI.WebControls.LinkButton btnLogout;
         protected global::System.Web.UI.WebControls.Literal NavName;
         protected global::System.Web.UI.HtmlControls.HtmlForm form1;
