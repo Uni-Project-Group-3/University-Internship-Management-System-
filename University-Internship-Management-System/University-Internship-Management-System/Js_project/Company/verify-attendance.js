@@ -10,6 +10,7 @@ let cameraOpening = false;
 let cameraVersion = 0;
 let frameId = 0;
 let lastFrameAt = 0;
+let scanScaleIndex = 0;
 let lastToken = "";
 let lastTokenAt = 0;
 const video = document.getElementById("cameraVideo");
@@ -158,21 +159,9 @@ function connected(data, name) {
     document.getElementById("connectionStatus").textContent = "Firebase connected";
     document.getElementById("navName").textContent = name || "Attendance";
     document.getElementById("modeMessage").textContent = data.localDemo
-        ? "Local demo · real Firebase"
+        ? "Local test accounts · real Firebase"
         : "Signed in";
-    const selector = document.getElementById("localIdentity");
-    if (selector) {
-        // الخيارات الجديدة تأتي من جلسات أنشأها السيرفر لهذه الجلسة المحلية فقط.
-        (data.demoSessions || []).forEach(function (session) {
-            const id = session.supervisorId;
-            if (!Array.from(selector.options).some(function (option) { return option.value === id; })) {
-                const option = document.createElement("option");
-                option.value = id; option.textContent = session.label;
-                selector.append(option);
-            }
-        });
-        selector.value = data.identityId;
-    }
+
 }
 function disconnected(error) {
     document.getElementById("connectionStatus").textContent = "Connection / setup required";
@@ -212,6 +201,7 @@ function renderSupervisorProgress(type, data) {
 function renderSupervisor(data) {
     document.getElementById("recordRows").removeAttribute("aria-busy");
     supervisorData = data;
+    document.getElementById("issueQrButton").disabled = saving || !data.students.length;
     connected(data, data.supervisor.name);
     document.getElementById("recordsDate").textContent = "Today: " + data.today + " · Asia/Amman";
     document.getElementById("assignedStudents").textContent = data.students.length
@@ -333,7 +323,7 @@ async function review(record, decision) {
 async function processToken(token) {
     if (saving) return;
     token = String(token || "").trim();
-    if (!token) { showNotice("Scan or paste a temporary UIMS attendance QR first.", true); return; }
+    if (!token) { scannerDiagnostic("qr.empty-result"); return; }
     if (token === lastToken && Date.now() - lastTokenAt < 5000) return;
     lastToken = token; lastTokenAt = Date.now();
     scannerDiagnostic("scan.callback", { decoder: typeof jsQR });
@@ -352,7 +342,7 @@ async function processToken(token) {
         stopCamera();
         showStudent(result);
         scannerDiagnostic("result.displayed");
-        // السجل المحفوظ يأتي من C#؛ نحدّث صفه فقط، والتحديث الدوري يجلب باقي السجل.
+        // السجل المحفوظ يأتي من C#؛ نحدّث صفه مباشرة، وباقي السجل من زر Refresh.
         if (supervisorData && result.record) {
             const row = Object.assign({}, result.record, { studentName: result.student.name });
             const index = supervisorData.records.findIndex(function (item) {
@@ -363,7 +353,6 @@ async function processToken(token) {
         }
         saved = true;
         showNotice("Attendance saved. Hours pending approval.");
-        if (document.getElementById("tokenInput")) document.getElementById("tokenInput").value = "";
     } catch (error) {
         scannerDiagnostic("scan.failed", { stage: scanStage, errorType: error.name });
         document.getElementById("scanStatus").textContent = "Not recorded / check state";
@@ -384,7 +373,7 @@ function showStudent(result) {
     document.getElementById("verificationEmpty").hidden = true;
     document.getElementById("verificationDetails").hidden = false;
     document.getElementById("verifiedStudentName").textContent = student.name;
-    document.getElementById("verifiedIdentity").textContent = result.localDemo ? "Demo student" : "Assigned trainee";
+    document.getElementById("verifiedIdentity").textContent = result.localDemo ? "Local test student" : "Assigned trainee";
     document.getElementById("verifiedStudentNumber").textContent = student.studentNumber || "—";
     document.getElementById("verifiedCompany").textContent = result.company.name;
     document.getElementById("verifiedSupervisor").textContent = result.supervisor.name;
@@ -430,7 +419,10 @@ function scanFrame(timestamp) {
     if (!saving && timestamp - lastFrameAt > 250 && video.readyState >= 2) {
         lastFrameAt = timestamp;
         const started = scannerDiagnosticsEnabled ? performance.now() : 0;
-        const scale = Math.min(1, 800 / video.videoWidth);
+        // نحتفظ بتفاصيل الرمز الطويل؛ تصغير الإطار كان يضيّع المربعات الصغيرة.
+        // نبدّل المقياس بين الإطارات لأن بعض الأحجام تفشل معها قراءة المربعات.
+        const targetWidth = [1280, 960, 1600][scanScaleIndex++ % 3];
+        const scale = targetWidth / video.videoWidth;
         scanCanvas.width = Math.round(video.videoWidth * scale);
         scanCanvas.height = Math.round(video.videoHeight * scale);
         scanContext.drawImage(video, 0, 0, scanCanvas.width, scanCanvas.height);
@@ -447,7 +439,16 @@ function scanFrame(timestamp) {
                 lastFrameDiagnosticAt = timestamp;
             }
         }
-        if (code) processToken(code.data);
+        // بعض الإطارات تعطي نتيجة فارغة؛ نكمل المسح حتى قراءة نص الرمز فعليًا.
+        if (code) {
+            let decoded = typeof code.data === "string" ? code.data.trim() : "";
+            // توكن الحضور ASCII؛ بعض نتائج المكتبة تحتوي البايتات بدون النص.
+            if (!decoded && code.binaryData && code.binaryData.length <= 4096 &&
+                code.binaryData.every(function (value) { return value >= 32 && value <= 126; })) {
+                decoded = String.fromCharCode.apply(null, code.binaryData);
+            }
+            if (decoded.startsWith("UIMSATT1:")) processToken(decoded);
+        }
     }
     frameId = requestAnimationFrame(scanFrame);
 }
@@ -456,7 +457,7 @@ document.getElementById("openCamera").addEventListener("click", async function (
     if (cameraOpening || cameraStream) return;
     if (typeof jsQR !== "function") { showNotice("The local QR decoder library could not be loaded.", true); return; }
     if (!window.isSecureContext || !navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-        showNotice("Camera access needs HTTPS or localhost and a supported browser. You can also scan a QR image below.", true); return;
+        showNotice("Camera access needs HTTPS or localhost and a supported browser. Allow camera access to scan attendance.", true); return;
     }
     cameraOpening = true;
     scannerDiagnostic("camera.requested", { decoder: typeof jsQR, secureContext: window.isSecureContext });
@@ -468,7 +469,7 @@ document.getElementById("openCamera").addEventListener("click", async function (
     document.getElementById("stopCamera").hidden = false;
     document.getElementById("cameraMessage").textContent = "Allow camera access…";
     try {
-        const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: "environment" } }, audio: false });
+        const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: "environment" }, width: { ideal: 1920 }, height: { ideal: 1080 } }, audio: false });
         if (version !== cameraVersion) { stream.getTracks().forEach(function (track) { track.stop(); }); return; }
         cameraStream = stream; video.srcObject = stream; video.hidden = false;
         document.getElementById("cameraPlaceholder").hidden = true;
@@ -482,50 +483,47 @@ document.getElementById("openCamera").addEventListener("click", async function (
         scannerDiagnostic("camera.failed", { errorType: error.name });
         if (version !== cameraVersion) return;
         stopCamera();
-        showNotice(error.name === "NotAllowedError" ? "Camera permission denied. Allow access or scan a saved QR image."
-            : "Camera unavailable or already in use. Try another camera or a saved QR image.", true);
+        showNotice(error.name === "NotAllowedError" ? "Camera permission denied. Allow camera access in your browser settings."
+            : "Camera unavailable or already in use. Close other camera apps and try again.", true);
     } finally { cameraOpening = false; this.disabled = !!cameraStream; }
 });
 document.getElementById("stopCamera").addEventListener("click", stopCamera);
 window.addEventListener("pagehide", stopCamera);
 document.addEventListener("visibilitychange", function () { if (document.hidden) stopCamera(); });
 
-document.getElementById("qrImage")?.addEventListener("change", function () {
-    const file = this.files[0];
-    if (!file) return;
-    if (typeof jsQR !== "function") { showNotice("QR decoder unavailable.", true); return; }
-    if (file.size > 10 * 1024 * 1024) { showNotice("Choose a QR image smaller than 10 MB.", true); return; }
-    stopCamera();
-    const image = new Image(), url = URL.createObjectURL(file);
-    image.onload = function () {
-        try {
-            const scale = Math.min(1, 1600 / Math.max(image.width, image.height));
-            scanCanvas.width = Math.round(image.width * scale); scanCanvas.height = Math.round(image.height * scale);
-            scanContext.drawImage(image, 0, 0, scanCanvas.width, scanCanvas.height);
-            const pixels = scanContext.getImageData(0, 0, scanCanvas.width, scanCanvas.height);
-            const code = jsQR(pixels.data, pixels.width, pixels.height, { inversionAttempts: "attemptBoth" });
-            if (!code) throw new Error("No readable QR was found in this image.");
-            processToken(code.data);
-        } catch (error) { showNotice(error.message, true); }
-        finally { URL.revokeObjectURL(url); }
-    };
-    image.onerror = function () { URL.revokeObjectURL(url); showNotice("Unable to open this image.", true); };
-    image.src = url;
-    this.value = "";
-});
-document.getElementById("submitToken")?.addEventListener("click", function () { processToken(document.getElementById("tokenInput").value); });
 document.getElementById("attendanceSearch").addEventListener("input", renderRecords);
 document.getElementById("refreshAttendance").addEventListener("click", loadSupervisor);
-const identitySelector = document.getElementById("localIdentity");
-if (identitySelector) identitySelector.addEventListener("change", async function () {
-    if (saving || loading) { if (supervisorData) this.value = supervisorData.identityId; return; }
-    stopCamera();
-    document.getElementById("verificationDetails").hidden = true;
-    document.getElementById("verificationEmpty").hidden = false;
-    loading = true;
-    try { renderSupervisor(await api("identity", { identityId: this.value })); }
-    catch (error) { disconnected(error); }
-    finally { loading = false; }
-});
 // نحمّل البيانات عند فتح الصفحة؛ تحديث تغييرات الطرف الآخر يكون يدويًا من زر Refresh.
 loadSupervisor();
+
+// اختيار الطلاب يغيّر رموزهم المؤقتة فقط؛ لا يسجل حضورًا.
+document.getElementById("issueQrButton").addEventListener("click", function () {
+    const list = document.getElementById("qrStudentList");
+    list.replaceChildren();
+    (supervisorData ? supervisorData.students : []).forEach(function (student) {
+        const row = document.createElement("p"), label = document.createElement("label");
+        const checkbox = document.createElement("input");
+        checkbox.type = "checkbox"; checkbox.value = student.id; checkbox.name = "qrStudent";
+        label.append(checkbox, " " + student.name); row.append(label); list.append(row);
+    });
+    document.getElementById("selectAllQrStudents").checked = false;
+    document.getElementById("issueQrStatus").textContent = "";
+    openDialog("issueQrDialog", this);
+});
+document.getElementById("selectAllQrStudents").addEventListener("change", function () {
+    const checked = this.checked;
+    document.querySelectorAll("#qrStudentList input").forEach(function (box) { box.checked = checked; });
+});
+document.getElementById("confirmIssueQr").addEventListener("click", async function () {
+    if (saving) return;
+    const ids = Array.from(document.querySelectorAll("#qrStudentList input:checked")).map(function (box) { return box.value; });
+    const status = document.getElementById("issueQrStatus");
+    if (!ids.length) { status.textContent = "Select at least one student."; return; }
+    saving = true; this.disabled = true;
+    try {
+        const result = await api("issueQr", { studentIds: JSON.stringify(ids), attendanceAction: document.getElementById("issuedQrAction").value });
+        status.textContent = result.issued.length + " QR codes issued. Each student can now open their own QR.";
+        if (result.failed.length) status.textContent += " Not issued: " + result.failed.map(function (row) { return row.message; }).join("; ");
+    } catch (error) { status.textContent = error.message; }
+    finally { saving = false; this.disabled = false; }
+});

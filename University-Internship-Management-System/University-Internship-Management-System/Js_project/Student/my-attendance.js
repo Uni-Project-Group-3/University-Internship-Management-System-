@@ -132,26 +132,9 @@ function connected(data, name) {
     document.getElementById("connectionStatus").textContent = "Firebase connected";
     document.getElementById("navName").textContent = name || "Attendance";
     document.getElementById("modeMessage").textContent = data.localDemo
-        ? "Local demo · real Firebase"
+        ? "Local test accounts · real Firebase"
         : "Signed in";
-    const selector = document.getElementById("localIdentity");
-    if (selector) {
-        // الخيارات الجديدة تأتي من جلسات أنشأها السيرفر لهذه الجلسة المحلية فقط.
-        (data.demoSessions || []).forEach(function (session) {
-            const id = session.studentId;
-            if (!Array.from(selector.options).some(function (option) { return option.value === id; })) {
-                const option = document.createElement("option");
-                option.value = id; option.textContent = session.label;
-                selector.append(option);
-            }
-        });
-        selector.value = data.identityId;
-    }
-    const demoInfo = document.getElementById("demoSessionInfo");
-    const demo = (data.demoSessions || []).find(function (session) { return session.studentId === data.identityId; });
-    if (demoInfo) demoInfo.textContent = demo
-        ? demo.label + " · Firebase record: uimsAttendance/attendance/" + demo.assignmentId + "/" + demo.date
-        : "Create a new session to start a separate live demo. Previous Firebase records are preserved.";
+
 }
 function disconnected(error) {
     document.getElementById("connectionStatus").textContent = "Connection / setup required";
@@ -277,7 +260,6 @@ async function loadAttendance() {
     if (loading || saving) return;
     loading = true;
     document.getElementById("connectionStatus").textContent = "Refreshing…";
-    if (createDemoButton) createDemoButton.disabled = true;
     const version = dataVersion;
     ["checkInButton", "checkOutButton", "earlyButton"].forEach(function (id) { document.getElementById(id).disabled = true; });
     ["historyRows", "todayStatus", "actualCheckIn", "actualCheckOut"].forEach(function (id) {
@@ -305,7 +287,7 @@ async function loadAttendance() {
         document.getElementById("todayStatus").textContent = "Unavailable";
         if (!attendance) document.getElementById("historyEmpty").textContent = "Attendance could not be loaded.";
         ["checkInButton", "checkOutButton", "earlyButton"].forEach(function (id) { document.getElementById(id).disabled = true; });
-    } finally { loading = false; if (createDemoButton) createDemoButton.disabled = saving; }
+    } finally { loading = false; }
 }
 
 async function showQr(action, button) {
@@ -322,15 +304,49 @@ async function showQr(action, button) {
         const container = document.getElementById("qrCode");
         container.replaceChildren();
         // التوكن المحمي طويل؛ دقة أعلى تمنع ضياع مربعات QR عند حفظ الصورة وقراءتها.
-        new QRCode(container, { text: qr.token, width: 640, height: 640, correctLevel: QRCode.CorrectLevel.L });
-        if (document.getElementById("qrToken")) document.getElementById("qrToken").value = qr.token;
-        if (document.getElementById("copyTokenStatus")) document.getElementById("copyTokenStatus").textContent = "";
+        const generatedQr = new QRCode(container, { text: qr.token, width: 640, height: 640, correctLevel: QRCode.CorrectLevel.L });
+        // هامش أبيض وأبعاد بمضاعفات صحيحة تمنع تشويش مربعات الرمز أمام الكاميرا.
+        const qrCanvas = container.querySelector("canvas");
+        if (qrCanvas && generatedQr._oQRCode) {
+            const matrix = generatedQr._oQRCode;
+            const count = matrix.getModuleCount();
+            const moduleSize = Math.max(4, Math.floor(640 / (count + 8)));
+            qrCanvas.width = qrCanvas.height = (count + 8) * moduleSize;
+            const context = qrCanvas.getContext("2d");
+            context.fillStyle = "#ffffff";
+            context.fillRect(0, 0, qrCanvas.width, qrCanvas.height);
+            context.fillStyle = "#000000";
+            for (let row = 0; row < count; row++) {
+                for (let column = 0; column < count; column++) {
+                    if (matrix.isDark(row, column)) context.fillRect((column + 4) * moduleSize, (row + 4) * moduleSize, moduleSize, moduleSize);
+                }
+            }
+            const image = container.querySelector("img");
+            if (image) image.remove();
+            // SVG يحافظ على حدة المربعات مهما تغيّر حجم الشاشة.
+            const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+            svg.setAttribute("viewBox", "0 0 " + (count + 8) + " " + (count + 8));
+            svg.setAttribute("role", "img");
+            svg.setAttribute("aria-label", "Attendance QR");
+            svg.style.cssText = "width:480px;max-width:100%;height:auto;background:white;shape-rendering:crispEdges";
+            const path = document.createElementNS(svg.namespaceURI, "path");
+            let squares = "";
+            for (let row = 0; row < count; row++) {
+                for (let column = 0; column < count; column++) {
+                    if (matrix.isDark(row, column)) squares += "M" + (column + 4) + " " + (row + 4) + "h1v1h-1z";
+                }
+            }
+            path.setAttribute("d", squares);
+            path.setAttribute("fill", "black");
+            svg.append(path);
+            qrCanvas.style.display = "none";
+            container.append(svg);
+        }
         document.getElementById("qrTitle").textContent = action === "checkIn" ? "Check-in QR" : "Check-out QR";
         document.getElementById("qrDescription").textContent = attendance.student.name + " · " + attendance.company.name + ". Show this QR to your assigned supervisor.";
         qrAction = action;
         clearInterval(qrTimer);
         qrTimer = setInterval(updateCountdown, 250);
-        if (document.getElementById("saveQrImage")) document.getElementById("saveQrImage").disabled = false;
         updateCountdown();
         openDialog("qrDialog", button);
     } catch (error) { showNotice(error.message, true); }
@@ -339,30 +355,15 @@ async function showQr(action, button) {
 
 function updateCountdown() {
     const seconds = Math.max(0, Math.ceil((qrDeadline - performance.now()) / 1000));
-    document.getElementById("qrCountdown").textContent = seconds ? "Expires in " + seconds + " seconds" : "QR expired. Close and generate a new one.";
+    document.getElementById("qrCountdown").textContent = seconds ? "Expires in " + seconds + " seconds" : "QR expired. Close and ask your supervisor for a new one.";
     if (!seconds) {
         clearInterval(qrTimer);
         document.getElementById("qrCode").replaceChildren();
-        if (document.getElementById("qrToken")) document.getElementById("qrToken").value = "";
-        if (document.getElementById("saveQrImage")) document.getElementById("saveQrImage").disabled = true;
     }
 }
 document.getElementById("qrDialog").addEventListener("close", function () {
     clearInterval(qrTimer);
-    if (document.getElementById("qrToken")) document.getElementById("qrToken").value = "";
     document.getElementById("qrCode").replaceChildren();
-});
-document.getElementById("saveQrImage")?.addEventListener("click", function () {
-    const original = document.querySelector("#qrCode canvas");
-    if (!original || performance.now() >= qrDeadline) return;
-    const canvas = document.createElement("canvas");
-    canvas.width = original.width + 64; canvas.height = original.height + 64;
-    const context = canvas.getContext("2d");
-    context.fillStyle = "#ffffff"; context.fillRect(0, 0, canvas.width, canvas.height);
-    context.drawImage(original, 32, 32);
-    const link = document.createElement("a");
-    link.download = "UIMS-temporary-attendance-QR.png";
-    link.href = canvas.toDataURL("image/png"); link.click();
 });
 document.getElementById("checkInButton").addEventListener("click", function () { showQr("checkIn", this); });
 document.getElementById("checkOutButton").addEventListener("click", function () { showQr("checkOut", this); });
@@ -386,46 +387,8 @@ document.getElementById("sendEarlyRequest").addEventListener("click", async func
     } catch (error) { showNotice(error.message, true); }
     finally { saving = false; this.disabled = false; }
 });
-const identitySelector = document.getElementById("localIdentity");
-const createDemoButton = document.getElementById("createDemoSession");
-if (createDemoButton) createDemoButton.addEventListener("click", async function () {
-    if (loading || saving) return;
-    saving = true; this.disabled = true;
-    if (document.getElementById("qrDialog").open) document.getElementById("qrDialog").close();
-    try {
-        const data = await api("newDemo", { scenario: document.getElementById("demoScenario").value });
-        saving = false;
-        renderStudent(data);
-        showNotice("Session ready. Refresh the supervisor tab.");
-    } catch (error) {
-        attendance = null;
-        disconnected(error);
-        ["checkInButton", "checkOutButton", "earlyButton"].forEach(function (id) { document.getElementById(id).disabled = true; });
-    }
-    finally { saving = false; this.disabled = false; }
-});
-if (identitySelector) identitySelector.addEventListener("change", async function () {
-    if (saving || loading) { if (attendance) this.value = attendance.identityId; return; }
-    if (document.getElementById("qrDialog").open) document.getElementById("qrDialog").close();
-    loading = true;
-    try { renderStudent(await api("identity", { identityId: this.value })); }
-    catch (error) {
-        disconnected(error);
-        ["checkInButton", "checkOutButton", "earlyButton"].forEach(function (id) { document.getElementById(id).disabled = true; });
-    }
-    finally { loading = false; }
-});
 document.getElementById("historyFilter").addEventListener("change", renderHistory);
 document.getElementById("attendanceSearch").addEventListener("input", renderHistory);
 document.getElementById("refreshAttendance").addEventListener("click", function () { loadAttendance(); });
 // نحمّل البيانات عند فتح الصفحة؛ تحديث تغييرات الطرف الآخر يكون يدويًا من زر Refresh.
 loadAttendance();
-
-// النسخ يعمل على localhost؛ عند رفض Clipboard نحدد النص للنسخ اليدوي.
-document.getElementById("copyQrToken")?.addEventListener("click", async function () {
-    const field = document.getElementById("qrToken");
-    const status = document.getElementById("copyTokenStatus");
-    if (!field.value || performance.now() >= qrDeadline) { status.textContent = "Generate a fresh QR first."; return; }
-    try { await navigator.clipboard.writeText(field.value); status.textContent = "Token copied."; }
-    catch (error) { field.focus(); field.select(); status.textContent = "Press Ctrl+C to copy."; }
-});

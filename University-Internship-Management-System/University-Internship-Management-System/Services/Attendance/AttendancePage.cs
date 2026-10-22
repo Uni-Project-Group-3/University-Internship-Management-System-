@@ -1,4 +1,5 @@
 ﻿using System;
+using System.IO;
 using System.Net.Http;
 using System.Security.Cryptography;
 using System.Threading.Tasks;
@@ -25,9 +26,9 @@ namespace UIMS.Attendance
                     !(context.Handler is University_Internship_Management_System.Company.VerifyAttendance)) || context.Request.HttpMethod != "POST" ||
                     context.Request.QueryString["attendanceApi"] != "1") return;
                 string action = context.Request.Form["action"];
-                if (action == "load" || action == "qr" || action == "scan" || action == "requestEarly" || action == "review")
+                if (action == "load" || action == "qr" || action == "scan" || action == "requestEarly" || action == "review" || action == "issueQr")
                     context.SetSessionStateBehavior(SessionStateBehavior.ReadOnly);
-                // identity وnewDemo يحتاجان تعديل Session، فيبقى لهما القفل الافتراضي.
+                // identity وnewTest يحتاجان تعديل Session، فيبقى لهما القفل الافتراضي.
             };
         }
         public void Dispose() { }
@@ -60,7 +61,8 @@ namespace UIMS.Attendance
             Response.Headers["Referrer-Policy"] = "no-referrer";
             Response.Headers["X-Frame-Options"] = "DENY";
             // وضع التطوير محصور بنفس الجهاز، ولا يمكن تفعيله من رابط أو حقل بالمتصفح.
-            LocalDemoAllowed = AttendanceFirebase.Setting("UIMS_ATTENDANCE_LOCAL_DEMO") == "true" &&
+            LocalDemoAllowed = (AttendanceFirebase.Setting("UIMS_ATTENDANCE_LOCAL_TEST") == "true" ||
+                AttendanceFirebase.Setting("UIMS_ATTENDANCE_LOCAL_DEMO") == "true") &&
                 Request.IsLocal && Request.Url.IsLoopback && string.IsNullOrEmpty(Request.Headers["X-Forwarded-For"]);
             isApi = Request.QueryString["attendanceApi"] == "1";
             if (Session["Attendance.Csrf"] == null && !isApi)
@@ -117,6 +119,15 @@ namespace UIMS.Attendance
         {
             var sessions = Session["Attendance.DemoSessions"] as JArray ?? new JArray();
             sessions.Add(session);
+            var studentIds = session["studentIds"] as JArray;
+            if (studentIds != null && studentIds.Count > 1)
+            {
+                var second = (JObject)session.DeepClone();
+                second["studentId"] = studentIds[1];
+                second["assignmentId"] = session["secondAssignmentId"];
+                second["label"] = (string)session["label"] + " Student 2";
+                sessions.Add(second);
+            }
             Session["Attendance.DemoSessions"] = sessions;
             Session["Attendance.Local.student"] = (string)session["studentId"];
             Session["Attendance.Local.company"] = (string)session["supervisorId"];
@@ -179,6 +190,16 @@ namespace UIMS.Attendance
         {
             if (LocalDemoAllowed)
             {
+                // إعداد تجربة ثابت من السيرفر، وليس تسجيل دخول أو معرّفًا من المتصفح.
+                string testFile = AttendanceFirebase.Setting("UIMS_ATTENDANCE_TEST_SESSION_FILE");
+                if (!string.IsNullOrWhiteSpace(testFile))
+                {
+                    if (action == "identity") throw new InvalidOperationException("Local test identity is configured on the server.");
+                    var test = JObject.Parse(File.ReadAllText(testFile));
+                    string configuredId = (string)test[role == "student" ? "studentId" : "supervisorId"];
+                    AttendanceFirebase.CheckKey(configuredId);
+                    return configuredId;
+                }
                 string key = "Attendance.Local." + role;
                 if (action == "identity")
                 {

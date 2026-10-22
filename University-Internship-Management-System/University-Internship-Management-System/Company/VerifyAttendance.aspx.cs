@@ -1,4 +1,5 @@
-using System;
+﻿using System;
+using System.Linq;
 using System.Threading.Tasks;
 using System.Web.UI;
 using Newtonsoft.Json.Linq;
@@ -26,8 +27,8 @@ namespace University_Internship_Management_System.Company
             using (attendanceService.ReuseRequestReads())
             {
                 string action = attendanceRequest.Action;
-                if (action == "newDemo")
-                    throw new InvalidOperationException("New demo sessions require the local student page.");
+                if (action == "newTest")
+                    throw new InvalidOperationException("Local test setup requires the local student page.");
 
                 string supervisorId = attendanceRequest.ResolveIdentity("company", action);
                 string uid = Session["Uims.VerifiedFirebaseUid"] as string ?? "";
@@ -37,6 +38,9 @@ namespace University_Internship_Management_System.Company
                 JObject data;
                 switch (action)
                 {
+                    case "issueQr":
+                        data = await IssueSelectedQr(supervisorId);
+                        break;
                     case "scan":
                         data = await ScanAttendance(supervisorId);
                         break;
@@ -75,13 +79,30 @@ namespace University_Internship_Management_System.Company
         private Task<JObject> ScanAttendance(string supervisorId)
         {
             // فحص الرمز والدخول والخروج والحفظ الآمن تنفذها الخدمة المشتركة.
-            return attendanceService.Scan(supervisorId, Request.Form["token"], LocalDemoAllowed);
+            return attendanceService.ScanIssuedQr(supervisorId, Request.Form["token"], LocalDemoAllowed);
         }
 
-        private Task ReviewAttendance(string supervisorId)
+        private async Task ReviewAttendance(string supervisorId)
         {
-            return attendanceService.Review(supervisorId, Request.Form["assignmentId"],
+            if (LocalDemoAllowed)
+            {
+                var selected = await attendanceService.LoadSupervisorAttendance(supervisorId, null, null);
+                var student = selected[0].OfType<JObject>().FirstOrDefault(row =>
+                    (string)row["assignmentId"] == Request.Form["assignmentId"]);
+                if (student == null) throw new InvalidOperationException("Choose one of your test students.");
+                await attendanceService.CheckLocalStudent((string)student["id"], supervisorId, true);
+            }
+            await attendanceService.Review(supervisorId, Request.Form["assignmentId"],
                 Request.Form["date"], Request.Form["decision"]);
+        }
+
+        private Task<JObject> IssueSelectedQr(string supervisorId)
+        {
+            JArray students;
+            try { students = JArray.Parse(Request.Form["studentIds"] ?? "[]"); }
+            catch (Newtonsoft.Json.JsonException) { throw new InvalidOperationException("Invalid student selection."); }
+            return attendanceService.IssueStudentQrs(supervisorId, students,
+                Request.Form["attendanceAction"], LocalDemoAllowed, Session["Uims.VerifiedFirebaseUid"] as string ?? "");
         }
 
         protected override void Render(HtmlTextWriter writer)

@@ -79,10 +79,7 @@
 <main class="content attendance-content">
     <div class="page-heading"><div><p class="eyebrow">COMPANY WORKSPACE</p><h1>Verify Attendance</h1><p>Scan attendance and review your trainees.</p></div><span class="date-chip" id="connectionStatus">Connecting…</span></div>
     <span id="modeMessage" class="visually-hidden"></span>
-    <% if (LocalDemoAllowed) { %><details class="demo-tools" id="demoTools"><summary>Demo Tools</summary><div class="demo-tools-body">
-    <div class="preview-controls"><label for="localIdentity">Local test supervisor</label><select id="localIdentity" class="form-select"><option value="att_demo_supervisor_a">Test supervisor A</option><option value="att_demo_supervisor_b">Test supervisor B</option></select></div>
-            <div class="sample-scan"><label for="qrImage" class="form-label">Upload QR image</label><input id="qrImage" class="form-control" type="file" accept="image/*" /><div class="token-tools"><label for="tokenInput" class="form-label">Paste student Token</label><textarea id="tokenInput" class="form-control" rows="3" maxlength="4096" placeholder="UIMSATT1:…" aria-label="Temporary QR token"></textarea><button id="submitToken" type="button" class="secondary-action">Record attendance</button></div></div></div></details><% } %>
-    <div class="panel-heading"><span id="assignedStudents" class="section-note">Loading assigned students…</span><button id="refreshAttendance" type="button" class="text-action">Refresh records</button></div>
+    <div class="panel-heading"><span id="assignedStudents" class="section-note">Loading assigned students…</span><div class="attendance-actions"><button id="issueQrButton" type="button" class="primary-action" disabled>Issue student QR codes</button><button id="refreshAttendance" type="button" class="text-action">Refresh records</button></div></div>
     <div id="pageNotice" class="page-notice" role="status" hidden></div>
     <div class="row g-4 align-items-start">
         <div class="col-xl-6"><section class="attendance-panel" aria-labelledby="scannerHeading"><div class="panel-heading"><h2 id="scannerHeading">Scan QR</h2><span class="attendance-badge">Live QR scanner</span></div>
@@ -98,6 +95,16 @@
     </div>
     <section class="attendance-panel" aria-labelledby="requestsHeading"><div class="panel-heading"><div><h2 id="requestsHeading">Early check-out requests</h2><p class="section-note">Approve the request before the student scans out.</p></div><span id="requestStatus" class="attendance-badge badge-warning">Loading</span></div><div id="requestList"></div></section>
     <section class="attendance-panel" aria-labelledby="recordsHeading"><div class="panel-heading"><h2 id="recordsHeading">Attendance records &amp; hours approval</h2><span class="section-note"><span id="recordsDate"></span></span></div><div class="table-responsive"><table class="table attendance-table"><caption class="visually-hidden">Attendance records and separate hours approval</caption><thead><tr><th scope="col">Date</th><th scope="col">Student</th><th scope="col">Check-in</th><th scope="col">Check-out</th><th scope="col">Worked</th><th scope="col">Attendance</th><th scope="col">Hours approval</th></tr></thead><tbody id="recordRows"></tbody></table></div><p class="section-note">Hours count after check-out and your approval.</p></section>
+    <dialog id="issueQrDialog" class="attendance-dialog" aria-labelledby="issueQrHeading">
+        <div class="panel-heading"><h2 id="issueQrHeading">Issue student QR codes</h2><button type="button" class="dialog-close" data-close-dialog="issueQrDialog" aria-label="Close">&times;</button></div>
+        <p class="section-note">Each selected student receives a different QR. Students use Refresh attendance, then Show QR. Valid for 120 seconds.</p>
+        <label for="issuedQrAction" class="form-label">Attendance action</label>
+        <select id="issuedQrAction" class="form-select"><option value="checkIn">Check-in</option><option value="checkOut">Check-out</option></select>
+        <p><label><input id="selectAllQrStudents" type="checkbox" /> Select all students</label></p>
+        <div id="qrStudentList"></div>
+        <p id="issueQrStatus" class="section-note" role="status"></p>
+        <div class="attendance-actions"><button id="confirmIssueQr" type="button" class="primary-action">Issue selected QR codes</button><button type="button" class="secondary-action" data-close-dialog="issueQrDialog">Close</button></div>
+    </dialog>
     <noscript><p>Enable JavaScript to scan QR codes and load attendance records.</p></noscript>
 </main>
 

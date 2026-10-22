@@ -6,6 +6,7 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
 using System.Web;
+using System.Web.Caching;
 using System.Web.Security;
 using Newtonsoft.Json.Linq;
 
@@ -77,34 +78,32 @@ namespace UIMS.Attendance
 
         public async Task<JObject> CreateLocalDemoSession(string scenario, bool localDemo)
         {
-            if (!localDemo) throw new InvalidOperationException("Demo session creation is available on localhost test mode only.");
-            if (scenario != "early" && scenario != "normal") throw new InvalidOperationException("Choose a supported demo scenario.");
+            if (!localDemo) throw new InvalidOperationException("Training test creation is available on localhost test mode only.");
+            if (scenario != "early" && scenario != "normal" && scenario != "local") throw new InvalidOperationException("Choose a supported training test scenario.");
             await CheckEnabled(); // نقرأ الإعداد فقط؛ لا نفعّل Firebase من زر التجربة.
             var zone = TimeZoneInfo.FindSystemTimeZoneById("Jordan Standard Time");
             var localNow = TimeZoneInfo.ConvertTime(DateTimeOffset.UtcNow, zone);
             string date = localNow.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
-            if (date != "2026-10-21" && date != "2026-10-22")
-                throw new InvalidOperationException("This demo is available on October 21 and 22, 2026 only.");
             long start = localNow.ToUnixTimeMilliseconds();
             long midnight = new DateTimeOffset(localNow.Date.AddDays(1), localNow.Offset).ToUnixTimeMilliseconds();
             // الجلسة الجديدة تنتهي قبل منتصف الليل؛ لا نغير ساعة السيرفر أو جدول جلسة سابقة.
-            long end = Math.Min(start + (scenario == "normal" ? 5 : 20) * 60000, midnight - 1);
-            string prefix = "att_demo_run_" + Guid.NewGuid().ToString("N");
+            long end = Math.Min(start + (scenario == "normal" ? 5 : scenario == "local" ? 240 : 20) * 60000, midnight - 1);
+            string prefix = "att_local_run_" + Guid.NewGuid().ToString("N");
             string student = prefix + "_student", supervisor = prefix + "_supervisor", company = prefix + "_company";
             string assignment = prefix + "_assignment", academic = prefix + "_academic";
-            string label = localNow.ToString("MM-dd HH:mm:ss") + (scenario == "early" ? " Early (20 min)" : " Normal (5 min)");
+            string label = localNow.ToString("MM-dd HH:mm:ss") + (scenario == "early" ? " Early (20 min)" : scenario == "local" ? " Local test (4 hours)" : " Normal (5 min)");
             var nodes = new Dictionary<string, JObject>
             {
-                ["companies/" + company] = new JObject { ["name"] = "Cycle 4 Demo Company", ["status"] = "active", ["isTestData"] = true },
-                ["academicSupervisors/" + academic] = new JObject { ["name"] = "Cycle 4 Demo Academic", ["status"] = "active", ["isTestData"] = true },
-                ["companySupervisors/" + supervisor] = new JObject { ["name"] = "Demo Supervisor " + label, ["companyId"] = company, ["status"] = "active", ["isTestData"] = true },
+                ["companies/" + company] = new JObject { ["name"] = "Local Test Company", ["status"] = "active", ["isTestData"] = true },
+                ["academicSupervisors/" + academic] = new JObject { ["name"] = "Local Test Academic", ["status"] = "active", ["isTestData"] = true },
+                ["companySupervisors/" + supervisor] = new JObject { ["name"] = "Test Supervisor " + label, ["companyId"] = company, ["status"] = "active", ["isTestData"] = true },
                 ["trainingAssignments/" + assignment] = new JObject
                 {
                     ["studentId"] = student, ["companyId"] = company, ["companySupervisorId"] = supervisor, ["academicSupervisorId"] = academic,
                     ["status"] = "active", ["isTestData"] = true, ["requiredHours"] = scenario == "early" ? 120 : 240,
-                    ["startDate"] = date, ["endDate"] = date, ["timeZone"] = "Asia/Amman", ["trainingTitle"] = "Cycle 4 live demo - " + label
+                    ["startDate"] = date, ["endDate"] = date, ["timeZone"] = "Asia/Amman", ["trainingTitle"] = "Local training test - " + label
                 },
-                ["students/" + student] = new JObject { ["name"] = "Demo Student " + label, ["studentNumber"] = prefix, ["major"] = "Software Engineering", ["status"] = "active", ["isTestData"] = true, ["activeAssignmentId"] = assignment },
+                ["students/" + student] = new JObject { ["name"] = "Test Student " + label, ["studentNumber"] = prefix, ["major"] = "Software Engineering", ["status"] = "active", ["isTestData"] = true, ["activeAssignmentId"] = assignment },
                 ["schedules/" + assignment + "/" + date] = new JObject
                 {
                     ["assignmentId"] = assignment, ["attendanceDate"] = date, ["isTestData"] = true, ["isTrainingDay"] = true,
@@ -112,14 +111,27 @@ namespace UIMS.Attendance
                     ["scheduledStart"] = localNow.ToString("HH:mm"), ["scheduledEnd"] = TimeZoneInfo.ConvertTime(DateTimeOffset.FromUnixTimeMilliseconds(end), zone).ToString("HH:mm")
                 }
             };
+            // طالب ثانٍ لنفس الشركة والمشرف حتى نجرب تحديد الكل برمزين مختلفين.
+            string secondStudent = prefix + "_student2", secondAssignment = prefix + "_assignment2";
+            var secondAccount = (JObject)nodes["students/" + student].DeepClone();
+            secondAccount["name"] = "Test Student 2 " + label;
+            secondAccount["studentNumber"] = secondStudent;
+            secondAccount["activeAssignmentId"] = secondAssignment;
+            nodes["students/" + secondStudent] = secondAccount;
+            var secondTraining = (JObject)nodes["trainingAssignments/" + assignment].DeepClone();
+            secondTraining["studentId"] = secondStudent;
+            nodes["trainingAssignments/" + secondAssignment] = secondTraining;
+            var secondSchedule = (JObject)nodes["schedules/" + assignment + "/" + date].DeepClone();
+            secondSchedule["assignmentId"] = secondAssignment;
+            nodes["schedules/" + secondAssignment + "/" + date] = secondSchedule;
             // هذه سجلات جديدة مستقلة؛ نحفظها معًا لتقليل انتظار التجهيز، ولا نكتب أي حضور.
             await Task.WhenAll(nodes.Select(async node =>
             {
                 // null_etag يضمن الإنشاء فقط؛ لا نستبدل أي سجل سابق حتى عند التصادم.
                 if (!await Save(node.Key, node.Value, "null_etag"))
-                    throw new InvalidOperationException("Demo ID conflict. No existing record was replaced. Create a new session.");
+                    throw new InvalidOperationException("Test ID conflict. No existing record was replaced. Create a new test.");
             }));
-            return new JObject { ["studentId"] = student, ["supervisorId"] = supervisor, ["assignmentId"] = assignment, ["label"] = label, ["date"] = date, ["startAt"] = start, ["endAt"] = end };
+            return new JObject { ["studentId"] = student, ["studentIds"] = new JArray(student, secondStudent), ["secondAssignmentId"] = secondAssignment, ["supervisorId"] = supervisor, ["assignmentId"] = assignment, ["label"] = label, ["date"] = date, ["startAt"] = start, ["endAt"] = end };
         }
 
         public async Task<JObject> Identity(string role, string id, string verifiedUid, bool localDemo)
@@ -130,7 +142,7 @@ namespace UIMS.Attendance
             if (!actor.HasValues || Text(actor, "status") != "active")
                 throw new InvalidOperationException("This attendance identity is missing or inactive.");
             if (localDemo && !Flag(actor, "isTestData"))
-                throw new InvalidOperationException("Local demonstration mode only permits labelled test records.");
+                throw new InvalidOperationException("Local testing only permits labelled test records.");
             if (!localDemo && (string.IsNullOrWhiteSpace(verifiedUid) || Text(actor, "firebaseUid") != verifiedUid || Flag(actor, "isTestData")))
                 throw new InvalidOperationException("The verified login UID is not mapped to this attendance identity.");
             return actor;
@@ -376,8 +388,107 @@ namespace UIMS.Attendance
             return new JObject { ["token"] = "UIMSATT1:" + HttpServerUtility.UrlTokenEncode(protectedBytes), ["expiresAt"] = now + 120000, ["serverNow"] = now };
         }
 
+        private static string IssuedQrKey(string assignmentId, string action)
+        {
+            return "Uims.Attendance.IssuedQr:" + assignmentId + ":" + Today() + ":" + action;
+        }
+
+        // هذا الحاجز يخص التجربة بدون Login؛ لا يسمح باستعمال حسابات أو تكليفات حقيقية.
+        private static void CheckLocalTestContext(AttendanceContext context, bool localTest)
+        {
+            if (localTest && (!Flag(context.Student, "isTestData") || !Flag(context.Assignment, "isTestData") ||
+                !Flag(context.Company, "isTestData") || !Flag(context.Supervisor, "isTestData") ||
+                !Flag(context.Schedule, "isTestData")))
+                throw new InvalidOperationException("Local testing permits isolated test accounts and schedules only.");
+        }
+
+        public async Task<JObject> IssueStudentQrs(string supervisorId, JArray selectedStudents, string action, bool localTest, string verifiedUid = "")
+        {
+            if (action != "checkIn" && action != "checkOut") throw new InvalidOperationException("Choose check-in or check-out.");
+            var ids = selectedStudents.Select(value => value.Type == JTokenType.String ? (string)value : "").Distinct().ToList();
+            if (ids.Count == 0 || ids.Count > 200) throw new InvalidOperationException("Select between 1 and 200 students.");
+            var issued = new JArray(); var failed = new JArray();
+            foreach (string studentId in ids)
+            {
+                try
+                {
+                    await Identity("company", supervisorId, verifiedUid, localTest);
+                    var context = await Context(studentId, supervisorId);
+                    CheckLocalTestContext(context, localTest);
+                    var qr = await CreateQr(studentId, action, localTest);
+                    var entry = (JObject)qr.DeepClone();
+                    // مرجع عشوائي قصير للكاميرا؛ البيانات المحمية تظل على السيرفر.
+                    var randomBytes = new byte[32];
+                    using (var random = RandomNumberGenerator.Create()) random.GetBytes(randomBytes);
+                    string shortToken = "UIMSATT1:S:" + BitConverter.ToString(randomBytes).Replace("-", "");
+                    entry["protectedToken"] = qr["token"];
+                    entry["token"] = shortToken;
+                    HttpRuntime.Cache.Insert("Uims.Attendance.ShortQr:" + shortToken, entry, null,
+                        DateTimeOffset.FromUnixTimeMilliseconds(Number(qr, "expiresAt")).UtcDateTime,
+                        Cache.NoSlidingExpiration);
+                    entry["studentId"] = studentId; entry["supervisorId"] = supervisorId;
+                    entry["assignmentId"] = context.AssignmentId; entry["action"] = action;
+                    // الرمز مؤقت في ذاكرة السيرفر 120 ثانية؛ لا نضيف مسارات أو حقولاً لقاعدة البيانات.
+                    HttpRuntime.Cache.Insert(IssuedQrKey(context.AssignmentId, action), entry, null,
+                        DateTimeOffset.FromUnixTimeMilliseconds(Number(qr, "expiresAt")).UtcDateTime,
+                        Cache.NoSlidingExpiration);
+                    issued.Add(new JObject { ["studentId"] = studentId, ["name"] = Text(context.Student, "name"),
+                        ["expiresAt"] = qr["expiresAt"] });
+                }
+                catch (InvalidOperationException error)
+                {
+                    failed.Add(new JObject { ["studentId"] = studentId, ["message"] = error.Message });
+                }
+            }
+            return new JObject { ["issued"] = issued, ["failed"] = failed };
+        }
+
+        public async Task<JObject> ReadIssuedQr(string studentId, string action, bool localTest)
+        {
+            var context = await Context(studentId, null);
+            CheckLocalTestContext(context, localTest);
+            await CheckEnabled();
+            CheckAction(context, action, Now());
+            var issued = HttpRuntime.Cache[IssuedQrKey(context.AssignmentId, action)] as JObject;
+            if (issued == null || Number(issued, "expiresAt") <= Now() || Text(issued, "studentId") != studentId)
+                throw new InvalidOperationException("No current QR. Ask your supervisor to issue one, then try again.");
+            var result = (JObject)issued.DeepClone();
+            result.Remove("protectedToken");
+            result["serverNow"] = Now();
+            return result;
+        }
+
+        public async Task<JObject> ScanIssuedQr(string supervisorId, string token, bool localTest)
+        {
+            var payload = ReadQr(token);
+            string action = Text(payload, "action"), assignmentId = Text(payload, "assignmentId");
+            var issued = HttpRuntime.Cache[IssuedQrKey(assignmentId, action)] as JObject;
+            if (issued == null || Text(issued, "token") != token || Text(issued, "supervisorId") != supervisorId ||
+                Text(issued, "studentId") != Text(payload, "studentId"))
+                throw new InvalidOperationException("This QR was not issued by your supervisor or has been replaced.");
+            var context = await Context(Text(payload, "studentId"), supervisorId);
+            CheckLocalTestContext(context, localTest);
+            // Scan يعيد التحقق من الوقت والملكية وETag قبل أي حفظ؛ وجود الرمز لا يتجاوزها.
+            var result = await Scan(supervisorId, token, localTest);
+            if (ReferenceEquals(HttpRuntime.Cache[IssuedQrKey(assignmentId, action)], issued))
+                HttpRuntime.Cache.Remove(IssuedQrKey(assignmentId, action));
+            return result;
+        }
+
+        public async Task CheckLocalStudent(string studentId, string supervisorId, bool localTest)
+        {
+            if (localTest) CheckLocalTestContext(await Context(studentId, supervisorId), true);
+        }
+
         public static JObject ReadQr(string token)
         {
+            if (token != null && token.StartsWith("UIMSATT1:S:", StringComparison.Ordinal))
+            {
+                var entry = token.Length == 75 ? HttpRuntime.Cache["Uims.Attendance.ShortQr:" + token] as JObject : null;
+                if (entry == null || Number(entry, "expiresAt") <= Now())
+                    throw new InvalidOperationException("QR expired. Ask your supervisor to issue a new one.");
+                token = Text(entry, "protectedToken");
+            }
             if (token == null || !token.StartsWith("UIMSATT1:", StringComparison.Ordinal) || token.Length > 4096)
                 throw new InvalidOperationException("This is not a UIMS attendance QR.");
             try

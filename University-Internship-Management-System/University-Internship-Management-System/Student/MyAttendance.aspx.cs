@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Web.UI;
@@ -28,7 +28,6 @@ namespace University_Internship_Management_System.Student
             using (attendanceService.ReuseRequestReads())
             {
                 string action = attendanceRequest.Action;
-                if (action == "newDemo") await CreateDemoSession();
 
                 string studentId = attendanceRequest.ResolveIdentity("student", action);
                 string uid = Session["Uims.VerifiedFirebaseUid"] as string ?? "";
@@ -39,15 +38,13 @@ namespace University_Internship_Management_System.Student
                 switch (action)
                 {
                     case "qr":
-                        data = await GenerateQr(studentId);
+                        data = await LoadIssuedQr(studentId);
                         break;
                     case "requestEarly":
                         await RequestEarlyDeparture(studentId);
                         data = await LoadAttendance(studentId, student);
                         break;
                     case "load":
-                    case "identity":
-                    case "newDemo":
                         data = await LoadAttendance(studentId, student);
                         break;
                     default:
@@ -86,23 +83,15 @@ namespace University_Internship_Management_System.Student
             };
         }
 
-        private Task<JObject> GenerateQr(string studentId)
+        private Task<JObject> LoadIssuedQr(string studentId)
         {
-            return attendanceService.CreateQr(studentId, Request.Form["attendanceAction"], LocalDemoAllowed);
+            return attendanceService.ReadIssuedQr(studentId, Request.Form["attendanceAction"], LocalDemoAllowed);
         }
 
-        private Task RequestEarlyDeparture(string studentId)
+        private async Task RequestEarlyDeparture(string studentId)
         {
-            return attendanceService.RequestEarly(studentId, Request.Form["reason"]);
-        }
-
-        private async Task CreateDemoSession()
-        {
-            // إنشاء التجربة يحتاج وضع localhost المسموح، ولا يعمل بهوية يرسلها المتصفح.
-            if (!LocalDemoAllowed)
-                throw new InvalidOperationException("New demo sessions require the local student page.");
-            var session = await attendanceService.CreateLocalDemoSession(Request.Form["scenario"], LocalDemoAllowed);
-            attendanceRequest.RememberDemoSession(session);
+            await attendanceService.CheckLocalStudent(studentId, null, LocalDemoAllowed);
+            await attendanceService.RequestEarly(studentId, Request.Form["reason"]);
         }
 
         protected override void Render(HtmlTextWriter writer)
