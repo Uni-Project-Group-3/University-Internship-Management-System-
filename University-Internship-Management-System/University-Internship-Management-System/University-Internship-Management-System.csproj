@@ -711,6 +711,12 @@
   <ItemGroup>
     <Content Include="Assets\public\about.css" />
   </ItemGroup>
+  <ItemGroup>
+    <Content Include="TasksApi.ashx" />
+    <Content Include="Js_project\firebase-client.js" />
+    <Compile Include="Services\FirebaseConfiguration.cs" />
+    <Compile Include="Services\TaskService.cs" />
+  </ItemGroup>
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
     <PropertyGroup>
       <ErrorText>This project references NuGet package(s) that are missing on this computer. Use NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>

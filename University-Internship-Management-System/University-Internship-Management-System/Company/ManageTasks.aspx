@@ -116,7 +116,7 @@
                         <div class="topbar-actions ms-auto">
                             <div class="user-chip">
                                 <span class="avatar">C</span>
-                                <span class="name">Company Portal<span class="role">Interface preview</span>
+                                <span class="name">Company Portal<span class="role">Company workspace</span>
                                 </span>
                             </div>
                         </div>
@@ -124,7 +124,7 @@
 
                     <!-- ============ CONTENT ============ -->
                     <div class="content">
-                        <p class="preview-note">Interface preview · Sample data. Changes last until this page is reloaded; no Firebase updates.</p>
+                        <p class="preview-note">Loading live task records from Firebase…</p>
                         <div id="pageNotice" class="page-notice" role="status" aria-live="polite" hidden>
                         </div>
                         <div class="page-header d-flex justify-content-between align-items-center animate-fade-up template-style-1">
@@ -195,79 +195,23 @@
                                     <option value="submitted">Awaiting Review</option>
                                     <option value="revision">Revision Requested</option>
                                     <option value="completed">Completed</option>
-                                    <option value="in-progress">In Progress</option>
+                                    <option value="assigned">In Progress</option>
                                 </select>
                             </div>
                         </div>
 
                         <!-- TASKS LIST -->
+                        <div class="d-flex justify-content-between align-items-center mb-3"><h4 class="m-0 fw-bold fs-5">Tasks</h4><span id="taskCount" class="badge badge-primary-soft fs-6">Loading…</span></div>
                         <div class="task-list" id="taskList">
-                            <div class="d-flex justify-content-between align-items-center mb-3">
-                                <h4 class="m-0 fw-bold fs-5">Active Submissions</h4>
-                                <span id="taskCount" class="badge badge-primary-soft fs-6">2 matching tasks</span>
-                            </div>
 
-                            <!-- Task: Submitted -->
-                            <div class="task-card animate-fade-up template-style-7" data-status="submitted">
-                                <div class="task-info">
-                                    <div class="task-head">
-                                        <span class="badge badge-primary-soft">Technical Task</span>
-                                        <h3 class="task-title">Database Design (ERD)</h3>
-                                        <span class="badge badge-warning">Awaiting Review</span>
-                                    </div>
-                                    <p class="task-desc">Create an Entity Relationship Diagram (ERD) and explain the relationships between entities.</p>
-                                    <div class="task-meta">
-                                        <span>
-                                            <i class="bi bi-person" aria-hidden="true">
-                                            </i> Ali Mohammad</span>
-                                        <span>
-                                            <i class="bi bi-calendar-event" aria-hidden="true">
-                                            </i> Oct 23, 2026</span>
-                                        <span>
-                                            <i class="bi bi-bullseye" aria-hidden="true">
-                                            </i> Example criteria: accuracy and documentation</span>
-                                    </div>
-                                </div>
-                                <div class="task-action">
-                                    <button type="button" class="btn btn-primary review-btn" data-bs-toggle="modal" data-bs-target="#reviewModal">
-                                        Review & Grade
-                                    </button>
-                                </div>
-                            </div>
-
-                            <!-- Task: Revision -->
-                            <div class="task-card border-danger-left animate-fade-up template-style-8" data-status="revision">
-                                <div class="task-info">
-                                    <div class="task-head">
-                                        <span class="badge badge-primary-soft">Programming</span>
-                                        <h3 class="task-title">Employee Management Module</h3>
-                                        <span class="badge badge-danger">Revision Requested</span>
-                                    </div>
-                                    <p class="task-desc">Implement employee CRUD operations and handle form validations.</p>
-                                    <div class="task-meta">
-                                        <span>
-                                            <i class="bi bi-person" aria-hidden="true">
-                                            </i> Sara Ahmed</span>
-                                        <span class="text-danger">
-                                            <i class="bi bi-calendar-event" aria-hidden="true">
-                                            </i> Oct 22, 2026</span>
-                                    </div>
-                                </div>
-                                <div class="task-action">
-                                    <button type="button" class="btn btn-light review-btn" data-bs-toggle="modal" data-bs-target="#reviewModal">
-                                        View History
-                                    </button>
-                                </div>
-                            </div>
-
-                            <!-- Empty State -->
+<!-- Empty State -->
                             <div id="noTasksMsg" class="no-tasks animate-fade-up template-style-9">
                                 <div class="empty-icon">
                                     <i class="bi bi-inbox" aria-hidden="true">
                                     </i>
                                 </div>
-                                <h4 class="fw-bold mt-3 mb-1">No tasks found</h4>
-                                <p class="text-muted m-0">Try adjusting your search or filters.</p>
+                                <h4 class="fw-bold mt-3 mb-1">Loading tasks</h4>
+                                <p class="text-muted m-0">Loading live task records from Firebase.</p>
                             </div>
                         </div>
                     </div>
@@ -303,14 +247,13 @@
                                 <div class="col-md-6">
                                     <label class="form-label custom-label">Assigned Student</label>
                                     <select id="newTaskStudent" class="form-control custom-input">
-                                        <option>Ali Mohammad</option>
-                                        <option>Sara Ahmed</option>
+                                        <option value="">Loading confirmed trainees…</option>
                                     </select>
                                 </div>
                             </div>
                             <div class="mb-2">
                                 <label class="form-label custom-label">Evaluation Criteria (Preview)</label>
-                                <label class="form-label custom-label" for="newTaskMaximum">Maximum task score (demo)</label><input type="number" id="newTaskMaximum" class="form-control custom-input" min="1" value="10" required /><input type="text" class="form-control custom-input" id="newTaskCriteria" required placeholder="e.g. Code Quality">
+                                <label class="form-label custom-label" for="newTaskMaximum">Maximum task score</label><input type="number" id="newTaskMaximum" class="form-control custom-input" min="1" value="10" required /><input type="text" class="form-control custom-input" id="newTaskCriteria" required placeholder="e.g. Code Quality">
                             </div>
                         </div>
                         <div class="modal-footer border-0 pb-4 px-4">
@@ -336,14 +279,14 @@
 
                             <div class="submission-details-box mb-4">
                                 <strong class="d-block mb-1 text-dark">Student Description:</strong>
-                                <p class="mb-3 text-muted">Completed the ERD schema using MySQL Workbench and added relationships mapping.</p>
+                                <p class="mb-3 text-muted">Submission details load from Firebase when a task is opened.</p>
                                 <strong class="d-block mb-1 text-dark">Submitted Link:</strong>
-                                <span class="text-muted">No file or repository connected in this preview.</span>
+                                <span class="text-muted">Submission link and attachment details load from Firebase.</span>
                             </div>
 
                             <div class="mb-4">
                                 <label for="gradeInput" class="form-label custom-label">Task score</label>
-                                <p class="text-muted small">Demonstration scale only; university grading configuration is not connected.</p>
+                                <p class="text-muted small">The score range follows the assigned task.</p>
                                 <input type="number" id="gradeInput" class="form-control custom-input" min="0" max="100" placeholder="e.g. 95">
                             </div>
                             <div class="mb-2">
@@ -361,10 +304,9 @@
             </div>
 
         </form>
-        <script src="../Js_project/Demo/demo-store.js?v=20261021-original-ui"></script>
-<script src="../Scripts/bootstrap.bundle.min.js">
+        <script src="../Scripts/bootstrap.bundle.min.js">
         </script>
-        <script src="../Js_project/Company/ManageTasks.js?v=20261021-original-ui">
+        <script src="../Js_project/Company/ManageTasks.js?v=20261022-task-list-fix1">
         </script>
     </body>
 </html>
