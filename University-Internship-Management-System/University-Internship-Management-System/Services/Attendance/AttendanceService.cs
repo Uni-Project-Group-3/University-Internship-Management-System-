@@ -76,9 +76,62 @@ namespace UIMS.Attendance
             return saved;
         }
 
-        public Task<JObject> CreateLocalDemoSession(string scenario, bool localDemo)
+        public async Task<JObject> CreateLocalDemoSession(string scenario, bool localDemo)
         {
-            throw new UIMS.Services.FirebaseException(501, "New sample identities are disabled. Use the existing attendance records in Firebase.");
+            if (!localDemo || !AttendanceConfiguration.IsLocalDevelopment(HttpContext.Current)) throw new InvalidOperationException("Training test creation is available on localhost test mode only.");
+            if (scenario != "early" && scenario != "normal" && scenario != "local") throw new InvalidOperationException("Choose a supported training test scenario.");
+            await CheckEnabled(); // نقرأ الإعداد فقط؛ لا نفعّل Firebase من زر التجربة.
+            var zone = TimeZoneInfo.FindSystemTimeZoneById("Jordan Standard Time");
+            var localNow = TimeZoneInfo.ConvertTime(DateTimeOffset.UtcNow, zone);
+            string date = localNow.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
+            long start = localNow.ToUnixTimeMilliseconds();
+            long midnight = new DateTimeOffset(localNow.Date.AddDays(1), localNow.Offset).ToUnixTimeMilliseconds();
+            // الجلسة الجديدة تنتهي قبل منتصف الليل؛ لا نغير ساعة السيرفر أو جدول جلسة سابقة.
+            long end = Math.Min(start + (scenario == "normal" ? 5 : scenario == "local" ? 240 : 20) * 60000, midnight - 1);
+            string prefix = "att_demo_session_" + Guid.NewGuid().ToString("N");
+            string student = prefix + "_student", supervisor = prefix + "_supervisor", company = prefix + "_company";
+            string assignment = prefix + "_assignment", academic = prefix + "_academic";
+            string label = localNow.ToString("MM-dd HH:mm:ss") + (scenario == "early" ? " Early (20 min)" : scenario == "local" ? " Local test (4 hours)" : " Normal (5 min)");
+            var nodes = new Dictionary<string, JObject>
+            {
+                ["companies/" + company] = new JObject { ["name"] = "Local Test Company", ["status"] = "active", ["isTestData"] = true },
+                ["academicSupervisors/" + academic] = new JObject { ["name"] = "Local Test Academic", ["status"] = "active", ["isTestData"] = true },
+                ["companySupervisors/" + supervisor] = new JObject { ["name"] = "Test Supervisor " + label, ["companyId"] = company, ["status"] = "active", ["isTestData"] = true },
+                ["trainingAssignments/" + assignment] = new JObject
+                {
+                    ["studentId"] = student, ["companyId"] = company, ["companySupervisorId"] = supervisor, ["academicSupervisorId"] = academic,
+                    ["status"] = "active", ["isTestData"] = true, ["requiredHours"] = scenario == "early" ? 120 : 240,
+                    ["startDate"] = date, ["endDate"] = date, ["timeZone"] = "Asia/Amman", ["trainingTitle"] = "Local training test - " + label
+                },
+                ["students/" + student] = new JObject { ["name"] = "Test Student " + label, ["studentNumber"] = prefix, ["major"] = "Software Engineering", ["status"] = "active", ["isTestData"] = true, ["activeAssignmentId"] = assignment },
+                ["schedules/" + assignment + "/" + date] = new JObject
+                {
+                    ["assignmentId"] = assignment, ["attendanceDate"] = date, ["isTestData"] = true, ["isTrainingDay"] = true,
+                    ["version"] = 1, ["timeZone"] = "Asia/Amman", ["scheduledStartAt"] = start, ["scheduledEndAt"] = end,
+                    ["scheduledStart"] = localNow.ToString("HH:mm"), ["scheduledEnd"] = TimeZoneInfo.ConvertTime(DateTimeOffset.FromUnixTimeMilliseconds(end), zone).ToString("HH:mm")
+                }
+            };
+            // طالب ثانٍ لنفس الشركة والمشرف حتى نجرب تحديد الكل برمزين مختلفين.
+            string secondStudent = prefix + "_student2", secondAssignment = prefix + "_assignment2";
+            var secondAccount = (JObject)nodes["students/" + student].DeepClone();
+            secondAccount["name"] = "Test Student 2 " + label;
+            secondAccount["studentNumber"] = secondStudent;
+            secondAccount["activeAssignmentId"] = secondAssignment;
+            nodes["students/" + secondStudent] = secondAccount;
+            var secondTraining = (JObject)nodes["trainingAssignments/" + assignment].DeepClone();
+            secondTraining["studentId"] = secondStudent;
+            nodes["trainingAssignments/" + secondAssignment] = secondTraining;
+            var secondSchedule = (JObject)nodes["schedules/" + assignment + "/" + date].DeepClone();
+            secondSchedule["assignmentId"] = secondAssignment;
+            nodes["schedules/" + secondAssignment + "/" + date] = secondSchedule;
+            // هذه سجلات جديدة مستقلة؛ نحفظها معًا لتقليل انتظار التجهيز، ولا نكتب أي حضور.
+            await Task.WhenAll(nodes.Select(async node =>
+            {
+                // null_etag يضمن الإنشاء فقط؛ لا نستبدل أي سجل سابق حتى عند التصادم.
+                if (!await Save(node.Key, node.Value, "null_etag"))
+                    throw new InvalidOperationException("Test ID conflict. No existing record was replaced. Create a new test.");
+            }));
+            return new JObject { ["studentId"] = student, ["studentIds"] = new JArray(student, secondStudent), ["secondAssignmentId"] = secondAssignment, ["supervisorId"] = supervisor, ["assignmentId"] = assignment, ["label"] = label, ["date"] = date, ["startAt"] = start, ["endAt"] = end };
         }
 
         public async Task<JObject> Identity(string role, string id, string verifiedUid, bool localDemo)

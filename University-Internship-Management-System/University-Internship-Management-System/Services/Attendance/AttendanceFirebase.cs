@@ -55,9 +55,16 @@ namespace UIMS.Attendance
             {
                 configuration.EnsureWritesAllowed();
                 var parts = path.Split('/');
-                if (parts.Length < 2 || !parts[1].StartsWith("att_demo_", StringComparison.Ordinal) ||
-                    (parts[0] != "attendance" && parts[0] != "earlyCheckoutRequests"))
-                    throw new UIMS.Services.FirebaseException(403, "Development writes are limited to existing test attendance and early-departure records.");
+                bool attendanceWrite = parts.Length == 3 && parts[1].StartsWith("att_demo_", StringComparison.Ordinal) &&
+                    (parts[0] == "attendance" || parts[0] == "earlyCheckoutRequests");
+                // إنشاء فقط بمعرّفات تجربة عشوائية؛ null_etag يمنع استبدال أي بيانات سابقة.
+                bool newTestData = method == "PUT" && etag == "null_etag" && parts.Length >= 2 &&
+                    parts[1].StartsWith("att_demo_session_", StringComparison.Ordinal) && data != null &&
+                    AttendanceService.Flag(data, "isTestData") &&
+                    ((parts.Length == 2 && new[] { "students", "companies", "companySupervisors", "academicSupervisors", "trainingAssignments" }.Contains(parts[0])) ||
+                     (parts.Length == 3 && parts[0] == "schedules"));
+                if (!attendanceWrite && !newTestData)
+                    throw new UIMS.Services.FirebaseException(403, "Development writes are limited to isolated test records.");
             }
             foreach (string key in path.Split('/')) CheckKey(key);
             string database = configuration.DatabaseUrl;
@@ -145,7 +152,8 @@ namespace UIMS.Attendance
         public bool LiveWritesEnabled { get { return Setting("AttendanceLiveWritesEnabled") == "true"; } }
         public static bool IsLocalDevelopment(System.Web.HttpContext context)
         {
-            return context != null && System.Configuration.ConfigurationManager.AppSettings["AttendanceLocalDevelopmentEnabled"] == "true" && context.Request.IsLocal && context.Request.Url.IsLoopback &&
+            return context != null && (System.Configuration.ConfigurationManager.AppSettings["AttendanceLocalDevelopmentEnabled"] == "true" ||
+                AttendanceFirebase.Setting("UIMS_ATTENDANCE_LOCAL_TEST") == "true") && context.Request.IsLocal && context.Request.Url.IsLoopback &&
                 string.IsNullOrEmpty(context.Request.Headers["X-Forwarded-For"]) && string.IsNullOrEmpty(context.Request.Headers["Forwarded"]);
         }
         public void EnsureEnabled()
