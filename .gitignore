@@ -1,0 +1,31 @@
+# Visual Studio
+.vs/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# Build Files
+bin/
+obj/
+Debug/
+Release/
+
+# NuGet
+packages/
+*.nupkg
+
+# Temporary Files
+*.tmp
+*.log
+
+# Test Results
+TestResults/
+
+# Publish
+publish/
+
+# Final evaluation server credentials must be kept outside the checkout.
+.final-evaluation-secrets/
+*service-account*.json
+*service_account*.json

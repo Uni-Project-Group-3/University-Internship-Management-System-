@@ -1,0 +1,441 @@
+{
+  "users": {
+    "X35KPqy8bmPKJ1aXNK3Cgrn5J743": {
+      "fullName": "Demo Coordinator",
+      "email": "coordinator@example.invalid",
+      "role": "coordinator",
+      "isActive": true,
+      "accountSetupStatus": "complete"
+    },
+    "DEMO_UID_COORDINATOR_001": {
+      "fullName": "Demo Coordinator",
+      "email": "coordinator@example.invalid",
+      "role": "coordinator",
+      "isActive": true,
+      "accountSetupStatus": "demoOnly"
+    },
+    "DEMO_UID_ACADEMIC_001": {
+      "fullName": "Demo Academic Supervisor",
+      "email": "academic@example.invalid",
+      "academicSupervisorId": "AS-DEMO-001",
+      "universityId": "JUST-DEMO",
+      "collegeId": "IT-DEMO",
+      "majorId": "Computer Science",
+      "department": "Computer Science",
+      "role": "academicSupervisor",
+      "isActive": true,
+      "accountSetupStatus": "demoOnly"
+    },
+    "DEMO_UID_COMPANY_001": {
+      "fullName": "Demo Company Supervisor",
+      "email": "company@example.invalid",
+      "companySupervisorId": "CS-DEMO-001",
+      "companyId": "CO-DEMO-001",
+      "companyName": "Northstar Software (Demo)",
+      "role": "companySupervisor",
+      "isActive": true,
+      "accountSetupStatus": "demoOnly"
+    },
+    "DEMO_UID_STUDENT_001": {
+      "fullName": "Demo Student One",
+      "email": "student.one@example.invalid",
+      "studentId": "2023001",
+      "universityId": "JUST-DEMO",
+      "collegeId": "IT-DEMO",
+      "majorId": "Computer Science",
+      "department": "Computer Science",
+      "requiredTrainingHours": 300,
+      "academicSupervisorId": "AS-DEMO-001",
+      "role": "student",
+      "isActive": true,
+      "accountSetupStatus": "demoOnly"
+    },
+    "DEMO_UID_STUDENT_002": {
+      "fullName": "Demo Student Two",
+      "email": "student.two@example.invalid",
+      "studentId": "2023002",
+      "universityId": "JUST-DEMO",
+      "collegeId": "IT-DEMO",
+      "majorId": "Computer Science",
+      "department": "Computer Science",
+      "requiredTrainingHours": 300,
+      "academicSupervisorId": "AS-DEMO-001",
+      "role": "student",
+      "isActive": true,
+      "accountSetupStatus": "demoOnly"
+    }
+  },
+  "universityRecords": {
+    "students": {
+      "2023001": {
+        "studentId": "2023001",
+        "fullName": "Demo Student One",
+        "email": "student.one@example.invalid",
+        "universityId": "JUST-DEMO",
+        "collegeId": "IT-DEMO",
+        "majorId": "Computer Science",
+        "requiredTrainingHours": 300,
+        "isEligible": true
+      },
+      "2023002": {
+        "studentId": "2023002",
+        "fullName": "Demo Student Two",
+        "email": "student.two@example.invalid",
+        "universityId": "JUST-DEMO",
+        "collegeId": "IT-DEMO",
+        "majorId": "Computer Science",
+        "requiredTrainingHours": 300,
+        "isEligible": true
+      }
+    }
+  },
+  "companies": {
+    "CO-DEMO-001": {
+      "id": "CO-DEMO-001",
+      "name": "Northstar Software (Demo)",
+      "status": "active",
+      "companySupervisorId": "CS-DEMO-001"
+    }
+  },
+  "assignments": {
+    "ASG-DEMO-001": {
+      "id": "ASG-DEMO-001",
+      "studentId": "2023001",
+      "academicSupervisorId": "AS-DEMO-001",
+      "active": true
+    },
+    "ASG-DEMO-002": {
+      "id": "ASG-DEMO-002",
+      "studentId": "2023002",
+      "academicSupervisorId": "AS-DEMO-001",
+      "active": true
+    }
+  },
+  "supervisorAssignments": {
+    "ASG-DEMO-001": {
+      "id": "ASG-DEMO-001",
+      "studentId": "2023001",
+      "academicSupervisorId": "AS-DEMO-001",
+      "active": true
+    },
+    "ASG-DEMO-002": {
+      "id": "ASG-DEMO-002",
+      "studentId": "2023002",
+      "academicSupervisorId": "AS-DEMO-001",
+      "active": true
+    }
+  },
+  "opportunities": {
+    "OP-DEMO-001": {
+      "id": "OP-DEMO-001",
+      "companyId": "CO-DEMO-001",
+      "companyName": "Northstar Software (Demo)",
+      "title": "Software Engineering Internship (Demo)",
+      "description": "Fictional training opportunity for isolated UIMS development testing.",
+      "requirements": "Computer Science or a related major.",
+      "majors": ["Computer Science"],
+      "seats": 2,
+      "acceptedCount": 1,
+      "applicantsCount": 2,
+      "acceptedApplications": {"APP-DEMO-001": true},
+      "location": "Irbid (Demo)",
+      "workMode": "Hybrid",
+      "startDate": "2026-09-01",
+      "durationWeeks": 16,
+      "requiredHours": 300,
+      "deadline": "2026-08-20",
+      "status": "published",
+      "createdAt": "2026-07-01T09:00:00.000Z"
+    },
+    "OP-DEMO-002": {
+      "id": "OP-DEMO-002",
+      "companyId": "CO-DEMO-001",
+      "companyName": "Northstar Software (Demo)",
+      "title": "Cloud Operations Internship (Demo)",
+      "description": "A fictional future opportunity for exercising the application review flow.",
+      "requirements": "Computer Science or a related major.",
+      "majors": ["Computer Science"],
+      "seats": 1,
+      "acceptedCount": 0,
+      "applicantsCount": 1,
+      "location": "Irbid (Demo)",
+      "workMode": "On-site",
+      "startDate": "2026-12-01",
+      "durationWeeks": 12,
+      "requiredHours": 300,
+      "deadline": "2026-11-10",
+      "status": "published",
+      "createdAt": "2026-10-01T09:00:00.000Z"
+    }
+  },
+  "applications": {
+    "APP-DEMO-001": {
+      "id": "APP-DEMO-001",
+      "studentId": "2023001",
+      "studentUid": "DEMO_UID_STUDENT_001",
+      "studentName": "Demo Student One",
+      "opportunityId": "OP-DEMO-001",
+      "companyId": "CO-DEMO-001",
+      "companyName": "Northstar Software (Demo)",
+      "status": "confirmed",
+      "phone": "+962790000001",
+      "cvLink": "https://example.invalid/demo-student-one-cv",
+      "portfolioLink": "",
+      "motivation": "Fictional test application.",
+      "reason": "Accepted for the demo placement.",
+      "createdAt": "2026-08-01T10:00:00.000Z",
+      "decidedAt": "2026-08-03T10:00:00.000Z",
+      "companySupervisorId": "CS-DEMO-001",
+      "placementId": "PLC-APP-DEMO-001",
+      "confirmedAt": "2026-08-04T10:00:00.000Z"
+    },
+    "APP-DEMO-002": {
+      "id": "APP-DEMO-002",
+      "studentId": "2023002",
+      "studentUid": "DEMO_UID_STUDENT_002",
+      "studentName": "Demo Student Two",
+      "opportunityId": "OP-DEMO-002",
+      "companyId": "CO-DEMO-001",
+      "companyName": "Northstar Software (Demo)",
+      "status": "pending",
+      "phone": "+962790000002",
+      "cvLink": "https://example.invalid/demo-student-two-cv",
+      "portfolioLink": "",
+      "motivation": "Fictional test application awaiting company review.",
+      "reason": "",
+      "createdAt": "2026-08-05T10:00:00.000Z"
+    }
+  },
+  "placements": {
+    "PLC-APP-DEMO-001": {
+      "id": "PLC-APP-DEMO-001",
+      "applicationId": "APP-DEMO-001",
+      "opportunityId": "OP-DEMO-001",
+      "studentId": "2023001",
+      "studentProfileId": "2023001",
+      "studentUid": "DEMO_UID_STUDENT_001",
+      "companyId": "CO-DEMO-001",
+      "companySupervisorId": "CS-DEMO-001",
+      "supervisorId": "CS-DEMO-001",
+      "academicSupervisorId": "AS-DEMO-001",
+      "status": "active",
+      "startDate": "2026-09-01",
+      "durationWeeks": 16,
+      "requiredHours": 300,
+      "createdAt": "2026-08-04T10:00:00.000Z"
+    }
+  },
+  "placementClaims": {
+    "2023001": {
+      "studentId": "2023001",
+      "applicationId": "APP-DEMO-001",
+      "placementId": "PLC-APP-DEMO-001",
+      "claimedAt": "2026-08-04T10:00:00.000Z"
+    }
+  },
+  "tasks": {
+    "TASK-DEMO-001": {
+      "id": "TASK-DEMO-001",
+      "title": "Build an internship progress dashboard",
+      "description": "Create a responsive dashboard prototype using the approved demo placement data.",
+      "studentId": "2023001",
+      "placementId": "PLC-APP-DEMO-001",
+      "assignedBy": "CS-DEMO-001",
+      "assignedAt": "2026-09-05T09:00:00.000Z",
+      "dueDate": "2026-10-30",
+      "status": "In Progress",
+      "isDemo": true,
+      "evaluationCriteria": "Functionality, readability, and responsive layout.",
+      "maximumScore": 100,
+      "submissions": []
+    },
+    "TASK-DEMO-002": {
+      "id": "TASK-DEMO-002",
+      "title": "Prepare API integration notes",
+      "description": "Document the demo API request and response flow.",
+      "studentId": "2023001",
+      "placementId": "PLC-APP-DEMO-001",
+      "assignedBy": "CS-DEMO-001",
+      "assignedAt": "2026-09-10T09:00:00.000Z",
+      "dueDate": "2026-10-21",
+      "status": "Completed",
+      "isDemo": true,
+      "evaluationCriteria": "Clear technical explanation.",
+      "maximumScore": 100,
+      "score": 92,
+      "feedback": "Fictional sample grade for UI demonstration.",
+      "submissions": [
+        {
+          "revision": 1,
+          "description": "Completed the written API flow notes for the demo.",
+          "link": "https://example.invalid/demo-api-notes",
+          "fileName": "",
+          "submittedAt": "2026-10-19T13:00:00.000Z"
+        }
+      ]
+    }
+  },
+  "taskBoards": {
+    "PLC-APP-DEMO-001": {
+      "placementId": "PLC-APP-DEMO-001",
+      "columns": {
+        "todo": {"title": "To Do", "order": 0},
+        "inProgress": {"title": "In Progress", "order": 1},
+        "review": {"title": "Review", "order": 2},
+        "done": {"title": "Done", "order": 3}
+      },
+      "positions": {
+        "TASK-DEMO-001": {"columnId": "inProgress", "order": 0},
+        "TASK-DEMO-002": {"columnId": "done", "order": 0}
+      },
+      "operations": {},
+      "updatedAt": "2026-10-20T14:00:00.000Z"
+    }
+  },
+  "taskExams": {
+    "EXAM-DEMO-001": {
+      "id": "EXAM-DEMO-001",
+      "taskId": "TASK-DEMO-001",
+      "placementId": "PLC-APP-DEMO-001",
+      "companyId": "CO-DEMO-001",
+      "createdBy": "CS-DEMO-001",
+      "status": "published",
+      "publishedVersion": 1,
+      "draftRevision": 1,
+      "versions": {
+        "1": {
+          "version": 1,
+          "title": "Web Fundamentals Check (Demo)",
+          "instructions": "Choose the best answer for each question.",
+          "opensAt": "2026-10-22T00:00:00.000Z",
+          "closesAt": "2026-11-30T20:59:59.000Z",
+          "publishedAt": "2026-10-21T10:00:00.000Z",
+          "durationMinutes": 30,
+          "attemptLimit": 2,
+          "totalPoints": 10,
+          "questionOrder": ["Q-DEMO-001", "Q-DEMO-002"],
+          "questions": {
+            "Q-DEMO-001": {
+              "id": "Q-DEMO-001",
+              "type": "multipleChoice",
+              "prompt": "Which protocol protects data in transit between a browser and a website?",
+              "points": 6,
+              "order": 0,
+              "options": [
+                {"id": "OPT-A", "text": "HTTPS"},
+                {"id": "OPT-B", "text": "FTP"},
+                {"id": "OPT-C", "text": "SMTP"}
+              ]
+            },
+            "Q-DEMO-002": {
+              "id": "Q-DEMO-002",
+              "type": "trueFalse",
+              "prompt": "A published exam version is immutable for attempts already created.",
+              "points": 4,
+              "order": 1
+            }
+          }
+        }
+      },
+      "createdAt": "2026-10-20T10:00:00.000Z",
+      "publishedAt": "2026-10-21T10:00:00.000Z"
+    }
+  },
+  "taskExamAnswerKeys": {
+    "EXAM-DEMO-001": {
+      "1": {
+        "Q-DEMO-001": {"correctOptionId": "OPT-A", "points": 6},
+        "Q-DEMO-002": {"correctAnswer": true, "points": 4}
+      }
+    }
+  },
+  "taskExamAttempts": {
+    "EXAM-DEMO-001": {
+      "2023001": {
+        "ATT-DEMO-001": {
+          "id": "ATT-DEMO-001",
+          "examId": "EXAM-DEMO-001",
+          "taskId": "TASK-DEMO-001",
+          "placementId": "PLC-APP-DEMO-001",
+          "studentId": "2023001",
+          "version": 1,
+          "status": "submitted",
+          "startedAt": "2026-10-22T09:00:00.000Z",
+          "deadlineAt": "2026-10-22T09:30:00.000Z",
+          "answers": {"Q-DEMO-001": "OPT-A", "Q-DEMO-002": true},
+          "submittedAt": "2026-10-22T09:20:00.000Z",
+          "gradedAt": "2026-10-22T09:20:00.000Z",
+          "score": 10,
+          "maximumScore": 10
+        }
+      }
+    }
+  },
+  "uimsAttendance": {
+    "students": {
+      "2023001": {
+        "firebaseUid": "DEMO_UID_STUDENT_001",
+        "name": "Demo Student One",
+        "status": "active",
+        "activeAssignmentId": "ASG-TRAIN-DEMO-001"
+      }
+    },
+    "companySupervisors": {
+      "CS-DEMO-001": {
+        "firebaseUid": "DEMO_UID_COMPANY_001",
+        "companyId": "CO-DEMO-001",
+        "name": "Demo Company Supervisor",
+        "status": "active"
+      }
+    },
+    "companies": {
+      "CO-DEMO-001": {"name": "Northstar Software (Demo)", "status": "active"}
+    },
+    "trainingAssignments": {
+      "ASG-TRAIN-DEMO-001": {
+        "studentId": "2023001",
+        "companyId": "CO-DEMO-001",
+        "companySupervisorId": "CS-DEMO-001",
+        "status": "active",
+        "requiredHours": 300,
+        "startDate": "2026-09-01",
+        "endDate": "2026-12-20"
+      }
+    },
+    "schedules": {
+      "ASG-TRAIN-DEMO-001": {
+        "2026-10-20": {
+          "assignmentId": "ASG-TRAIN-DEMO-001",
+          "attendanceDate": "2026-10-20",
+          "timeZone": "Asia/Amman",
+          "version": 1,
+          "isTrainingDay": true,
+          "scheduledStartAt": 1792472400000,
+          "scheduledEndAt": 1792501200000
+        }
+      }
+    },
+    "attendance": {
+      "ASG-TRAIN-DEMO-001": {
+        "2026-10-20": {
+          "assignmentId": "ASG-TRAIN-DEMO-001",
+          "studentId": "2023001",
+          "attendanceDate": "2026-10-20",
+          "companyId": "CO-DEMO-001",
+          "companySupervisorId": "CS-DEMO-001",
+          "status": "completed",
+          "checkInAt": 1792473000000,
+          "checkOutAt": 1792501800000,
+          "workedMinutes": 480,
+          "hoursApprovalStatus": "approved",
+          "hoursApprovedAt": 1792502400000,
+          "hoursApprovedById": "CS-DEMO-001",
+          "checkInVerifiedById": "CS-DEMO-001",
+          "checkOutVerifiedById": "CS-DEMO-001",
+          "lateMinutes": 10,
+          "isLate": true
+        }
+      }
+    }
+  }
+}

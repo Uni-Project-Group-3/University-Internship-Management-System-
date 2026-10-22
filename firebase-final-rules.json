@@ -1,0 +1,38 @@
+{
+  "rules": {
+    ".read": false,
+    ".write": false,
+    "users": {
+      ".indexOn": ["studentId"]
+    },
+    "universityRecords": {
+      "students": {
+        ".indexOn": ["studentId"]
+      }
+    },
+    "assignments": {
+      ".indexOn": ["studentId", "academicSupervisorId"]
+    },
+    "supervisorAssignments": {
+      ".indexOn": ["studentId"]
+    },
+    "placements": {
+      ".indexOn": ["studentId", "studentProfileId", "companyId", "companySupervisorId", "supervisorId", "applicationId"]
+    },
+    "applications": {
+      ".indexOn": ["studentId", "companyId", "opportunityId"]
+    },
+    "opportunities": {
+      ".indexOn": ["companyId", "status"]
+    },
+    "tasks": {
+      ".indexOn": ["placementId"]
+    },
+    "taskExams": {
+      ".indexOn": ["companyId", "createdBy", "placementId"]
+    },
+    "weeklyReports": {
+      ".indexOn": ["companyId", "companySupervisorId", "academicSupervisorId", "studentId"]
+    }
+  }
+}

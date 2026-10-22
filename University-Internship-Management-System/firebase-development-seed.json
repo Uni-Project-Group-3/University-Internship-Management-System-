@@ -1,0 +1,365 @@
+{
+  "users": {
+    "TEST_UID_COORDINATOR": {
+      "role": "coordinator",
+      "isActive": true,
+      "displayName": "Test Coordinator",
+      "email": "coordinator@example.invalid",
+      "status": "active"
+    },
+    "TEST_UID_STUDENT": {
+      "role": "student",
+      "isActive": true,
+      "displayName": "Test Student",
+      "email": "student@example.invalid",
+      "studentId": "DEMO-ST-001",
+      "department": "Computer Science",
+      "academicSupervisorId": "TEST_UID_ACADEMIC",
+      "status": "active"
+    },
+    "TEST_UID_COMPANY": {
+      "role": "companySupervisor",
+      "isActive": true,
+      "displayName": "Test Company Supervisor",
+      "email": "supervisor@example.invalid",
+      "companySupervisorId": "DEMO-CS-001",
+      "companyId": "DEMO-CO-001",
+      "status": "active"
+    },
+    "TEST_UID_ACADEMIC": {
+      "role": "academicSupervisor",
+      "isActive": true,
+      "displayName": "Test Academic Supervisor",
+      "email": "academic@example.invalid",
+      "academicSupervisorId": "TEST_UID_ACADEMIC",
+      "status": "active"
+    }
+  },
+  "assignments": {
+    "DEMO-ASG-001": {
+      "studentId": "DEMO-ST-001",
+      "academicSupervisorId": "TEST_UID_ACADEMIC",
+      "active": true
+    }
+  },
+  "students": {
+    "DEMO-ST-001": {
+      "firebaseUid": "TEST_UID_STUDENT",
+      "status": "active",
+      "isTestData": true,
+      "activeAssignmentId": "DEMO-TA-001"
+    }
+  },
+  "companies": {
+    "DEMO-CO-001": {
+      "companyId": "DEMO-CO-001",
+      "companyName": "Fictional Development Company",
+      "status": "active",
+      "isTestData": true
+    }
+  },
+  "companySupervisors": {
+    "DEMO-CS-001": {
+      "firebaseUid": "TEST_UID_COMPANY",
+      "companyId": "DEMO-CO-001",
+      "status": "active",
+      "isTestData": true
+    }
+  },
+  "opportunities": {
+    "DEMO-OP-001": {
+      "id": "DEMO-OP-001",
+      "companyId": "DEMO-CO-001",
+      "companyName": "Fictional Development Company",
+      "title": "Software Engineering Internship",
+      "description": "Fictional isolated-development opportunity.",
+      "requirements": "Development test fixture.",
+      "majors": ["Computer Science"],
+      "seats": 1,
+      "acceptedCount": 1,
+      "applicantsCount": 1,
+      "location": "Irbid",
+      "workMode": "Hybrid",
+      "startDate": "2026-10-01T00:00:00Z",
+      "durationWeeks": 12,
+      "deadline": "2026-09-20T00:00:00Z",
+      "status": "published",
+      "createdAt": "2026-09-01T00:00:00Z"
+    }
+  },
+  "applications": {
+    "DEMO-APP-001": {
+      "id": "DEMO-APP-001",
+      "studentId": "DEMO-ST-001",
+      "opportunityId": "DEMO-OP-001",
+      "companyId": "DEMO-CO-001",
+      "status": "confirmed",
+      "appliedAt": "2026-09-05T09:00:00Z",
+      "decidedAt": "2026-09-08T09:00:00Z",
+      "confirmedAt": "2026-09-09T09:00:00Z"
+    }
+  },
+  "placements": {
+    "DEMO-PL-001": {
+      "id": "DEMO-PL-001",
+      "studentId": "DEMO-ST-001",
+      "studentProfileId": "DEMO-ST-001",
+      "companyId": "DEMO-CO-001",
+      "companySupervisorId": "DEMO-CS-001",
+      "supervisorId": "DEMO-CS-001",
+      "academicSupervisorId": "TEST_UID_ACADEMIC",
+      "applicationId": "DEMO-APP-001",
+      "opportunityId": "DEMO-OP-001",
+      "status": "active",
+      "startDate": "2026-10-01",
+      "endDate": "2026-12-24",
+      "isTestData": true
+    }
+  },
+  "tasks": {
+    "DEMO-TASK-001": {
+      "id": "DEMO-TASK-001",
+      "title": "Development test milestone",
+      "description": "Complete and submit the fictional development milestone.",
+      "studentId": "DEMO-ST-001",
+      "placementId": "DEMO-PL-001",
+      "assignedBy": "DEMO-CS-001",
+      "assignedAt": "2026-10-01",
+      "dueDate": "2026-11-10",
+      "status": "Completed",
+      "isDemo": true,
+      "evaluationCriteria": "Completeness and correctness",
+      "maximumScore": 10,
+      "score": 9,
+      "feedback": "Fictional test feedback.",
+      "submissions": [
+        {
+          "revision": 1,
+          "description": "Fictional completed work.",
+          "link": "https://example.invalid/work",
+          "submittedAt": "2026-10-15T12:00:00Z",
+          "status": "graded",
+          "score": 9,
+          "feedback": "Fictional test feedback."
+        }
+      ]
+    }
+  },
+  "taskBoards": {
+    "DEMO-PL-001": {
+      "placementId": "DEMO-PL-001",
+      "columns": {
+        "todo": { "title": "To do", "order": 0 },
+        "inProgress": { "title": "In progress", "order": 1 },
+        "review": { "title": "Awaiting review", "order": 2 },
+        "done": { "title": "Done", "order": 3 }
+      },
+      "positions": {
+        "DEMO-TASK-001": { "columnId": "done", "order": 1024 }
+      },
+      "operations": {},
+      "updatedAt": "2026-10-15T12:05:00Z",
+      "updatedByUid": "TEST_UID_COMPANY"
+    }
+  },
+  "fileAttachments": {},
+  "taskExams": {
+    "EX-DEMO-001": {
+      "id": "EX-DEMO-001",
+      "taskId": "DEMO-TASK-001",
+      "placementId": "DEMO-PL-001",
+      "companyId": "DEMO-CO-001",
+      "createdBy": "DEMO-CS-001",
+      "status": "published",
+      "publishedVersion": 1,
+      "draftRevision": 1,
+      "versions": {
+        "1": {
+          "version": 1,
+          "title": "Development test exam",
+          "instructions": "Fictional test exam; no real assessment is represented.",
+          "opensAt": "2026-10-01T00:00:00Z",
+          "closesAt": "2026-12-01T00:00:00Z",
+          "durationMinutes": 30,
+          "attemptLimit": 2,
+          "totalPoints": 10,
+          "publishedAt": "2026-10-01T00:00:00Z",
+          "questionOrder": ["Q-DEMO-001", "Q-DEMO-002"],
+          "questions": {
+            "Q-DEMO-001": {
+              "id": "Q-DEMO-001",
+              "type": "multipleChoice",
+              "prompt": "Which practice improves code reliability?",
+              "points": 5,
+              "order": 0,
+              "options": [
+                { "id": "OPT-A", "text": "Automated tests" },
+                { "id": "OPT-B", "text": "Remove validation" }
+              ]
+            },
+            "Q-DEMO-002": {
+              "id": "Q-DEMO-002",
+              "type": "trueFalse",
+              "prompt": "A server should validate submitted answers.",
+              "points": 5,
+              "order": 1
+            }
+          }
+        }
+      }
+    }
+  },
+  "taskExamAnswerKeys": {
+    "EX-DEMO-001": {
+      "1": {
+        "Q-DEMO-001": { "correctOptionId": "OPT-A", "points": 5 },
+        "Q-DEMO-002": { "correctAnswer": true, "points": 5 }
+      }
+    }
+  },
+  "taskExamAttempts": {
+    "EX-DEMO-001": {
+      "DEMO-ST-001": {
+        "AT-DEMO-001": {
+          "id": "AT-DEMO-001",
+          "examId": "EX-DEMO-001",
+          "taskId": "DEMO-TASK-001",
+          "placementId": "DEMO-PL-001",
+          "studentId": "DEMO-ST-001",
+          "version": 1,
+          "status": "submitted",
+          "startedAt": "2026-10-10T10:00:00Z",
+          "deadlineAt": "2026-10-10T10:30:00Z",
+          "answers": { "Q-DEMO-001": "OPT-A", "Q-DEMO-002": true },
+          "submittedAt": "2026-10-10T10:12:00Z",
+          "gradedAt": "2026-10-10T10:12:01Z",
+          "score": 10,
+          "maximumScore": 10
+        }
+      }
+    }
+  },
+  "weeklyReports": {},
+  "weeklyReportReviews": {},
+  "uimsAttendance": {
+    "students": {
+      "DEMO-ST-001": {
+        "firebaseUid": "TEST_UID_STUDENT",
+        "status": "active",
+        "activeAssignmentId": "DEMO-TA-001",
+        "isTestData": true
+      }
+    },
+    "companySupervisors": {
+      "DEMO-CS-001": {
+        "firebaseUid": "TEST_UID_COMPANY",
+        "companyId": "DEMO-CO-001",
+        "status": "active",
+        "isTestData": true
+      }
+    },
+    "companies": {
+      "DEMO-CO-001": {
+        "companyName": "Fictional Development Company",
+        "status": "active",
+        "isTestData": true
+      }
+    },
+    "trainingAssignments": {
+      "DEMO-TA-001": {
+        "studentId": "DEMO-ST-001",
+        "companySupervisorId": "DEMO-CS-001",
+        "companyId": "DEMO-CO-001",
+        "placementId": "DEMO-PL-001",
+        "status": "active",
+        "requiredHours": 240,
+        "isTestData": true
+      }
+    },
+    "attendance": {
+      "DEMO-TA-001": {
+        "2026-10-21": {
+          "studentId": "DEMO-ST-001",
+          "assignmentId": "DEMO-TA-001",
+          "status": "completed",
+          "hoursApprovalStatus": "approved",
+          "workedMinutes": 90,
+          "isTestData": true
+        }
+      }
+    },
+    "schedules": {},
+    "earlyCheckoutRequests": {},
+    "settings": {}
+  },
+  "finalEvaluationReviewsV2": {
+    "DEMO-PL-001": {
+      "schemaVersion": 2,
+      "internshipId": "DEMO-PL-001",
+      "studentId": "DEMO-ST-001",
+      "policyId": "DEMO-POLICY-001",
+      "policyVersion": "dev-1",
+      "current": {
+        "versionId": "DEMO-EVAL-VERSION-001",
+        "number": 1,
+        "percentage": 85,
+        "comments": "Fictional development evaluation.",
+        "companySupervisorId": "DEMO-CS-001",
+        "updatedAtUtc": "2026-10-20T12:00:00Z",
+        "submittedAtUtc": "2026-10-20T12:00:00Z"
+      },
+      "submissions": [
+        {
+          "versionId": "DEMO-EVAL-VERSION-001",
+          "number": 1,
+          "percentage": 85,
+          "comments": "Fictional development evaluation.",
+          "companySupervisorId": "DEMO-CS-001",
+          "updatedAtUtc": "2026-10-20T12:00:00Z",
+          "submittedAtUtc": "2026-10-20T12:00:00Z"
+        }
+      ],
+      "reviews": []
+    }
+  },
+  "evaluationPolicies": {
+    "DEMO-POLICY-001": {
+      "policyId": "DEMO-POLICY-001",
+      "version": "dev-1",
+      "isApproved": false,
+      "companyCommentsRequired": true,
+      "academicCommentsRequired": true,
+      "requiredHours": 240,
+      "passingThreshold": 60,
+      "studentFinalOutcomeDisclosureAllowed": false,
+      "companyCriteria": {},
+      "academicCriteria": {},
+      "completionReport": {
+        "enabled": false,
+        "requireUniversityName": false,
+        "requireCollegeName": false
+      },
+      "completionDecisions": {
+        "approve": { "enabled": false, "requireReason": true, "requireSupportingNotes": true },
+        "requestChanges": { "enabled": true, "requireReason": true, "requireSupportingNotes": false },
+        "reject": { "enabled": false, "requireReason": true, "requireSupportingNotes": true }
+      },
+      "updatedAtUtc": "2026-10-01T00:00:00Z"
+    }
+  },
+  "completionReviews": {
+    "DEMO-PL-001": {
+      "internshipId": "DEMO-PL-001",
+      "studentId": "DEMO-ST-001",
+      "policyId": "DEMO-POLICY-001",
+      "policyVersion": "dev-1",
+      "status": "Pending",
+      "feedback": null,
+      "createdAtUtc": "2026-10-20T12:00:00Z",
+      "updatedAtUtc": "2026-10-20T12:00:00Z",
+      "reviewedAtUtc": null,
+      "decisionHistory": []
+    }
+  },
+  "completionDocuments": {}
+}

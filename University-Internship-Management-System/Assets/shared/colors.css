@@ -1,0 +1,59 @@
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap');
+
+:root {
+    /* Fonts */
+    --font-heading: 'Manrope', sans-serif;
+    --font-body: 'Inter', sans-serif;
+    /* University-inspired blues */
+    --primary: #1F3D78;
+    --primary-hover: #294D91;
+    --primary-light: #DCE9F7;
+    --primary-soft: #EAF2FA;
+    /* Main backgrounds */
+    --background: #F4F3EF;
+    --surface: #FFFFFF;
+    --surface-alt: #F6F7FA;
+    --sidebar-bg: #E8EDF2;
+    /* Cards */
+    --card-blue: #DCE9F7;
+    --card-ice: #EAF2FA;
+    --card-lavender: #E8E8F1;
+    /* Dark contrast */
+    --dark: #242844;
+    --dark-hover: #303657;
+    /* Text */
+    --text: #242844;
+    --text-secondary: #66718A;
+    --muted: #718096;
+    --text-inverse: #FFFFFF;
+    /* Borders */
+    --border: #DFE3EB;
+    --border-light: #EBEDF2;
+    /* Status colors */
+    --success: #28734D;
+    --success-light: #E6F3EB;
+    --warning: #895A18;
+    --warning-light: #FFF1D8;
+    --danger: #B4232B;
+    --danger-light: #F9E4EC;
+    --info: #1F3D78;
+    --info-light: #DCE9F7;
+    /* Hero gradient */
+    --hero-gradient-start: #1E284C;
+    --hero-gradient-mid: #1F294D;
+    --hero-gradient-end: #6689BB;
+}
+
+/* Typography */
+
+body {
+    font-family: var(--font-body);
+}
+
+h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-heading);
+}
+
+button, input, select, textarea {
+    font-family: var(--font-body);
+}
