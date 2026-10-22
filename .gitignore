@@ -1,0 +1,10 @@
+tests/**/test-bin/
+tests/**/test-obj/
+
+**/Firebase.Local.config
+
+.vs/
+**/bin/
+**/obj/
+*.user
+*.suo

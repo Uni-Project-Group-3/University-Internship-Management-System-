@@ -1,7 +1,7 @@
-﻿<%@ Page Language="C#" AutoEventWireup="true" CodeBehind="ManageStudents.aspx.cs" Inherits="University_Internship_Management_System.Coordinator.ManageStudents" %>
-<!DOCTYPE html><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head runat="server"><meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" /><title>Manage Students | UIMS</title><link runat="server" href="~/Assets/shared/colors.css" rel="stylesheet" />    <link runat="server" href="~/Assets/coordinator/manage-students.css?v=20261021-original-ui" rel="stylesheet" />
+<%@ Page Language="C#" AutoEventWireup="true" async="true" CodeBehind="ManageStudents.aspx.cs" Inherits="University_Internship_Management_System.Coordinator.ManageStudents" %>
+<!DOCTYPE html><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head runat="server"><meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" /><title>Manage Students | UIMS</title><link runat="server" href="~/Assets/shared/colors.css" rel="stylesheet" />    <link runat="server" href="~/Assets/coordinator/manage-students.css?v=20261022-complete" rel="stylesheet" />
 </head>
-<body class="dashboard-direct app-page completion-page" data-demo-role="admin"><form id="form1" runat="server"><div class="app-layout">            <aside class="dash-sidebar" id="dashboardSidebar" aria-label="Coordinator navigation">
+<body class="dashboard-direct app-page completion-page" data-page="manage-students"><form id="form1" runat="server"><div class="app-layout">            <aside class="dash-sidebar" id="dashboardSidebar" aria-label="Coordinator navigation">
                 <a href="<%= ResolveUrl("~/Coordinator/CoordinatorDashboard.aspx") %>" class="dash-brand">
                     <span class="dash-brand-logo">J</span>
                     <span class="dash-brand-text">
@@ -23,7 +23,7 @@
 <li><a href="FinalCompletionReview.aspx"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="m8 12 3 3 5-6"/></svg><span>Final Completion Review</span></a></li>
 <li><a href="ContactMessages.aspx"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="m8 12 3 3 5-6"/></svg><span>Contact Messages</span></a></li>
 
-<li><a href="Manage_Academic_Supervisor.aspx"><svg class="nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M4 5h16v14H4zM8 9h8M8 13h6" /></svg><span>Manage Academic Supervisors</span></a></li>
+<li><a href='<%= ResolveUrl("~/Coordinator/Manage_Academic_Supervisor.aspx") %>'><svg class="nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M4 5h16v14H4zM8 9h8M8 13h6" /></svg><span>Manage Academic Supervisors</span></a></li>
 
 <li><a href="Assign_Supervisors.aspx"><svg class="nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M4 5h16v14H4zM8 9h8M8 13h6" /></svg><span>Assign Academic Supervisors</span></a></li>
 
@@ -88,8 +88,110 @@
                                 </div>
                             </details>
                         </div>
-                    </header><main class="app-content"><p class="completion-eyebrow">STUDENT RECORDS</p><h1>Manage Students</h1><p class="completion-subtitle">Monitor completion acknowledgments, certificate delivery, and account status.</p><p class="completion-notice">Interface preview only. Student records and completion operations are not connected.</p><section class="completion-panel"><header><div><h2>Student completion records</h2><p>Academic history remains available after account deactivation.</p></div><button type="button" class="completion-button" id="addStudentButton">Add student</button></header><div class="completion-filters"><label>Department<select id="studentDepartmentFilter"></select></label><label>Academic supervisor<select id="studentSupervisorFilter"></select></label><label>Search students<input type="search" id="completionSearch" placeholder="Student name or university ID..." /></label><label>Completion status<select id="completionStatusFilter"><option value="">All statuses</option><option>In Training</option><option>Pending Student Confirmation</option><option>Completed — Grace Period</option><option>Completed — Disabled</option></select></label><button type="button" class="completion-button completion-button--secondary" id="completionClearFilters">Clear filters</button></div><div class="completion-table-wrap" role="region" aria-label="Student completion records" tabindex="0"><table><thead><tr><th scope="col">Student / ID</th><th scope="col">Completion status</th><th scope="col">Confirmed at (UTC)</th><th scope="col">Disable deadline (UTC)</th><th scope="col">Certificate</th><th scope="col">Actions</th></tr></thead><tbody></tbody></table></div><div class="completion-empty"><h3 id="completionEmptyTitle">Student records are not connected</h3><p>No student records are loaded. Search results will be available after integration.</p></div></section><p class="completion-help">Completed accounts use automatic deactivation. Manual Disable/Enable actions are not included in this completion workflow.</p></main></div></div>
-<dialog id="completionDialog" class="completion-dialog" aria-labelledby="completionDialogTitle" aria-describedby="completionDialogNote"><header class="completion-dialog-header"><div><p class="completion-eyebrow">STUDENT COMPLETION</p><h2 id="completionDialogTitle">Student details</h2></div><button type="button" class="completion-close" data-completion-close aria-label="Close student details">&times;</button></header><div class="completion-dialog-body"><p id="completionDialogNote" class="completion-notice">Layout preview only. No student record is selected or changed.</p><div data-completion-view="record"><label class="completion-preview-label">Preview completion state<select id="completionRecordState"><option value="training">In Training</option><option value="pending">Pending Student Confirmation</option><option value="grace">Completed — Grace Period</option><option value="disabled">Completed — Disabled</option></select></label><article id="completionRecordPreview" class="completion-record"><span id="completionRecordBadge" class="completion-badge">In Training</span><h3>No student selected</h3><p id="completionRecordDescription" class="completion-subtitle">Training and academic evaluations are in progress.</p><dl class="completion-info"><div><dt>Company / Internship</dt><dd>&mdash;</dd></div><div><dt>Completion approved at (UTC)</dt><dd>&mdash;</dd></div><div><dt>Student confirmed at (UTC)</dt><dd>&mdash;</dd></div><div><dt>Account disable deadline (UTC)</dt><dd>&mdash;</dd></div><div><dt>Account disabled at (UTC)</dt><dd>&mdash;</dd></div><div><dt>Certificate ID / Status</dt><dd>No document loaded</dd></div></dl></article><p class="completion-help">Dates and certificate metadata will come from trusted server records. Full academic history is retained; company, evaluations, and approved hours are not deleted.</p><button type="button" class="completion-button completion-button--secondary" data-completion-close>Close</button></div></div></dialog><dialog id="studentEditor" class="completion-dialog" aria-labelledby="studentEditorTitle"><header class="completion-dialog-header"><h2 id="studentEditorTitle">Add student</h2><button type="button" class="completion-close" data-close aria-label="Close">&times;</button></header><div class="completion-dialog-body"><p id="studentActionDescription"></p><div id="studentFields"><label>Full name<input id="studentName" required maxlength="100" /></label><label>Email<input id="studentEmail" type="email" required maxlength="254" /></label><label>University ID<input id="studentUniversityId" required maxlength="30" /></label><label>Department<select id="studentDepartment" required></select></label></div><button type="button" class="completion-button completion-button--secondary" data-close>Cancel</button><button type="button" id="saveStudentButton" class="completion-button">Confirm</button></div></dialog></form><script src="../Js_project/Demo/demo-store.js?v=20261021-original-ui"></script>
-<script src="<%= ResolveUrl("~/Js_project/Public/completion.js?v=20261021-original-ui") %>"></script>    <script src="<%= ResolveUrl("~/Js_project/Public/dashboard-navigation.js?v=20261021-original-ui") %>"></script>
-<script src="../Js_project/Coordinator/manage-students.js?v=20261021-original-ui"></script>
+                    </header><main class="app-content" id="manageStudentsPage">
+    <p class="completion-eyebrow">STUDENT RECORDS</p>
+    <h1>Manage Students</h1>
+    <p class="completion-subtitle">Create student accounts and follow academic information, supervision and completion.</p>
+    <asp:HiddenField ID="studentCsrf" runat="server" ClientIDMode="Static" />
+    <asp:HiddenField ID="studentPageState" runat="server" ClientIDMode="Static" />
+    <asp:Label ID="studentListMessage" runat="server" ClientIDMode="Static" role="status" CssClass="student-page-message" />
+    <asp:Panel ID="emailDeliveryNotice" runat="server" Visible="false" CssClass="completion-notice" role="status">
+        Email delivery is unavailable. Students can still be saved; no welcome email will be sent.
+    </asp:Panel>
+    <section class="completion-panel" aria-labelledby="studentListTitle">
+        <header><div><h2 id="studentListTitle">Student accounts</h2><p>Account actions preserve university records and academic history.</p></div>
+            <div class="student-list-actions">
+                <asp:Button ID="refreshStudentsButton" runat="server" Text="Refresh" CausesValidation="false"
+                    CssClass="completion-button completion-button--secondary" OnClick="RefreshStudents_Click" />
+                <button type="button" class="completion-button" id="addStudentButton">Add student</button>
+            </div>
+        </header>
+        <div class="completion-filters">
+            <label for="studentDepartmentFilter">Department<select id="studentDepartmentFilter" runat="server" ClientIDMode="Static"><option value="">All departments</option></select></label>
+            <label for="studentSupervisorFilter">Academic supervisor<select id="studentSupervisorFilter" runat="server" ClientIDMode="Static"><option value="">All supervisors</option></select></label>
+            <label for="completionSearch">Search students<input type="search" id="completionSearch" runat="server" ClientIDMode="Static" placeholder="Name, student ID or email" maxlength="150" /></label>
+            <label for="completionStatusFilter">Completion status<select id="completionStatusFilter" runat="server" ClientIDMode="Static"><option value="">All completion statuses</option></select></label>
+            <button type="button" class="completion-button completion-button--secondary" id="completionClearFilters">Clear filters</button>
+        </div>
+        <p id="studentFilterSummary" class="student-filter-summary" role="status" aria-live="polite"></p>
+        <div class="completion-table-wrap" role="region" aria-label="Student accounts" tabindex="0">
+            <asp:GridView ID="studentsGrid" runat="server" ClientIDMode="Static" AutoGenerateColumns="false"
+                DataKeyNames="Uid" GridLines="None" UseAccessibleHeader="true" ShowHeaderWhenEmpty="true"
+                EmptyDataText="No student accounts found. Add a student or refresh the list."
+                OnSelectedIndexChanged="ViewDetails_Click"
+                OnRowDataBound="StudentGrid_RowDataBound">
+                <Columns>
+                    <asp:BoundField DataField="FullName" HeaderText="Student" HtmlEncode="true" />
+                    <asp:BoundField DataField="StudentId" HeaderText="Student ID" HtmlEncode="true" />
+                    <asp:BoundField DataField="Email" HeaderText="Email" HtmlEncode="true" />
+                    <asp:BoundField DataField="Department" HeaderText="Department" HtmlEncode="true" />
+                    <asp:BoundField DataField="Supervisor" HeaderText="Academic supervisor" HtmlEncode="true" />
+                    <asp:BoundField DataField="CompletionStatus" HeaderText="Completion" HtmlEncode="true" />
+                    <asp:BoundField DataField="AccountStatus" HeaderText="Account" HtmlEncode="true" />
+                    <asp:CommandField ShowSelectButton="true" SelectText="View details" CausesValidation="false" />
+                    <asp:TemplateField HeaderText="Actions"><ItemTemplate>
+                        <button type="button" class="student-delete-action" data-delete-student='<%#: Eval("Uid") %>' data-student-name='<%#: Eval("FullName") %>'>Delete</button>
+                    </ItemTemplate></asp:TemplateField>
+                </Columns>
+            </asp:GridView>
+        </div>
+        <p id="studentNoMatches" class="student-filter-summary" hidden>No students match these filters.</p>
+    </section>
+</main></div></div>
+
+<dialog id="studentDeleteDialog" class="completion-dialog" aria-labelledby="studentDeleteTitle">
+    <header class="completion-dialog-header"><h2 id="studentDeleteTitle">Delete student?</h2><button type="button" class="completion-close" data-close aria-label="Cancel deletion">&times;</button></header>
+    <div class="completion-dialog-body">
+        <p>Delete the login and account profile for <strong id="studentDeleteName"></strong>?</p>
+        <p>This permanently removes their Firebase login and users profile. University records and academic history will be retained.</p>
+        <asp:HiddenField ID="studentDeleteUid" runat="server" ClientIDMode="Static" />
+        <div class="student-form-actions">
+            <button type="button" class="completion-button completion-button--secondary" data-close>Cancel</button>
+            <asp:Button ID="confirmDeleteStudentButton" runat="server" ClientIDMode="Static" Text="Delete student" CssClass="completion-button" UseSubmitBehavior="true" CausesValidation="false" OnClick="DeleteStudent_Click" />
+        </div>
+    </div>
+</dialog>
+<dialog id="studentDetailsDialog" class="completion-dialog" aria-labelledby="studentDetailsTitle">
+    <header class="completion-dialog-header"><h2 id="studentDetailsTitle">Student details</h2><button type="button" class="completion-close" data-close aria-label="Close student details">&times;</button></header>
+    <div class="completion-dialog-body">
+        <asp:Panel ID="studentDetailsPanel" runat="server" ClientIDMode="Static" Visible="false">
+            <asp:Literal ID="studentDetailsContent" runat="server" />
+        </asp:Panel>
+        <button type="button" class="completion-button completion-button--secondary" data-close>Close</button>
+    </div>
+</dialog>
+
+<dialog id="studentEditor" class="completion-dialog" aria-labelledby="studentEditorTitle">
+    <header class="completion-dialog-header"><h2 id="studentEditorTitle">Add student</h2><button type="button" class="completion-close" data-close aria-label="Close">&times;</button></header>
+    <div class="completion-dialog-body"><div id="studentFields">
+        <div class="student-lookup">
+            <label for="studentUniversityId" class="student-label">Student ID</label>
+            <div class="student-input-action">
+                <input id="studentUniversityId" runat="server" ClientIDMode="Static" maxlength="30" inputmode="numeric" placeholder="Enter student ID" />
+                <asp:Button ID="findStudentButton" runat="server" ClientIDMode="Static" Text="Find student" CssClass="completion-button student-find" CausesValidation="false" OnClick="findStudentButton_Click" />
+            </div>
+            <asp:Label ID="studentLookupMessage" runat="server" ClientIDMode="Static" CssClass="student-lookup-status" role="status" />
+        </div>
+        <div class="student-record"><div class="student-detail-grid">
+            <label class="student-label">Full name<input id="studentName" runat="server" ClientIDMode="Static" disabled="disabled" /></label>
+            <label class="student-label">Department<input id="studentDepartment" runat="server" ClientIDMode="Static" disabled="disabled" /></label>
+            <label class="student-label student-email">University email<input id="studentEmail" runat="server" ClientIDMode="Static" type="email" disabled="disabled" /></label>
+        </div></div>
+        <div class="student-password-section">
+            <label for="studentTemporaryPassword" class="student-label">Temporary password</label>
+            <div class="student-input-action">
+                <input id="studentTemporaryPassword" runat="server" ClientIDMode="Static" EnableViewState="false" type="text" readonly="readonly" autocomplete="off" spellcheck="false" />
+                <asp:Button ID="generateStudentPassword" runat="server" ClientIDMode="Static" Text="Generate password" CssClass="completion-button completion-button--secondary" CausesValidation="false" OnClick="generateStudentPassword_Click" />
+                <button type="button" id="copyStudentPassword" class="completion-button completion-button--secondary" aria-label="Copy temporary password">Copy</button>
+            </div>
+            <span id="studentPasswordStatus" class="student-field-help" role="status"></span>
+        </div>
+    </div>
+    <div class="student-form-actions"><button type="button" class="completion-button completion-button--secondary" data-close>Cancel</button>
+        <asp:Button ID="saveStudentButton" runat="server" ClientIDMode="Static" Text="Confirm" CssClass="completion-button" CausesValidation="false" OnClick="saveStudentButton_Click" />
+    </div></div>
+</dialog>
+</form>
+<script src="<%= ResolveUrl("~/Js_project/Public/dashboard-navigation.js?v=20261021-original-ui") %>"></script>
+<script src="../Js_project/Coordinator/manage-students.js?v=20261022-delete-submit"></script>
 </body></html>

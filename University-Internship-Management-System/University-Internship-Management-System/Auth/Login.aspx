@@ -1,4 +1,4 @@
-﻿<%@ Page Title="Sign In | UIMS" Language="C#" AutoEventWireup="true" Async="true" EnableViewState="false" CodeBehind="Login.aspx.cs" Inherits="University_Internship_Management_System.Auth.Login" %>
+<%@ Page Title="Sign In | UIMS" Language="C#" AutoEventWireup="true" Async="true" EnableViewState="false" CodeBehind="Login.aspx.cs" Inherits="University_Internship_Management_System.Auth.Login" %>
 <!DOCTYPE html>
 <html lang="en">
 <head id="Head1" runat="server">
@@ -145,7 +145,7 @@
         <noscript><p class="auth-noscript">Enable JavaScript for password visibility controls and the secure first-login dialog.</p></noscript>
     </form>
     <footer class="auth-public-footer"><span>&copy; <%= DateTime.Now.Year %> Jordan University of Science and Technology.</span><span>University Internship Management System.</span></footer>
-    <script src="../Js_project/Demo/demo-store.js"></script>
-    <script src="../Js_project/Auth/auth.js" defer="defer"></script>
+
+    <script src="../Js_project/Auth/auth.js?v=20261022-real-login" defer="defer"></script>
 </body>
 </html>

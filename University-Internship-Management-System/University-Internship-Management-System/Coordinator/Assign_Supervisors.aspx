@@ -1,4 +1,4 @@
-﻿<%@ Page Language="C#" AutoEventWireup="true" CodeBehind="Assign_Supervisors.aspx.cs" Inherits="University_Internship_Management_System.Coordinator.Assign_Supervisors" %>
+<%@ Page Language="C#" AutoEventWireup="true" CodeBehind="Assign_Supervisors.aspx.cs" Inherits="University_Internship_Management_System.Coordinator.Assign_Supervisors" %>
 
 <!DOCTYPE html>
 <html lang="en">
@@ -31,7 +31,7 @@
                     <li><a href="CoordinatorDashboard.aspx"><i class="bi bi-house-door"></i><span>Dashboard</span></a></li>
                     <li><a href="ManageStudents.aspx"><i class="bi bi-mortarboard"></i><span>Manage Students</span></a></li>
                     <li><a href="ManageCompanies.aspx"><i class="bi bi-building"></i><span>Manage Companies</span></a></li>
-                    <li><a href="Manage_Academic_Supervisor.aspx"><i class="bi bi-person-badge"></i><span>Manage Academic Supervisors</span></a></li>
+                    <li><a href='<%= ResolveUrl("~/Coordinator/Manage_Academic_Supervisor.aspx") %>'><i class="bi bi-person-badge"></i><span>Manage Academic Supervisors</span></a></li>
                     <li><a href="Assign_Supervisors.aspx" class="active"><i class="bi bi-diagram-3"></i><span>Assign Academic Supervisors</span></a></li>
                     <li><a href="MonitorPlacementsProgress.aspx"><i class="bi bi-activity"></i><span>Monitor Placements &amp; Progress</span></a></li>
                     <li><a href="FinalCompletionReview.aspx"><i class="bi bi-patch-check"></i><span>Final Completion Review</span></a></li>
