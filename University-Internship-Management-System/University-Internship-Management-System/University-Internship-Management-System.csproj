@@ -49,6 +49,91 @@
       <Private>True</Private>
     </Reference>
     <Reference Include="Microsoft.CSharp" />
+    <Reference Include="PdfSharp-gdi, Version=6.2.4.0, Culture=neutral, PublicKeyToken=f94615aa0424f9eb">
+      <HintPath>..\packages\PDFsharp-GDI.6.2.4\lib\net462\PdfSharp-gdi.dll</HintPath>
+      <SpecificVersion>True</SpecificVersion>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="PdfSharp.Charting-gdi, Version=6.2.4.0, Culture=neutral, PublicKeyToken=f94615aa0424f9eb">
+      <HintPath>..\packages\PDFsharp-GDI.6.2.4\lib\net462\PdfSharp.Charting-gdi.dll</HintPath>
+      <SpecificVersion>True</SpecificVersion>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="PdfSharp.Cryptography, Version=6.2.4.0, Culture=neutral, PublicKeyToken=f94615aa0424f9eb">
+      <HintPath>..\packages\PDFsharp-GDI.6.2.4\lib\net462\PdfSharp.Cryptography.dll</HintPath>
+      <SpecificVersion>True</SpecificVersion>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="PdfSharp.Shared, Version=6.2.4.0, Culture=neutral, PublicKeyToken=f94615aa0424f9eb">
+      <HintPath>..\packages\PDFsharp-GDI.6.2.4\lib\net462\PdfSharp.Shared.dll</HintPath>
+      <SpecificVersion>True</SpecificVersion>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="PdfSharp.System, Version=6.2.4.0, Culture=neutral, PublicKeyToken=f94615aa0424f9eb">
+      <HintPath>..\packages\PDFsharp-GDI.6.2.4\lib\net462\PdfSharp.System.dll</HintPath>
+      <SpecificVersion>True</SpecificVersion>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="PdfSharp.WPFonts, Version=6.2.4.0, Culture=neutral, PublicKeyToken=f94615aa0424f9eb">
+      <HintPath>..\packages\PDFsharp-GDI.6.2.4\lib\net462\PdfSharp.WPFonts.dll</HintPath>
+      <SpecificVersion>True</SpecificVersion>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="MigraDoc.DocumentObjectModel, Version=6.2.4.0, Culture=neutral, PublicKeyToken=f94615aa0424f9eb">
+      <HintPath>..\packages\PDFsharp-MigraDoc-GDI.6.2.4\lib\net462\MigraDoc.DocumentObjectModel.dll</HintPath>
+      <SpecificVersion>True</SpecificVersion>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="MigraDoc.Rendering-gdi, Version=6.2.4.0, Culture=neutral, PublicKeyToken=f94615aa0424f9eb">
+      <HintPath>..\packages\PDFsharp-MigraDoc-GDI.6.2.4\lib\net462\MigraDoc.Rendering-gdi.dll</HintPath>
+      <SpecificVersion>True</SpecificVersion>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="Microsoft.Extensions.Logging.Abstractions, Version=8.0.0.3, Culture=neutral, PublicKeyToken=adb9793829ddae60">
+      <HintPath>..\packages\Microsoft.Extensions.Logging.Abstractions.8.0.3\lib\net462\Microsoft.Extensions.Logging.Abstractions.dll</HintPath>
+      <SpecificVersion>True</SpecificVersion>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="Microsoft.Extensions.DependencyInjection.Abstractions, Version=8.0.0.2, Culture=neutral, PublicKeyToken=adb9793829ddae60">
+      <HintPath>..\packages\Microsoft.Extensions.DependencyInjection.Abstractions.8.0.2\lib\net462\Microsoft.Extensions.DependencyInjection.Abstractions.dll</HintPath>
+      <SpecificVersion>True</SpecificVersion>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="Microsoft.Bcl.AsyncInterfaces, Version=8.0.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51">
+      <HintPath>..\packages\Microsoft.Bcl.AsyncInterfaces.8.0.0\lib\net462\Microsoft.Bcl.AsyncInterfaces.dll</HintPath>
+      <SpecificVersion>True</SpecificVersion>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="System.Security.Cryptography.Pkcs, Version=8.0.0.1, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
+      <HintPath>..\packages\System.Security.Cryptography.Pkcs.8.0.1\lib\net462\System.Security.Cryptography.Pkcs.dll</HintPath>
+      <SpecificVersion>True</SpecificVersion>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="System.Memory, Version=4.0.1.2, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51">
+      <HintPath>..\packages\System.Memory.4.5.5\lib\net461\System.Memory.dll</HintPath>
+      <SpecificVersion>True</SpecificVersion>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="System.Buffers, Version=4.0.3.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51">
+      <HintPath>..\packages\System.Buffers.4.5.1\lib\net461\System.Buffers.dll</HintPath>
+      <SpecificVersion>True</SpecificVersion>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="System.Runtime.CompilerServices.Unsafe, Version=4.0.4.1, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
+      <HintPath>..\packages\System.Runtime.CompilerServices.Unsafe.4.5.3\lib\net461\System.Runtime.CompilerServices.Unsafe.dll</HintPath>
+      <SpecificVersion>True</SpecificVersion>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="System.Threading.Tasks.Extensions, Version=4.2.0.1, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51">
+      <HintPath>..\packages\System.Threading.Tasks.Extensions.4.5.4\lib\net461\System.Threading.Tasks.Extensions.dll</HintPath>
+      <SpecificVersion>True</SpecificVersion>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="System.Numerics.Vectors, Version=4.1.4.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
+      <HintPath>..\packages\System.Numerics.Vectors.4.5.0\lib\net46\System.Numerics.Vectors.dll</HintPath>
+      <SpecificVersion>True</SpecificVersion>
+      <Private>True</Private>
+    </Reference>
     <Reference Include="System.ComponentModel.DataAnnotations" />
     <Reference Include="System" />
     <Reference Include="System.Data" />
@@ -80,7 +165,7 @@
       <HintPath>..\packages\Microsoft.AspNet.Web.Optimization.1.1.3\lib\net40\System.Web.Optimization.dll</HintPath>
     </Reference>
     <Reference Include="Newtonsoft.Json">
-      <HintPath>..\packages\Newtonsoft.Json.13.0.3\lib\net45\Newtonsoft.Json.dll</HintPath>
+      <HintPath>..\packages\Newtonsoft.Json.13.0.4\lib\net45\Newtonsoft.Json.dll</HintPath>
     </Reference>
     <Reference Include="WebGrease">
       <Private>True</Private>
@@ -663,15 +748,87 @@
     </Compile>
     <Content Include="Assets\company\reports-final-evaluation.css" />
     <Content Include="Js_project\Company\reports-final-evaluation.js" />
+    <Content Include="Js_project\final-evaluation-v2.js" />
   </ItemGroup>
-  <ItemGroup><Content Include="Js_project\Demo\demo-store.js" /></ItemGroup>
-  <ItemGroup><Content Include="Js_project\Coordinator\manage-students.js" /></ItemGroup>
-  <ItemGroup><Content Include="Js_project\Student\profile.js" /></ItemGroup>
-  <ItemGroup><Content Include="Js_project\Company\my-trainees.js" /></ItemGroup>
-  <ItemGroup><Content Include="Js_project\Academic\academic-supervisor-account.js" /></ItemGroup>
-  <ItemGroup><Content Include="Assets\coordinator\manage-students.css" /></ItemGroup>
-  <ItemGroup><Content Include="Js_project\Coordinator\contact-messages.js" /></ItemGroup>
-  <ItemGroup><Content Include="Js_project\Public\contact-demo.js" /></ItemGroup>
-  <ItemGroup><Content Include="Assets\public\home-public.css" /></ItemGroup>
-  <ItemGroup><Content Include="Assets\public\about.css" /></ItemGroup>
+  <ItemGroup>
+    <Content Include="Js_project\Demo\demo-store.js" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="Js_project\Coordinator\manage-students.js" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="Js_project\Student\profile.js" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="Js_project\Company\my-trainees.js" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="Js_project\Academic\academic-supervisor-account.js" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="Assets\coordinator\manage-students.css" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="Js_project\Coordinator\contact-messages.js" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="Js_project\Public\contact-demo.js" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="Assets\public\home-public.css" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="Assets\public\about.css" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Models\FinalEvaluation\AcademicFinalEvaluation.cs" />
+    <Compile Include="Models\FinalEvaluation\CompanyFinalEvaluation.cs" />
+    <Compile Include="Models\FinalEvaluation\CompletionDocument.cs" />
+    <Compile Include="Models\FinalEvaluation\CompletionReview.cs" />
+    <Compile Include="Models\FinalEvaluation\EvaluationPolicy.cs" />
+    <Compile Include="Services\FinalEvaluation\Contracts.cs" />
+    <Compile Include="Services\FinalEvaluation\FinalEvaluationServices.cs" />
+    <Compile Include="Services\FinalEvaluation\FinalEvaluationValidation.cs" />
+    <Compile Include="Services\FinalEvaluation\FirebaseConfiguration.cs" />
+    <Compile Include="Services\FinalEvaluation\FirebaseFinalEvaluationRepository.cs" />
+    <Compile Include="Services\FinalEvaluation\InMemoryFinalEvaluationRepository.cs" />
+    <Compile Include="Services\FinalEvaluation\AcademicSubmissionService.cs" />
+    <Compile Include="Services\FinalEvaluation\CoordinatorEvaluationReader.cs" />
+    <Compile Include="Services\FinalEvaluation\CoordinatorReadinessWorkflow.cs" />
+    <Compile Include="Services\FinalEvaluation\CompletionDecisionWorkflow.cs" />
+    <Compile Include="Services\FinalEvaluation\CompletionReportService.cs" />
+    <Compile Include="Services\FinalEvaluation\StudentCompletionWorkflow.cs" />
+    <Compile Include="Services\FinalEvaluation\StudentCompletionPageIntegration.cs" />
+    <Compile Include="Services\FinalEvaluation\CompletionReportPdfRenderer.cs" />
+    <Compile Include="Services\FinalEvaluation\InMemoryPrivateCompletionReportStorage.cs" />
+    <Compile Include="Services\FinalEvaluation\CoordinatorReviewPageIntegration.cs" />
+    <Compile Include="Services\FinalEvaluation\AcademicDraftWorkflow.cs" />
+    <Compile Include="Services\FinalEvaluation\AcademicDraftPageIntegration.cs" />
+    <Compile Include="Services\FinalEvaluation\CompanySubmissionService.cs" />
+    <Compile Include="Services\FinalEvaluation\CompanyDraftWorkflow.cs" />
+    <Compile Include="Services\FinalEvaluation\CompanyDraftPageIntegration.cs" />
+    <Compile Include="Services\FinalEvaluation\PercentagePageIntegration.cs" />
+    <Compile Include="Services\FinalEvaluation\PercentageEvaluationPage.cs">
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="Models\FinalEvaluation\PercentageEvaluation.cs" />
+    <Compile Include="Services\FinalEvaluation\PercentageEvaluationWorkflow.cs" />
+    <Compile Include="Services\FinalEvaluation\PercentageEvaluationRepositories.cs" /><Compile Include="Services\FinalEvaluation\FirebaseDevelopmentDemoRepository.cs" /><Compile Include="Services\FinalEvaluation\DevelopmentDemoSeed.cs" />
+    <None Include="Services\FinalEvaluation\README.md" />
+    <Reference Include="Google.Apis, Version=1.77.0.0, Culture=neutral, PublicKeyToken=4b01fa6e34db77ab">
+      <HintPath>..\packages\Google.Apis.1.77.0\lib\net462\Google.Apis.dll</HintPath>
+      <SpecificVersion>True</SpecificVersion>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="Google.Apis.Auth, Version=1.77.0.0, Culture=neutral, PublicKeyToken=4b01fa6e34db77ab">
+      <HintPath>..\packages\Google.Apis.Auth.1.77.0\lib\net462\Google.Apis.Auth.dll</HintPath>
+      <SpecificVersion>True</SpecificVersion>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="Google.Apis.Core, Version=1.77.0.0, Culture=neutral, PublicKeyToken=4b01fa6e34db77ab">
+      <HintPath>..\packages\Google.Apis.Core.1.77.0\lib\net462\Google.Apis.Core.dll</HintPath>
+      <SpecificVersion>True</SpecificVersion>
+      <Private>True</Private>
+    </Reference>
+  </ItemGroup>
 </Project>
