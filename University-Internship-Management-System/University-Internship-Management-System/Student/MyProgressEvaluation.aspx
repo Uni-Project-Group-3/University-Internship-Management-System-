@@ -146,8 +146,6 @@
             </div>
         </div>
     </form>
-    <script src="../Js_project/Demo/demo-store.js?v=20261021-original-ui"></script>
-<script src="../Scripts/bootstrap.bundle.min.js"></script>
-    <script src="<%= ResolveUrl("~/Js_project/Student/my-progress-evaluation.js?v=20261021-original-ui") %>" defer="defer"></script>
+   <script src="../Scripts/bootstrap.bundle.min.js"></script>
 </body>
 </html>

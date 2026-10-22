@@ -468,12 +468,6 @@
       </FlavorProperties>
     </VisualStudio>
   </ProjectExtensions>
-  <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
-    <PropertyGroup>
-      <ErrorText>This project references NuGet package(s) that are missing on this computer. Use NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
-    </PropertyGroup>
-    <Error Condition="!Exists('..\packages\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.2.0.1\build\net46\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.props')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.2.0.1\build\net46\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.props'))" />
-  </Target>
   <ItemGroup>
     <Content Include="Public\home.aspx" />
     <Content Include="Assets\public\home.css" />
@@ -664,14 +658,40 @@
     <Content Include="Assets\company\reports-final-evaluation.css" />
     <Content Include="Js_project\Company\reports-final-evaluation.js" />
   </ItemGroup>
-  <ItemGroup><Content Include="Js_project\Demo\demo-store.js" /></ItemGroup>
-  <ItemGroup><Content Include="Js_project\Coordinator\manage-students.js" /></ItemGroup>
-  <ItemGroup><Content Include="Js_project\Student\profile.js" /></ItemGroup>
-  <ItemGroup><Content Include="Js_project\Company\my-trainees.js" /></ItemGroup>
-  <ItemGroup><Content Include="Js_project\Academic\academic-supervisor-account.js" /></ItemGroup>
-  <ItemGroup><Content Include="Assets\coordinator\manage-students.css" /></ItemGroup>
-  <ItemGroup><Content Include="Js_project\Coordinator\contact-messages.js" /></ItemGroup>
-  <ItemGroup><Content Include="Js_project\Public\contact-demo.js" /></ItemGroup>
-  <ItemGroup><Content Include="Assets\public\home-public.css" /></ItemGroup>
-  <ItemGroup><Content Include="Assets\public\about.css" /></ItemGroup>
+  <ItemGroup>
+    <Content Include="Js_project\Demo\demo-store.js" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="Js_project\Coordinator\manage-students.js" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="Js_project\Student\profile.js" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="Js_project\Company\my-trainees.js" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="Js_project\Academic\academic-supervisor-account.js" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="Assets\coordinator\manage-students.css" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="Js_project\Coordinator\contact-messages.js" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="Js_project\Public\contact-demo.js" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="Assets\public\home-public.css" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="Assets\public\about.css" />
+  </ItemGroup>
+  <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
+    <PropertyGroup>
+      <ErrorText>This project references NuGet package(s) that are missing on this computer. Use NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
+    </PropertyGroup>
+    <Error Condition="!Exists('..\packages\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.2.0.1\build\net46\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.props')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.2.0.1\build\net46\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.props'))" />
+  </Target>
 </Project>
