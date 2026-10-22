@@ -60,16 +60,30 @@ namespace UIMS.Attendance
             Response.Headers["Referrer-Policy"] = "no-referrer";
             Response.Headers["X-Frame-Options"] = "DENY";
             // وضع التطوير محصور بنفس الجهاز، ولا يمكن تفعيله من رابط أو حقل بالمتصفح.
-            LocalDemoAllowed = AttendanceFirebase.Setting("UIMS_ATTENDANCE_LOCAL_DEMO") == "true" &&
-                Request.IsLocal && Request.Url.IsLoopback && string.IsNullOrEmpty(Request.Headers["X-Forwarded-For"]);
+            LocalDemoAllowed = AttendanceConfiguration.IsLocalDevelopment(HttpContext.Current);
             isApi = Request.QueryString["attendanceApi"] == "1";
-            if (Session["Attendance.Csrf"] == null && !isApi)
+            AttendanceCsrfToken = isApi ? Request.Form["csrf"] : CreateCsrfToken();
+        }
+
+        // A signed per-page token avoids invalidating another tab when ASP.NET issues a session cookie.
+        public static string CreateCsrfToken()
+        {
+            byte[] data = new byte[40];
+            using (var random = RandomNumberGenerator.Create()) random.GetBytes(data);
+            BitConverter.GetBytes(DateTimeOffset.UtcNow.ToUnixTimeSeconds()).CopyTo(data, 32);
+            return Convert.ToBase64String(System.Web.Security.MachineKey.Protect(data, "UIMS.Attendance.Csrf.v1"));
+        }
+        public static bool ValidateCsrfToken(string token)
+        {
+            if (string.IsNullOrWhiteSpace(token) || token.Length > 2048) return false;
+            try
             {
-                byte[] bytes = new byte[32];
-                using (var random = RandomNumberGenerator.Create()) random.GetBytes(bytes);
-                Session["Attendance.Csrf"] = Convert.ToBase64String(bytes);
+                byte[] data = System.Web.Security.MachineKey.Unprotect(Convert.FromBase64String(token), "UIMS.Attendance.Csrf.v1");
+                if (data == null || data.Length != 40) return false;
+                long age = DateTimeOffset.UtcNow.ToUnixTimeSeconds() - BitConverter.ToInt64(data, 32);
+                return age >= -60 && age <= 21600;
             }
-            AttendanceCsrfToken = (string)Session["Attendance.Csrf"];
+            catch (Exception error) when (error is FormatException || error is CryptographicException || error is ArgumentException || error is HttpException) { return false; }
         }
 
         // طلب تحميل واحد، ورسائل JSON صغيرة؛ لا نفتح طلبات Firebase إضافية للتدرج.
@@ -128,7 +142,7 @@ namespace UIMS.Attendance
             AttendanceTiming.Current.Value = timing;
             try
             {
-                if (Request.HttpMethod != "POST" || string.IsNullOrEmpty(AttendanceCsrfToken) || Request.Form["csrf"] != AttendanceCsrfToken)
+                if (Request.HttpMethod != "POST" || !ValidateCsrfToken(Request.Form["csrf"]))
                 {
                     Response.StatusCode = 403;
                     throw new InvalidOperationException("This request is not authorized. Reload the attendance page.");
@@ -142,9 +156,11 @@ namespace UIMS.Attendance
                 string action = Request.Form["action"] ?? "";
                 if (action == "identity" && !LocalDemoAllowed)
                     throw new InvalidOperationException("Identity switching is available in localhost demo mode only.");
+                if (action == "newDemo") throw new UIMS.Services.FirebaseException(501, "Creating replacement identities or new sample datasets is disabled. Use the existing attendance test records.");
                 JObject data = await handleAction();
                 jsonResponse = JsonConvert.SerializeObject(new { success = true, data = data });
             }
+            catch (UIMS.Services.FirebaseException error) { WriteError(error.Message, error.StatusCode); }
             catch (InvalidOperationException error) { WriteError(error.Message, 400); }
             catch (HttpRequestException) { WriteError("Firebase could not complete the request. Check server access and permissions. No successful save was confirmed.", 502); }
             catch (TaskCanceledException) { WriteError("Firebase timed out. Refresh to check the stored state before retrying.", 504); }
@@ -201,15 +217,7 @@ namespace UIMS.Attendance
                 }
                 return Session[key] as string ?? (role == "student" ? "att_demo_student_a" : "att_demo_supervisor_a");
             }
-            // هذه القيم يضعها زميل المصادقة بعد التحقق الحقيقي على السيرفر، وليس من المتصفح.
-            string uid = Session["Uims.VerifiedFirebaseUid"] as string;
-            if (Session["Uims.PasswordChangeRequired"] as bool? == true)
-                throw new InvalidOperationException("Complete the required password change before using attendance.");
-            string loggedRole = Session["Uims.Role"] as string;
-            string id = Session[role == "student" ? "Attendance.StudentId" : "Attendance.SupervisorId"] as string;
-            if (string.IsNullOrWhiteSpace(uid) || !string.Equals(loggedRole, role, StringComparison.OrdinalIgnoreCase) || string.IsNullOrWhiteSpace(id))
-                throw new InvalidOperationException("Verified sign-in is required. For localhost test records only, configure UIMS_ATTENDANCE_LOCAL_DEMO on the server.");
-            return id;
+            throw new UIMS.Services.FirebaseException(401, "Attendance without sign-in is available only in localhost development mode.");
         }
 
         private void WriteError(string message, int status)

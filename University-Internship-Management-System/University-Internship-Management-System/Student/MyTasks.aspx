@@ -123,7 +123,7 @@
                         <div class="topbar-actions ms-auto">
                             <div class="user-chip">
                                 <span class="avatar">ST</span>
-                                <span class="name">Student Portal<span class="role">Interface preview</span>
+                                <span class="name">Student Portal<span class="role">Student workspace</span>
                                 </span>
                             </div>
                         </div>
@@ -131,7 +131,7 @@
 
                     <!-- CONTENT -->
                     <div class="content">
-                        <p class="preview-note">Interface preview · Sample data. Changes last until this page is reloaded; no Firebase updates.</p>
+                        <p class="preview-note">Loading live task records from Firebase…</p>
                         <div id="pageNotice" class="page-notice" role="status" aria-live="polite" hidden>
                         </div>
                         <div class="page-header animate-fade-up template-style-1">
@@ -193,7 +193,7 @@
                             <div class="filter-box">
                                 <select id="taskFilter" aria-label="Filter by task status" class="form-select">
                                     <option value="all">All Statuses</option>
-                                    <option value="in-progress">In Progress</option>
+                                    <option value="assigned">In Progress</option>
                                     <option value="submitted">Awaiting Review</option>
                                     <option value="revision">Revision Requested</option>
                                     <option value="completed">Completed</option>
@@ -204,117 +204,14 @@
                         <!-- TASK LIST -->
                         <div class="task-list" id="taskList">
 
-                            <!-- Task: In Progress -->
-                            <div class="task-card animate-fade-up template-style-7" data-status="in-progress">
-                                <div class="task-info">
-                                    <div class="task-head">
-                                        <h3 class="task-title">Database Design</h3>
-                                        <span class="badge badge-warning">In Progress</span>
-                                    </div>
-                                    <p class="task-desc">Create an Entity Relationship Diagram (ERD) and explain the relationships between the main database entities.</p>
-                                    <div class="task-meta">
-                                        <span>
-                                            <i class="bi bi-calendar-event" aria-hidden="true">
-                                            </i> Oct 23, 2026</span>
-                                        <span>
-                                            <i class="bi bi-person" aria-hidden="true">
-                                            </i> Eng. Ahmad Khalil</span>
-                                    </div>
-                                </div>
-                                <div class="task-action">
-                                    <button type="button" class="btn btn-primary submit-btn" data-bs-toggle="modal" data-bs-target="#submitModal">
-                                        Submit Work <i class="bi bi-arrow-right ms-1" aria-hidden="true">
-                                        </i>
-                                    </button>
-                                </div>
-                            </div>
-
-                            <!-- Task: Submitted -->
-                            <div class="task-card animate-fade-up template-style-8" data-status="submitted">
-                                <div class="task-info">
-                                    <div class="task-head">
-                                        <h3 class="task-title">Weekly Progress Report</h3>
-                                        <span class="badge badge-info">Awaiting Review</span>
-                                    </div>
-                                    <p class="task-desc">Prepare a report describing your completed activities, acquired skills, and internship progress this week.</p>
-                                    <div class="task-meta">
-                                        <span>
-                                            <i class="bi bi-calendar-event" aria-hidden="true">
-                                            </i> Oct 21, 2026</span>
-                                        <span>
-                                            <i class="bi bi-person" aria-hidden="true">
-                                            </i> Eng. Ahmad Khalil</span>
-                                    </div>
-                                </div>
-                                <div class="task-action text-center">
-                                    <span class="action-text">
-                                        <i class="bi bi-clock-history me-1" aria-hidden="true">
-                                        </i> Submitted</span>
-                                </div>
-                            </div>
-
-                            <!-- Task: Revision -->
-                            <div class="task-card border-danger-left animate-fade-up template-style-9" data-status="revision">
-                                <div class="task-info">
-                                    <div class="task-head">
-                                        <h3 class="task-title">Employee Management Module</h3>
-                                        <span class="badge badge-danger">Revision Requested</span>
-                                    </div>
-                                    <p class="task-desc">Implement an employee management module and demonstrate the main operations.</p>
-
-                                    <div class="feedback-note">
-                                        <strong>
-                                            <i class="bi bi-exclamation-triangle-fill me-1" aria-hidden="true">
-                                            </i> Supervisor Feedback:</strong> Please improve input validation and handle empty fields before resubmitting.
-                                    </div>
-
-                                    <div class="task-meta">
-                                        <span class="text-danger fw-semibold">
-                                            <i class="bi bi-calendar-event" aria-hidden="true">
-                                            </i> Oct 22, 2026 (Urgent)</span>
-                                        <span>
-                                            <i class="bi bi-person" aria-hidden="true">
-                                            </i> Eng. Ahmad Khalil</span>
-                                    </div>
-                                </div>
-                                <div class="task-action">
-                                    <button type="button" class="btn btn-danger submit-btn" data-bs-toggle="modal" data-bs-target="#submitModal">
-                                        Resubmit <i class="bi bi-arrow-repeat ms-1" aria-hidden="true">
-                                        </i>
-                                    </button>
-                                </div>
-                            </div>
-
-                            <!-- Task: Completed -->
-                            <div class="task-card animate-fade-up template-style-10" data-status="completed">
-                                <div class="task-info">
-                                    <div class="task-head">
-                                        <h3 class="task-title text-muted text-decoration-line-through">Internship Orientation</h3>
-                                        <span class="badge badge-success">Completed</span>
-                                    </div>
-                                    <p class="task-desc">Review the internship guidelines and document the main responsibilities and workplace policies.</p>
-                                    <div class="task-meta">
-                                        <span>
-                                            <i class="bi bi-check2-circle" aria-hidden="true">
-                                            </i> Completed: Oct 16, 2026</span>
-                                    </div>
-                                </div>
-                                <div class="task-action text-center">
-                                    <div class="success-circle">
-                                        <i class="bi bi-check-lg" aria-hidden="true">
-                                        </i>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Empty State -->
+<!-- Empty State -->
                             <div id="noTasksMsg" class="no-tasks animate-fade-up template-style-11">
                                 <div class="empty-icon">
                                     <i class="bi bi-inbox" aria-hidden="true">
                                     </i>
                                 </div>
-                                <h4 class="fw-bold mt-3 mb-1">No tasks found</h4>
-                                <p class="text-muted m-0">Try adjusting your search or filters.</p>
+                                <h4 class="fw-bold mt-3 mb-1">Loading tasks</h4>
+                                <p class="text-muted m-0">Loading live task records from Firebase.</p>
                             </div>
 
                         </div>
@@ -335,6 +232,12 @@
                             <p class="text-muted mb-4 template-style-13">Provide your work details, repository links, or attach files for supervisor review.</p>
 
                             <div id="modalError" class="alert alert-danger custom-alert template-style-14">
+                            </div>
+
+                            <div id="studentTaskEvaluation" class="alert alert-success" role="status" hidden>
+                                <strong>Institution evaluation</strong>
+                                <div class="mt-2">Score: <span id="studentTaskScore"></span> / <span id="studentTaskMaximum"></span></div>
+                                <p id="studentTaskFeedback" class="mb-0 mt-2"></p>
                             </div>
 
                             <div class="mb-4">
@@ -365,10 +268,9 @@
             </div>
 
         </form>
-        <script src="../Js_project/Demo/demo-store.js?v=20261021-original-ui"></script>
-<script src="../Scripts/bootstrap.bundle.min.js">
+        <script src="../Scripts/bootstrap.bundle.min.js">
         </script>
-        <script src="../Js_project/Student/MyTasks.js?v=20261021-original-ui">
+        <script src="../Js_project/Student/MyTasks.js?v=20261022-institution-score">
         </script>
     </body>
 </html>

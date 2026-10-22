@@ -12,7 +12,7 @@
 </head>
 <body>
     <form id="attendanceForm" runat="server">
-        <script type="application/json" id="attendanceBootstrap">{"csrf":"<%= AttendanceCsrfToken %>"}</script>
+        <script type="application/json" id="attendanceBootstrap">{"csrf":"<%= AttendanceCsrfToken %>","localDemo":<%= LocalDemoAllowed ? "true" : "false" %>}</script>
         <div class="app">
 
             <!-- ============ SIDEBAR (Company Supervisor) ============ -->
@@ -104,6 +104,7 @@
             </div>
         </div>
     </form>
+    <script src="../Js_project/firebase-client.js"></script>
     <script src="../Scripts/bootstrap.bundle.min.js"></script>
     <script src="../Js_project/Company/attendance-jsqr.js"></script>
     <script src="../Js_project/Company/verify-attendance.js?v=ui-simple2"></script>

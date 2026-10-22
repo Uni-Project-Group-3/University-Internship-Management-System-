@@ -95,6 +95,8 @@ async function api(action, values, onProgress) {
         csrf: JSON.parse(document.getElementById("attendanceBootstrap").textContent).csrf
     }, values || {}));
     if (action === "load" && onProgress) body.set("stream", "1");
+    const localDevelopment = JSON.parse(document.getElementById("attendanceBootstrap").textContent).localDemo;
+    const idToken = localDevelopment ? null : await window.UimsFirebase.getIdToken();
     const controller = new AbortController();
     const timeout = setTimeout(function () { controller.abort(); }, 130000);
     try {
@@ -102,7 +104,7 @@ async function api(action, values, onProgress) {
         try {
             response = await fetch(url.href, {
                 method: "POST", credentials: "same-origin", signal: controller.signal,
-                headers: { "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8" }, body: body
+                headers: { "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8", ...(idToken ? { "Authorization": "Bearer " + idToken } : {}) }, body: body
             });
         } catch (error) {
             if (action === "scan") scannerDiagnostic("request.network-failed", { errorType: error.name });

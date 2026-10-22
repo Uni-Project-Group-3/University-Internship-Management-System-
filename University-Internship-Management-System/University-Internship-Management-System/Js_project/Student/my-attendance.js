@@ -75,6 +75,8 @@ async function api(action, values, onProgress) {
         csrf: JSON.parse(document.getElementById("attendanceBootstrap").textContent).csrf
     }, values || {}));
     if (action === "load" && onProgress) body.set("stream", "1");
+    const localDevelopment = JSON.parse(document.getElementById("attendanceBootstrap").textContent).localDemo;
+    const idToken = localDevelopment ? null : await window.UimsFirebase.getIdToken();
     const controller = new AbortController();
     const timeout = setTimeout(function () { controller.abort(); }, 130000);
     try {
@@ -82,7 +84,7 @@ async function api(action, values, onProgress) {
         try {
             response = await fetch(url.href, {
                 method: "POST", credentials: "same-origin", signal: controller.signal,
-                headers: { "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8" }, body: body
+                headers: { "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8", ...(idToken ? { "Authorization": "Bearer " + idToken } : {}) }, body: body
             });
         } catch (error) {
             throw new Error(error.name === "AbortError"
@@ -303,7 +305,10 @@ async function loadAttendance() {
             document.getElementById(id).removeAttribute("aria-busy");
         });
         document.getElementById("todayStatus").textContent = "Unavailable";
-        if (!attendance) document.getElementById("historyEmpty").textContent = "Attendance could not be loaded.";
+        if (!attendance) {
+            document.getElementById("historyEmpty").textContent = "Attendance could not be loaded.";
+            ["approvedHours", "remainingHours", "progressText"].forEach(function (id) { document.getElementById(id).textContent = "Unavailable"; });
+        }
         ["checkInButton", "checkOutButton", "earlyButton"].forEach(function (id) { document.getElementById(id).disabled = true; });
     } finally { loading = false; if (createDemoButton) createDemoButton.disabled = saving; }
 }

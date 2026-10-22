@@ -1,194 +1,112 @@
-
-/* Original-page demo bindings. Layout and server controls remain in the ASPX. */
 (function () {
     'use strict';
-    if (!window.UimsDemo?.enabled()) { location.replace('../Auth/Login.aspx?demo=1'); return; }
-    let binding;
-    function initialize() {
-        binding?.abort();
-        binding = new AbortController();
-        const signal = binding.signal, demo = window.UimsDemo;
-        let view = demo.view(), selected = null, render = () => {};
-        if (!view || view.user.mustChangePassword || view.user.role !== document.body.dataset.demoRole) {
-            location.href = '../Auth/Login.aspx?demo=1';
-            return;
-        }
-        const by = id => document.getElementById(id) || document.querySelector('[id$="_' + id + '"]');
-        const all = selector => [...document.querySelectorAll(selector)];
-        const escape = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-        const text = (id, value) => { const element = by(id); if (element) element.textContent = value ?? '—'; };
-        const value = id => by(id)?.value?.trim() || '';
-        const set = (id, value) => { if (by(id)) by(id).value = value ?? ''; };
-        const options = (id, records, placeholder = 'All') => {
-            const element = by(id); if (!element) return;
-            const previous = element.value;
-            element.innerHTML = '<option value="">' + escape(placeholder) + '</option>' + records.map(record => '<option value="' + escape(record.id) + '">' + escape(record.name) + '</option>').join('');
-            if (records.some(record => record.id === previous)) element.value = previous;
-        };
-        const on = (id, type, handler) => by(id)?.addEventListener(type, handler, {signal});
-        const click = (id, handler) => on(id, 'click', event => { event.preventDefault(); try { handler(event); } catch(exception) { error(exception,event.currentTarget.closest('dialog,.modal,.offcanvas')); } });
-        const button = (label, action, id, className = 'row-action') => {
-            const paths={edit:'M4 16v4h4L20 8l-4-4L4 16Z',delete:'M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13',reset:'M13 7a5 5 0 1 0 0 10 5 5 0 0 0 0-10ZM8 12H2m2 0v4',status:'M12 2v10M6 5a9 9 0 1 0 12 0',assign:'M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 3a4 4 0 1 0 0 8 4 4 0 0 0 0-8M20 8v6m-3-3h6'};
-            const icon=className.includes('action-btn')&&paths[action];
-            const content=icon?'<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="'+paths[action]+'"/></svg>':escape(label);
-            return '<button type="button" title="'+escape(label)+'" aria-label="'+escape(label)+'" class="' + className + '" data-uims="' + action + '" data-record="' + escape(id) + '">' + content + '</button>';
-        };
-        const cells = values => '<tr>' + values.map(cell => '<td>' + cell + '</td>').join('') + '</tr>';
-        const fill = (selector, records, row) => {
-            const element = document.querySelector(selector);
-            if(!element)return;
-            const emptyState=element.id==='taskList'?element.querySelector('#noTasksMsg'):null;
-            element.innerHTML=records.map(row).join('');
-            if(emptyState)element.append(emptyState);
-        };
-        const messageElement = () => by('uimsPageNotice') || document.querySelector('main .preview-note,main .completion-notice,main .companies-notice,main .evaluation-notice,main .monitor-notice,main .workspace-note,#messagesAvailability,#traineesAvailability,#accountAvailability') || by('pageNotice') || by('profileMessage') || by('pnlMessage');
-        function notice(message) {
-            let element = messageElement();
-            if (!element) { element = document.createElement('p'); element.id='uimsPageNotice'; element.className = 'uims-feedback'; element.setAttribute('role','status'); (document.querySelector('main') || document.querySelector('.content')).prepend(element); }
-            element.hidden = false; element.textContent = message;
-        }
-        function error(error, scope) {
-            let element = scope?.querySelector('[data-uims-error]');
-            if (scope && !element) { element = document.createElement('p'); element.dataset.uimsError = ''; element.className = 'uims-error'; element.setAttribute('role','alert'); (scope.querySelector('.modal-body') || scope).append(element); }
-            if (element) element.textContent = error.message; else notice(error.message);
-        }
-        const dirty = new WeakSet(), openers = new WeakMap();
-        let beforeClose=null;
-        function open(id) {
-            const dialog = by(id); if (!dialog) throw Error('Missing original popup: ' + id);
-            const alreadyOpen=dialog.tagName==='DIALOG'?dialog.open:dialog.classList.contains('show');
-            if(!alreadyOpen){openers.set(dialog, document.activeElement);dirty.delete(dialog);}
-            dialog.querySelectorAll('[data-uims-error],.uims-discard').forEach(el => el.remove());
-            if (dialog.tagName === 'DIALOG') { if (!dialog.open) dialog.showModal(); }
-            else if (dialog.classList.contains('offcanvas')) bootstrap.Offcanvas.getOrCreateInstance(dialog).show();
-            else bootstrap.Modal.getOrCreateInstance(dialog).show();
-            dialog.querySelector('input:not([readonly]):not([disabled]),textarea:not([disabled]),select:not([disabled])')?.focus();
-        }
-        function close(id, force = false) {
-            const dialog = by(id); if (!dialog) return;
-            if(!force&&beforeClose?.(id)===false)return;
-            if (dirty.has(dialog) && !force) {
-                if (dialog.querySelector('.uims-discard')) return;
-                const prompt = document.createElement('div'); prompt.className = 'uims-discard'; prompt.setAttribute('role','alert');
-                prompt.innerHTML = '<p>Discard unsaved changes?</p><button type="button" data-keep>Keep editing</button><button type="button" data-discard>Discard changes</button>';
-                (dialog.querySelector('.modal-footer') || dialog).append(prompt);
-                prompt.querySelector('[data-keep]').onclick = () => prompt.remove();
-                prompt.querySelector('[data-discard]').onclick = () => { prompt.remove(); close(id, true); };
-                prompt.querySelector('button').focus(); return;
-            }
-            dirty.delete(dialog);
-            if (dialog.tagName === 'DIALOG') dialog.close();
-            else if (dialog.classList.contains('offcanvas')) bootstrap.Offcanvas.getInstance(dialog)?.hide();
-            else bootstrap.Modal.getInstance(dialog)?.hide();
-            openers.get(dialog)?.focus();
-        }
-        function transact(action, payload, popup) {
-            try {
-                const result = demo.transaction(action, payload); view = demo.view();
-                if (popup) close(popup, true);
-                render(); notice('Saved in local demo storage. No Firebase operation or email was sent.');
-                return {ok:true, result};
-            } catch (exception) { error(exception, popup ? by(popup) : null); return {ok:false}; }
-        }
-        function valid(ids, popup) {
-            const invalid = ids.map(by).find(field => field && (!field.checkValidity() || field.required && !field.value.trim()));
-            if (!invalid) return true;
-            invalid.reportValidity(); error(Error('Check the highlighted field.'), by(popup)); return false;
-        }
-        const actions = {};
-        document.addEventListener('click', event => {
-            const control = event.target.closest('[data-uims]'); if (!control) return;
-            event.preventDefault();
-            try { actions[control.dataset.uims]?.(control.dataset.record, control); } catch (exception) { error(exception); }
-        }, {signal});
-        all('dialog,.modal,.offcanvas').forEach(dialog => {
-            const changed = () => dirty.add(dialog);
-            dialog.addEventListener('input', changed, {signal}); dialog.addEventListener('change', changed, {signal});
-            dialog.addEventListener('cancel', event => { event.preventDefault(); close(dialog.id); }, {signal});
-            dialog.addEventListener('hide.bs.modal', event => { if (dirty.has(dialog)) { event.preventDefault(); close(dialog.id); } }, {signal});
-            dialog.addEventListener('hidden.bs.modal', () => openers.get(dialog)?.focus(), {signal});
-            dialog.addEventListener('click', event => {
-                if(event.defaultPrevented)return;
-                if (event.target.closest('[data-bs-dismiss], [data-close], [data-completion-close], [data-profile-cancel], .popup-close, .monitor-close, .evaluation-close, .companies-close, .placements-close, [data-close-exam]')) {
-                    event.preventDefault(); event.stopPropagation(); close(dialog.id);
-                } else if (event.target === dialog && dialog.tagName === 'DIALOG') {
-                    const rect = dialog.getBoundingClientRect();
-                    if (event.clientX < rect.left || event.clientX > rect.right || event.clientY < rect.top || event.clientY > rect.bottom) close(dialog.id);
-                }
-            }, {signal});
+    const api = '../TasksApi.ashx?role=student';
+    let state = { tasks: [], submissions: [] }, selectedId = null, busy = false;
+    const by = id => document.getElementById(id);
+    const escapeHtml = value => String(value == null ? '' : value).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    const message = (value, error) => {
+        const notice = by('pageNotice');
+        if (notice) { notice.hidden = false; notice.textContent = value; notice.classList.toggle('text-danger', !!error); notice.classList.toggle('text-success', !error); }
+    };
+    const connection = value => { const status = document.querySelector('.preview-note'); if (status) status.textContent = value; };
+    const modal = id => window.bootstrap && bootstrap.Modal.getOrCreateInstance(by(id));
+    async function request(action, data) {
+        const response = await fetch(api + (action ? '&action=' + encodeURIComponent(action) : ''), {
+            method: action ? 'POST' : 'GET', cache: 'no-store', headers: action ? { 'Content-Type': 'application/json' } : {},
+            body: action ? JSON.stringify(data || {}) : undefined
         });
-        function detail(student, id, selector) {
-            const progress = view.progress.find(item => item.id === student); if (!progress) throw Error('This student is not available to this demo identity.');
-            const target = document.querySelector(selector);
-            if (target) target.innerHTML = '<h3>' + escape(progress.name) + '</h3><dl>' + [['University ID',progress.universityId],['Department',progress.department],['Company',progress.company?.name],['Company Supervisor',progress.companySupervisor?.name],['Academic Supervisor',progress.supervisor?.name],['Training status',progress.placement?.completionStatus || 'Not placed'],['Approved / Required hours',progress.approvedHours + ' / ' + progress.requiredHours],['Tasks completed',progress.completedTasks + ' / ' + progress.tasks.length],['Risk indicators',progress.risks.join(', ') || 'None'],['Confirmed at UTC',progress.placement?.studentConfirmedAt],['Disable deadline UTC',progress.placement?.accountDisableAt],['Certificate',progress.placement?.certificateId]].map(([label,content]) => '<dt>' + escape(label) + '</dt><dd>' + escape(content || '—') + '</dd>').join('') + '</dl>' + progress.tasks.map(task => '<article><h4>' + escape(task.title) + '</h4><p>' + escape(task.description) + '</p><p>' + escape(task.deadline) + ' · ' + escape(task.status) + '</p><p>' + escape(task.feedback) + '</p>' + view.submissions.filter(sub => sub.taskId === task.id).map(sub => '<p>Submitted ' + escape(sub.createdAt) + ': ' + escape(sub.description) + ' · ' + escape(sub.fileName) + '</p>').join('') + '</article>').join('') + progress.evaluations.map(evaluation => '<article><h4>' + escape(evaluation.kind) + ' evaluation · ' + escape(evaluation.status) + '</h4><p>' + escape(evaluation.comments) + '</p></article>').join('');
-            selected = student; open(id);
-        }
-        function shell() {
-            all('[id$="lblUserName"],[id$="NavName"]').forEach(el => el.textContent = view.user.name);
-            document.addEventListener('click', event => {
-                const element = event.target.closest('a,button,input');
-                if (element && (/log\s*out/i.test(element.textContent) || /logout/i.test(element.id))) {
-                    event.preventDefault(); event.stopImmediatePropagation(); demo.logout(); location.href = '../Auth/Login.aspx?demo=1';
-                }
-            }, {signal,capture:true});
-            all('[id*=Logout],[id*=logout]').forEach(el => el.disabled = false);
-            if (!document.querySelector('script[src*="dashboard-navigation.js"]')) {
-                const sidebar = document.querySelector('aside.sidebar,aside.dash-sidebar,aside[id$="Sidebar"]');
-                const toggle = document.querySelector('.menu-btn,.dash-menu-btn');
-                const main = document.querySelector('.main,.dash-main');
-                const media = matchMedia('(max-width:991.98px)');
-                const setOpen = show => {
-                    const active = media.matches && show;
-                    document.body.classList.toggle('sidebar-open',active); toggle?.setAttribute('aria-expanded',String(active));
-                    if (sidebar) sidebar.inert = media.matches && !active;
-                    if (main) main.inert = active;
-                    document.querySelector('.sidebar-backdrop,.dash-sidebar-backdrop')?.toggleAttribute('hidden',!active);
-                    if (active) sidebar?.querySelector('button,a[href]')?.focus();
-                };
-                window.toggleSidebar = () => setOpen(!document.body.classList.contains('sidebar-open'));
-                if (toggle) { toggle.onclick = null; toggle.addEventListener('click',window.toggleSidebar,{signal}); }
-                all('.sidebar-close,.dash-sidebar-close,.legacy-sidebar-close,.sidebar-backdrop,.dash-sidebar-backdrop').forEach(el => el.addEventListener('click',()=>{setOpen(false);toggle?.focus();},{signal}));
-                document.addEventListener('keydown',event=>{if(event.key==='Escape'&&document.body.classList.contains('sidebar-open')){setOpen(false);toggle?.focus();}},{signal});
-                media.addEventListener('change',()=>setOpen(false),{signal}); setOpen(false);
-            }
-            const topSearch = document.querySelector('.topbar input,.dash-topbar input');
-            const search = document.querySelector('main input[type="search"],.content input[type="search"],#taskSearch,#searchInput');
-            if(topSearch&&!search){topSearch.disabled=false;topSearch.addEventListener('keydown',event=>{if(event.key!=='Enter')return;event.preventDefault();const route={admin:'MonitorPlacementsProgress.aspx',student:'ExploreOpportunities.aspx',company:'MyTrainees.aspx',academic:'StudentProgressMonitor.aspx'}[view.user.role];location.href=route+'?search='+encodeURIComponent(topSearch.value.trim());},{signal});}
-            if (topSearch && search && topSearch !== search) { topSearch.disabled=false;topSearch.addEventListener('input',()=>{search.value=topSearch.value;search.dispatchEvent(new Event('input'));},{signal}); }
-        }
-
-        function notifications() {
-            const items=[];
-            if(view.user.role==='student'){view.applications.forEach(a=>items.push('Application: '+a.status));view.placements.filter(p=>p.completionStatus==='PendingStudentConfirmation').forEach(()=>items.push('Coordinator approval received. Confirm completion in the Student Dashboard.'));}
-            if(view.user.role==='company')items.push(view.applications.filter(a=>a.status==='pending').length+' pending applications',view.tasks.filter(t=>t.status==='submitted').length+' task submissions awaiting review');
-            if(view.user.role==='academic')items.push(view.progress.filter(s=>s.evaluations.some(e=>e.kind==='company'&&e.status==='submitted')&&!s.evaluations.some(e=>e.kind==='academic'&&e.status==='submitted')).length+' assigned students awaiting academic evaluation');
-            if(view.user.role==='admin')items.push(view.messages.filter(m=>m.status==='unread').length+' unread contact messages',view.progress.filter(s=>s.placement?.completionStatus==='PendingStudentConfirmation').length+' pending student confirmations');
-            let dialog=by('originalNotifications');
-            if(!dialog){dialog=document.createElement('dialog');dialog.id='originalNotifications';dialog.className='uims-notifications';dialog.setAttribute('aria-label','Demo notifications');document.forms[0].append(dialog);}
-            dialog.innerHTML='<h2>Notifications · local demo</h2>'+items.map(item=>'<p>'+escape(item)+'</p>').join('')+(items.length?'':'<p>No notifications.</p>')+'<button type="button" data-notification-close>Close</button>';
-            dialog.querySelector('button').onclick=()=>dialog.close();dialog.showModal();
-        }
-        all('.topbar button,.dash-topbar button').forEach(el=>{if(!/notification/i.test(el.getAttribute('aria-label')||'')&&!el.querySelector('.bi-bell'))return;el.disabled=false;el.title='Local demo notifications';el.addEventListener('click',event=>{event.preventDefault();event.stopImmediatePropagation();view=demo.view();if(view)notifications();},{signal,capture:true});});
-        shell();
-        
-        options('taskFilter',[{id:'assigned',name:'In Progress'},{id:'submitted',name:'Submitted'},{id:'revision',name:'Revision Requested'},{id:'completed',name:'Completed'}]);
-        render=()=>{
-            const records=view.tasks.filter(task=>(!value('taskSearch')||task.title.toLowerCase().includes(value('taskSearch').toLowerCase()))&&(!value('taskFilter')||task.status===value('taskFilter')));
-            fill('#taskList',records,task=>'<article class="task-card"><div class="task-header"><h3>'+escape(task.title)+'</h3><span class="status-badge">'+escape(task.status)+'</span></div><p>'+escape(task.description)+'</p><p>Deadline '+escape(task.deadline)+(task.status!=='completed'&&Date.parse(task.deadline)<Date.parse(demo.now())?' · Overdue':'')+'</p><p>'+escape(task.feedback||'')+'</p><small>'+(task.score!==undefined?escape(task.score)+' / '+escape(task.maximum):'Not evaluated')+'</small>'+button('View details','details',task.id,'btn btn-light')+(['assigned','revision'].includes(task.status)?button('Submit work','submit',task.id,'btn btn-primary submit-btn'):'<p>'+escape(view.submissions.filter(sub=>sub.taskId===task.id).length)+' recorded submission(s)</p>')+'</article>');
-            by('noTasksMsg').style.display=records.length?'none':'block';all('.stat-details h3').forEach((el,index)=>el.textContent=[view.tasks.length,view.tasks.filter(t=>t.status==='completed').length,view.tasks.filter(t=>t.status==='submitted').length,view.tasks.filter(t=>t.status==='revision').length][index]??0);
-        };
-        actions.submit=id=>{selected=id;by('workDesc').readOnly=false;by('workLink').readOnly=false;by('workFile').disabled=false;by('confirmSubmitBtn').hidden=false;text('studentSubmissionHistory','');set('workDesc','');set('workLink','');set('workFile','');by('submitModal').querySelector('.modal-title').textContent=view.tasks.find(task=>task.id===id)?.title;open('submitModal');};
-        click('confirmSubmitBtn',()=>transact('submitTask',{id:selected,description:value('workDesc'),link:value('workLink'),fileName:by('workFile').files[0]?.name||''},'submitModal'));
-        on('taskSearch','input',render);on('taskFilter','change',render);
-
-        actions.details=id=>{selected=id;const task=view.tasks.find(task=>task.id===id),submissions=view.submissions.filter(sub=>sub.taskId===id),last=submissions.at(-1);by('submitModal').querySelector('.modal-title').textContent=task.title;set('workDesc',last?.description||task.description);set('workLink',last?.link||'');by('workDesc').readOnly=true;by('workLink').readOnly=true;by('workFile').disabled=true;by('confirmSubmitBtn').hidden=true;by('studentSubmissionHistory').innerHTML=submissions.map(sub=>'<p>'+escape(sub.createdAt)+' · '+escape(sub.description)+' · '+escape(sub.fileName)+'</p>').join('')||'<p>No submitted work yet.</p>';open('submitModal');};
-
-        render();
-        notice('DEMO — original interface connected to local browser storage. No Firebase or real authentication.');
-        window.addEventListener('storage', event => { if (event.key === 'uims.demo.v1') { view=demo.view(); if(view&&!view.user.mustChangePassword&&view.user.role===document.body.dataset.demoRole)render();else location.href='../Auth/Login.aspx?demo=1'; } }, {signal});
-        window.addEventListener('focus',()=>{const current=demo.current();if(!current||current.mustChangePassword)location.href='../Auth/Login.aspx?demo=1';},{signal});
-        window.addEventListener('pageshow',()=>{const current=demo.current();if(!current||current.mustChangePassword)location.href='../Auth/Login.aspx?demo=1';},{signal});
+        let result;
+        try { result = await response.json(); } catch (_) { throw new Error('Firebase returned an unreadable response.'); }
+        if (!response.ok) throw new Error(result.message || ('Firebase request failed (' + response.status + ').'));
+        return result;
     }
-    if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',initialize,{once:true});else initialize();
-    if(window.Sys?.WebForms?.PageRequestManager)Sys.WebForms.PageRequestManager.getInstance().add_endRequest(initialize);
+    function statusLabel(status) { return ({ assigned: 'Assigned', inprogress: 'In progress', submitted: 'Awaiting review', revision: 'Revision requested', completed: 'Completed' })[status] || status || 'Unknown'; }
+    function dateLabel(value) { const date = new Date(value); return isNaN(date.getTime()) ? (value || 'No deadline') : date.toLocaleDateString(); }
+    function render() {
+        const query = (by('taskSearch')?.value || '').trim().toLowerCase();
+        const filter = by('taskFilter')?.value || '';
+        const tasks = state.tasks.filter(task => (!query || (task.title + ' ' + task.description).toLowerCase().includes(query)) && (!filter || filter === 'all' || task.status === filter || filter === 'assigned' && task.status === 'inprogress'));
+        const list = by('taskList');
+        list.querySelectorAll('.task-card').forEach(card => card.remove());
+        const markup = tasks.map(task => {
+            const latest = state.submissions.filter(sub => sub.taskId === task.id).slice(-1)[0];
+            const action = task.status === 'revision' ? 'Resubmit' : task.status === 'inprogress' ? 'Continue task' : task.status === 'assigned' ? 'Start task' : 'View details';
+            const actionName = task.status === 'revision' || task.status === 'inprogress' ? 'submit' : task.status === 'assigned' ? 'start' : 'details';
+            return '<article class="task-card" data-status="' + escapeHtml(task.status) + '"><div class="task-info"><div class="task-head"><h3 class="task-title">' + escapeHtml(task.title) + '</h3><span class="status-badge">' + escapeHtml(statusLabel(task.status)) + '</span></div><p class="task-desc">' + escapeHtml(task.description) + '</p>' +
+                (task.feedback ? '<div class="feedback-note"><strong>Supervisor feedback:</strong> ' + escapeHtml(task.feedback) + '</div>' : '') +
+                '<div class="task-meta"><span><i class="bi bi-calendar-event" aria-hidden="true"></i> ' + escapeHtml(dateLabel(task.deadline)) + '</span><span>' + (task.score == null ? 'Not graded' : 'Score ' + escapeHtml(task.score) + ' / ' + escapeHtml(task.maximum)) + '</span>' + (latest ? '<span>Submission ' + escapeHtml(latest.revision) + '</span>' : '') + '</div></div><div class="task-action"><button type="button" class="btn btn-primary submit-btn" data-task-action="' + actionName + '" data-task-id="' + escapeHtml(task.id) + '">' + action + '</button></div></article>';
+        }).join('');
+        if (markup) by('noTasksMsg').insertAdjacentHTML('beforebegin', markup);
+        const empty = by('noTasksMsg');
+        if (empty) {
+            empty.style.display = tasks.length ? 'none' : 'block';
+            empty.querySelector('h4').textContent = state.tasks.length ? 'No tasks match these filters' : 'No tasks assigned yet';
+            empty.querySelector('p').textContent = state.tasks.length ? 'Clear the search or choose All Statuses to see tasks.' : 'Assigned tasks will appear here once your supervisor adds them.';
+        }
+        document.querySelectorAll('.stat-details h3').forEach((el, i) => { el.textContent = [state.tasks.length, state.tasks.filter(t => t.status === 'inprogress').length, state.tasks.filter(t => t.status === 'submitted').length, state.tasks.filter(t => t.status === 'revision').length][i] ?? 0; });
+    }
+    function openSubmit(task, readOnly) {
+        selectedId = task.id;
+        const submissions = state.submissions.filter(sub => sub.taskId === task.id);
+        const latest = submissions.slice(-1)[0];
+        by('submitModal').querySelector('.modal-title').textContent = task.title + (task.score == null ? '' : ' · Institution evaluation');
+        const evaluation = by('studentTaskEvaluation');
+        const hasScore = task.score !== null && task.score !== undefined && task.score !== '';
+        evaluation.hidden = !hasScore;
+        if (hasScore) {
+            by('studentTaskScore').textContent = task.score;
+            by('studentTaskMaximum').textContent = task.maximum || 100;
+            by('studentTaskFeedback').textContent = task.feedback || 'No additional supervisor feedback.';
+        } else {
+            by('studentTaskScore').textContent = '';
+            by('studentTaskMaximum').textContent = '';
+            by('studentTaskFeedback').textContent = '';
+        }
+        by('studentSubmissionHistory').innerHTML = submissions.map(sub => '<p>Revision ' + escapeHtml(sub.revision) + ' · ' + escapeHtml(sub.createdAt) + '<br>' + escapeHtml(sub.description) + (sub.link ? ' · <a href="' + escapeHtml(sub.link) + '" target="_blank" rel="noopener">Open work</a>' : '') + '</p>').join('') || '';
+        by('workDesc').value = readOnly ? (latest?.description || task.description) : '';
+        by('workLink').value = readOnly ? (latest?.link || '') : '';
+        by('workDesc').readOnly = !!readOnly; by('workLink').readOnly = !!readOnly; by('workFile').disabled = !!readOnly;
+        by('confirmSubmitBtn').hidden = !!readOnly; by('modalError').textContent = '';
+        modal('submitModal')?.show();
+    }
+    async function refresh() {
+        try { state = await request(''); render(); connection('Connected to Firebase /tasks. No-login task mode is active.'); return true; }
+        catch (error) {
+            message(error.message, true); connection('Could not load task records from Firebase.');
+            const list = by('taskList'); list.querySelectorAll('.task-card').forEach(card => card.remove());
+            const empty = by('noTasksMsg'); if (empty) { empty.style.display = 'block'; empty.querySelector('h4').textContent = 'Tasks unavailable'; empty.querySelector('p').textContent = 'Check the Firebase connection and Rules, then retry.'; }
+            return false;
+        }
+    }
+    document.addEventListener('click', async event => {
+        const logout = event.target.closest('#btnLogout');
+        if (logout) { event.preventDefault(); location.href = '../Default.aspx'; return; }
+        const button = event.target.closest('[data-task-action]');
+        if (!button || busy) return;
+        event.preventDefault(); const task = state.tasks.find(item => item.id === button.dataset.taskId); if (!task) return;
+        try {
+            if (button.dataset.taskAction === 'details') { openSubmit(task, true); return; }
+            if (button.dataset.taskAction === 'start') {
+                busy = true; button.disabled = true; await request('start', { assignmentId: task.id }); await refresh(); message('Task started and saved to Firebase.', false); return;
+            }
+            openSubmit(task, false);
+        } catch (error) { message(error.message, true); }
+        finally { busy = false; }
+    });
+    by('confirmSubmitBtn')?.addEventListener('click', async () => {
+        if (busy || !selectedId) return;
+        const description = by('workDesc').value.trim(), link = by('workLink').value.trim();
+        if (!description || !link) { by('modalError').textContent = 'Add a description and a work link before submitting.'; return; }
+        busy = true; by('confirmSubmitBtn').disabled = true; by('modalError').textContent = '';
+        try {
+            await request('submit', { assignmentId: selectedId, description, link, fileName: by('workFile').files[0]?.name || '' });
+            modal('submitModal')?.hide(); await refresh(); message('Submission saved to Firebase and sent for supervisor review.', false);
+        } catch (error) { by('modalError').textContent = error.message; }
+        finally { busy = false; by('confirmSubmitBtn').disabled = false; }
+    });
+    by('taskSearch')?.addEventListener('input', render); by('taskFilter')?.addEventListener('change', render);
+    window.addEventListener('focus', refresh); document.addEventListener('visibilitychange', () => { if (!document.hidden) refresh(); });
+    window.setInterval(() => { if (!document.hidden) refresh(); }, 30000);
+    if (window.Sys?.WebForms?.PageRequestManager) Sys.WebForms.PageRequestManager.getInstance().add_endRequest(refresh);
+    refresh();
 })();
