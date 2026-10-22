@@ -340,6 +340,29 @@
     </Compile>
   </ItemGroup>
   <ItemGroup>
+    <Content Include="Student\MyAttendance.aspx" />
+    <Content Include="Company\VerifyAttendance.aspx" />
+    <Content Include="Assets\student\my-attendance.css" />
+    <Content Include="Assets\company\verify-attendance.css" />
+    <Content Include="Js_project\Student\my-attendance.js" />
+    <Content Include="Js_project\Student\attendance-qrcode.min.js" />
+    <Content Include="Js_project\Company\verify-attendance.js" />
+    <Content Include="Js_project\Company\attendance-jsqr.js" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Student\MyAttendance.aspx.cs">
+      <DependentUpon>MyAttendance.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="Company\VerifyAttendance.aspx.cs">
+      <DependentUpon>VerifyAttendance.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="Services\Attendance\AttendanceFirebase.cs" />
+    <Compile Include="Services\Attendance\AttendanceService.cs" />
+    <Compile Include="Services\Attendance\AttendancePage.cs" />
+  </ItemGroup>
+  <ItemGroup>
     <Folder Include="App_Data\" />
   </ItemGroup>
   <ItemGroup>
