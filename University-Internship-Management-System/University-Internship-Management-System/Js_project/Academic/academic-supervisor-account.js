@@ -2,20 +2,19 @@
 /* Original-page demo bindings. Layout and server controls remain in the ASPX. */
 (function () {
     'use strict';
-    if (!window.UimsLive?.enabled()) return;
+    if (!window.UimsDemo?.enabled()) { location.replace('../Auth/Login.aspx?demo=1'); return; }
     let binding;
     function initialize() {
         binding?.abort();
         binding = new AbortController();
-        const signal = binding.signal, demo = window.UimsLive;
+        const signal = binding.signal, demo = window.UimsDemo;
         let view = demo.view(), selected = null, render = () => {};
-        if (!view || view.user.mustChangePassword || view.user.role !== document.body.dataset.portal) {
-            location.href = '../Auth/Login.aspx';
+        if (!view || view.user.mustChangePassword || view.user.role !== document.body.dataset.demoRole) {
+            location.href = '../Auth/Login.aspx?demo=1';
             return;
         }
         const by = id => document.getElementById(id) || document.querySelector('[id$="_' + id + '"]');
         const all = selector => [...document.querySelectorAll(selector)];
-        const displayValue=value=>typeof value==='string'&&/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?Z$/.test(value)?new Intl.DateTimeFormat('en-GB',{timeZone:'Asia/Amman',year:'numeric',month:'short',day:'2-digit',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).format(new Date(value))+' Jordan Time (UTC+3)':value;
         const escape = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
         const text = (id, value) => { const element = by(id); if (element) element.textContent = value ?? '—'; };
         const value = id => by(id)?.value?.trim() || '';
@@ -121,7 +120,7 @@
         function detail(student, id, selector) {
             const progress = view.progress.find(item => item.id === student); if (!progress) throw Error('This student is not available to this demo identity.');
             const target = document.querySelector(selector);
-            if (target) target.innerHTML = '<h3>' + escape(progress.name) + '</h3><dl>' + [['University ID',progress.universityId],['Department',progress.department],['Company',progress.company?.name],['Company Supervisor',progress.companySupervisor?.name],['Academic Supervisor',progress.supervisor?.name],['Training status',progress.placement?.completionStatus || 'Not placed'],['Approved / Required hours',progress.approvedHours + ' / ' + progress.requiredHours],['Tasks completed',progress.completedTasks + ' / ' + progress.tasks.length],['Risk indicators',progress.risks.join(', ') || 'None'],['Confirmed at (Jordan Time)',progress.placement?.studentConfirmedAt],['Disable deadline (Jordan Time)',progress.placement?.accountDisableAt],['Certificate',progress.placement?.certificateId]].map(([label,content]) => '<dt>' + escape(label) + '</dt><dd>' + escape(displayValue(content) || '—') + '</dd>').join('') + '</dl>' + progress.tasks.map(task => '<article><h4>' + escape(task.title) + '</h4><p>' + escape(task.description) + '</p><p>' + escape(displayValue(task.deadline)) + ' · ' + escape(task.status) + '</p><p>' + escape(task.feedback) + '</p>' + view.submissions.filter(sub => sub.taskId === task.id).map(sub => '<p>Submitted ' + escape(displayValue(sub.createdAt)) + ': ' + escape(sub.description) + ' · ' + escape(sub.fileName) + '</p>').join('') + '</article>').join('') + progress.evaluations.map(evaluation => '<article><h4>' + escape(evaluation.kind) + ' evaluation · ' + escape(evaluation.status) + '</h4><p>' + escape(evaluation.comments) + '</p></article>').join('');
+            if (target) target.innerHTML = '<h3>' + escape(progress.name) + '</h3><dl>' + [['University ID',progress.universityId],['Department',progress.department],['Company',progress.company?.name],['Company Supervisor',progress.companySupervisor?.name],['Academic Supervisor',progress.supervisor?.name],['Training status',progress.placement?.completionStatus || 'Not placed'],['Approved / Required hours',progress.approvedHours + ' / ' + progress.requiredHours],['Tasks completed',progress.completedTasks + ' / ' + progress.tasks.length],['Risk indicators',progress.risks.join(', ') || 'None'],['Confirmed at UTC',progress.placement?.studentConfirmedAt],['Disable deadline UTC',progress.placement?.accountDisableAt],['Certificate',progress.placement?.certificateId]].map(([label,content]) => '<dt>' + escape(label) + '</dt><dd>' + escape(content || '—') + '</dd>').join('') + '</dl>' + progress.tasks.map(task => '<article><h4>' + escape(task.title) + '</h4><p>' + escape(task.description) + '</p><p>' + escape(task.deadline) + ' · ' + escape(task.status) + '</p><p>' + escape(task.feedback) + '</p>' + view.submissions.filter(sub => sub.taskId === task.id).map(sub => '<p>Submitted ' + escape(sub.createdAt) + ': ' + escape(sub.description) + ' · ' + escape(sub.fileName) + '</p>').join('') + '</article>').join('') + progress.evaluations.map(evaluation => '<article><h4>' + escape(evaluation.kind) + ' evaluation · ' + escape(evaluation.status) + '</h4><p>' + escape(evaluation.comments) + '</p></article>').join('');
             selected = student; open(id);
         }
         function shell() {
@@ -129,7 +128,7 @@
             document.addEventListener('click', event => {
                 const element = event.target.closest('a,button,input');
                 if (element && (/log\s*out/i.test(element.textContent) || /logout/i.test(element.id))) {
-                    event.preventDefault(); event.stopImmediatePropagation(); demo.logout(); location.href = '../Auth/Login.aspx';
+                    event.preventDefault(); event.stopImmediatePropagation(); demo.logout(); location.href = '../Auth/Login.aspx?demo=1';
                 }
             }, {signal,capture:true});
             all('[id*=Logout],[id*=logout]').forEach(el => el.disabled = false);
@@ -183,13 +182,11 @@
         click('saveAcademicProfile',()=>{if(valid(['supervisorPhone','supervisorOffice','supervisorOfficeHours']))transact('profile',{name:view.user.name,phone:value('supervisorPhone'),office:value('supervisorOffice'),officeHours:value('supervisorOfficeHours')});});
 
         render();
-        notice('Live data integration is pending. No local fallback is enabled.');
-        window.addEventListener('focus',()=>{const current=demo.current();if(!current||current.mustChangePassword)location.href='../Auth/Login.aspx';},{signal});
-        window.addEventListener('pageshow',()=>{const current=demo.current();if(!current||current.mustChangePassword)location.href='../Auth/Login.aspx';},{signal});
+        notice('DEMO — original interface connected to local browser storage. No Firebase or real authentication.');
+        window.addEventListener('storage', event => { if (event.key === 'uims.demo.v1') { view=demo.view(); if(view&&!view.user.mustChangePassword&&view.user.role===document.body.dataset.demoRole)render();else location.href='../Auth/Login.aspx?demo=1'; } }, {signal});
+        window.addEventListener('focus',()=>{const current=demo.current();if(!current||current.mustChangePassword)location.href='../Auth/Login.aspx?demo=1';},{signal});
+        window.addEventListener('pageshow',()=>{const current=demo.current();if(!current||current.mustChangePassword)location.href='../Auth/Login.aspx?demo=1';},{signal});
     }
     if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',initialize,{once:true});else initialize();
     if(window.Sys?.WebForms?.PageRequestManager)Sys.WebForms.PageRequestManager.getInstance().add_endRequest(initialize);
 })();
-
-/* Verified account projection. Protected fields remain read-only. */
-(()=>{'use strict';async function init(){if(!window.UimsTab)return;const page="Academic/AcademicSupervisorAccount";try{const data=await UimsTab.request('roleData',{}, {page}),u=data.user;const text=(s,v)=>document.querySelectorAll(s).forEach(el=>el.textContent=v||'Not recorded');text('[data-uims-profile="name"],#supervisorSummaryTitle,#lblUserName',u.name);text('[data-uims-profile="email"]',u.email);text('[data-uims-profile="phone"]',u.phone);text('[data-uims-profile="office"]',u.office);text('[data-live-company]',u.companyId);text('.profile-company',u.companyId?'Company ID: '+u.companyId:'Company association unavailable');text('.profile-reference','Profile ID: '+u.id);text('.account-summary > p',u.email);text('.account-summary-status','Active verified account');text('#accountAvailability','Live Firebase profile. Contact updates require scoped permissions and are currently unavailable.');const info=document.querySelectorAll('.account-info dd');if(info.length){[u.name,u.id,u.programId||'Not recorded','Academic Supervisor',u.email].forEach((v,i)=>{if(info[i])info[i].textContent=v;});}['supervisorPhone','supervisorOffice','supervisorOfficeHours'].forEach((id,i)=>{const el=document.getElementById(id);if(el){el.value=[u.phone,u.office,u.officeHours][i]||'';el.readOnly=true;}});document.querySelectorAll('[id*=Logout]').forEach(el=>{el.disabled=false;el.removeAttribute('title');});const save=document.getElementById('saveAcademicProfile');if(save){save.disabled=true;save.title='Contact updates require scoped Firebase permissions.';}}catch(error){const status=document.querySelector('#accountAvailability,.profile-demo-note');if(status)status.textContent=error.message;}}if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();})();

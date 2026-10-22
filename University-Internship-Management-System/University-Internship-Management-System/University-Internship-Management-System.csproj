@@ -43,39 +43,7 @@
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
-
-  <PropertyGroup><AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects></PropertyGroup>
   <ItemGroup>
-    <Reference Include="FirebaseAdmin"><HintPath>..\packages\FirebaseAdmin.3.7.0\lib\net462\FirebaseAdmin.dll</HintPath><Private>True</Private></Reference>
-    <Reference Include="Google.Api.Gax.Rest"><HintPath>..\packages\Google.Api.Gax.Rest.4.13.1\lib\net462\Google.Api.Gax.Rest.dll</HintPath><Private>True</Private></Reference>
-    <Reference Include="Google.Api.Gax"><HintPath>..\packages\Google.Api.Gax.4.13.1\lib\net462\Google.Api.Gax.dll</HintPath><Private>True</Private></Reference>
-    <Reference Include="Microsoft.Bcl.AsyncInterfaces"><HintPath>..\packages\Microsoft.Bcl.AsyncInterfaces.6.0.0\lib\net461\Microsoft.Bcl.AsyncInterfaces.dll</HintPath><Private>True</Private></Reference>
-    <Reference Include="System.Threading.Tasks.Extensions"><HintPath>..\packages\System.Threading.Tasks.Extensions.4.5.4\lib\net461\System.Threading.Tasks.Extensions.dll</HintPath><Private>True</Private></Reference>
-    <Reference Include="System.Runtime.CompilerServices.Unsafe"><HintPath>..\packages\System.Runtime.CompilerServices.Unsafe.6.0.0\lib\net461\System.Runtime.CompilerServices.Unsafe.dll</HintPath><Private>True</Private></Reference>
-    <Reference Include="System.Diagnostics.DiagnosticSource"><HintPath>..\packages\System.Diagnostics.DiagnosticSource.6.0.2\lib\net461\System.Diagnostics.DiagnosticSource.dll</HintPath><Private>True</Private></Reference>
-    <Reference Include="System.Memory"><HintPath>..\packages\System.Memory.4.5.5\lib\net461\System.Memory.dll</HintPath><Private>True</Private></Reference>
-    <Reference Include="System.Buffers"><HintPath>..\packages\System.Buffers.4.5.1\lib\net461\System.Buffers.dll</HintPath><Private>True</Private></Reference>
-    <Reference Include="System.Numerics.Vectors"><HintPath>..\packages\System.Numerics.Vectors.4.5.0\lib\net46\System.Numerics.Vectors.dll</HintPath><Private>True</Private></Reference>
-    <Reference Include="Google.Apis.Auth"><HintPath>..\packages\Google.Apis.Auth.1.73.0\lib\net462\Google.Apis.Auth.dll</HintPath><Private>True</Private></Reference>
-    <Reference Include="Google.Apis.Core"><HintPath>..\packages\Google.Apis.Core.1.73.0\lib\net462\Google.Apis.Core.dll</HintPath><Private>True</Private></Reference>
-    <Reference Include="Google.Apis"><HintPath>..\packages\Google.Apis.1.73.0\lib\net462\Google.Apis.dll</HintPath><Private>True</Private></Reference>
-    <Reference Include="Microsoft.Extensions.DependencyInjection.Abstractions"><HintPath>..\packages\Microsoft.Extensions.DependencyInjection.Abstractions.6.0.0\lib\net461\Microsoft.Extensions.DependencyInjection.Abstractions.dll</HintPath><Private>True</Private></Reference>
-    <Reference Include="System.Collections.Immutable"><HintPath>..\packages\System.Collections.Immutable.8.0.0\lib\net462\System.Collections.Immutable.dll</HintPath><Private>True</Private></Reference>
-    <Compile Include="Services\FirebaseConfiguration.cs" />
-    <Compile Include="Services\FirebaseTokenVerifier.cs" />
-    <Compile Include="Services\FirebaseRestAuthenticationService.cs" />
-    <Compile Include="Services\FirebaseAuthenticationService.cs" />
-    <Compile Include="Services\FirebaseRealtimeDatabaseRepository.cs" />
-    <Compile Include="Services\UserAccountService.cs" />
-    <Compile Include="Services\StudentDashboardService.cs" />
-    <Compile Include="Services\StudentPortalService.cs" />
-    <Compile Include="Services\RoleDashboardService.cs" />
-    <Compile Include="Services\AccountLifecycleService.cs" />
-    <Compile Include="Services\RoleAuthorizationService.cs" />
-    <Compile Include="Services\SessionService.cs" />
-    <Compile Include="Services\JordanTime.cs" />
-    <Compile Include="Auth\Gateway.ashx.cs"><DependentUpon>Gateway.ashx</DependentUpon></Compile>
-
     <Reference Include="Microsoft.CodeDom.Providers.DotNetCompilerPlatform, Version=2.0.1.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
       <HintPath>..\packages\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.2.0.1\lib\net45\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.dll</HintPath>
       <Private>True</Private>
@@ -89,7 +57,6 @@
     <Reference Include="System.Data" />
     <Reference Include="System.Core" />
     <Reference Include="System.Net.Http" />
-    <Reference Include="System.Management" />
     <Reference Include="System.Data.DataSetExtensions" />
     <Reference Include="System.Web.Extensions" />
     <Reference Include="System.Xml.Linq" />
@@ -164,8 +131,6 @@
     <Content Include="Assets\shared\navbar.css" />
     <Content Include="Assets\shared\sidebar.css" />
     <Content Include="Js_project\Public\dashboard-navigation.js" />
-    <Content Include="Auth\Gateway.ashx" />
-    <Content Include="Js_project\Public\tab-session.js" />
     <Content Include="Auth\Login.aspx" />
     <Content Include="Assets\auth\auth.css" />
     <Content Include="Js_project\Auth\auth.js" />
@@ -478,7 +443,7 @@
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <Import Project="$(VSToolsPath)\WebApplications\Microsoft.WebApplication.targets" Condition="'$(VSToolsPath)' != ''" />
   <Import Project="$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v10.0\WebApplications\Microsoft.WebApplication.targets" Condition="false" />
-  <!-- To modify your build process, add your task inside one of the targets below and uncomment it.
+  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
   <Target Name="BeforeBuild">
   </Target>
@@ -693,17 +658,40 @@
     <Content Include="Assets\company\reports-final-evaluation.css" />
     <Content Include="Js_project\Company\reports-final-evaluation.js" />
   </ItemGroup>
-  <ItemGroup><Content Include="Js_project\Demo\demo-store.js" /></ItemGroup>
-  <ItemGroup><Content Include="Js_project\Coordinator\manage-students.js" /></ItemGroup>
-  <ItemGroup><Content Include="Js_project\Student\profile.js" /></ItemGroup>
-  <ItemGroup><Content Include="Js_project\Company\my-trainees.js" /></ItemGroup>
-  <ItemGroup><Content Include="Js_project\Academic\academic-supervisor-account.js" /></ItemGroup>
-  <ItemGroup><Content Include="Assets\coordinator\manage-students.css" /></ItemGroup>
-  <ItemGroup><Content Include="Js_project\Coordinator\contact-messages.js" /></ItemGroup>
-  <ItemGroup><Content Include="Js_project\Public\contact-demo.js" /></ItemGroup>
-  <ItemGroup><Content Include="Assets\public\home-public.css" /></ItemGroup>
-  <ItemGroup><Content Include="Assets\public\about.css" /></ItemGroup>
-  <ItemGroup><Compile Include="Services\ApplicationWorkflowService.cs" />
-    <Compile Include="Services\TrainingWorkflowService.cs" />
-    <Compile Include="Services\RolePortalService.cs" /></ItemGroup>
+  <ItemGroup>
+    <Content Include="Js_project\Demo\demo-store.js" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="Js_project\Coordinator\manage-students.js" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="Js_project\Student\profile.js" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="Js_project\Company\my-trainees.js" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="Js_project\Academic\academic-supervisor-account.js" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="Assets\coordinator\manage-students.css" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="Js_project\Coordinator\contact-messages.js" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="Js_project\Public\contact-demo.js" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="Assets\public\home-public.css" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="Assets\public\about.css" />
+  </ItemGroup>
+  <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
+    <PropertyGroup>
+      <ErrorText>This project references NuGet package(s) that are missing on this computer. Use NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
+    </PropertyGroup>
+    <Error Condition="!Exists('..\packages\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.2.0.1\build\net46\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.props')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.2.0.1\build\net46\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.props'))" />
+  </Target>
 </Project>

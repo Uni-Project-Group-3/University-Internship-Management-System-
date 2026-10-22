@@ -1,15 +1,15 @@
 <%@ Page Language="C#" AutoEventWireup="true" CodeBehind="ContactMessages.aspx.cs" Inherits="University_Internship_Management_System.Coordinator.ContactMessages" %>
 <!DOCTYPE html>
-<html lang="en" dir="ltr">
+<html lang="en">
 <head runat="server">
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Contact Messages | JUST Internships</title>
     <link runat="server" href="~/Assets/shared/colors.css" rel="stylesheet" />
-
+    
     <link runat="server" href="~/Assets/coordinator/contact-messages.css?v=3" rel="stylesheet" />
 </head>
-<body class="app-page contact-messages-page role-shell" data-portal="admin">
+<body class="app-page contact-messages-page role-shell" data-demo-role="admin">
     <form id="form1" runat="server">
         <div class="app">
             <aside class="sidebar" id="sidebar" aria-label="Internship Coordinator navigation" data-role-sidebar="true"><button class="sidebar-close" type="button" aria-label="Close navigation menu"><svg class="bi bi-x nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="m6 6 12 12M6 18 18 6"/></svg></button>
@@ -200,9 +200,131 @@
             </div>
         </div>
     </form>
+    <script>
+        // @ts-nocheck
+        (() => {
+            "use strict";
+            const sidebar = document.querySelector(".sidebar");
+            const menuButton = document.querySelector(".menu-btn");
+            const backdrop = document.querySelector(".sidebar-backdrop");
+            const main = document.querySelector(".main");
+            const userMenu = document.getElementById("accountMenu");
+            const closeButton = sidebar && sidebar.querySelector(".sidebar-close");
+            const accountToggle = userMenu && userMenu.querySelector("summary");
+            if (!(sidebar instanceof HTMLElement) || !(menuButton instanceof HTMLButtonElement) ||
+                !(backdrop instanceof HTMLButtonElement) || !(main instanceof HTMLElement) ||
+                !(userMenu instanceof HTMLElement) || !(closeButton instanceof HTMLButtonElement) ||
+                !(accountToggle instanceof HTMLElement)) return;
+            const ui = { sidebar, menuButton, backdrop, main, userMenu, closeButton, accountToggle };
+            const mobile = window.matchMedia("(max-width: 991.98px)");
+            /** @param {boolean} open */
+            function setSidebar(open) {
+                open = Boolean(open && mobile.matches);
+                document.body.classList.toggle("sidebar-open", open);
+                if (open) ui.main.setAttribute("inert", "");
+                else ui.main.removeAttribute("inert");
+                ui.menuButton.setAttribute("aria-expanded", String(open));
+                ui.menuButton.setAttribute("aria-label", open ? "Close navigation menu" : "Open navigation menu");
+                if (open) {
+                    ui.userMenu.removeAttribute("open");
+                    ui.closeButton.focus();
+                }
+            }
+            function closeSidebar() { setSidebar(false); ui.menuButton.focus(); }
+            ui.menuButton.addEventListener("click", () => setSidebar(!document.body.classList.contains("sidebar-open")));
+            ui.closeButton.addEventListener("click", closeSidebar);
+            ui.backdrop.addEventListener("click", closeSidebar);
+            document.addEventListener("keydown", event => {
+                if (event.key === "Escape") {
+                    if (document.body.classList.contains("sidebar-open")) closeSidebar();
+                    if (ui.userMenu.hasAttribute("open")) {
+                        ui.userMenu.removeAttribute("open");
+                        ui.accountToggle.focus();
+                    }
+                }
+                if (event.key === "Tab" && document.body.classList.contains("sidebar-open")) {
+                    const items = ui.sidebar.querySelectorAll('a[href], button:not([disabled])');
+                    const first = items.item(0);
+                    const last = items.item(items.length - 1);
+                    if (event.shiftKey && document.activeElement === first && last instanceof HTMLElement) {
+                        event.preventDefault(); last.focus();
+                    }
+                    if (!event.shiftKey && document.activeElement === last && first instanceof HTMLElement) {
+                        event.preventDefault(); first.focus();
+                    }
+                }
+            });
+            document.addEventListener("click", event => {
+                if (event.target instanceof Node && !ui.userMenu.contains(event.target)) ui.userMenu.removeAttribute("open");
+            });
+            ui.userMenu.addEventListener("focusout", event => {
+                if (!(event.relatedTarget instanceof Node) || !ui.userMenu.contains(event.relatedTarget)) ui.userMenu.removeAttribute("open");
+            });
+            mobile.addEventListener("change", () => setSidebar(false));
+        })();
+    </script>
+<script src="../Js_project/Demo/demo-store.js?v=20261021-original-ui"></script><script src="../Js_project/Coordinator/contact-messages.js?v=20261021-modern"></script>
+    <script>
+        // @ts-nocheck
+        // Dialog state: "Mark as read" is active only while the open message is unread
+        (() => {
+            const dialog = document.getElementById("messageDialog");
+            const markRead = document.getElementById("markMessageRead");
+            if (!dialog || !markRead) return;
+            const label = markRead.querySelector("span");
 
-<script src="../Js_project/Coordinator/contact-messages.js?v=20261021-modern"></script>
+            function updateButton() {
+                const statusTitle = [...dialog.querySelectorAll(".messages-metadata dt")].find(dt => dt.textContent.trim() === "Status");
+                const statusValue = statusTitle && statusTitle.nextElementSibling;
+                const status = statusValue ? statusValue.textContent.trim().toLowerCase() : "";
+                if (statusValue && statusValue.dataset.status !== status) statusValue.dataset.status = status;
 
-<script src="../Js_project/Public/tab-session.js" defer="defer"></script>
+                markRead.disabled = status !== "unread";
+                const text = markRead.disabled ? "Already read" : "Mark as read";
+                if (label && label.textContent !== text) label.textContent = text;
+            }
+
+            new MutationObserver(updateButton).observe(dialog, { childList: true, subtree: true, characterData: true, attributes: true, attributeFilter: ["open"] });
+            markRead.addEventListener("click", () => setTimeout(updateButton, 0));
+            updateButton();
+        })();
+
+        // Toast: page notices appear briefly, then fade out
+        (() => {
+            const toast = document.getElementById("uimsPageNotice");
+            if (!toast) return;
+            let timer;
+            new MutationObserver(() => {
+                if (toast.hidden) return;
+                clearTimeout(timer);
+                toast.classList.remove("is-hiding");
+                void toast.offsetWidth;
+                toast.classList.add("is-showing");
+                timer = setTimeout(() => {
+                    toast.classList.add("is-hiding");
+                    timer = setTimeout(() => { toast.hidden = true; toast.classList.remove("is-hiding", "is-showing"); }, 320);
+                }, 3800);
+            }).observe(toast, { childList: true, characterData: true, subtree: true, attributes: true, attributeFilter: ["hidden"] });
+        })();
+
+        // Page transition: the main content fades out before moving to another page
+        (() => {
+            const content = document.getElementById("mainContent");
+            if (!content) return;
+            const reduce = window.matchMedia("(prefers-reduced-motion: reduce)");
+            document.addEventListener("click", event => {
+                if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+                const link = event.target instanceof Element ? event.target.closest("a[href]") : null;
+                if (!link || link.hasAttribute("download") || (link.target && link.target !== "_self")) return;
+                const url = new URL(link.href, location.href);
+                if (url.origin !== location.origin || (url.pathname === location.pathname && url.search === location.search)) return;
+                if (reduce.matches) return;
+                event.preventDefault();
+                content.classList.add("is-leaving");
+                setTimeout(() => { location.href = url.href; }, 220);
+            });
+            window.addEventListener("pageshow", () => content.classList.remove("is-leaving"));
+        })();
+    </script>
 </body>
 </html>

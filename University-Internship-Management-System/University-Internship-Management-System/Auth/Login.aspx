@@ -1,6 +1,6 @@
 ﻿<%@ Page Title="Sign In | UIMS" Language="C#" AutoEventWireup="true" Async="true" EnableViewState="false" CodeBehind="Login.aspx.cs" Inherits="University_Internship_Management_System.Auth.Login" %>
 <!DOCTYPE html>
-<html lang="en" dir="ltr">
+<html lang="en">
 <head id="Head1" runat="server">
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -51,7 +51,7 @@
             <div class="auth-panel__inner" id="loginContent">
                 <a class="auth-brand" href="https://www.just.edu.jo/" target="_blank" rel="noopener noreferrer">
                     <img src="../Assets/shared/images/just-logo.png" width="72" height="72" alt="Official JUST emblem" />
-                    <span><strong>Jordan University of<br />Science and Technology</strong></span>
+                    <span><strong>Jordan University of<br />Science and Technology</strong><span lang="ar" dir="rtl">&#1580;&#1575;&#1605;&#1593;&#1577; &#1575;&#1604;&#1593;&#1604;&#1608;&#1605; &#1608;&#1575;&#1604;&#1578;&#1603;&#1606;&#1608;&#1604;&#1608;&#1580;&#1610;&#1575; &#1575;&#1604;&#1571;&#1585;&#1583;&#1606;&#1610;&#1577;</span></span>
                 </a>
                 <div class="auth-welcome">
                     <h2>Welcome Back</h2>
@@ -77,8 +77,7 @@
                     </div>
                     <div class="auth-options"><button id="ForgotPassword" type="button" class="auth-link" aria-haspopup="dialog" aria-controls="forgotPasswordDialog">Forgot Password?</button></div>
                     <div id="authMessage" class="auth-message" role="status" aria-live="polite"><asp:Literal ID="AuthMessage" runat="server" Mode="Encode" /></div>
-        <p id="liveAuthError" class="auth-message" role="alert" hidden="hidden"></p>
-            <asp:Button ID="SignIn" runat="server" ClientIDMode="Static" Text="Sign In" CssClass="auth-button" OnClick="SignIn_Click" CausesValidation="false" data-action="login" data-loading="Signing in..." />
+                    <asp:Button ID="SignIn" runat="server" ClientIDMode="Static" Text="Sign In" CssClass="auth-button" OnClick="SignIn_Click" CausesValidation="false" data-action="login" data-loading="Signing in..." />
                     <p class="auth-account-note">Use the account provided by your administrator.</p>
                 </div>
                 <div class="auth-footer"><svg class="auth-icon" aria-hidden="true"><use href="#icon-shield" /></svg><span>Authorized university users only</span></div>
@@ -117,14 +116,6 @@
             <h2 id="changeTitle">Change Your Password</h2>
             <p id="changeDescription">Choose a strong password to secure your account before continuing to your workspace.</p>
             <div class="auth-field">
-                <label for="CurrentPassword">Current password</label>
-                <div class="auth-input-wrap">
-                    <svg class="auth-icon" aria-hidden="true"><use href="#icon-lock" /></svg>
-                    <asp:TextBox ID="CurrentPassword" runat="server" ClientIDMode="Static" TextMode="Password" CssClass="auth-input" autocomplete="current-password" />
-                    <button class="auth-eye" type="button" data-toggle="CurrentPassword" aria-label="Show current password" aria-pressed="false"><svg class="auth-icon" aria-hidden="true"><use href="#icon-eye" /></svg></button>
-                </div>
-            </div>
-            <div class="auth-field">
                 <label for="NewPassword">New password</label>
                 <div class="auth-input-wrap">
                     <svg class="auth-icon" aria-hidden="true"><use href="#icon-lock" /></svg>
@@ -148,11 +139,13 @@
             <asp:Button ID="SaveChanges" runat="server" ClientIDMode="Static" Text="Save Changes" CssClass="auth-button" OnClick="SaveChanges_Click" CausesValidation="false" data-action="change" data-loading="Saving changes..." />
             <p id="firstChangeStatus" class="auth-message" role="status" tabindex="-1" hidden="hidden"></p>
             <p class="auth-dialog__note"><svg class="auth-icon" aria-hidden="true"><use href="#icon-lock" /></svg> Update your temporary password to continue securely.</p>
+            <p id="firstLoginPreviewNotice" class="auth-preview-note" hidden="hidden">Design preview only. Firebase is not connected and no password will be saved.</p>
+            <a id="exitPasswordPreview" class="auth-link auth-preview-back" href="Login.aspx" hidden="hidden">Back to Login</a>
         </dialog>
         <noscript><p class="auth-noscript">Enable JavaScript for password visibility controls and the secure first-login dialog.</p></noscript>
     </form>
-    <footer class="auth-public-footer"><span>&copy; <%= University_Internship_Management_System.Services.JordanTime.LocalNow.Year %> Jordan University of Science and Technology.</span><span>University Internship Management System.</span></footer>
-    <script id="loginResult" type="application/json"><%= Newtonsoft.Json.JsonConvert.SerializeObject(new { ticket = IssuedTicket, dashboard = DashboardUrl, restricted = PasswordChangeRequired, completionPending = CompletionPending }, new Newtonsoft.Json.JsonSerializerSettings { StringEscapeHandling = Newtonsoft.Json.StringEscapeHandling.EscapeHtml }) %></script>
-    <script src="../Js_project/Auth/auth.js?v=20261021-signed-completion-final" defer="defer"></script>
+    <footer class="auth-public-footer"><span>&copy; <%= DateTime.Now.Year %> Jordan University of Science and Technology.</span><span>University Internship Management System.</span></footer>
+    <script src="../Js_project/Demo/demo-store.js"></script>
+    <script src="../Js_project/Auth/auth.js" defer="defer"></script>
 </body>
 </html>

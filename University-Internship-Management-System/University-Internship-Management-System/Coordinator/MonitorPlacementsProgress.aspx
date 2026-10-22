@@ -6,10 +6,10 @@
     <title>Monitor Placements &amp; Progress | JUST UIMS</title>
     <link runat="server" href="~/Assets/shared/colors.css" rel="stylesheet" />
 
-    <link runat="server" href="~/Assets/coordinator/monitor-placements-progress.css?v=20261021-role-pages-final" rel="stylesheet" />
+    <link runat="server" href="~/Assets/coordinator/monitor-placements-progress.css?v=20261021-original-ui" rel="stylesheet" />
     
 </head>
-<body class="dashboard-direct app-page placements-page" data-portal="admin">
+<body class="dashboard-direct app-page placements-page" data-demo-role="admin">
     <form id="form1" runat="server">
         <div class="app-layout">
                         <aside class="dash-sidebar" id="dashboardSidebar" aria-label="Coordinator navigation">
@@ -80,8 +80,8 @@
                         </button>
                         <details class="dash-profile">
                             <summary class="dash-user-chip">
-                                <span class="dash-avatar" id="lblInitials">—</span>
-                                <span class="dash-user-name"><span id="lblUserName">Verified account</span><span class="dash-role">Internship Coordinator</span>
+                                <span class="dash-avatar">CO</span>
+                                <span class="dash-user-name">Coordinator<span class="dash-role">Internship Coordinator</span>
                             </span>
                             <span aria-hidden="true">&#8964;</span>
                         </summary>
@@ -134,8 +134,8 @@
             <div id="placementDetailsBody"></div>
         </dialog>
     </form>
-    <script src="<%= ResolveUrl("~/Js_project/Coordinator/monitor-placements-progress.js?v=20261021-role-pages-final") %>"></script>
-    <script src="<%= ResolveUrl("~/Js_project/Public/dashboard-navigation.js?v=20261021-role-pages-final") %>"></script>
-<script src="../Js_project/Public/tab-session.js" defer="defer"></script>
+    <script src="../Js_project/Demo/demo-store.js?v=20261021-original-ui"></script>
+<script src="<%= ResolveUrl("~/Js_project/Coordinator/monitor-placements-progress.js?v=20261021-original-ui") %>"></script>
+    <script src="<%= ResolveUrl("~/Js_project/Public/dashboard-navigation.js?v=20261021-original-ui") %>"></script>
 </body>
 </html>

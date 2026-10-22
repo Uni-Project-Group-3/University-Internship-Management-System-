@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Globalization;
-using University_Internship_Management_System.Services;
 using System.Linq;
 using System.Web.UI;
 using System.Web.UI.WebControls;
@@ -19,19 +18,39 @@ namespace University_Internship_Management_System.Company
 
         protected void Page_Init(object sender, EventArgs e)
         {
-            if (!(Context.Items["Uims.Account"] is UimsAccount)) throw new UnauthorizedAccessException();
-            assignedTrainees = new Trainee[0];
-            criterionDefinitions = new Criterion[0];
-            Intern.AutoPostBack = false;
-            Intern.Items.Clear();
-            Criteria.DataSource = criterionDefinitions; Criteria.DataBind();
+            assignedTrainees = GetDemoTrainees()
+                .Where(t => t.CompanyId == DemoCompanyId &&
+                            t.SupervisorId == DemoSupervisorId)
+                .ToArray();
+
+            Intern.DataSource = assignedTrainees;
+            Intern.DataTextField = "Name";
+            Intern.DataValueField = "Id";
+            Intern.DataBind();
+
+            Intern.Items.Insert(0,
+                new ListItem("Choose a trainee", ""));
+
+            selectedTrainee =
+                FindTrainee(Request.Form[Intern.UniqueID]);
+
+            string config =
+                Request.Form[CriteriaConfig.UniqueID] == "weighted"
+                    ? "weighted" : "points";
+
+            criterionDefinitions = GetCriteria(config);
+
+            Criteria.DataSource = criterionDefinitions;
+            Criteria.DataBind();
+
+            PopulateReports();
             SetEditingPermissions();
         }
 
         protected void Page_Load(object sender, EventArgs e)
         {
             Response.Cache.SetNoStore();
-            NavName.Text = ((UimsAccount)Context.Items["Uims.Account"]).DisplayName;
+            NavName.Text = Session["FullName"] as string ?? "Company Portal";
             Title = "Reports & Final Evaluation | UIMS";
 
             ReportPreview.Text = "";
@@ -176,7 +195,24 @@ namespace University_Internship_Management_System.Company
 
         protected void SaveDraft_Click(object sender, EventArgs e)
         {
-            EvaluationError.Text = "Live evaluation drafts are not configured. No data was changed.";
+            ActiveView.Value = "evaluation";
+
+            EvaluationDraft draft;
+
+            if (!CanEditEvaluation() ||
+                !TryReadDraft(false, out draft))
+                return;
+
+            ViewState["Draft." + selectedTrainee.Id] = draft;
+            ViewState.Remove("Ready." + selectedTrainee.Id);
+
+            FinalStatus.Text = "Draft · demo";
+
+            FinalPreview.Text =
+                "Draft stored temporarily in this page. " +
+                "Nothing was saved to Firebase.";
+
+            BindOverview();
         }
 
         protected void PreviewDraft_Click(object sender, EventArgs e)
@@ -213,19 +249,59 @@ namespace University_Internship_Management_System.Company
 
         protected void Page_PreRender(object sender, EventArgs e)
         {
-            ActiveView.Value = "trainees";
-            OverviewView.Visible = true;
-            InternDetails.Visible = false;
+            // Frontend demo rendering only; this flag never grants authorization.
+            if (Request.QueryString["frontendDemo"] == "1")
+            {
+                InternDetails.Visible = true;
+                ReportSection.Visible = true;
+                ReportDetailsPanel.Visible = true;
+                ReportFeedbackPanel.Visible = true;
+                EvaluationPreview.Visible = true;
+                NoReports.Visible = true;
+                Criteria.Visible = false;
+                Assessments.Visible = false;
+                FinalComments.Enabled = true;
+                SaveDraft.Enabled = true;
+                PreviewDraft.Enabled = true;
+                ConfirmSubmission.Enabled = true;
+                return;
+            }
+
+            string view = ActiveView.Value;
+
+            if (selectedTrainee == null ||
+                (view != "reports" &&
+                 view != "evaluation" &&
+                 view != "details"))
+            {
+                view = "trainees";
+            }
+
+            ActiveView.Value = view;
             SelectInternMessage.Visible = false;
-            ReviewSubmission.Disabled = true;
-            ConfirmSubmission.Enabled = false;
-            TraineeTotal.Text = PendingReports.Text = DraftTotal.Text = SubmittedTotal.Text = "Unavailable";
-            SetEditingPermissions();
+            ReviewSubmission.Disabled = selectedTrainee == null || IsSubmitted(selectedTrainee) || !(ViewState["Ready." + selectedTrainee.Id] as bool? == true);
+
+            // Original single-view behavior.
+            SetHidden(OverviewView, false);
+            SetHidden(InternDetails, view == "trainees");
+
+            SetHidden(ReportsView, view != "reports");
+            SetHidden(EvaluationView, view != "evaluation");
+            SetHidden(DetailsView, view != "details");
+
+            SetHidden(ReportDetailsPanel,
+                ReportMode.Value != "read" &&
+                ReportMode.Value != "review");
+
+            SetHidden(ReportFeedbackPanel,
+                ReportMode.Value != "review");
         }
 
         protected void btnLogout_Click(object sender, EventArgs e)
         {
-            SessionService.Logout(SessionService.Handle(Request));
+            System.Web.Security.FormsAuthentication.SignOut();
+            Session.Clear();
+            Session.Abandon();
             Response.Redirect("~/Auth/Login.aspx", false);
             Context.ApplicationInstance.CompleteRequest();
         }
@@ -533,7 +609,9 @@ namespace University_Internship_Management_System.Company
 
         private void SetEditingPermissions()
         {
-            bool locked = true; // Live grading writes require their own authorized integration.
+            bool locked =
+                selectedTrainee != null &&
+                IsSubmitted(selectedTrainee);
 
             CriteriaConfig.Enabled = !locked;
             FinalComments.ReadOnly = locked;
@@ -755,7 +833,12 @@ namespace University_Internship_Management_System.Company
 
         private bool CanEditEvaluation()
         {
-            EvaluationError.Text = "Live evaluation writes are not configured.";
+            if (selectedTrainee != null &&
+                !IsSubmitted(selectedTrainee))
+                return true;
+
+            EvaluationError.Text =
+                "Select a trainee with an editable evaluation.";
             return false;
         }
 

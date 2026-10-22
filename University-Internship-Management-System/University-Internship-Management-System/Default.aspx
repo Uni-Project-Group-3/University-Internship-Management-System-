@@ -1,5 +1,5 @@
 <%@ Page Title="UIMS | JUST Internships" Language="C#" AutoEventWireup="true" CodeBehind="Default.aspx.cs" Inherits="University_Internship_Management_System._Default" %>
-<!DOCTYPE html><html lang="en" dir="ltr"><head runat="server"><meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" /><title>UIMS | JUST Internships</title><link href="Assets/shared/colors.css" rel="stylesheet" /><link href="Assets/public/home-public.css" rel="stylesheet" /></head><body><form id="form1" runat="server"><header class="home-header">
+<!DOCTYPE html><html lang="en"><head runat="server"><meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" /><title>UIMS | JUST Internships</title><link href="Assets/shared/colors.css" rel="stylesheet" /><link href="Assets/public/home-public.css" rel="stylesheet" /></head><body><form id="form1" runat="server"><header class="home-header">
     <nav class="home-navbar" aria-label="Public navigation">
         <a class="home-navbar__brand" href="<%= ResolveUrl("~/Default.aspx") %>">
             <img class="home-navbar__logo" src="<%= ResolveUrl("~/Assets/shared/images/just-logo.png") %>" width="40" height="40" alt="Official JUST emblem" />

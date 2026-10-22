@@ -2569,8 +2569,3 @@ body.role-shell {
         border-radius: 6px;
         max-width: 100%
     }
-
-/* Live record details; page-local styles, existing JUST tokens. */
-.role-live-status{padding:.8rem 1rem;border:1px solid var(--border);border-radius:.75rem;line-height:1.6}.role-live-details{width:min(46rem,94vw);max-height:88dvh;overflow:auto;border:0;border-radius:1rem;padding:1.5rem;color:var(--text);background:var(--surface);box-shadow:0 1rem 3rem rgb(0 0 0 / .18)}.role-live-details::backdrop{background:rgb(0 0 0 / .35)}.role-live-details header{display:flex;justify-content:space-between;align-items:center;gap:1rem}.role-live-details header button{font-size:1.7rem;background:transparent;border:0;color:inherit}.role-live-details dl{display:grid;grid-template-columns:minmax(8rem,1fr) minmax(0,2fr);gap:.8rem}.role-live-details dt{text-transform:capitalize}.role-live-details dd{margin:0;overflow-wrap:anywhere;white-space:pre-wrap}button:disabled{cursor:not-allowed}@media(max-width:500px){.role-live-details dl{grid-template-columns:1fr;gap:.4rem}.role-live-details dd{margin-bottom:.8rem}}
-
-[data-live-record]{border:1px solid var(--border);border-radius:.6rem;padding:.5rem .8rem;background:var(--primary-soft);color:var(--primary);font-weight:600;white-space:nowrap}[data-live-record]:hover{background:var(--primary-light)}[data-live-record]:focus-visible{outline:2px solid var(--primary);outline-offset:2px}

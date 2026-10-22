@@ -1,7 +1,7 @@
 ﻿<%@ Page Language="C#" AutoEventWireup="true" CodeBehind="ManageTasks.aspx.cs" Inherits="University_Internship_Management_System.Company.ManageTasks" %>
 
 <!DOCTYPE html>
-<html lang="en" dir="ltr">
+<html lang="en">
     <head runat="server">
         <meta charset="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -10,9 +10,9 @@
         <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet" />
 
         <link href="../Assets/shared/colors.css" rel="stylesheet" />
-        <link href="../Assets/company/ManageTasks.css?v=20261021-live-placement-tasks-final" rel="stylesheet" />
+        <link href="../Assets/company/ManageTasks.css?v=20261021-original-ui" rel="stylesheet" />
     </head>
-    <body data-portal="company">
+    <body data-demo-role="company">
         <form id="form1" runat="server">
             <div class="app">
 
@@ -115,34 +115,256 @@
                         </button>
                         <div class="topbar-actions ms-auto">
                             <div class="user-chip">
-                                <span class="avatar" id="taskAccountInitials">—</span>
-                                <span class="name"><span id="taskAccountName">Company account</span><span class="role">Company Supervisor</span>
+                                <span class="avatar">C</span>
+                                <span class="name">Company Portal<span class="role">Interface preview</span>
                                 </span>
                             </div>
                         </div>
                     </header>
 
                     <!-- ============ CONTENT ============ -->
-                    <div class="content c3-workspace" id="cycle3Workspace">
-    <p class="c3-demo" role="note">Live Firebase records · Company-owned placement tasks. Advanced exam and submission operations are not enabled.</p>
-    <div id="pageNotice" role="status" aria-live="polite" hidden></div>
-    <div class="c3-heading"><div><span class="c3-eyebrow">UIMS / TRAINING WORKSPACE</span><h1 id="c3Heading">Training Tasks</h1><p id="c3Subtitle">Plan focused work. Review each student's progress independently.</p></div><div class="c3-actions"><button type="button" id="c3Create" class="c3-primary" data-t="create">+ Create Task</button></div></div>
-    <div id="c3Stats" class="c3-stats" aria-live="polite"></div>
-    <div class="c3-toolbar"><input type="search" id="taskSearch" aria-label="Search tasks" placeholder="Search tasks…" /><select id="c3Student" aria-label="Student"></select><select id="c3Week" aria-label="Week"></select><select id="c3Priority" aria-label="Priority"></select><select id="c3Status" aria-label="Status"></select><select id="c3Sort" aria-label="Sort"><option value="asc">Deadline ↑</option><option value="desc">Deadline ↓</option></select><button type="button" id="c3View" data-t="list">List view</button><label id="c3GroupLabel"><input type="checkbox" id="c3Group" /> <span data-t="group">Group tasks</span></label><button type="button" id="c3Drafts" data-t="drafts">Drafts</button><button type="button" id="c3Reports" data-t="reports">Weekly reports</button><button type="button" id="c3Clear" data-t="clear">Clear filters</button></div>
-    <div id="taskList" class="c3-board" aria-label="Training task board"></div><p id="noTasksMsg" class="c3-empty" hidden>No matching tasks. Adjust filters or create the first assignment.</p>
-</div>
+                    <div class="content">
+                        <p class="preview-note">Interface preview · Sample data. Changes last until this page is reloaded; no Firebase updates.</p>
+                        <div id="pageNotice" class="page-notice" role="status" aria-live="polite" hidden>
+                        </div>
+                        <div class="page-header d-flex justify-content-between align-items-center animate-fade-up template-style-1">
+                            <div>
+                                <h1 class="greeting">Manage & Review Tasks</h1>
+                                <p class="subtitle mb-0">Create tasks, specify deadlines, review student submissions, and provide grades.</p>
+                            </div>
+                            <button type="button" class="btn custom-btn-primary" data-bs-toggle="modal" data-bs-target="#createTaskModal">
+                                <i class="bi bi-plus-lg me-2" aria-hidden="true">
+                                </i>Create New Task
+                            </button>
+                        </div>
 
-</div></div>
+                        <!-- STATS GRID -->
+                        <div class="stats-grid">
+                            <div class="stat-card animate-fade-up template-style-2">
+                                <div class="stat-icon primary">
+                                    <i class="bi bi-list-task" aria-hidden="true">
+                                    </i>
+                                </div>
+                                <div class="stat-details">
+                                    <h3>8</h3>
+                                    <span>Total Assigned</span>
+                                </div>
+                            </div>
+                            <div class="stat-card animate-fade-up template-style-3">
+                                <div class="stat-icon primary-soft">
+                                    <i class="bi bi-eye" aria-hidden="true">
+                                    </i>
+                                </div>
+                                <div class="stat-details">
+                                    <h3>3</h3>
+                                    <span>Awaiting Review</span>
+                                </div>
+                            </div>
+                            <div class="stat-card border-danger-left animate-fade-up template-style-4">
+                                <div class="stat-icon danger">
+                                    <i class="bi bi-exclamation-circle" aria-hidden="true">
+                                    </i>
+                                </div>
+                                <div class="stat-details">
+                                    <h3 class="text-danger">2</h3>
+                                    <span class="text-danger fw-semibold">Revision Requested</span>
+                                </div>
+                            </div>
+                            <div class="stat-card animate-fade-up template-style-5">
+                                <div class="stat-icon success">
+                                    <i class="bi bi-check-circle" aria-hidden="true">
+                                    </i>
+                                </div>
+                                <div class="stat-details">
+                                    <h3>3</h3>
+                                    <span>Completed</span>
+                                </div>
+                            </div>
+                        </div>
 
-<dialog id="c3Dialog" class="c3-dialog" aria-labelledby="c3DialogTitle"><header><div><small id="c3DialogHint">TRAINING WORKSPACE</small><h2 id="c3DialogTitle"></h2></div><button type="button" id="c3Close" aria-label="Close dialog">×</button></header><p id="c3Error" role="alert" hidden></p><div id="c3DialogBody" class="c3-dialog-body"></div><footer id="c3DialogActions"></footer></dialog>
-<dialog id="c3Confirm" class="c3-confirm" aria-labelledby="c3ConfirmTitle"><h2 id="c3ConfirmTitle">Confirm action</h2><p id="c3ConfirmText"></p><div class="c3-actions"><button type="button" id="c3ConfirmCancel">Cancel</button><button type="button" id="c3ConfirmYes" class="c3-primary">Confirm</button></div></dialog>
+                        <!-- TOOLBAR (Search & Filter) -->
+                        <div class="toolbar animate-fade-up template-style-6">
+                            <div class="search-box">
+                                <i class="bi bi-search" aria-hidden="true">
+                                </i>
+                                <input type="text" id="taskSearch" aria-label="Search tasks" placeholder="Search tasks by title..." />
+                            </div>
+                            <div class="filter-box">
+                                <select id="statusFilter" aria-label="Filter by task status" class="form-select">
+                                    <option value="all">All Statuses</option>
+                                    <option value="submitted">Awaiting Review</option>
+                                    <option value="revision">Revision Requested</option>
+                                    <option value="completed">Completed</option>
+                                    <option value="in-progress">In Progress</option>
+                                </select>
+                            </div>
+                        </div>
 
-<dialog id="c3ImageViewer" class="c3-image-viewer" aria-label="Question image"><button type="button" id="c3ImageClose" aria-label="Close image">×</button><img alt="Question illustration" /></dialog>
+                        <!-- TASKS LIST -->
+                        <div class="task-list" id="taskList">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <h4 class="m-0 fw-bold fs-5">Active Submissions</h4>
+                                <span id="taskCount" class="badge badge-primary-soft fs-6">2 matching tasks</span>
+                            </div>
+
+                            <!-- Task: Submitted -->
+                            <div class="task-card animate-fade-up template-style-7" data-status="submitted">
+                                <div class="task-info">
+                                    <div class="task-head">
+                                        <span class="badge badge-primary-soft">Technical Task</span>
+                                        <h3 class="task-title">Database Design (ERD)</h3>
+                                        <span class="badge badge-warning">Awaiting Review</span>
+                                    </div>
+                                    <p class="task-desc">Create an Entity Relationship Diagram (ERD) and explain the relationships between entities.</p>
+                                    <div class="task-meta">
+                                        <span>
+                                            <i class="bi bi-person" aria-hidden="true">
+                                            </i> Ali Mohammad</span>
+                                        <span>
+                                            <i class="bi bi-calendar-event" aria-hidden="true">
+                                            </i> Oct 23, 2026</span>
+                                        <span>
+                                            <i class="bi bi-bullseye" aria-hidden="true">
+                                            </i> Example criteria: accuracy and documentation</span>
+                                    </div>
+                                </div>
+                                <div class="task-action">
+                                    <button type="button" class="btn btn-primary review-btn" data-bs-toggle="modal" data-bs-target="#reviewModal">
+                                        Review & Grade
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Task: Revision -->
+                            <div class="task-card border-danger-left animate-fade-up template-style-8" data-status="revision">
+                                <div class="task-info">
+                                    <div class="task-head">
+                                        <span class="badge badge-primary-soft">Programming</span>
+                                        <h3 class="task-title">Employee Management Module</h3>
+                                        <span class="badge badge-danger">Revision Requested</span>
+                                    </div>
+                                    <p class="task-desc">Implement employee CRUD operations and handle form validations.</p>
+                                    <div class="task-meta">
+                                        <span>
+                                            <i class="bi bi-person" aria-hidden="true">
+                                            </i> Sara Ahmed</span>
+                                        <span class="text-danger">
+                                            <i class="bi bi-calendar-event" aria-hidden="true">
+                                            </i> Oct 22, 2026</span>
+                                    </div>
+                                </div>
+                                <div class="task-action">
+                                    <button type="button" class="btn btn-light review-btn" data-bs-toggle="modal" data-bs-target="#reviewModal">
+                                        View History
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Empty State -->
+                            <div id="noTasksMsg" class="no-tasks animate-fade-up template-style-9">
+                                <div class="empty-icon">
+                                    <i class="bi bi-inbox" aria-hidden="true">
+                                    </i>
+                                </div>
+                                <h4 class="fw-bold mt-3 mb-1">No tasks found</h4>
+                                <p class="text-muted m-0">Try adjusting your search or filters.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ============ CREATE TASK MODAL ============ -->
+            <div class="modal" id="createTaskModal" tabindex="-1" aria-hidden="true">
+                <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-lg">
+                    <div class="modal-content custom-modal">
+                        <div class="modal-header pb-0 border-0 pt-4 px-4">
+                            <h5 class="modal-title fw-bold template-style-10">Create New Task</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
+                            </button>
+                        </div>
+                        <div class="modal-body p-4">
+                            <div id="createTaskError" class="alert alert-danger" role="alert" hidden>
+                            </div>
+                            <div class="mb-4">
+                                <label class="form-label custom-label">Task Title</label>
+                                <input type="text" class="form-control custom-input" id="newTaskTitle" required maxlength="150" placeholder="e.g. RESTful API Integration">
+                            </div>
+                            <div class="mb-4">
+                                <label class="form-label custom-label">Description & Requirements</label>
+                                <textarea class="form-control custom-input" rows="3" id="newTaskDescription" required maxlength="3000" placeholder="Describe requirements clearly...">
+                                </textarea>
+                            </div>
+                            <div class="row mb-4">
+                                <div class="col-md-6">
+                                    <label class="form-label custom-label">Deadline</label>
+                                    <input type="date" id="newTaskDeadline" required class="form-control custom-input">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label custom-label">Assigned Student</label>
+                                    <select id="newTaskStudent" class="form-control custom-input">
+                                        <option>Ali Mohammad</option>
+                                        <option>Sara Ahmed</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="mb-2">
+                                <label class="form-label custom-label">Evaluation Criteria (Preview)</label>
+                                <label class="form-label custom-label" for="newTaskMaximum">Maximum task score (demo)</label><input type="number" id="newTaskMaximum" class="form-control custom-input" min="1" value="10" required /><input type="text" class="form-control custom-input" id="newTaskCriteria" required placeholder="e.g. Code Quality">
+                            </div>
+                        </div>
+                        <div class="modal-footer border-0 pb-4 px-4">
+                            <button type="button" class="btn btn-light custom-btn-light" data-bs-dismiss="modal">Cancel</button>
+                            <button type="button" class="btn custom-btn-primary" id="publishTaskBtn">Publish Task</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ============ REVIEW MODAL ============ -->
+            <div class="modal" id="reviewModal" tabindex="-1" aria-hidden="true">
+                <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+                    <div class="modal-content custom-modal">
+                        <div class="modal-header pb-0 border-0 pt-4 px-4">
+                            <h5 class="modal-title fw-bold template-style-10">Review & Grade Submission</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
+                            </button>
+                        </div>
+                        <div class="modal-body p-4">
+                            <div id="modalErrorContainer" class="alert alert-danger custom-alert template-style-11">
+                            </div>
+
+                            <div class="submission-details-box mb-4">
+                                <strong class="d-block mb-1 text-dark">Student Description:</strong>
+                                <p class="mb-3 text-muted">Completed the ERD schema using MySQL Workbench and added relationships mapping.</p>
+                                <strong class="d-block mb-1 text-dark">Submitted Link:</strong>
+                                <span class="text-muted">No file or repository connected in this preview.</span>
+                            </div>
+
+                            <div class="mb-4">
+                                <label for="gradeInput" class="form-label custom-label">Task score</label>
+                                <p class="text-muted small">Demonstration scale only; university grading configuration is not connected.</p>
+                                <input type="number" id="gradeInput" class="form-control custom-input" min="0" max="100" placeholder="e.g. 95">
+                            </div>
+                            <div class="mb-2">
+                                <label class="form-label custom-label">Supervisor Feedback / Notes</label>
+                                <textarea id="feedbackInput" class="form-control custom-input" rows="3" placeholder="Write feedback or request modifications...">
+                                </textarea>
+                            </div>
+                        </div>
+                        <div class="modal-footer border-0 pb-4 px-4 d-flex justify-content-between">
+                            <button type="button" class="btn custom-btn-danger" id="requestRevisionBtn">Request Revision</button>
+                            <button type="button" class="btn custom-btn-success" id="approveTaskBtn">Approve & Grade</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
         </form>
-        <script src="../Scripts/bootstrap.bundle.min.js">
+        <script src="../Js_project/Demo/demo-store.js?v=20261021-original-ui"></script>
+<script src="../Scripts/bootstrap.bundle.min.js">
         </script>
-        <script src="../Js_project/Company/ManageTasks.js?v=20261022-assignment-confirmation-4">
+        <script src="../Js_project/Company/ManageTasks.js?v=20261021-original-ui">
         </script>
-    <script src="../Js_project/Public/tab-session.js" defer="defer"></script>
-</body>
+    </body>
 </html>

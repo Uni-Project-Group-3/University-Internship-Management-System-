@@ -42,7 +42,7 @@ namespace UIMS.Services
             lock (_lock)
             {
                 opp.Id = Guid.NewGuid().ToString("N");
-                opp.CreatedAt = DateTime.UtcNow;
+                opp.CreatedAt = DateTime.Now;
                 opp.Status = OpportunityStatus.Open;
                 _items.Add(opp);
             }
@@ -71,7 +71,7 @@ namespace UIMS.Services
         {
             const string company = "orange-jo";
             const string name = "Orange Jordan";
-            DateTime today = University_Internship_Management_System.Services.JordanTime.LocalNow.Date;
+            DateTime today = DateTime.Today;
 
             return new List<Opportunity>
             {

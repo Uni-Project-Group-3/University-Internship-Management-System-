@@ -20,6 +20,5 @@
             </main>
         </div>
     </form>
-<script src="../Js_project/Public/tab-session.js" defer="defer"></script>
 </body>
 </html>

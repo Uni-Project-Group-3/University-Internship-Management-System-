@@ -1,16 +1,16 @@
 ﻿<%@ Page Language="C#" AutoEventWireup="true" ViewStateEncryptionMode="Always" CodeBehind="ReportsFinalEvaluation.aspx.cs" Inherits="University_Internship_Management_System.Company.ReportsFinalEvaluation" %>
 <!DOCTYPE html>
-<html lang="en" dir="ltr">
+<html lang="en">
 <head runat="server">
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Reports &amp; Final Evaluation | UIMS</title>
     <link runat="server" href="~/Content/bootstrap.min.css" rel="stylesheet" />
     <link runat="server" href="~/Assets/shared/colors.css" rel="stylesheet" />
-    <link runat="server" href="~/Assets/company/reports-final-evaluation.css?v=20261021-role-pages-final" rel="stylesheet" />
+    <link runat="server" href="~/Assets/company/reports-final-evaluation.css?v=20261021-original-ui" rel="stylesheet" />
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet" />
 </head>
-<body class="app-page uims-workspace company-evaluation" data-portal="company">
+<body class="app-page uims-workspace company-evaluation" data-demo-role="company">
     <form id="form1" runat="server" novalidate="novalidate">
         <asp:ScriptManager ID="PageScripts" runat="server" EnablePartialRendering="true" />
         <div class="app-layout">
@@ -26,7 +26,7 @@
 <li><a href="CompanySupervisorAccount.aspx"><i class="bi bi-person-circle" aria-hidden="true"></i><span>Supervisor Account</span></a></li></ul>
     <div class="side-divider"></div><ul class="side-nav"><li><a href="../Contact.aspx"><i class="bi bi-question-circle" aria-hidden="true"></i><span>Help &amp; contact</span></a></li><li><asp:LinkButton ID="btnLogout" runat="server" OnClick="btnLogout_Click" CausesValidation="false"><i class="bi bi-box-arrow-right" aria-hidden="true"></i><span>Logout</span></asp:LinkButton></li></ul>
 </aside><div class="sidebar-backdrop" aria-hidden="true"></div>
-            <div class="main workspace-region"><header class="topbar"><button type="button" class="menu-btn d-lg-none" aria-label="Open navigation" aria-controls="sidebar" aria-expanded="false"><i class="bi bi-list" aria-hidden="true"></i></button><span class="topbar-label">University Internship Management System</span><div class="topbar-actions ms-auto"><span class="avatar" aria-hidden="true">U</span><span class="user-chip"><span class="name"><asp:Literal ID="NavName" runat="server" Mode="Encode"/><span class="role">Verified company account</span></span></span></div></header>
+            <div class="main workspace-region"><header class="topbar"><button type="button" class="menu-btn d-lg-none" aria-label="Open navigation" aria-controls="sidebar" aria-expanded="false"><i class="bi bi-list" aria-hidden="true"></i></button><span class="topbar-label">University Internship Management System</span><div class="topbar-actions ms-auto"><span class="avatar" aria-hidden="true">U</span><span class="user-chip"><span class="name"><asp:Literal ID="NavName" runat="server" Mode="Encode"/><span class="role">UIMS workspace · frontend preview</span></span></span></div></header>
                 <asp:UpdatePanel ID="WorkspacePanel" runat="server" UpdateMode="Conditional"><ContentTemplate>
                 <main class="app-content workspace-content" id="companyWorkspace">
                     <asp:HiddenField ID="ActiveView" runat="server" ClientIDMode="Static" Value="trainees" />
@@ -35,7 +35,7 @@
                     <asp:HiddenField ID="StatusValue" runat="server" ClientIDMode="Static" Value="all" />
                     <header class="workspace-header"><span class="workspace-eyebrow">Company supervisor workspace</span><h1>Reports &amp; Final Evaluation</h1><p class="workspace-muted">Manage trainee reports and complete final evaluations.</p></header>
                 <asp:Panel ID="OverviewView" runat="server" ClientIDMode="Static" data-workspace-view="trainees">
-                    <p class="demo-note">Live company-owned placements and progress reports. Evaluation submission is not yet enabled.</p>
+                    <p class="demo-note"><strong>Demo workspace.</strong> Fictional records. Drafts are temporary; no official evaluation or Firebase submission takes place.</p>
                     <dl class="workspace-stats compact-summary">
                         <div class="workspace-stat"><dt>Total Trainees</dt><dd><span data-uims-report="TraineeTotal"><asp:Literal ID="TraineeTotal" runat="server" /></span></dd></div>
                         <div class="workspace-stat"><dt>Pending Reports</dt><dd><span data-uims-report="PendingReports"><asp:Literal ID="PendingReports" runat="server" /></span></dd></div>
@@ -43,7 +43,7 @@
                         <div class="workspace-stat"><dt>Submitted Evaluations</dt><dd><span data-uims-report="SubmittedTotal"><asp:Literal ID="SubmittedTotal" runat="server" /></span></dd></div>
                     </dl>
                     <section class="workspace-card" aria-labelledby="internTitle">
-                        <div class="workspace-heading"><div><h2 id="internTitle" tabindex="-1">Trainees</h2><p>Your company’s verified placements</p></div></div>
+                        <div class="workspace-heading"><div><h2 id="internTitle" tabindex="-1">Trainees</h2><p>Northstar Software · Demonstration assignments</p></div></div>
                         <div class="trainee-filters">
                             <div><label class="workspace-label" for="traineeSearch">Search trainees</label><input id="traineeSearch" type="search" class="workspace-input" placeholder="Name, ID, university or major" /></div>
                             <div><label class="workspace-label" for="evaluationFilter">Evaluation status</label><select id="evaluationFilter" class="workspace-input"><option value="all">All statuses</option><option value="not-started">Not started</option><option value="draft">Draft</option><option value="ready">Ready for submission</option><option value="submitted">Submitted</option></select></div>
@@ -80,7 +80,7 @@
                     <nav class="section-links" aria-label="Trainee sections"><button type="button" data-open-view="reports">Reports</button><button type="button" data-open-view="evaluation">Evaluation</button><button type="button" data-open-view="details">Details &amp; progress</button></nav>
                     <asp:Panel ID="ReportsView" runat="server" ClientIDMode="Static" CssClass="workspace-card" data-workspace-view="reports" aria-labelledby="reportsTitle">
                         <div class="workspace-heading"><div><h2 id="reportsTitle" tabindex="-1">Internship reports</h2><p>Select a report to view its contents or add review feedback.</p></div></div>
-                        <p class="workspace-hint">Live placement reports. University grading and evaluation submission are not configured.</p>
+                        <p class="workspace-hint">Demo reports only. University reporting requirements and grading are not configured.</p>
                         <asp:Panel ID="NoReports" runat="server" CssClass="workspace-empty">No submitted demonstration reports are available for this trainee.</asp:Panel>
                         <asp:Panel ID="ReportSection" runat="server">
                             <div class="workspace-table-scroll" tabindex="0" role="region" aria-label="Internship reports table">
@@ -169,8 +169,8 @@
             </div>
         </div>
     </form>
-    <script src="../Scripts/bootstrap.bundle.min.js"></script>
-    <script src="<%= ResolveUrl("~/Js_project/Company/reports-final-evaluation.js?v=20261021-role-pages-final") %>" defer="defer"></script>
-<script src="../Js_project/Public/tab-session.js" defer="defer"></script>
+    <script src="../Js_project/Demo/demo-store.js?v=20261021-original-ui"></script>
+<script src="../Scripts/bootstrap.bundle.min.js"></script>
+    <script src="<%= ResolveUrl("~/Js_project/Company/reports-final-evaluation.js?v=20261021-original-ui") %>" defer="defer"></script>
 </body>
 </html>

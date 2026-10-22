@@ -2,20 +2,19 @@
 /* Original-page demo bindings. Layout and server controls remain in the ASPX. */
 (function () {
     'use strict';
-    if (!window.UimsLive?.enabled()) return;
+    if (!window.UimsDemo?.enabled()) { location.replace('../Auth/Login.aspx?demo=1'); return; }
     let binding;
     function initialize() {
         binding?.abort();
         binding = new AbortController();
-        const signal = binding.signal, demo = window.UimsLive;
+        const signal = binding.signal, demo = window.UimsDemo;
         let view = demo.view(), selected = null, render = () => {};
-        if (!view || view.user.mustChangePassword || view.user.role !== document.body.dataset.portal) {
-            location.href = '../Auth/Login.aspx';
+        if (!view || view.user.mustChangePassword || view.user.role !== document.body.dataset.demoRole) {
+            location.href = '../Auth/Login.aspx?demo=1';
             return;
         }
         const by = id => document.getElementById(id) || document.querySelector('[id$="_' + id + '"]');
         const all = selector => [...document.querySelectorAll(selector)];
-        const displayValue=value=>typeof value==='string'&&/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?Z$/.test(value)?new Intl.DateTimeFormat('en-GB',{timeZone:'Asia/Amman',year:'numeric',month:'short',day:'2-digit',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).format(new Date(value))+' Jordan Time (UTC+3)':value;
         const escape = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
         const text = (id, value) => { const element = by(id); if (element) element.textContent = value ?? '—'; };
         const value = id => by(id)?.value?.trim() || '';
@@ -121,7 +120,7 @@
         function detail(student, id, selector) {
             const progress = view.progress.find(item => item.id === student); if (!progress) throw Error('This student is not available to this demo identity.');
             const target = document.querySelector(selector);
-            if (target) target.innerHTML = '<h3>' + escape(progress.name) + '</h3><dl>' + [['University ID',progress.universityId],['Department',progress.department],['Company',progress.company?.name],['Company Supervisor',progress.companySupervisor?.name],['Academic Supervisor',progress.supervisor?.name],['Training status',progress.placement?.completionStatus || 'Not placed'],['Approved / Required hours',progress.approvedHours + ' / ' + progress.requiredHours],['Tasks completed',progress.completedTasks + ' / ' + progress.tasks.length],['Risk indicators',progress.risks.join(', ') || 'None'],['Confirmed at (Jordan Time)',progress.placement?.studentConfirmedAt],['Disable deadline (Jordan Time)',progress.placement?.accountDisableAt],['Certificate',progress.placement?.certificateId]].map(([label,content]) => '<dt>' + escape(label) + '</dt><dd>' + escape(displayValue(content) || '—') + '</dd>').join('') + '</dl>' + progress.tasks.map(task => '<article><h4>' + escape(task.title) + '</h4><p>' + escape(task.description) + '</p><p>' + escape(displayValue(task.deadline)) + ' · ' + escape(task.status) + '</p><p>' + escape(task.feedback) + '</p>' + view.submissions.filter(sub => sub.taskId === task.id).map(sub => '<p>Submitted ' + escape(displayValue(sub.createdAt)) + ': ' + escape(sub.description) + ' · ' + escape(sub.fileName) + '</p>').join('') + '</article>').join('') + progress.evaluations.map(evaluation => '<article><h4>' + escape(evaluation.kind) + ' evaluation · ' + escape(evaluation.status) + '</h4><p>' + escape(evaluation.comments) + '</p></article>').join('');
+            if (target) target.innerHTML = '<h3>' + escape(progress.name) + '</h3><dl>' + [['University ID',progress.universityId],['Department',progress.department],['Company',progress.company?.name],['Company Supervisor',progress.companySupervisor?.name],['Academic Supervisor',progress.supervisor?.name],['Training status',progress.placement?.completionStatus || 'Not placed'],['Approved / Required hours',progress.approvedHours + ' / ' + progress.requiredHours],['Tasks completed',progress.completedTasks + ' / ' + progress.tasks.length],['Risk indicators',progress.risks.join(', ') || 'None'],['Confirmed at UTC',progress.placement?.studentConfirmedAt],['Disable deadline UTC',progress.placement?.accountDisableAt],['Certificate',progress.placement?.certificateId]].map(([label,content]) => '<dt>' + escape(label) + '</dt><dd>' + escape(content || '—') + '</dd>').join('') + '</dl>' + progress.tasks.map(task => '<article><h4>' + escape(task.title) + '</h4><p>' + escape(task.description) + '</p><p>' + escape(task.deadline) + ' · ' + escape(task.status) + '</p><p>' + escape(task.feedback) + '</p>' + view.submissions.filter(sub => sub.taskId === task.id).map(sub => '<p>Submitted ' + escape(sub.createdAt) + ': ' + escape(sub.description) + ' · ' + escape(sub.fileName) + '</p>').join('') + '</article>').join('') + progress.evaluations.map(evaluation => '<article><h4>' + escape(evaluation.kind) + ' evaluation · ' + escape(evaluation.status) + '</h4><p>' + escape(evaluation.comments) + '</p></article>').join('');
             selected = student; open(id);
         }
         function shell() {
@@ -129,7 +128,7 @@
             document.addEventListener('click', event => {
                 const element = event.target.closest('a,button,input');
                 if (element && (/log\s*out/i.test(element.textContent) || /logout/i.test(element.id))) {
-                    event.preventDefault(); event.stopImmediatePropagation(); demo.logout(); location.href = '../Auth/Login.aspx';
+                    event.preventDefault(); event.stopImmediatePropagation(); demo.logout(); location.href = '../Auth/Login.aspx?demo=1';
                 }
             }, {signal,capture:true});
             all('[id*=Logout],[id*=logout]').forEach(el => el.disabled = false);
@@ -185,45 +184,11 @@
         set('searchInput',new URLSearchParams(location.search).get('search')||'');
 
         render();
-        notice('Live data integration is pending. No local fallback is enabled.');
-        window.addEventListener('focus',()=>{const current=demo.current();if(!current||current.mustChangePassword)location.href='../Auth/Login.aspx';},{signal});
-        window.addEventListener('pageshow',()=>{const current=demo.current();if(!current||current.mustChangePassword)location.href='../Auth/Login.aspx';},{signal});
+        notice('DEMO — original interface connected to local browser storage. No Firebase or real authentication.');
+        window.addEventListener('storage', event => { if (event.key === 'uims.demo.v1') { view=demo.view(); if(view&&!view.user.mustChangePassword&&view.user.role===document.body.dataset.demoRole)render();else location.href='../Auth/Login.aspx?demo=1'; } }, {signal});
+        window.addEventListener('focus',()=>{const current=demo.current();if(!current||current.mustChangePassword)location.href='../Auth/Login.aspx?demo=1';},{signal});
+        window.addEventListener('pageshow',()=>{const current=demo.current();if(!current||current.mustChangePassword)location.href='../Auth/Login.aspx?demo=1';},{signal});
     }
     if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',initialize,{once:true});else initialize();
     if(window.Sys?.WebForms?.PageRequestManager)Sys.WebForms.PageRequestManager.getInstance().add_endRequest(initialize);
-})();
-
-/* Live Student adapter: authenticated C# REST projection, no local data fallback. */
-(() => {
- 'use strict';
- const start=async()=>{
- const by=id=>document.getElementById(id)||document.querySelector('[id$="_'+id+'"]');
- const text=(id,value)=>{const el=by(id);if(el)el.textContent=value??'—';};
- const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
- const fmt=value=>{if(!value)return 'Not recorded';if(/^\d{4}-\d{2}-\d{2}$/.test(value))return value;const d=new Date(value);return Number.isNaN(d.valueOf())?'Not recorded':new Intl.DateTimeFormat('en-GB',{timeZone:'Asia/Amman',dateStyle:'medium',timeStyle:'short',hourCycle:'h23'}).format(d)+' Jordan Time';};
- const note=message=>{let el=by('pageNotice')||by('profileAvailability')||document.querySelector('main > .preview-notice,main > .sample-note');if(!el){el=document.createElement('p');el.id='pageNotice';(document.querySelector('main,.content')||document.body).prepend(el);}el.hidden=false;el.setAttribute('role','status');el.textContent=message;};
- const set=(id,value)=>{if(by(id))by(id).value=value??'';};
- const error=()=>note('Firebase data could not be loaded. Refresh to retry; no demonstration records are shown.');
- const open=id=>{const el=by(id);if(!el)return;if(el.tagName==='DIALOG')el.showModal();else bootstrap.Modal.getOrCreateInstance(el).show();};
- const state=(data,key)=>data.states[key]==='permission_denied'?'The student-only '+key+' read permission has not been published.':data.states[key]==='schema_mismatch'?'The '+key+' record relationships need verification.':'The '+key+' data is unavailable.';
- const opts=(id,values,label)=>{if(!by(id))return;by(id).innerHTML='<option value="">'+esc(label)+'</option>'+[...new Set(values.filter(Boolean))].map(v=>'<option value="'+esc(v)+'">'+esc(v)+'</option>').join('');};
- const modalButton=(id,label)=>'<button type="button" class="details-button" data-live-id="'+esc(id)+'">'+esc(label)+'</button>';
- // Keep each page's existing sidebar markup and CSS; no layout component is introduced.
- const sidebar=document.querySelector('aside.sidebar,aside[id="sidebar"]'),toggle=document.querySelector('.menu-btn,.dash-menu-btn');
- if(toggle&&!location.pathname.toLowerCase().includes('/profile')){toggle.removeAttribute('onclick');window.toggleSidebar=()=>{const isOpen=!document.body.classList.contains('sidebar-open');document.body.classList.toggle('sidebar-open',isOpen);sidebar?.classList.toggle('open',isOpen);toggle.setAttribute('aria-expanded',String(isOpen));};toggle.addEventListener('click',window.toggleSidebar);document.querySelectorAll('.sidebar-close,.sidebar-backdrop').forEach(el=>el.addEventListener('click',()=>{document.body.classList.remove('sidebar-open');sidebar?.classList.remove('open');toggle.setAttribute('aria-expanded','false');}));}
- document.querySelectorAll('[data-live-close]').forEach(el=>el.addEventListener('click',()=>el.closest('dialog')?.close()));
- by('opportunitiesList')?.replaceChildren();text('resultCount','(…)');
- try {
- const data=await window.UimsTab.studentData('opportunities');
- document.querySelectorAll('[id$="lblUserName"],[id$="NavName"],.user-chip .name').forEach(el=>{el.textContent=data.user.name||data.user.email;});
- 
- const records=(data.opportunities||[]).filter(o=>!o.eligibleProgramIds?.length||o.eligibleProgramIds.includes(data.student?.programId));
- opts('majorFilter',[data.student?.department],'All specializations');opts('locationFilter',records.map(o=>o.location),'All locations');
- const render=()=>{const q=by('searchInput').value.toLowerCase();const rows=records.filter(o=>(!q||[o.title,o.companyNameSnapshot].join(' ').toLowerCase().includes(q))&&(!by('locationFilter').value||o.location===by('locationFilter').value));by('opportunitiesList').innerHTML=rows.map(o=>'<div class="col-md-6 col-xl-4 opportunity-item"><article class="opportunity-card"><div class="company-heading"><span class="company-mark" aria-hidden="true">'+esc((o.companyNameSnapshot||o.companyId).slice(0,2))+'</span><div><p class="company-name">'+esc(o.companyNameSnapshot||o.companyId)+'</p><p class="company-location">'+esc(o.location)+' · '+esc(o.workMode)+'</p></div></div><span class="specialization">'+esc(data.student?.department||data.student?.programId)+'</span><h3>'+esc(o.title)+'</h3><p class="opportunity-description">'+esc(o.description)+'</p><dl class="opportunity-facts"><div><dt>Capacity</dt><dd>'+esc(o.capacity??'Not recorded')+'</dd></div><div><dt>Deadline</dt><dd>'+esc(fmt(o.applicationDeadline))+'</dd></div></dl>'+modalButton(o.id,'View details →')+'</article></div>').join('');text('resultCount','('+rows.length+')');by('emptyState').hidden=rows.length>0;};
- by('opportunitiesList').addEventListener('click',event=>{const id=event.target.closest('[data-live-id]')?.dataset.liveId;if(!id)return;const o=records.find(item=>item.id===id);text('modalTitle',o.title);text('modalCompany',o.companyNameSnapshot||o.companyId);text('modalMajor',data.student?.department);text('modalLocation',o.location);text('modalFacts','Deadline: '+fmt(o.applicationDeadline));text('modalDetails',o.description+' '+(Array.isArray(o.requirements)?o.requirements.join(', '):o.requirements||''));by('applyLink').href='ApplicationForm.aspx?opportunity='+encodeURIComponent(id);open('opportunityModal');});
- ['searchInput','majorFilter','locationFilter'].forEach(id=>by(id).addEventListener(id==='searchInput'?'input':'change',render));by('resetFilters').addEventListener('click',()=>{['searchInput','majorFilter','locationFilter'].forEach(id=>set(id,''));render();});set('searchInput',new URLSearchParams(location.search).get('search'));render();note(data.states.opportunities==='ready'?'Published Firebase opportunities for your program.':state(data,'opportunities'));
-
- }catch(exception){error();}
- };
- if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});else start();
 })();

@@ -1,15 +1,15 @@
 <%@ Page Language="C#" AutoEventWireup="true" CodeBehind="MyTrainees.aspx.cs" Inherits="University_Internship_Management_System.Company.MyTrainees" %>
 <!DOCTYPE html>
-<html lang="en" dir="ltr">
+<html lang="en">
 <head runat="server">
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>My Trainees | JUST Internships</title>
     <link runat="server" href="~/Assets/shared/colors.css" rel="stylesheet" />
     
-    <link runat="server" href="~/Assets/company/my-trainees.css?v=20261021-role-pages-final" rel="stylesheet" />
+    <link runat="server" href="~/Assets/company/my-trainees.css?v=20261021-original-ui" rel="stylesheet" />
 </head>
-<body class="app-page trainees-page role-shell" data-portal="company">
+<body class="app-page trainees-page role-shell" data-demo-role="company">
     <form id="form1" runat="server">
         <div class="app">
             <aside class="sidebar" id="sidebar" aria-label="Company Supervisor navigation" data-role-sidebar="true"><button class="sidebar-close" type="button" aria-label="Close navigation menu"><svg class="bi bi-x nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="m6 6 12 12M6 18 18 6"/></svg></button>
@@ -98,7 +98,8 @@
             </div>
         </div>
     </form>
-    <script>
+    <script src="../Js_project/Demo/demo-store.js?v=20261021-original-ui"></script>
+<script>
         (() => {
             "use strict";
             const sidebar = document.querySelector(".sidebar");
@@ -160,7 +161,6 @@
             mobile.addEventListener("change", () => setSidebar(false));
         })();
     </script>
-<script src="../Js_project/Company/my-trainees.js?v=20261021-role-pages-final"></script>
-<script src="../Js_project/Public/tab-session.js" defer="defer"></script>
+<script src="../Js_project/Company/my-trainees.js?v=20261021-original-ui"></script>
 </body>
 </html>

@@ -1,7 +1,7 @@
 ﻿<%@ Page Language="C#" AutoEventWireup="true" CodeBehind="ApplicationsReview.aspx.cs" Inherits="University_Internship_Management_System.Company.ApplicationsReview" %>
 
 <!DOCTYPE html>
-<html lang="en" dir="ltr">
+<html lang="en">
 <head runat="server">
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -10,9 +10,9 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet" />
     <link runat="server" href="~/Assets/shared/colors.css" rel="stylesheet" />
     
-    <link runat="server" href="~/Assets/company/applications-review.css?v=20261021-role-pages-final" rel="stylesheet" />
+    <link runat="server" href="~/Assets/company/applications-review.css?v=20261021-original-ui" rel="stylesheet" />
 </head>
-<body data-portal="company">
+<body data-demo-role="company">
     <form id="form1" runat="server">
         <div class="app">
 
@@ -52,11 +52,11 @@
                         <input type="search" id="searchBox" placeholder="Search by student name, ID, or major..." autocomplete="off" />
                     </div>
                     <div class="topbar-actions">
-                        <button type="button" class="icon-btn" aria-label="Notifications unavailable" disabled="disabled" title="Notification reads are not connected"><i class="bi bi-bell"></i></button>
+                        <button type="button" class="icon-btn" aria-label="Notifications"><i class="bi bi-bell"></i><span class="dot"></span></button>
                         <div class="dropdown">
                             <button type="button" class="user-chip" data-bs-toggle="dropdown">
-                                <span class="avatar" id="lblInitials">—</span>
-                                <span class="name"><span id="lblUserName">Company account</span><span class="role">Company Supervisor</span></span>
+                                <span class="avatar">MH</span>
+                                <span class="name">Mohammad H.<span class="role">Company Supervisor</span></span>
                                 <i class="bi bi-chevron-down small"></i>
                             </button>
                             <ul class="dropdown-menu dropdown-menu-end">
@@ -74,7 +74,7 @@
                     <!-- Page header -->
                     <div class="page-head">
                         <div>
-                            <div class="date-line">COMPANY SUPERVISOR · YOUR COMPANY</div>
+                            <div class="date-line">Company Supervisor · Orange Jordan</div>
                             <h1 class="page-title">Applications Review</h1>
                             <p class="subtitle mb-0">Review JUST students who applied to your opportunities. Accept them, or reject with a reason they can read.</p>
                         </div>
@@ -260,8 +260,8 @@
         </div>
     </form>
 
-    <script src="<%= ResolveUrl("~/Scripts/bootstrap.bundle.min.js") %>"></script>
-    <script src="../Js_project/Company/applications-review.js?v=20261021-role-pages-final"></script>
-<script src="../Js_project/Public/tab-session.js" defer="defer"></script>
+    <script src="../Js_project/Demo/demo-store.js?v=20261021-original-ui"></script>
+<script src="<%= ResolveUrl("~/Scripts/bootstrap.bundle.min.js") %>"></script>
+    <script src="../Js_project/Company/applications-review.js?v=20261021-original-ui"></script>
 </body>
 </html>

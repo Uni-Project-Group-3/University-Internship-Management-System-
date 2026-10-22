@@ -1,1 +1,0 @@
-<%@ WebHandler Language="C#" CodeBehind="Gateway.ashx.cs" Class="University_Internship_Management_System.Auth.Gateway" %>

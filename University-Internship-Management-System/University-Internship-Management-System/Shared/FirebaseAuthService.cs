@@ -9,12 +9,15 @@ namespace University_Internship_Management_System.Shared
 {
     internal sealed class FirebaseAuthService
     {
-        private static readonly HttpClient SharedClient = Services.FirebaseHttp.Client;
+        private static readonly HttpClient SharedClient = new HttpClient
+        {
+            Timeout = TimeSpan.FromSeconds(15)
+        };
         private readonly HttpClient client;
         private readonly string apiKey;
 
         public FirebaseAuthService()
-            : this(SharedClient, Services.FirebaseConfiguration.WebApiKey)
+            : this(SharedClient, Environment.GetEnvironmentVariable("FIREBASE_API_KEY"))
         {
         }
 

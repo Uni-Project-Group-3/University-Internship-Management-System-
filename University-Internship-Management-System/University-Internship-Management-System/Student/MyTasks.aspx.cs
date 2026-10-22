@@ -1,5 +1,5 @@
 ﻿using System;
-using University_Internship_Management_System.Services;
+using System.Web.Security;
 using System.Web.UI;
 
 namespace University_Internship_Management_System.Student
@@ -13,7 +13,9 @@ namespace University_Internship_Management_System.Student
 
         protected void btnLogout_Click(object sender, EventArgs e)
         {
-            SessionService.Logout(SessionService.Handle(Request));
+            FormsAuthentication.SignOut();
+            Session.Clear();
+            Session.Abandon();
             Response.Redirect("~/Auth/Login.aspx", false);
             Context.ApplicationInstance.CompleteRequest();
         }

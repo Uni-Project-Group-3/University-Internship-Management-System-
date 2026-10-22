@@ -1,5 +1,6 @@
 ﻿<%@ Page Language="C#" AutoEventWireup="true" CodeBehind="ApplicationForm.aspx.cs" Inherits="University_Internship_Management_System.Student.ApplicationForm" %>
 
+<script src="../Js_project/Demo/demo-store.js?v=20261021-original-ui"></script>
 <script runat="server">
     protected void btnLogout_Click(object sender, System.EventArgs e)
     {
@@ -10,7 +11,7 @@
 </script>
 
 <!DOCTYPE html>
-<html lang="en" dir="ltr">
+<html lang="en">
 <head runat="server">
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -20,7 +21,7 @@
     <link href="../Assets/shared/colors.css" rel="stylesheet" />
     <link href="../Assets/student/application-form.css?v=20261021-original-ui" rel="stylesheet" />
 </head>
-<body class="standalone-shell" data-portal="student">
+<body class="standalone-shell" data-demo-role="student">
     <form id="applicationForm" runat="server">
         <div class="app">
             <!-- نفس السايد بار المرسل، مكرر داخل الصفحة مع ضبط الروابط المتوفرة -->
@@ -88,7 +89,7 @@
                 <p>Introduce yourself and take the next step in your internship journey.</p>
             </header>
 
-            <div class="preview-notice">Your verified account information is loaded from Firebase.</div>
+            <div class="preview-notice">Frontend preview — your information will not be saved or sent.</div>
             <div id="invalidOpportunity" class="invalid-opportunity" role="alert" hidden>
                 Please select a valid opportunity from <a href="ExploreOpportunities.aspx">Explore Opportunities</a> before continuing.
             </div>
@@ -191,6 +192,5 @@
     </form>
     <script src="../Scripts/bootstrap.bundle.min.js"></script>
     <script src="../Js_project/Student/application-form.js?v=20261021-original-ui"></script>
-<script src="../Js_project/Public/tab-session.js" defer="defer"></script>
 </body>
 </html>
