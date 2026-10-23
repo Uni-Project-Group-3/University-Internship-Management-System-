@@ -25,6 +25,7 @@ internal static partial class Program
         await Test("failed weekly report metadata writes clean only the new private upload and never publish an incomplete report", WeeklyReportMetadataFailureCleanupOffline);
         await Test("disabled weekly reports make no database, token or Storage requests", WeeklyReportDisabledOffline);
         await Test("weekly report validation rejects invalid dates, MIME, DOCX structure and oversize data before upload", WeeklyReportValidationOffline);
+        await Test("weekly task snapshots, independent academic evaluation and private task discussion are scoped by revision", WeeklyTaskContextOffline);
     }
 
     private static Dictionary<string, string> WeeklySettings(bool enabled = true)
@@ -68,7 +69,7 @@ internal static partial class Program
         db.Set("users/U-ST2", new JObject { ["role"] = "student", ["studentId"] = "ST-2", ["academicSupervisorId"] = "AC-2", ["isActive"] = true });
         db.Set("tasks/T-1", new JObject { ["placementId"] = "PL-1", ["studentId"] = "ST-1", ["title"] = "Task Alpha", ["status"] = "Completed", ["grade"] = 8, ["maximumScore"] = 10 });
         db.Set("taskExams/E-1", new JObject { ["placementId"] = "PL-1", ["status"] = "published" });
-        db.Set("taskExamAttempts/E-1/ST-1/ATT-1", new JObject { ["studentId"] = "ST-1", ["status"] = "submitted", ["score"] = 9, ["maximumScore"] = 10, ["answers"] = new JObject { ["Q1"] = "answer-key-must-not-leak" } });
+        db.Set("taskExamAttempts/E-1/ST-1/ATT-1", new JObject { ["studentId"] = "ST-1", ["status"] = "submitted", ["resultStatus"] = "released", ["score"] = 9, ["maximumScore"] = 10, ["answers"] = new JObject { ["Q1"] = "answer-key-must-not-leak" } });
         db.Set("uimsAttendance/students/ST-1", new JObject { ["status"] = "active", ["activeAssignmentId"] = "TA-1" });
         db.Set("uimsAttendance/trainingAssignments/TA-1", new JObject { ["studentId"] = "ST-1", ["companySupervisorId"] = "CS-1", ["status"] = "active" });
         db.Set("uimsAttendance/attendance/TA-1/2026-10-21", new JObject { ["studentId"] = "ST-1", ["assignmentId"] = "TA-1", ["status"] = "completed", ["hoursApprovalStatus"] = "approved", ["workedMinutes"] = 90 });
@@ -107,7 +108,7 @@ internal static partial class Program
         var report2 = (JObject)resubmitted["report"]; string revision2 = (string)report2["currentRevisionId"];
         Assert((string)report2["status"] == "resubmitted" && revision1 != revision2 && report2["revisions"][revision1] != null && report2["revisions"][revision2] != null);
         await Reject<UIMS.Services.FirebaseException>(() => academic.ReviewAsync(id, revision1, "approved", "Stale review", Guid.NewGuid().ToString("D"), CancellationToken.None));
-        var final = await academic.ReviewAsync(id, revision2, "approved", "Approved after review.", Guid.NewGuid().ToString("D"), CancellationToken.None);
+        var final = await academic.ReviewAsync(id, revision2, "approved", "Approved after review.", Guid.NewGuid().ToString("D"), CancellationToken.None, 84m, "Excellent");
         Assert((string)final["report"]["status"] == "approved" && (await company.GetCompanyReportAsync(id, CancellationToken.None))["reviews"].Children().Count() == 2);
         var student = WeeklyService(db, WeeklyStudentActor(), null, files); var studentList = await student.ListStudentReportsAsync(CancellationToken.None);
         Assert((string)studentList["reports"][id]["status"] == "approved" && studentList.ToString().IndexOf("storagePath", StringComparison.Ordinal) < 0);
@@ -172,6 +173,26 @@ internal static partial class Program
         await Reject<UIMS.Services.FirebaseException>(() => service.SubmitAsync("PL-1", 1, "2026-10-19", "2026-10-25", "x.docx", WeeklyMime, new byte[] { 0x50, 0x4b, 0, 1 }, "", CancellationToken.None));
         await Reject<UIMS.Services.FirebaseException>(() => service.SubmitAsync("PL-1", 1, "2026-10-19", "2026-10-25", "x.docx", WeeklyMime, new byte[UIMS.Services.FirebaseFileStorageService.MaximumFileBytes + 1], "", CancellationToken.None));
         Assert(uploads == 0 && files.Count == 0 && db.Writes == 0);
+    }
+
+    private static async Task WeeklyTaskContextOffline()
+    {
+        var db = new WeeklyReportDb(); SeedWeekly(db); var files = new Dictionary<string, byte[]>();
+        db.Set("tasks/T-SELECTED", new JObject { ["placementId"] = "PL-1", ["studentId"] = "ST-1", ["assignedBy"] = "CS-1", ["title"] = "Original task", ["assignedAt"] = "2026-10-21", ["status"] = "Completed", ["score"] = 8, ["maximumScore"] = 10 });
+        var company = WeeklyService(db, WeeklyCompanyActor(), null, files); var academic = WeeklyService(db, WeeklyAcademicActor(), null, files);
+        var suggestions = await company.TaskSuggestionsAsync("PL-1", "2026-10-19", "2026-10-25", CancellationToken.None); Assert(suggestions["tasks"].Count() == 1);
+        var submitted = await company.SubmitAsync("PL-1", 3, "2026-10-19", "2026-10-25", "week.docx", WeeklyMime, WeeklyDocx(), "", CancellationToken.None, new JArray("T-SELECTED"));
+        var report = submitted["report"]; string id = (string)report["reportId"], revision = (string)report["currentRevisionId"];
+        Assert((string)report["revisions"][revision]["taskSnapshot"][0]["title"] == "Original task");
+        await academic.AddDiscussionAsync(new JObject { ["reportId"] = id, ["revisionId"] = revision, ["taskId"] = "T-SELECTED", ["message"] = "Private task discussion", ["requestId"] = Guid.NewGuid().ToString() }, CancellationToken.None);
+        await Reject<UIMS.Services.FirebaseException>(() => WeeklyService(db, WeeklyStudentActor(), null, files).AddDiscussionAsync(new JObject { ["reportId"] = id, ["revisionId"] = revision, ["message"] = "No", ["requestId"] = Guid.NewGuid().ToString() }, CancellationToken.None));
+        await Reject<UIMS.Services.FirebaseException>(() => academic.ReviewAsync(id, revision, "approved", "Public academic feedback", Guid.NewGuid().ToString(), CancellationToken.None));
+        await academic.ReviewAsync(id, revision, "approved", "Public academic feedback", Guid.NewGuid().ToString(), CancellationToken.None, 12m, "Excellent");
+        var visible = await WeeklyService(db, WeeklyStudentActor(), null, files).ListStudentReportsAsync(CancellationToken.None);
+        Assert((decimal)visible["reports"][id]["academicEvaluation"]["score"] == 12m && (string)visible["reports"][id]["academicEvaluation"]["rating"] == "Excellent");
+        Assert(!visible.ToString().Contains("Private task discussion") && !visible.ToString().Contains("discussions"));
+        var changed = (JObject)db.Get("tasks/T-SELECTED"); changed["title"] = "Later task edit"; db.Set("tasks/T-SELECTED", changed);
+        Assert((string)db.Get("weeklyReports/" + id + "/revisions/" + revision + "/taskSnapshot")[0]["title"] == "Original task");
     }
 
     private sealed class WeeklyReportDb : HttpMessageHandler

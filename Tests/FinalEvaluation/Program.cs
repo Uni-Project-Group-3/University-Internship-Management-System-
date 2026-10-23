@@ -265,7 +265,7 @@ internal static partial class Program
 
         await UIMS.Tasks.TasksApiHandler.DispatchAsync(OfflineTaskService(db, student, settings), "POST", "start", new Newtonsoft.Json.Linq.JObject { ["assignmentId"] = taskId }, CancellationToken.None);
         await UIMS.Tasks.TasksApiHandler.DispatchAsync(OfflineTaskService(db, student, settings), "POST", "submit", new Newtonsoft.Json.Linq.JObject { ["assignmentId"] = taskId, ["description"] = "First fictional submission", ["link"] = "https://example.test/first" }, CancellationToken.None);
-        await UIMS.Tasks.TasksApiHandler.DispatchAsync(OfflineTaskService(db, company, settings), "POST", "review", new Newtonsoft.Json.Linq.JObject { ["assignmentId"] = taskId, ["reviewAction"] = "revision", ["feedback"] = "Please revise" }, CancellationToken.None);
+        await UIMS.Tasks.TasksApiHandler.DispatchAsync(OfflineTaskService(db, company, settings), "POST", "review", new Newtonsoft.Json.Linq.JObject { ["assignmentId"] = taskId, ["reviewAction"] = "revision", ["feedback"] = "Please revise", ["deadline"] = DateTimeOffset.UtcNow.AddDays(1).ToString("o") }, CancellationToken.None);
         await UIMS.Tasks.TasksApiHandler.DispatchAsync(OfflineTaskService(db, student, settings), "POST", "submit", new Newtonsoft.Json.Linq.JObject { ["assignmentId"] = taskId, ["description"] = "Revised fictional submission", ["link"] = "https://example.test/revision" }, CancellationToken.None);
         await UIMS.Tasks.TasksApiHandler.DispatchAsync(OfflineTaskService(db, company, settings), "POST", "review", new Newtonsoft.Json.Linq.JObject { ["assignmentId"] = taskId, ["reviewAction"] = "grade", ["score"] = 92, ["feedback"] = "Passed" }, CancellationToken.None);
         var final = db.Records["tasks/" + taskId] as Newtonsoft.Json.Linq.JObject;
@@ -308,8 +308,39 @@ internal static partial class Program
         Assert(requests == 1 && tokenLookups == 0);
     }
 
-    private static int Main()
+    private static async Task AuthenticationTransientFailuresKeepTheirStatus()
     {
+        var config = new UIMS.Services.FirebaseConfiguration("false", "offline-test", OfflineFirebaseRoot, "offline-key", "false", "false", "false", "true");
+        foreach (var status in new[] { 400, 429, 503 })
+        {
+            int requests = 0;
+            var handler = new Handler { Respond = request => { requests++; var response = new HttpResponseMessage((System.Net.HttpStatusCode)status) { Content = new StringContent("{\"error\":{\"message\":\"" + (status == 503 ? "UNAVAILABLE" : "TOO_MANY_ATTEMPTS_TRY_LATER") + "\"}}") }; response.Headers.RetryAfter = new System.Net.Http.Headers.RetryConditionHeaderValue(TimeSpan.FromSeconds(120)); return response; } };
+            var service = new University_Internship_Management_System.Shared.FirebaseSignInService(new HttpClient(handler), "offline-key", token => Task.FromResult("test-uid"), uid => Task.FromResult(new Newtonsoft.Json.Linq.JObject()), config);
+            foreach (var refresh in new[] { false, true })
+            {
+                try { if (refresh) await service.RefreshAsync("isolated-refresh"); else await service.SignInAsync("user@example.test", "isolated-password"); throw new Exception("Transient error was accepted."); }
+                catch (University_Internship_Management_System.Shared.FirebaseLoginException error)
+                { Assert(error.StatusCode == (status == 503 ? 503 : 429)); Assert(error.RetryAfterSeconds == (status == 503 ? 0 : 120)); }
+            }
+            Assert(requests == 2); // One provider request per action, no automatic credential retries.
+        }
+    }
+
+    private static int Main(string[] args)
+    {
+        if (args.Length == 1 && args[0] == "--test-task-workflows-no-storage")
+        {
+            try
+            {
+                TaskApiOfflineTests().GetAwaiter().GetResult();
+                TaskSubmissionCompatibilityTests().GetAwaiter().GetResult();
+                TaskBoardTests().GetAwaiter().GetResult();
+                RunTaskExamTests(false).GetAwaiter().GetResult();
+                Console.WriteLine("Task, submission and board checks plus " + passed + " exam tests passed. Storage excluded; no production writes.");
+                return 0;
+            }
+            catch (Exception error) { Console.Error.WriteLine(error); return 1; }
+        }
         try { Run().GetAwaiter().GetResult(); Console.WriteLine(passed + " tests passed. No network requests or Firebase writes were made."); return 0; }
         catch (Exception e) { Console.Error.WriteLine(e); return 1; }
     }
@@ -333,6 +364,7 @@ internal static partial class Program
             return Task.CompletedTask;
         });
         await Test("sign-in trusts Firebase-issued UID and avoids a duplicate auth lookup", LoginUsesTrustedAuthResponseUid);
+        await Test("authentication throttling preserves 429 Retry-After and transient refresh errors never masquerade as revoked sessions", AuthenticationTransientFailuresKeepTheirStatus);
         await Test("Firebase disabled blocks all service transports before HTTP", FirebaseDisabledBlocksNetwork);
         await Test("opportunity reads fail closed before Firebase transport when disabled", OpportunityServiceHonorsDisabledFirebase);
         await Test("applications, company decisions, and placement confirmation preserve authorization and idempotency", ApplicationPlacementLifecycleUsesAuthorizedRecords);

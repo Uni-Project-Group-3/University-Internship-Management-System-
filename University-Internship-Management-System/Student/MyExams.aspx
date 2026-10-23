@@ -12,6 +12,9 @@
         <section id="examList" class="exam-list" aria-live="polite"></section>
         <section id="attemptPanel" class="panel hidden" aria-live="polite"></section>
     </main>
-    <script src="../Js_project/Student/TaskExams.js"></script>
+    <link href="../Assets/task-workspace.css?v=20261023-exam-gate" rel="stylesheet" />
+    <script src="../Js_project/firebase-client.js?v=20261023-live-review"></script>
+    <script src="../Js_project/task-dialogs.js?v=20261023-live-result"></script>
+    <script src="../Js_project/Student/TaskExams.js?v=20261023-live-result"></script>
 </body>
 </html>

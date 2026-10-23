@@ -1,1 +1,23 @@
-(function(){'use strict';var api='../WeeklyReportsApi.ashx',notice=document.getElementById('wrNotice'),list=document.getElementById('studentReports');function say(v,k){notice.textContent=v;notice.className='wr-notice'+(k?' '+k:'');}function n(t,v,c){var e=document.createElement(t);e.textContent=String(v==null?'':v);if(c)e.className=c;return e;}async function load(){say('Loading your read-only report status…');var response=await fetch(api+'?action=studentReports',{credentials:'same-origin',cache:'no-store'}),data=await response.json();if(!response.ok)throw new Error(data.message||'The report status could not be loaded.');list.replaceChildren();var reports=data.reports||{},ids=Object.keys(reports);if(!ids.length){list.appendChild(n('p','Your company supervisor has not submitted a weekly report yet.','wr-empty'));say('No weekly report status is available yet.');return;}ids.forEach(function(id){var r=reports[id],card=n('article',null,'wr-report'),info=n('div'),h=n('h3','Training week '+r.weekNumber);info.appendChild(h);info.appendChild(n('span',r.status,'wr-badge '+r.status));info.appendChild(n('p',(r.weekStart||'')+' — '+(r.weekEnd||'')));if(r.status==='approved'&&r.companyComments)info.appendChild(n('p','Company comments: '+r.companyComments));info.appendChild(n('p','Submitted: '+(r.submittedAt||'Not submitted'),'wr-small'));card.appendChild(info);list.appendChild(card);});say(ids.length+' report status record(s) loaded.');}document.getElementById('refreshStudent').addEventListener('click',function(){load().catch(function(e){say(e.message,'error');});});load().catch(function(e){say(e.message,'error');list.replaceChildren(n('p','Report status is unavailable until Firebase is configured.','wr-empty'));});}());
+(function () {
+    'use strict';
+    const list = document.getElementById('studentReports'), notice = document.getElementById('wrNotice');
+    function node(tag, text, cls) { const el = document.createElement(tag); el.textContent = String(text ?? ''); if (cls) el.className = cls; return el; }
+    async function load() {
+        notice.textContent = 'Loading your read-only report status…';
+        const response = await fetch('../WeeklyReportsApi.ashx?action=studentReports', { credentials: 'same-origin', cache: 'no-store' }), data = await response.json();
+        if (!response.ok) throw new Error(data.message || 'Report status could not be loaded.');
+        list.replaceChildren();
+        for (const report of Object.values(data.reports || {})) {
+            const card = node('article', '', 'wr-report'), info = node('div');
+            info.append(node('h3', 'Training week ' + report.weekNumber), node('span', report.status, 'wr-badge ' + report.status), node('p', (report.weekStart || '') + ' — ' + (report.weekEnd || '')));
+            const evaluation = report.academicEvaluation;
+            if (evaluation) info.append(node('h4', 'Latest approved academic evaluation'), node('p', evaluation.score + ' / 100 · ' + evaluation.rating), node('p', evaluation.feedback), node('p', 'Approved: ' + new Date(evaluation.approvedAt).toLocaleString(), 'wr-small'));
+            if (report.status === 'approved' && report.companyComments) info.append(node('p', 'Company comments: ' + report.companyComments));
+            info.append(node('p', 'Submitted: ' + (report.submittedAt || 'Not submitted'), 'wr-small')); card.append(info); list.append(card);
+        }
+        if (!list.children.length) list.append(node('p', 'Your company supervisor has not submitted a weekly report yet.', 'wr-empty'));
+        notice.textContent = Object.keys(data.reports || {}).length + ' report status record(s) loaded.';
+    }
+    function refresh() { load().catch(error => { notice.textContent = error.message; notice.className = 'wr-notice error'; }); }
+    document.getElementById('refreshStudent').addEventListener('click', refresh); refresh();
+}());

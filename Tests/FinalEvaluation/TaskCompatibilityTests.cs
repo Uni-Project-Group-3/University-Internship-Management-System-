@@ -42,6 +42,7 @@ internal static partial class Program
 
     private static async Task TaskSubmissionCompatibilityTests()
     {
+        await TaskBulkAndExtensionTests();
         var settings = EnabledTaskSettings();
         var student = TaskActor.FromVerifiedProfile("auth-student-1", "student", JObject.Parse("{\"role\":\"student\",\"isActive\":true,\"studentId\":\"ST-1\"}"));
         var company = TaskActor.FromVerifiedProfile("auth-company-1", "companySupervisor", JObject.Parse("{\"role\":\"companySupervisor\",\"isActive\":true,\"companySupervisorId\":\"SUP-1\",\"companyId\":\"CO-1\"}"));
@@ -78,7 +79,7 @@ internal static partial class Program
         Assert((string)((JObject)arrayReviewDb.Records["tasks/review-array"])["status"] == "Completed");
         var objectReviewDb = TaskDbWithPlacement();
         objectReviewDb.Records["tasks/review-object"] = TaskFixture("review-object", "Submitted", objectOriginal);
-        await OfflineTaskService(objectReviewDb, company, settings).ReviewAsync("review-object", "revision", 0, "Please revise", CancellationToken.None);
+        await OfflineTaskService(objectReviewDb, company, settings).ReviewAsync("review-object", "revision", 0, "Please revise", CancellationToken.None, DateTimeOffset.UtcNow.AddDays(1).ToString("o"));
         Assert(((JObject)((JObject)objectReviewDb.Records["tasks/review-object"])["submissions"]).Count == 2);
         Assert((string)((JObject)objectReviewDb.Records["tasks/review-object"])["status"] == "Revision Needed");
 
@@ -121,6 +122,58 @@ internal static partial class Program
             StatusCode(() => raceServiceB.StartAsync("race-task", CancellationToken.None)));
         Assert(raceResults.Count(x => x == 200) == 1 && raceResults.Count(x => x == 409) == 1);
         Assert((string)raceHandler.TaskRecord["status"] == "In Progress" && raceHandler.TaskWrites == 1);
+    }
+
+    private static async Task TaskBulkAndExtensionTests()
+    {
+        var db = TaskDbWithPlacement(); var settings = EnabledTaskSettings();
+        db.Records["placements/PLACE-2"] = JObject.Parse("{\"studentId\":\"ST-2\",\"companySupervisorId\":\"SUP-1\",\"companyId\":\"CO-1\",\"status\":\"confirmed\"}");
+        db.Records["users/one"] = JObject.Parse("{\"role\":\"student\",\"isActive\":true,\"studentId\":\"ST-1\"}");
+        db.Records["users/two"] = JObject.Parse("{\"role\":\"student\",\"isActive\":true,\"studentId\":\"ST-2\"}");
+        var company = TaskActor.FromVerifiedProfile("company-uid", "companySupervisor", JObject.Parse("{\"role\":\"companySupervisor\",\"isActive\":true,\"companySupervisorId\":\"SUP-1\",\"companyId\":\"CO-1\"}"));
+        var student = TaskActor.FromVerifiedProfile("student-uid", "student", JObject.Parse("{\"role\":\"student\",\"isActive\":true,\"studentId\":\"ST-1\"}"));
+        var service = OfflineTaskService(db, company, settings);
+        var input = new JObject { ["batchId"] = "BATCH-TEST", ["placementIds"] = new JArray("PLACE-1", "PLACE-2"), ["title"] = "Independent tasks", ["description"] = "Requirements", ["criteria"] = "Instructions", ["deadline"] = DateTimeOffset.UtcNow.AddDays(1).ToString("o"), ["maximum"] = 20 };
+        var created = await service.BulkCreateAsync(input, CancellationToken.None); Assert((bool)created["success"] && created["results"].Count() == 2);
+        string first = (string)created["results"][0]["id"], second = (string)created["results"][1]["id"];
+        Assert(first != second && (string)db.Records["tasks/" + first]["studentId"] == "ST-1" && (string)db.Records["tasks/" + second]["studentId"] == "ST-2");
+        var retry = await OfflineTaskService(db, company, settings).BulkCreateAsync(input, CancellationToken.None); Assert((bool)retry["success"] && (string)retry["results"][0]["id"] == first && db.Records.Keys.Count(k => k.StartsWith("tasks/")) == 2);
+        var changed = (JObject)input.DeepClone(); changed["title"] = "Changed retry"; Assert(!(bool)(await service.BulkCreateAsync(changed, CancellationToken.None))["success"]);
+        var firstRow = (JObject)db.Records["tasks/" + first]; firstRow["status"] = "Submitted"; firstRow["submissions"] = new JArray(new JObject { ["revision"] = 1, ["description"] = "Original submission" }); firstRow["boardPosition"] = new JObject { ["columnId"] = "custom", ["order"] = 7 };
+        var secondRow = (JObject)db.Records["tasks/" + second]; secondRow["score"] = 12; secondRow["status"] = "Completed";
+        var secondBefore = secondRow.DeepClone();
+        var edit = new JObject { ["taskId"] = first, ["all"] = true, ["title"] = "Updated instructions", ["description"] = "Revised", ["criteria"] = "Acceptance", ["deadline"] = DateTimeOffset.UtcNow.AddDays(2).ToString("o"), ["resubmit"] = true };
+        var edited = await service.EditAsync(edit, CancellationToken.None); Assert(edited["affected"].Count() == 1 && edited["excluded"].Count() == 1 && JToken.DeepEquals(secondBefore, db.Records["tasks/" + second]));
+        firstRow = (JObject)db.Records["tasks/" + first]; Assert((string)firstRow["status"] == "Revision Needed" && (string)firstRow["submissions"][0]["description"] == "Original submission" && firstRow["instructionVersions"]["1"] != null && (int)firstRow["boardPosition"]["order"] == 7);
+        firstRow["instructionVersions"] = new JArray(JValue.CreateNull(), new JObject { ["title"] = "Historical instructions", ["legacy"] = "preserve" });
+        firstRow["instructionVersion"] = 2;
+        var nextEdit = (JObject)edit.DeepClone(); nextEdit["all"] = false; nextEdit["resubmit"] = false;
+        await service.EditAsync(nextEdit, CancellationToken.None);
+        firstRow = (JObject)db.Records["tasks/" + first];
+        Assert((string)firstRow["instructionVersions"]["1"]["legacy"] == "preserve" && firstRow["instructionVersions"]["2"] != null);
+        firstRow["dueDate"] = DateTimeOffset.UtcNow.AddHours(-1).ToString("o");
+        var studentService = OfflineTaskService(db, student, settings);
+        Assert(await StatusCode(() => studentService.SubmitAsync(first, "Late", "https://example.test", "", CancellationToken.None)) == 409);
+        var extension = new JObject { ["taskId"] = first, ["reason"] = "More time required", ["deadline"] = DateTimeOffset.UtcNow.AddDays(3).ToString("o") };
+        await studentService.ExtensionAsync(extension, CancellationToken.None);
+        Assert(await StatusCode(() => studentService.ExtensionAsync(extension, CancellationToken.None)) == 409);
+        await service.ExtensionAsync(new JObject { ["taskId"] = first, ["approve"] = false, ["reason"] = "Final decision" }, CancellationToken.None);
+        Assert(await StatusCode(() => studentService.ExtensionAsync(extension, CancellationToken.None)) == 409);
+        Assert((string)db.Records["tasks/" + first]["extension"]["status"] == "rejected");
+        Assert(JToken.DeepEquals(secondBefore, db.Records["tasks/" + second]));
+        var overdue = TaskFixture("extension-approved", "In Progress", new JArray()); overdue["dueDate"] = DateTimeOffset.UtcNow.AddDays(-1).ToString("o"); db.Records["tasks/extension-approved"] = overdue;
+        var approvalRequest = new JObject { ["taskId"] = "extension-approved", ["reason"] = "Awaiting required resource", ["deadline"] = DateTimeOffset.UtcNow.AddDays(2).ToString("o") };
+        await studentService.ExtensionAsync(approvalRequest, CancellationToken.None);
+        await service.ExtensionAsync(new JObject { ["taskId"] = "extension-approved", ["approve"] = true, ["deadline"] = DateTimeOffset.UtcNow.AddDays(1).ToString("o") }, CancellationToken.None);
+        await OfflineTaskService(db, student, settings).SubmitAsync("extension-approved", "Work after approval", "https://example.test/approved", "", CancellationToken.None);
+        Assert((string)db.Records["tasks/extension-approved"]["status"] == "Submitted" && db.Records["tasks/extension-approved"]["extension"]["oldDeadline"] != null);
+        var partial = (JObject)input.DeepClone(); partial["placementIds"] = new JArray("PLACE-1", "UNAUTHORIZED");
+        var partialResult = await service.BulkCreateAsync(partial, CancellationToken.None); Assert(!(bool)partialResult["success"] && (bool)partialResult["results"][0]["reused"] && !(bool)partialResult["results"][1]["success"]);
+        var beforeArchive = db.Records["tasks/" + first].DeepClone();
+        await service.ArchiveAsync(first, CancellationToken.None);
+        Assert(JToken.DeepEquals(beforeArchive["submissions"], db.Records["tasks/" + first]["submissions"]) && db.Records["tasks/" + first]["archivedAt"] != null);
+        Assert((bool)(await service.ArchiveAsync(first, CancellationToken.None))["duplicate"]);
+        Assert(await StatusCode(() => studentService.ArchiveAsync(first, CancellationToken.None)) == 403);
     }
 
     private sealed class TaskRaceHandler : HttpMessageHandler

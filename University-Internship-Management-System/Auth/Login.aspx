@@ -146,7 +146,7 @@
     </form>
     <footer class="auth-public-footer"><span>&copy; <%= DateTime.Now.Year %> Jordan University of Science and Technology.</span><span>University Internship Management System.</span></footer>
 
-<script src="../Js_project/firebase-client.js?v=20261022-auth-api" defer="defer"></script>
+<script src="../Js_project/firebase-client.js?v=20261023-tab-sessions" defer="defer"></script>
 <script src="../Js_project/Auth/auth.js?v=20261022-real-login" defer="defer"></script>
 </body>
 </html>
