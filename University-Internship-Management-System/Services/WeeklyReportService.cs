@@ -351,6 +351,7 @@ namespace UIMS.Tasks
                 if (!(placement.Value is JObject) || Text(placement.Value, "studentId", "studentProfileId", "traineeId") != actor.StudentId) continue;
                 var visible = new JObject { ["reportId"] = pair.Key, ["placementId"] = pair.Value["placementId"], ["weekNumber"] = pair.Value["weekNumber"], ["weekStart"] = pair.Value["weekStart"], ["weekEnd"] = pair.Value["weekEnd"], ["status"] = pair.Value["status"], ["submittedAt"] = pair.Value["submittedAt"], ["currentRevisionId"] = pair.Value["currentRevisionId"] };
                 if (Text(pair.Value, "status") == "approved") visible["companyComments"] = pair.Value["companyComments"];
+                if (pair.Value["latestApprovedEvaluation"] is JObject) visible["academicEvaluation"] = pair.Value["latestApprovedEvaluation"].DeepClone();
                 result[pair.Key] = visible;
             }
             return new JObject { ["reports"] = result };
@@ -374,7 +375,38 @@ namespace UIMS.Tasks
             return new JObject { ["report"] = PublicReport(report), ["reviews"] = await ReadReviewsAsync(reportId, cancellation).ConfigureAwait(false) };
         }
 
-        public async Task<JObject> SubmitAsync(string placementId, int weekValue, string weekStartValue, string weekEndValue, string fileName, string contentType, byte[] bytes, string companyComments, CancellationToken cancellation)
+        public async Task<JObject> TaskSuggestionsAsync(string placementId, string weekStart, string weekEnd, CancellationToken cancellation)
+        {
+            Ensure(false, "companySupervisor");
+            var placement = await RequirePlacementAsync(placementId, cancellation).ConfigureAwait(false);
+            string student = Text(placement, "studentId", "studentProfileId", "traineeId");
+            return new JObject { ["tasks"] = await BuildTaskSnapshotAsync(placementId, student, DateOnly(weekStart, "weekStart"), DateOnly(weekEnd, "weekEnd"), null, cancellation).ConfigureAwait(false) };
+        }
+        private async Task<JArray> BuildTaskSnapshotAsync(string placementId, string studentId, string weekStart, string weekEnd, JArray selection, CancellationToken cancellation)
+        {
+            var records = new Dictionary<string, JObject>(StringComparer.Ordinal);
+            AddRecords(records, await ReadEqualAsync("tasks", "placementId", placementId, cancellation).ConfigureAwait(false));
+            if (selection != null && (selection.Count > 200 || selection.Any(t => t.Type != JTokenType.String))) throw new UIMS.Services.FirebaseException(400, "Select valid task identifiers.");
+            var chosen = selection == null ? null : new HashSet<string>(selection.Values<string>(), StringComparer.Ordinal);
+            var snapshot = new JArray();
+            DateTimeOffset start = DateTimeOffset.Parse(weekStart, CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal), end = DateTimeOffset.Parse(weekEnd, CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal).AddDays(1);
+            foreach (var pair in records)
+            {
+                var task = pair.Value;
+                if (Text(task, "placementId") != placementId || Text(task, "studentId", "assignedTo", "traineeId") != studentId || Text(task, "assignedBy", "companySupervisorId") != actor.CompanySupervisorId) continue;
+                bool suggested = new[] { "assignedAt", "dueDate", "updatedAt" }.Any(field => { DateTimeOffset date; return DateTimeOffset.TryParse(Text(task, field), CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal, out date) && date >= start && date < end; });
+                if (!suggested) suggested = TaskSubmissionHistory.Read(task["submissions"]).Records.Any(sub => { DateTimeOffset date; return DateTimeOffset.TryParse(Text(sub, "submittedAt"), CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal, out date) && date >= start && date < end; });
+                if (!suggested) suggested = (task["activity"] as JObject ?? new JObject()).Properties().Any(activity => { DateTimeOffset date; return DateTimeOffset.TryParse(Text(activity.Value, "at"), CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal, out date) && date >= start && date < end; });
+                if (chosen != null && !chosen.Remove(pair.Key)) continue;
+                var row = new JObject { ["taskId"] = pair.Key, ["studentId"] = studentId, ["placementId"] = placementId, ["suggested"] = suggested, ["capturedAt"] = UtcNow() };
+                foreach (var field in new[] { "title", "description", "evaluationCriteria", "instructionVersion", "dueDate", "status", "score", "maximumScore", "feedback", "batchId" }) if (task[field] != null) row[field] = task[field].DeepClone();
+                snapshot.Add(row);
+            }
+            if (chosen != null && chosen.Count > 0) throw new UIMS.Services.FirebaseException(403, "One or more selected tasks are outside this student's authorized placement.");
+            return selection == null ? new JArray(snapshot.Where(t => (bool?)t["suggested"] == true)) : snapshot;
+        }
+
+        public async Task<JObject> SubmitAsync(string placementId, int weekValue, string weekStartValue, string weekEndValue, string fileName, string contentType, byte[] bytes, string companyComments, CancellationToken cancellation, JArray selectedTaskIds = null)
         {
             Ensure(true, "companySupervisor");
             int week = WeekNumber(new JValue(weekValue)); string weekStart = DateOnly(weekStartValue, "weekStart"), weekEnd = DateOnly(weekEndValue, "weekEnd");
@@ -387,10 +419,10 @@ namespace UIMS.Tasks
             string reportId = StableReportId(placementId, week);
             var existing = await ReadAsync("weeklyReports/" + reportId, cancellation).ConfigureAwait(false);
             if (existing.Value != null) throw new UIMS.Services.FirebaseException(409, "A weekly report already exists for this placement and training week. Use the resubmit action only after revision was requested.");
-            return await StoreNewOrRevisionAsync(reportId, placementId, null, placement, studentId, academicId, week, weekStart, weekEnd, fileName, contentType, bytes, companyComments, cancellation).ConfigureAwait(false);
+            return await StoreNewOrRevisionAsync(reportId, placementId, null, placement, studentId, academicId, week, weekStart, weekEnd, fileName, contentType, bytes, companyComments, cancellation, selectedTaskIds).ConfigureAwait(false);
         }
 
-        public async Task<JObject> ResubmitAsync(string reportId, string fileName, string contentType, byte[] bytes, string companyComments, CancellationToken cancellation)
+        public async Task<JObject> ResubmitAsync(string reportId, string fileName, string contentType, byte[] bytes, string companyComments, CancellationToken cancellation, JArray selectedTaskIds = null)
         {
             Ensure(true, "companySupervisor");
             var reportNode = await ReadAsync("weeklyReports/" + reportId, cancellation).ConfigureAwait(false); var report = reportNode.Value as JObject;
@@ -400,16 +432,17 @@ namespace UIMS.Tasks
             string currentAcademic = await ResolveAcademicSupervisorAsync(Text(report, "studentId"), cancellation).ConfigureAwait(false);
             var placementNode = await ReadAsync("placements/" + Text(report, "placementId"), cancellation).ConfigureAwait(false);
             return await StoreNewOrRevisionAsync(reportId, Text(report, "placementId"), reportNode, placementNode.Value as JObject,
-                Text(report, "studentId"), currentAcademic, (int?)report["weekNumber"] ?? 0, Text(report, "weekStart"), Text(report, "weekEnd"), fileName, contentType, bytes, companyComments, cancellation).ConfigureAwait(false);
+                Text(report, "studentId"), currentAcademic, (int?)report["weekNumber"] ?? 0, Text(report, "weekStart"), Text(report, "weekEnd"), fileName, contentType, bytes, companyComments, cancellation, selectedTaskIds).ConfigureAwait(false);
         }
 
         private async Task<JObject> StoreNewOrRevisionAsync(string reportId, string placementId, Node existing, JObject placement, string studentId, string academicId,
-            int week, string weekStart, string weekEnd, string fileName, string contentType, byte[] bytes, string companyComments, CancellationToken cancellation)
+            int week, string weekStart, string weekEnd, string fileName, string contentType, byte[] bytes, string companyComments, CancellationToken cancellation, JArray selectedTaskIds)
         {
             if (placement == null) throw new UIMS.Services.FirebaseException(404, "The report placement was not found.");
             string normalized = UIMS.Services.FirebaseFileStorageService.ValidateFile(fileName, contentType, bytes);
             if (!normalized.Equals(DocxMime, StringComparison.Ordinal)) throw new UIMS.Services.FirebaseException(415, "Weekly reports must be valid Microsoft Word .docx documents.");
             if (companyComments != null && companyComments.Length > 3000) throw new UIMS.Services.FirebaseException(400, "Company comments are limited to 3,000 characters.");
+            var taskSnapshot = await BuildTaskSnapshotAsync(placementId, studentId, weekStart, weekEnd, selectedTaskIds, cancellation).ConfigureAwait(false);
             string revisionId = "REV-" + Guid.NewGuid().ToString("N"); string fileId = UIMS.Services.FirebaseFileStorageService.CreateFileId();
             string objectPath = "uims/weekly-reports/" + reportId + "/" + revisionId + "/" + fileId + ".docx";
             UIMS.Services.StoredFile stored = await upload(objectPath, fileName, normalized, bytes, cancellation).ConfigureAwait(false);
@@ -432,6 +465,7 @@ namespace UIMS.Tasks
                 if (existing == null)
                 {
                     var revision = Revision(revisionId, 1, stored, fileId, companyComments, now);
+                    revision["taskSnapshot"] = taskSnapshot;
                     updated = new JObject { ["reportId"] = reportId, ["placementId"] = placementId, ["studentId"] = studentId,
                         ["companyId"] = Text(placement, "companyId"), ["companySupervisorId"] = actor.CompanySupervisorId, ["academicSupervisorId"] = academicId,
                         ["weekNumber"] = week, ["weekStart"] = weekStart, ["weekEnd"] = weekEnd, ["status"] = "submitted",
@@ -450,6 +484,7 @@ namespace UIMS.Tasks
                     if (revisions[revisionId] != null) throw new UIMS.Services.FirebaseException(409, "The revision ID already exists.");
                     int next = ((int?)updated["revisionNumber"] ?? revisions.Properties().Count()) + 1;
                     revisions[revisionId] = Revision(revisionId, next, stored, fileId, companyComments, now);
+                    revisions[revisionId]["taskSnapshot"] = taskSnapshot;
                     updated["revisions"] = revisions; updated["currentRevisionId"] = revisionId; updated["revisionNumber"] = next;
                     updated["academicSupervisorId"] = academicId; updated["uploadedByUid"] = actor.Uid; updated["companyComments"] = string.IsNullOrWhiteSpace(companyComments) ? null : companyComments.Trim();
                     updated["status"] = "resubmitted"; updated["submittedAt"] = now; updated["updatedAt"] = now;
@@ -504,7 +539,7 @@ namespace UIMS.Tasks
         private async Task<JObject> ReadReviewsAsync(string reportId, CancellationToken cancellation)
         { var node = await ReadAsync("weeklyReportReviews/" + reportId, cancellation).ConfigureAwait(false); return node.Value as JObject ?? new JObject(); }
 
-        public async Task<JObject> ReviewAsync(string reportId, string revisionId, string decision, string feedback, string requestId, CancellationToken cancellation)
+        public async Task<JObject> ReviewAsync(string reportId, string revisionId, string decision, string feedback, string requestId, CancellationToken cancellation, decimal? academicScore = null, string descriptiveRating = null)
         {
             Ensure(true, "academicSupervisor");
             if (decision != "approved" && decision != "revisionRequested") throw new UIMS.Services.FirebaseException(400, "Choose approve or request revision.");
@@ -513,7 +548,9 @@ namespace UIMS.Tasks
             var node = await ReadAsync("weeklyReports/" + reportId, cancellation).ConfigureAwait(false); var report = node.Value as JObject;
             if (report == null) throw new UIMS.Services.FirebaseException(404, "Weekly report was not found.");
             await EnsureCurrentAssignmentAsync(Text(report, "studentId"), actor.AcademicSupervisorId, cancellation).ConfigureAwait(false);
-            if (!(Text(report, "status") == "submitted" || Text(report, "status") == "resubmitted") || Text(report, "currentRevisionId") != revisionId) throw new UIMS.Services.FirebaseException(409, "This report revision is stale or is not awaiting review.");
+            if (decision == "approved" && (!academicScore.HasValue || academicScore < 0 || academicScore > 100 || string.IsNullOrWhiteSpace(descriptiveRating) || descriptiveRating.Length > 80))
+                throw new UIMS.Services.FirebaseException(400, "Approval requires an independent academic score from 0 to 100 and a separately selected descriptive rating.");
+            bool awaitingReview = (Text(report, "status") == "submitted" || Text(report, "status") == "resubmitted") && Text(report, "currentRevisionId") == revisionId;
             var revision = report["revisions"]?[revisionId] as JObject;
             if (revision == null) throw new UIMS.Services.FirebaseException(404, "The submitted revision was not found.");
             string reviewPath = "weeklyReportReviews/" + reportId + "/" + requestId;
@@ -523,17 +560,27 @@ namespace UIMS.Tasks
                 var prior = (JObject)existingReview.Value;
                 if (Text(prior, "revisionId") != revisionId || Text(prior, "reviewerUid") != actor.Uid || Text(prior, "decision") != decision)
                     throw new UIMS.Services.FirebaseException(409, "The idempotency key has already been used for a different review.");
+                if (Text(prior, "feedback") != feedback.Trim() || decision == "approved" && ((decimal?)prior["academicScore"] != academicScore || Text(prior, "descriptiveRating") != descriptiveRating.Trim()))
+                    throw new UIMS.Services.FirebaseException(409, "This review ID already has a different evaluation or feedback.");
                 var latest = await ReadAsync("weeklyReports/" + reportId, cancellation).ConfigureAwait(false);
                 if (Text(latest.Value, "lastReviewId") != requestId) throw new UIMS.Services.FirebaseException(409, "This review request is still pending reconciliation; refresh before retrying.");
                 prior = await FinalizeReviewRecordAsync(reviewPath, prior, cancellation).ConfigureAwait(false);
                 return new JObject { ["review"] = prior, ["report"] = PublicReport((JObject)latest.Value) };
             }
+            if (!awaitingReview) throw new UIMS.Services.FirebaseException(409, "This report revision is stale or is not awaiting review.");
             string reviewedAt = UtcNow();
             var review = new JObject { ["reviewId"] = requestId, ["reportId"] = reportId, ["revisionId"] = revisionId,
                 ["academicSupervisorId"] = actor.AcademicSupervisorId, ["reviewerUid"] = actor.Uid, ["decision"] = decision,
                 ["feedback"] = feedback.Trim(), ["reviewedAt"] = reviewedAt, ["status"] = "pendingCommit" };
+            if (decision == "approved") { review["academicScore"] = academicScore.Value; review["descriptiveRating"] = descriptiveRating.Trim(); }
             await WriteAsync(reviewPath, review, "null_etag", HttpMethod.Put, cancellation).ConfigureAwait(false);
             var updated = (JObject)report.DeepClone(); updated["status"] = decision; updated["lastReviewId"] = requestId; updated["lastReviewedAt"] = reviewedAt; updated["updatedAt"] = reviewedAt;
+            if (decision == "approved")
+            {
+                var evaluation = new JObject { ["revisionId"] = revisionId, ["score"] = academicScore.Value, ["maximumScore"] = 100, ["rating"] = descriptiveRating.Trim(), ["feedback"] = feedback.Trim(), ["approvedAt"] = reviewedAt, ["academicSupervisorId"] = actor.AcademicSupervisorId };
+                updated["revisions"][revisionId]["academicEvaluation"] = evaluation;
+                updated["latestApprovedEvaluation"] = evaluation.DeepClone();
+            }
             try
             {
                 await EnsureCurrentAssignmentAsync(Text(report, "studentId"), actor.AcademicSupervisorId, cancellation).ConfigureAwait(false);
@@ -559,6 +606,26 @@ namespace UIMS.Tasks
                 }
                 throw;
             }
+        }
+
+        public async Task<JObject> AddDiscussionAsync(JObject input, CancellationToken cancellation)
+        {
+            Ensure(true);
+            string reportId = Text(input, "reportId"), revisionId = Text(input, "revisionId"), taskId = Text(input, "taskId"), message = Text(input, "message").Trim(), requestId = Text(input, "requestId");
+            Guid operation; if (!Guid.TryParse(requestId, out operation) || message.Length == 0 || message.Length > 3000) throw new UIMS.Services.FirebaseException(400, "A request ID and comment up to 3000 characters are required.");
+            var node = await ReadAsync("weeklyReports/" + reportId, cancellation).ConfigureAwait(false); var report = node.Value as JObject;
+            if (report == null) throw new UIMS.Services.FirebaseException(404, "Report not found.");
+            if (actor.Role == "academicSupervisor") await EnsureCurrentAssignmentAsync(Text(report, "studentId"), actor.AcademicSupervisorId, cancellation).ConfigureAwait(false);
+            else if (actor.Role == "companySupervisor") await EnsureCompanyStudentPlacementAsync(Text(report, "placementId"), Text(report, "studentId"), cancellation).ConfigureAwait(false);
+            else throw new UIMS.Services.FirebaseException(403, "Report discussions are private to the authorized supervisors.");
+            var revision = report["revisions"]?[revisionId] as JObject;
+            if (revision == null) throw new UIMS.Services.FirebaseException(404, "Report revision not found.");
+            if (taskId.Length > 0 && !(revision["taskSnapshot"] as JArray ?? new JArray()).Any(t => Text(t, "taskId") == taskId)) throw new UIMS.Services.FirebaseException(403, "This task is outside the immutable report snapshot.");
+            var discussions = report["discussions"] as JObject ?? new JObject(); string key = operation.ToString("N");
+            if (discussions[key] != null) { if (Text(discussions[key], "authorUid") != actor.Uid || Text(discussions[key], "message") != message || Text(discussions[key], "taskId") != taskId || Text(discussions[key], "revisionId") != revisionId) throw new UIMS.Services.FirebaseException(409, "Discussion request ID was already used."); return new JObject { ["success"] = true }; }
+            discussions[key] = new JObject { ["revisionId"] = revisionId, ["taskId"] = taskId, ["message"] = message, ["authorUid"] = actor.Uid, ["authorRole"] = actor.Role, ["createdAt"] = UtcNow() }; report["discussions"] = discussions;
+            await WriteAsync("weeklyReports/" + reportId, report, node.ETag, HttpMethod.Put, cancellation).ConfigureAwait(false);
+            return new JObject { ["success"] = true };
         }
 
         private async Task<JObject> FinalizeReviewRecordAsync(string path, JObject review, CancellationToken cancellation)
@@ -608,7 +675,7 @@ namespace UIMS.Tasks
                 var attemptObject = attempts.Value as JObject; if (attemptObject == null) continue;
                 foreach (var attempt in attemptObject.Properties())
                 {
-                    var item = attempt.Value as JObject; if (item == null || !(Text(item, "status") == "submitted" || Text(item, "status") == "expired")) continue;
+                    var item = attempt.Value as JObject; if (item == null || Text(item, "resultStatus") != "released" || !(Text(item, "status") == "submitted" || Text(item, "status") == "expired")) continue;
                     results.Add(new JObject { ["examId"] = exam.Key, ["attemptId"] = attempt.Name, ["status"] = item["status"], ["score"] = item["score"], ["maximumScore"] = item["maximumScore"], ["submittedAt"] = item["submittedAt"], ["gradedAt"] = item["gradedAt"] });
                 }
             }

@@ -53,7 +53,11 @@ namespace UIMS
                 Write(context, 200, new { success = true, data = result });
             }
             catch (ApiFailure error) { Write(context, error.Status, new { success = false, message = error.Message }); }
-            catch (FirebaseLoginException error) { Write(context, error.StatusCode, new { success = false, message = error.Message }); }
+            catch (FirebaseLoginException error)
+            {
+                if (error.RetryAfterSeconds > 0) context.Response.Headers["Retry-After"] = error.RetryAfterSeconds.ToString(System.Globalization.CultureInfo.InvariantCulture);
+                Write(context, error.StatusCode, new { success = false, message = error.Message, retryAfterSeconds = error.RetryAfterSeconds });
+            }
             catch (UIMS.Services.FirebaseException error) { Write(context, error.StatusCode, new { success = false, message = error.Message }); }
             catch (UnauthorizedAccessException) { Write(context, 403, new { success = false, message = "This account is not authorized for that operation." }); }
             catch (Exception error)
@@ -95,7 +99,7 @@ namespace UIMS
                 throw new ApiFailure(400, "Enter a valid email address and password.");
             var blockedUntil = context.Session["Uims.LoginBlockedUntil"] as DateTime?;
             if (blockedUntil.HasValue && blockedUntil.Value > DateTime.UtcNow)
-                throw new ApiFailure(429, "Wait a minute before trying to sign in again.");
+                throw new FirebaseLoginException("Please wait before trying to sign in again.", 429, Math.Max(1, (int)Math.Ceiling((blockedUntil.Value - DateTime.UtcNow).TotalSeconds)));
             try
             {
                 var result = await new FirebaseSignInService().SignInAsync(email, password);
@@ -105,11 +109,16 @@ namespace UIMS
                 else IssueFormsCookie(context, result);
                 return SessionJson(result);
             }
-            catch (FirebaseLoginException)
+            catch (FirebaseLoginException error)
             {
-                int attempts = (context.Session["Uims.LoginAttempts"] as int? ?? 0) + 1;
-                context.Session["Uims.LoginAttempts"] = attempts >= 5 ? 0 : attempts;
-                if (attempts >= 5) context.Session["Uims.LoginBlockedUntil"] = DateTime.UtcNow.AddMinutes(1);
+                if (error.StatusCode == 429)
+                    context.Session["Uims.LoginBlockedUntil"] = DateTime.UtcNow.AddSeconds(Math.Max(1, error.RetryAfterSeconds));
+                else if (error.StatusCode == 401)
+                {
+                    int attempts = (context.Session["Uims.LoginAttempts"] as int? ?? 0) + 1;
+                    context.Session["Uims.LoginAttempts"] = attempts >= 5 ? 0 : attempts;
+                    if (attempts >= 5) context.Session["Uims.LoginBlockedUntil"] = DateTime.UtcNow.AddMinutes(1);
+                }
                 throw;
             }
         }
@@ -132,6 +141,9 @@ namespace UIMS
 
         private static object Logout(HttpContext context)
         {
+            var identity = context.User?.Identity as FormsIdentity;
+            string role = identity == null ? null : FirebaseSignInService.CanonicalRole(identity.Ticket.UserData);
+            if (role != null) context.Response.Cookies.Add(new HttpCookie(".UIMS.Role." + role, "") { Expires = DateTime.UtcNow.AddDays(-1), HttpOnly = true, Secure = context.Request.IsSecureConnection, SameSite = SameSiteMode.Lax, Path = FormsAuthentication.FormsCookiePath });
             FormsAuthentication.SignOut();
             context.Session.Remove("Uims.FirebaseIdToken");
             context.Response.Cookies.Add(new HttpCookie(FormsAuthentication.FormsCookieName, "")
@@ -168,15 +180,26 @@ namespace UIMS
         private static object SessionJson(FirebaseLoginResult result)
         {
             return new { idToken = result.IdToken, refreshToken = result.RefreshToken, expiresIn = result.ExpiresIn,
-                profileId = result.Uid, role = result.Role, mustChangePassword = result.MustChangePassword };
+                profileId = result.Uid, role = result.Role, mustChangePassword = result.MustChangePassword,
+                tabTicket = result.MustChangePassword ? null : FormsAuthentication.Encrypt(new FormsAuthenticationTicket(2, result.Uid, DateTime.Now, DateTime.Now.AddMinutes(30), false, result.Role, FormsAuthentication.FormsCookiePath)) };
         }
 
         private static void IssueFormsCookie(HttpContext context, FirebaseLoginResult result)
         {
+            var previous = context.User?.Identity as FormsIdentity;
+            string previousRole = previous == null || previous.Ticket.Expired ? null : FirebaseSignInService.CanonicalRole(previous.Ticket.UserData);
+            if (previousRole != null && previousRole != result.Role)
+                context.Response.Cookies.Add(new HttpCookie(".UIMS.Role." + previousRole, FormsAuthentication.Encrypt(previous.Ticket))
+                { HttpOnly = true, Secure = context.Request.IsSecureConnection, SameSite = SameSiteMode.Lax, Path = FormsAuthentication.FormsCookiePath });
             var now = DateTime.Now;
             var ticket = new FormsAuthenticationTicket(2, result.Uid, now, now.AddMinutes(30), false,
                 result.Role, FormsAuthentication.FormsCookiePath);
             context.Response.Cookies.Add(new HttpCookie(FormsAuthentication.FormsCookieName, FormsAuthentication.Encrypt(ticket))
+            {
+                HttpOnly = true, Secure = context.Request.IsSecureConnection, SameSite = SameSiteMode.Lax,
+                Path = FormsAuthentication.FormsCookiePath
+            });
+            context.Response.Cookies.Add(new HttpCookie(".UIMS.Role." + result.Role, FormsAuthentication.Encrypt(ticket))
             {
                 HttpOnly = true, Secure = context.Request.IsSecureConnection, SameSite = SameSiteMode.Lax,
                 Path = FormsAuthentication.FormsCookiePath

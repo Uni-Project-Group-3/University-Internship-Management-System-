@@ -24,4 +24,4 @@
 <label>Word report (.docx)<input id="reportFile" type="file" accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document" required /><small>Microsoft Word DOCX only · maximum 10 MiB · stored privately in Firebase Storage.</small></label>
 <button id="submitReport" class="wr-primary" type="button">Submit weekly report</button></section>
 <section class="wr-card"><div class="wr-card-heading"><div><h2>Report history</h2><p class="wr-muted">View revisions, academic decisions, and download previously submitted files.</p></div><button id="refreshCompany" class="wr-secondary" type="button">Refresh</button></div><div id="companyReports" class="wr-report-list"><p class="wr-empty">Loading reports…</p></div></section>
-</div></main></div></form><script src="../Js_project/Company/WeeklyReports.js"></script></body></html>
+</div></main></div></form><link href="../Assets/task-workspace.css" rel="stylesheet" /><script src="../Js_project/task-dialogs.js"></script><script src="../Js_project/weekly-task-context.js"></script><script src="../Js_project/Company/WeeklyReports.js"></script></body></html>
