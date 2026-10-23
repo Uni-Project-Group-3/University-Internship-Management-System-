@@ -32,6 +32,9 @@ namespace UIMS
             context.Response.Cache.SetCacheability(HttpCacheability.NoCache);
             context.Response.Cache.SetNoStore();
             context.Response.ContentType = "application/json; charset=utf-8";
+            // FormsAuthentication otherwise converts the JSON 401 returned for a rejected
+            // Firebase sign-in into a 302 login-page redirect, which hides the real API error.
+            context.Response.SuppressFormsAuthenticationRedirect = true;
             context.Response.Headers["X-Content-Type-Options"] = "nosniff";
             context.Response.Headers["Referrer-Policy"] = "same-origin";
             try

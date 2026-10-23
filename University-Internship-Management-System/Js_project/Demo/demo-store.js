@@ -6,7 +6,7 @@
 (function (scope) {
     'use strict';
 
-    var unavailable = 'Firebase connection is not configured. No application data was loaded or saved.';
+    var unavailable = 'Dashboard business data is not connected to the live database yet. No dashboard data was loaded or saved.';
 
     function reject() {
         throw new Error(unavailable);

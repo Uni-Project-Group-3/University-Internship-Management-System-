@@ -1,0 +1,50 @@
+{
+  "rules": {
+    ".read": false,
+    ".write": false,
+    "users": {
+      ".indexOn": ["studentId"],
+      "$uid": {
+        ".read": "auth != null && auth.uid === $uid",
+        ".write": "auth != null && auth.uid === $uid && data.exists() && newData.exists() && newData.child('role').val() === data.child('role').val() && newData.child('email').val() === data.child('email').val() && newData.child('universityEmail').val() === data.child('universityEmail').val() && newData.child('studentId').val() === data.child('studentId').val() && newData.child('staffId').val() === data.child('staffId').val() && newData.child('companyId').val() === data.child('companyId').val() && newData.child('companyName').val() === data.child('companyName').val() && newData.child('companySupervisorId').val() === data.child('companySupervisorId').val() && newData.child('academicSupervisorId').val() === data.child('academicSupervisorId').val() && newData.child('departmentId').val() === data.child('departmentId').val() && newData.child('department').val() === data.child('department').val() && newData.child('majorId').val() === data.child('majorId').val() && newData.child('universityId').val() === data.child('universityId').val() && newData.child('collegeId').val() === data.child('collegeId').val() && newData.child('requiredTrainingHours').val() === data.child('requiredTrainingHours').val() && newData.child('accountSetupStatus').val() === data.child('accountSetupStatus').val() && newData.child('isActive').val() === data.child('isActive').val() && newData.child('mustChangePassword').val() === data.child('mustChangePassword').val() && newData.child('createdBy').val() === data.child('createdBy').val() && newData.child('createdAtUtc').val() === data.child('createdAtUtc').val() && (!newData.child('cvObjectPath').exists() || newData.child('cvObjectPath').val() === data.child('cvObjectPath').val() || (data.child('role').val() === 'student' && newData.child('cvObjectPath').isString() && newData.child('cvObjectPath').val().length <= 500 && newData.child('cvObjectPath').val().contains('uims/student-cvs/' + $uid + '/')))",
+        "$field": {
+          ".validate": "newData.val() === data.val() || ($field === 'phone' && newData.isString() && newData.val().length <= 25 && (newData.val() === '' || newData.val().matches(/^[+0-9() .-]{7,25}$/))) || ($field === 'city' && data.child('role').val() === 'student' && newData.isString() && newData.val().length <= 80) || ($field === 'portfolioUrl' && data.child('role').val() === 'student' && newData.isString() && newData.val().length <= 2000 && (newData.val() === '' || newData.val().matches(/^https:\/\/.+$/))) || ($field === 'officeLocation' && (data.child('role').val() === 'academicSupervisor' || data.child('role').val() === 'coordinator') && newData.isString() && newData.val().length <= 120) || ($field === 'officeHours' && data.child('role').val() === 'academicSupervisor' && newData.isString() && newData.val().length <= 200) || ($field === 'fullName' && (data.child('role').val() === 'companySupervisor' || data.child('role').val() === 'coordinator') && newData.isString() && newData.val().length >= 2 && newData.val().length <= 80) || ($field === 'cvObjectPath' && data.child('role').val() === 'student' && newData.isString() && newData.val().length <= 500 && newData.val().contains('uims/student-cvs/' + $uid + '/')) || ($field === 'cvFileName' && data.child('role').val() === 'student' && newData.isString() && newData.val().length <= 160) || ($field === 'cvContentType' && data.child('role').val() === 'student' && (newData.val() === 'application/pdf' || newData.val() === 'application/msword' || newData.val() === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document')) || ($field === 'cvSizeBytes' && data.child('role').val() === 'student' && newData.isNumber() && newData.val() > 0 && newData.val() <= 10485760) || ($field === 'cvSha256' && data.child('role').val() === 'student' && newData.isString() && newData.val().matches(/^[a-f0-9]{64}$/))"
+        }
+      }
+    },
+    "companies": {
+      "$companyId": {
+        ".read": "auth != null && root.child('users').child(auth.uid).child('role').val() === 'companySupervisor' && root.child('users').child(auth.uid).child('companyId').val() === $companyId"
+      }
+    },
+    "universityRecords": {
+      "students": {
+        ".indexOn": ["studentId"]
+      }
+    },
+    "assignments": {
+      ".indexOn": ["studentId", "academicSupervisorId"]
+    },
+    "supervisorAssignments": {
+      ".indexOn": ["studentId"]
+    },
+    "placements": {
+      ".indexOn": ["studentId", "studentProfileId", "companyId", "companySupervisorId", "supervisorId", "applicationId"]
+    },
+    "applications": {
+      ".indexOn": ["studentId", "companyId", "opportunityId"]
+    },
+    "opportunities": {
+      ".indexOn": ["companyId", "status"]
+    },
+    "tasks": {
+      ".indexOn": ["placementId"]
+    },
+    "taskExams": {
+      ".indexOn": ["companyId", "createdBy", "placementId"]
+    },
+    "weeklyReports": {
+      ".indexOn": ["companyId", "companySupervisorId", "academicSupervisorId", "studentId"]
+    }
+  }
+}
