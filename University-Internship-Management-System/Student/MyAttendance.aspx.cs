@@ -31,7 +31,8 @@ namespace University_Internship_Management_System.Student
 
                 string studentId = await attendanceRequest.ResolveIdentityAsync("student", action);
                 string uid = attendanceRequest.VerifiedUid ?? "";
-                var student = await attendanceService.Identity("student", studentId, uid, LocalDemoAllowed);
+                var student = await attendanceService.Identity("student", studentId, uid, LocalDemoAllowed,
+                    action == "load" ? attendanceRequest.VerifiedProfile : null);
                 await attendanceRequest.StartLoad("student", studentId, student);
 
                 JObject data;

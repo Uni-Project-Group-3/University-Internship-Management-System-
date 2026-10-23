@@ -69,7 +69,7 @@
                                 <li><a class="dropdown-item" href="Profile.aspx"><i class="bi bi-person me-2"></i>My Profile</a></li>
                                 <li><a class="dropdown-item" aria-disabled="true" title="This page is not available yet"><i class="bi bi-key me-2"></i>Change Password</a></li>
                                 <li><hr class="dropdown-divider" /></li>
-                                <li><button type="button" class="dropdown-item" disabled title="Authentication is not connected on this preview page">Log out (not connected)</button></li>
+                                <li><a id="attendanceLogout" class="dropdown-item" href="../Auth/Login.aspx">Log out</a></li>
                             </ul>
                         </div>
                     </div>
@@ -115,6 +115,6 @@
     <script src="../Js_project/firebase-client.js"></script>
     <script src="../Scripts/bootstrap.bundle.min.js"></script>
     <script src="../Js_project/Student/attendance-qrcode.min.js"></script>
-    <script src="../Js_project/Student/my-attendance.js?v=ui-simple2"></script>
+    <script src="../Js_project/Student/my-attendance.js?v=20261023-flexible"></script>
 </body>
 </html>

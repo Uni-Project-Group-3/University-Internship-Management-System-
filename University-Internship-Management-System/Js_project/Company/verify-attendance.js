@@ -259,6 +259,9 @@ async function loadSupervisor() {
             disconnected(error);
             document.getElementById("recordRows").removeAttribute("aria-busy");
             if (!supervisorData) {
+                // انتهى الطلب بالفشل؛ لا نترك الواجهة توحي بأن التحميل ما زال جاريًا.
+                document.getElementById("assignedStudents").textContent = "Assigned trainees could not be loaded.";
+                document.getElementById("requestStatus").textContent = "Unavailable";
                 document.getElementById("requestList").textContent = "Requests could not be loaded.";
                 const row = document.createElement("tr"), cell = document.createElement("td");
                 cell.colSpan = 7; cell.textContent = "Attendance could not be loaded."; row.append(cell);
@@ -440,7 +443,8 @@ function stopCamera() {
 
 function scanFrame(timestamp) {
     if (!cameraStream) return;
-    if (!saving && timestamp - lastFrameAt > 250 && video.readyState >= 2) {
+    try {
+    if (!saving && timestamp - lastFrameAt > 250 && video.readyState >= 2 && video.videoWidth > 0 && video.videoHeight > 0) {
         lastFrameAt = timestamp;
         const started = scannerDiagnosticsEnabled ? performance.now() : 0;
         // نحتفظ بتفاصيل الرمز الطويل؛ تصغير الإطار كان يضيّع المربعات الصغيرة.
@@ -474,7 +478,14 @@ function scanFrame(timestamp) {
             if (decoded.startsWith("UIMSATT1:")) processToken(decoded);
         }
     }
-    frameId = requestAnimationFrame(scanFrame);
+    } catch (error) {
+        // خطأ قراءة الإطار يجب أن يحرر الكاميرا ويتيح إعادة المحاولة، لا أن يوقف المسح بصمت.
+        scannerDiagnostic("frame.failed", { errorType: error.name });
+        stopCamera();
+        showNotice("The camera frame could not be processed. Open the camera again to retry. No attendance confirmation was received.", true);
+        return;
+    }
+    if (cameraStream) frameId = requestAnimationFrame(scanFrame);
 }
 
 document.getElementById("openCamera").addEventListener("click", async function () {
@@ -528,7 +539,10 @@ document.getElementById("issueQrButton").addEventListener("click", function () {
         const row = document.createElement("p"), label = document.createElement("label");
         const checkbox = document.createElement("input");
         checkbox.type = "checkbox"; checkbox.value = student.id; checkbox.name = "qrStudent";
-        label.append(checkbox, " " + student.name); row.append(label); list.append(row);
+        // رقم الطالب يميّز الحساب الصحيح عند تشابه الأسماء أو وجود أكثر من مشرف.
+        label.append(checkbox, " " + student.name + " · Student ID: " + student.id +
+            " · Assignment: " + student.assignmentId);
+        row.append(label); list.append(row);
     });
     document.getElementById("selectAllQrStudents").checked = false;
     document.getElementById("issueQrStatus").textContent = "";
@@ -547,7 +561,9 @@ document.getElementById("confirmIssueQr").addEventListener("click", async functi
     try {
         const result = await api("issueQr", { studentIds: JSON.stringify(ids), attendanceAction: document.getElementById("issuedQrAction").value });
         status.textContent = result.issued.length + " QR codes issued. Each student can now open their own QR.";
-        if (result.failed.length) status.textContent += " Not issued: " + result.failed.map(function (row) { return row.message; }).join("; ");
+        if (result.failed.length) status.textContent += " Not issued: " + result.failed.map(function (row) {
+            return "Student " + row.studentId + ": " + row.message;
+        }).join("; ");
     } catch (error) { status.textContent = error.message; }
     finally { saving = false; this.disabled = false; }
 });
