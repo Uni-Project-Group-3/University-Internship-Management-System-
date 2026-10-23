@@ -8,13 +8,13 @@ using University_Internship_Management_System.Services.FinalEvaluation;
 internal static partial class Program
 {
     private sealed class StudentSources : IStudentCompletionPlacementReader, IApprovedTrainingHoursReader, IRequiredTrainingHoursReader,
-        IStudentVisibleTaskReader, IStudentOverallProgressReader, IStudentCompletionReportLocator
+        IStudentVisibleTaskReader, IStudentOverallProgressReader, IStudentCompletionReportLocator, IStudentPendingTrainingHoursReader
     {
         internal int Reads, LocatorReads;
-        internal bool Trusted = true, MissingPlacement, FailTasks;
+        internal bool Trusted = true, MissingPlacement, FailTasks, FailPending;
         internal string DataStudent = "fictional-student", DocumentId;
         internal decimal Approved = 10;
-        internal decimal? Required = 20, Overall = 35;
+        internal decimal? Required = 20, Overall = 35, Pending;
         internal StudentTaskRecord[] Tasks = new[] {
             new StudentTaskRecord { Id = "visible-task", Title = "Student visible task", IsVisibleToStudent = true, Status = StudentTaskStatus.Evaluated, IsResultPublished = true, Grade = 4, MaximumGrade = 7, StudentVisibleFeedback = "Published task feedback" },
             new StudentTaskRecord { Id = "unpublished-task", Title = "Unpublished result", IsVisibleToStudent = true, Status = StudentTaskStatus.Submitted, Grade = 999, StudentVisibleFeedback = "PRIVATE_UNPUBLISHED_FEEDBACK" },
@@ -25,12 +25,50 @@ internal static partial class Program
         Task<TrustedCompletionData<decimal?>> IRequiredTrainingHoursReader.GetAsync(string id) { return Task.FromResult(Data(Required)); }
         Task<TrustedCompletionData<StudentTaskRecord[]>> IStudentVisibleTaskReader.GetAsync(string id) { if (FailTasks) throw new InvalidOperationException("PRIVATE_SOURCE_ERROR"); return Task.FromResult(Data(Tasks)); }
         Task<TrustedCompletionData<decimal?>> IStudentOverallProgressReader.GetAsync(string id) { return Task.FromResult(Data(Overall)); }
+        public Task<TrustedCompletionData<decimal?>> GetPendingHoursAsync(string id) { if (FailPending) throw new InvalidOperationException("PRIVATE_PENDING_ERROR"); return Task.FromResult(Data(Pending)); }
         public Task<string> GetIssuedDocumentIdAsync(string id, string student) { LocatorReads++; return Task.FromResult(DocumentId); }
     }
     private static StudentCompletionWorkflow StudentFlow(ReportFixture f, StudentSources source, string uid = "fictional-student")
     { return new StudentCompletionWorkflow(f.Repo, new User { UserId = uid }, f.Access, source, source, source, source, source, source, f.Service(uid)); }
     private static async Task RunStudentCompletionTests()
     {
+        await Test("Student grade card distinguishes unavailable source from a verified empty source", async () => {
+            var f = await ReportSetup();
+            var empty = await StudentFlow(f, new StudentSources { Tasks = new StudentTaskRecord[0] }).LoadAsync("fictional-internship");
+            var unavailable = await StudentFlow(f, new StudentSources { FailTasks = true }).LoadAsync("fictional-internship");
+            Assert(empty.PublishedTaskGradesText == "No published task grades available");
+            Assert(unavailable.PublishedTaskGradesText == "Published task grades unavailable");
+            Assert(unavailable.Status == CompletionStatus.Approved);
+        });
+        await Test("Student published grade count remains separate from unpublished results", async () => {
+            var f = await ReportSetup(); var source = new StudentSources();
+            var view = await StudentFlow(f, source).LoadAsync("fictional-internship");
+            Assert(view.PublishedTaskGradesText == "1" && !JsonConvert.SerializeObject(view.Tasks).Contains("999"));
+        });
+        await Test("Student pending hours require explicit trusted pending data rather than unapproved ledger entries", async () => {
+            var f = await ReportSetup();
+            var view = await StudentFlow(f, new StudentSources { Pending = 3 }).LoadAsync("fictional-internship");
+            Assert(view.PendingHours == 3 && view.ApprovedHours == 10 && view.RemainingHours == 10 && view.HoursPercent == 50);
+        });
+        await Test("Student unknown pending hours are not replaced with the unapproved total", async () => {
+            var f = await ReportSetup(); var view = await StudentFlow(f, new StudentSources()).LoadAsync("fictional-internship");
+            Assert(view.PendingHours == null && view.ApprovedHours == 10 && view.Notices.Any(n => n.Contains("pending-status")));
+        });
+        await Test("Student negative wrong-owner and failed pending sources remain unavailable", async () => {
+            var f = await ReportSetup();
+            foreach (var source in new[] { new StudentSources { Pending = -1 }, new StudentSources { Pending = 3, DataStudent = "another-student" }, new StudentSources { Pending = 3, FailPending = true } }) {
+                var view = await StudentFlow(f, source).LoadAsync("fictional-internship");
+                Assert(view.PendingHours == null && !JsonConvert.SerializeObject(view).Contains("PRIVATE_PENDING_ERROR"));
+            }
+        });
+        await Test("Student remaining hours clamp to zero and unknown inputs stay unknown", async () => {
+            var f = await ReportSetup();
+            var exceeded = await StudentFlow(f, new StudentSources { Approved = 30, Pending = 0 }).LoadAsync("fictional-internship");
+            var unknown = await StudentFlow(f, new StudentSources { Trusted = false }).LoadAsync("fictional-internship");
+            Assert(exceeded.RemainingHours == 0 && exceeded.HoursPercent == 100 && exceeded.PendingHours == 0);
+            Assert(unknown.RemainingHours == null && unknown.PendingHours == null);
+        });
+
         await Test("task grade count excludes unpublished hidden and feedback-only records", async () => {
             var f = await ReportSetup(); var source = new StudentSources();
             source.Tasks = source.Tasks.Concat(new[] {

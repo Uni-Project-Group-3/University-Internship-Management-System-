@@ -22,6 +22,7 @@ namespace University_Internship_Management_System.Student
             Response.Headers["X-Content-Type-Options"] = "nosniff";
         }
         protected void Page_Load(object sender, EventArgs e) { RegisterAsyncTask(new PageAsyncTask(LoadCompletionAsync)); }
+        protected void RefreshProgress_Click(object sender, EventArgs e) { } // Page_Load re-reads the authorized workflow on every request.
         protected void DownloadCompletionReport_Click(object sender, EventArgs e) { downloadRequested = true; }
         protected void DemoStudentChoice_Changed(object sender, EventArgs e) { demoSelectionChanged = true; }
         protected void ToggleExamDemo_Click(object sender, EventArgs e) { }
@@ -42,9 +43,11 @@ namespace University_Internship_Management_System.Student
             CompletionApprovalDate.Text = "Not available"; OverallCompletionProgress.Text = "Not supplied";
             ReportStatusText.Text = "Unavailable"; ReportAvailabilityText.Text = "Report access is not connected.";
             DownloadCompletionReport.Visible = false; HoursProgress.Attributes.Remove("value");
+            HoursProgress.Visible = false;
+            PendingHoursNotice.Text = "Pending hours require a trusted attendance source; rejected entries are not counted as pending.";
             Tasks.DataSource = new StudentVisibleTask[0]; Tasks.DataBind();
             taskFilterStatus.InnerText = "Trusted task information is unavailable.";
-            EvaluatedExams.Text = "No published task grades available";
+            EvaluatedExams.Text = "Published task grades unavailable";
             ToggleExamDemo.Enabled = false; ToggleExamDemo.Text = "Exam integration unavailable";
             ExamDemoNotice.Visible = false; ExamList.Visible = false; ExamDetails.Visible = false; NoExams.Visible = true;
             Exams.DataSource = new object[0]; Exams.DataBind();
@@ -57,7 +60,7 @@ namespace University_Internship_Management_System.Student
                 var context = await StudentCompletionPageIntegration.ResolveAsync(Context);
                 if (context == null)
                 {
-                    StudentAccessMessage.Text = "Official Firebase student access is disabled until trusted authentication, ownership, hours, tasks and policy integrations are connected.";
+                    StudentAccessMessage.Text = "Official Firebase student access is disabled until trusted account and internship integrations are connected. Progress records have not been loaded; this does not mean your internship has no records.";
                     if (downloadRequested) SendError(503, "Trusted student report access is not connected.");
                     return;
                 }
@@ -81,15 +84,18 @@ namespace University_Internship_Management_System.Student
                 NavName.Text = context.DisplayName ?? "Student Portal";
                 StudentAccessMessage.Text = (context.DevelopmentDatasetPath != null ? "LOCAL-ONLY Firebase DEMO: " + context.DevelopmentDatasetPath + ". Fictional Student " + (char)('A' + context.DemoStudentIndex) + ". " : context.IsDevelopment ? "Isolated in-memory student test mode. Fictional records only. " : "Authorized read-only student completion information. ") + string.Join(" ", view.Notices);
                 ApprovedHours.Text = HoursApprovalStatus.Text = Number(view.ApprovedHours); RequiredHours.Text = Number(view.RequiredHours);
-                RemainingHours.Text = view.ApprovedHours.HasValue && view.RequiredHours.HasValue ? Number(Math.Max(0, view.RequiredHours.Value - view.ApprovedHours.Value)) : "Unknown";
+                RemainingHours.Text = Number(view.RemainingHours);
+                PendingHours.Text = Number(view.PendingHours);
+                PendingHoursNotice.Text = view.PendingHours.HasValue ? "Only attendance explicitly awaiting approval is included. Rejected records do not count." : "Pending hours are unavailable because the trusted pending-status source is not connected or could not be verified.";
                 HoursPercent.Text = view.HoursPercent.HasValue ? Number(view.HoursPercent) + "%" : "Not supplied";
+                HoursProgress.Visible = view.HoursPercent.HasValue;
                 if (view.HoursPercent.HasValue) HoursProgress.Attributes["value"] = view.HoursPercent.Value.ToString(CultureInfo.InvariantCulture);
                 OverallCompletionProgress.Text = view.OverallPercent.HasValue ? Number(view.OverallPercent) + "%" : "Not supplied";
                 CompletionStatusText.Text = view.Status.HasValue ? (view.Status == CompletionStatus.ChangesRequested ? "Changes requested" : view.Status.Value.ToString()) : "Not recorded";
                 CompletionStatusMessage.Text = view.Status == CompletionStatus.Approved ? "Your internship completion is Approved. PDF availability is shown separately below." : "Completion is not approved, or no completion decision has been recorded.";
                 CompletionApprovalDate.Text = view.ApprovedAtUtc.HasValue ? view.ApprovedAtUtc.Value.ToString("u") : "Not recorded";
                 Tasks.DataSource = view.Tasks; Tasks.DataBind();
-                EvaluatedExams.Text = view.PublishedTaskGradeCount > 0 ? view.PublishedTaskGradeCount.ToString(CultureInfo.InvariantCulture) : "No published task grades available";
+                EvaluatedExams.Text = view.PublishedTaskGradesText;
                 if (view.TasksVerified) {
                     AssignedTasks.Text = view.Tasks.Length.ToString(CultureInfo.InvariantCulture);
                     SubmittedTasks.Text = view.Tasks.Count(t => t.StatusKey == "submitted").ToString(CultureInfo.InvariantCulture);

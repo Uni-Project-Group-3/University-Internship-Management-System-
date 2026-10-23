@@ -10,6 +10,16 @@
         media.addEventListener('change', () => setOpen(false)); setOpen(false);
         const filter = () => { if (!document.querySelector('[data-task-status]')) return; const status = by('taskFilter')?.value || ''; let shown = 0; document.querySelectorAll('[data-task-status]').forEach(row => { row.hidden = !!status && status !== 'all' && row.dataset.taskStatus !== status; if (!row.hidden) shown++; }); if (by('taskFilterStatus')) by('taskFilterStatus').textContent = shown + ' student-visible tasks shown'; };
         by('taskFilter')?.addEventListener('change', filter); filter();
+        const page = by('mainContent'), loading = by('progressLoading');
+        by('form1')?.addEventListener('submit', event => {
+            if (event.submitter?.id !== 'RefreshProgress') return;
+            page?.setAttribute('aria-busy', 'true');
+            if (loading) loading.hidden = false;
+        });
+        window.addEventListener('pageshow', () => {
+            page?.removeAttribute('aria-busy');
+            if (loading) loading.hidden = true;
+        });
         const dialog = by('examDialog'); document.querySelectorAll('[data-close-exam]').forEach(button => button.addEventListener('click', () => dialog?.close()));
     }
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initialize, { once: true }); else initialize();

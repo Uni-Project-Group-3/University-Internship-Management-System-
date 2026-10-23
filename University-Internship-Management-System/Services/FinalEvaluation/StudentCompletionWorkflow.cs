@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.IO;
 using System.Linq;
 using System.Collections.Generic;
@@ -10,6 +10,10 @@ namespace University_Internship_Management_System.Services.FinalEvaluation
 {
     public interface IStudentCompletionPlacementReader { Task<CompletionPlacement> GetAsync(string internshipId); }
     public interface IStudentVisibleTaskReader { Task<TrustedCompletionData<StudentTaskRecord[]>> GetAsync(string internshipId); }
+    // Optional hours-team adapter: pending must be derived from explicit pending statuses,
+    // never inferred from !IsApproved (which can include rejected entries).
+    public interface IStudentPendingTrainingHoursReader
+    { Task<TrustedCompletionData<decimal?>> GetPendingHoursAsync(string internshipId); }
     public interface IStudentOverallProgressReader { Task<TrustedCompletionData<decimal?>> GetAsync(string internshipId); }
     public interface IStudentCompletionReportLocator
     { Task<string> GetIssuedDocumentIdAsync(string internshipId, string studentId); }
@@ -46,11 +50,14 @@ namespace University_Internship_Management_System.Services.FinalEvaluation
         public DateTimeOffset? ApprovedAtUtc { get; internal set; }
         public decimal? ApprovedHours { get; internal set; }
         public decimal? RequiredHours { get; internal set; }
+        public decimal? PendingHours { get; internal set; }
+        public decimal? RemainingHours { get { return ApprovedHours.HasValue && RequiredHours.HasValue ? Math.Max(0, RequiredHours.Value - ApprovedHours.Value) : (decimal?)null; } }
         public decimal? HoursPercent { get; internal set; }
         public decimal? OverallPercent { get; internal set; }
         public StudentVisibleTask[] Tasks { get; internal set; } = new StudentVisibleTask[0];
         public bool TasksVerified { get; internal set; }
         public int PublishedTaskGradeCount { get; internal set; }
+        public string PublishedTaskGradesText { get { return !TasksVerified ? "Published task grades unavailable" : PublishedTaskGradeCount > 0 ? PublishedTaskGradeCount.ToString(CultureInfo.InvariantCulture) : "No published task grades available"; } }
         public string[] Notices { get; internal set; } = new string[0];
         public bool ReportAvailable { get; internal set; }
         public string ReportMessage { get; internal set; }
@@ -142,6 +149,16 @@ namespace University_Internship_Management_System.Services.FinalEvaluation
             }
             catch (UnauthorizedAccessException) { throw; }
             catch (Exception) { notices.Add("Required training hours could not be verified."); }
+            try
+            {
+                var pendingSource = hours as IStudentPendingTrainingHoursReader;
+                var pending = pendingSource == null ? null : await pendingSource.GetPendingHoursAsync(internshipId).ConfigureAwait(false);
+                if (!Matches(pending, placement) || !pending.Value.HasValue || pending.Value < 0)
+                    notices.Add("Pending attendance hours are unavailable; a trusted pending-status source is required. Rejected entries are not pending hours.");
+                else view.PendingHours = pending.Value;
+            }
+            catch (UnauthorizedAccessException) { throw; }
+            catch (Exception) { notices.Add("Pending attendance hours could not be verified."); }
             if (view.RequiredHours > 0 && view.ApprovedHours.HasValue) view.HoursPercent = view.ApprovedHours >= view.RequiredHours ? 100 : view.ApprovedHours.Value / view.RequiredHours.Value * 100;
             try
             {

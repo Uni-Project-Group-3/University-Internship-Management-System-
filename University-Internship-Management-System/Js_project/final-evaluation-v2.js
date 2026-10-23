@@ -30,10 +30,27 @@
    reason?.addEventListener('input', function () { reason.setCustomValidity(''); });
   }
   var search = document.getElementById('traineeSearch'), status = document.getElementById('evaluationFilter');
-  function filter() { document.querySelectorAll('[data-evaluation-row]').forEach(function (row) { row.hidden = !(row.textContent.toLowerCase().includes((search?.value || '').trim().toLowerCase()) && (!status?.value || row.dataset.status === status.value)); }); }
+  var tableWrap = document.querySelector('.evaluation-table-wrap');
+  var filterStatus = document.createElement('p'); filterStatus.id = 'evaluationFilterStatus'; filterStatus.className = 'workspace-hint'; filterStatus.setAttribute('role', 'status'); filterStatus.setAttribute('aria-live', 'polite');
+  var noMatches = document.createElement('p'); noMatches.id = 'evaluationNoMatches'; noMatches.className = 'workspace-hint'; noMatches.textContent = 'No authorized trainees match your search and filters.'; noMatches.hidden = true;
+  if (tableWrap) tableWrap.after(filterStatus, noMatches);
+  function filter() {
+   var rows = [...document.querySelectorAll('[data-evaluation-row]')], shown = 0;
+   rows.forEach(function (row) {
+    var visible = row.textContent.toLowerCase().includes((search?.value || '').trim().toLowerCase()) && (!status?.value || row.dataset.status === status.value);
+    row.hidden = !visible; if (visible) shown++;
+   });
+   filterStatus.textContent = rows.length ? shown + ' of ' + rows.length + ' authorized trainees shown' : '';
+   noMatches.hidden = rows.length === 0 || shown > 0;
+  }
   search?.addEventListener('input', filter); status?.addEventListener('change', filter);
-  document.getElementById('clearEvaluationFilters')?.addEventListener('click', function () { search.value = ''; status.value = ''; filter(); });
-  document.getElementById('form1')?.addEventListener('submit', function () { document.querySelector('main')?.setAttribute('aria-busy', 'true'); });
+  search?.addEventListener('keydown', function (event) { if (event.key === 'Enter') event.preventDefault(); });
+  document.getElementById('clearEvaluationFilters')?.addEventListener('click', function () { search.value = ''; status.value = ''; filter(); search.focus(); });
+  filter();
+  var main = document.querySelector('main'), loading = document.createElement('p'); loading.id = 'evaluationLoading'; loading.className = 'workspace-hint'; loading.setAttribute('role', 'status'); loading.hidden = true;
+  main?.prepend(loading);
+  document.getElementById('form1')?.addEventListener('submit', function () { main?.setAttribute('aria-busy', 'true'); loading.textContent = 'Processing your request. Please wait for server confirmation.'; loading.hidden = false; });
+  window.addEventListener('pageshow', function () { main?.removeAttribute('aria-busy'); loading.hidden = true; });
   // Academic navigation retains its existing shared script. Company retains its original behavior.
   if (!document.getElementById('dashboardSidebar')) {
    var toggle = document.querySelector('.menu-btn'), close = document.querySelector('.sidebar-close');

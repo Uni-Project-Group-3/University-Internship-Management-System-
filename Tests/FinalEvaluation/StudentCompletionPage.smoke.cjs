@@ -34,6 +34,11 @@ const pass = message => { count++; console.log('PASS ' + message); };
     let html = await page();
     if (disabled) {
         assert(html.includes('Official Firebase student access is disabled') && !button(html) && metric(html, 'ApprovedHours') === 'Unknown'); pass('default Student page fails closed with no demo identity or invented hours');
+        assert(metric(html, 'EvaluatedExams') === 'Published task grades unavailable' && !html.includes('No published task grades available')); pass('unavailable task source does not pretend to be a verified empty grade list');
+        assert(!html.includes('id="HoursProgress"')); pass('missing approved-hour data does not render an indeterminate progress bar');
+        assert(!html.includes('id="ToggleExamDemo"') && !html.includes('id="examDialog"')); pass('unsupported legacy exam controls are not rendered');
+        assert(html.includes('id="RefreshProgress"')); const refresh = form(html); refresh.set('RefreshProgress', 'Refresh progress'); html = await page(refresh); assert(html.includes('Official Firebase student access is disabled') && metric(html,'ApprovedHours') === 'Unknown'); pass('Refresh re-runs the authorized page flow without inventing records');
+
         await download(html, undefined, 503); pass('forged download postback is denied without trusted integrations');
         html = await page(undefined, 'dev-student-ready'); assert(!button(html) && !html.includes('Fictional published task')); pass('development internship ID cannot enable official Student access');
         const data = form(html); data.set('studentId', 'dev-student-owner'); data.set('role', 'student'); data.set('frontendDemo', '1'); html = await page(data); assert(!button(html) && metric(html, 'ApprovedHours') === 'Unknown'); pass('browser identity role and demo fields cannot authorize access');
@@ -59,7 +64,7 @@ const pass = message => { count++; console.log('PASS ' + message); };
     await download(html, undefined, 503); pass('corrupt PDF download returns safe service-unavailable error');
     html = await page(undefined, 'dev-student-missing-object'); assert(approved(html) && !button(html)); await download(html, undefined, 503); pass('missing private object does not expose storage paths or send a false PDF');
     html = await page(undefined, 'dev-student-untrusted'); assert(approved(html) && metric(html, 'ApprovedHours') === 'Unknown' && metric(html, 'RequiredHours') === 'Unknown' && metric(html, 'AssignedTasks') === 'Unknown' && html.includes('Overall completion progress: Not supplied')); pass('untrusted team inputs remain unknown while authoritative Approved status remains visible');
-    assert(metric(html, 'EvaluatedExams') === 'No published task grades available'); pass('missing trusted grades render explicit task-grade empty state');
+    assert(metric(html, 'EvaluatedExams') === 'Published task grades unavailable'); pass('missing trusted grades are distinct from verified empty task grades');
     html = await page(undefined, 'another-student-internship', 403); assert(!html.includes('Fictional published task') && !button(html)); pass('another student internship is denied before protected page data renders');
     await download(html, undefined, 403); pass('unauthorized download returns forbidden without PDF or HTML page');
     html = await page(undefined, 'dev-student-ready'); for (const value of form(html).values()) { let decoded = ''; try { decoded = Buffer.from(value, 'base64').toString(); } catch {} assert(!decoded.includes('PRIVATE_') && !decoded.includes('completion-reports/')); } pass('HTML and hidden postback state contain no confidential evaluations or storage references');

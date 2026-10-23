@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
@@ -47,6 +47,43 @@ internal static partial class Program
     { var s = await repo.GetPercentageAsync("fictional-internship"); await PercentageFlow(repo, true).ReviewAsync(s.Value.InternshipId, s.Version, s.Value.Current.VersionId, kind, reason, Guid.NewGuid().ToString("N"), true); }
     private static async Task RunPercentageRequirementsTests()
     {
+        await Test("evaluation statistics count only supplied authorized snapshots and current review states", () => {
+            var draft = ModernValue(false, false); var submitted = ModernValue(true, false); var approved = ModernValue(true, true);
+            var revision = ModernValue(true, true); revision.Reviews[0].Kind = AcademicReviewKind.RequestRevision;
+            var stats = EvaluationPageStatistics.From(new[] { null, draft, submitted, approved, revision });
+            Assert(stats.Assigned == 5 && stats.Drafts == 1 && stats.AwaitingReview == 1 && stats.Approved == 1);
+            var empty = EvaluationPageStatistics.From(new PercentageEvaluation[0]);
+            Assert(empty.Assigned == 0 && empty.Drafts == 0 && empty.Approved == 0);
+            return Task.CompletedTask;
+        });
+        await Test("Company statistic bindings display verified counts and restore unknown on unavailable data", () => {
+            var page = new University_Internship_Management_System.Company.ReportsFinalEvaluation();
+            var flags = System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic;
+            var bind = typeof(PercentageEvaluationPage).GetMethod("BindStatistics", flags);
+            bind.Invoke(page, new object[] { (int?)4, (int?)2, (int?)1, (int?)1 });
+            var property = page.GetType().GetProperty("AssignedTraineesCount", flags);
+            Assert((string)property.GetValue(page) == "4");
+            bind.Invoke(page, new object[] { null, null, null, null });
+            Assert((string)property.GetValue(page) == "—");
+            return Task.CompletedTask;
+        });
+        await Test("access denial clears Academic percentage reason timestamp and mutation controls", () => {
+            var page = new University_Internship_Management_System.Academic.FinalAcademicEvaluation();
+            foreach (var id in new[] { "FinalPercentage", "FinalComments", "RevisionReason" }) page.Controls.Add(new System.Web.UI.WebControls.TextBox { ID = id, Text = "PRIVATE_VALUE" });
+            foreach (var id in new[] { "SelectedName", "FinalStatus", "SubmissionTime", "ReviewStatus", "FinalOutcome", "OperationMessage", "InformationText", "InformationTitle", "CompanyPercentageDisplay", "ReviewTimestamp", "RecordedReviewReason", "EvaluationError" }) page.Controls.Add(new System.Web.UI.WebControls.Literal { ID = id, Text = "PRIVATE_VALUE" });
+            foreach (var id in new[] { "selectedInternship", "evaluationTicket", "activePanel", "reviewChoice" }) page.Controls.Add(new System.Web.UI.WebControls.HiddenField { ID = id, Value = "PRIVATE_VALUE" });
+            foreach (var id in new[] { "SaveDraft", "ConfirmSubmission", "ApproveReview", "RequestRevision" }) page.Controls.Add(new System.Web.UI.WebControls.Button { ID = id, Enabled = true });
+            page.Controls.Add(new System.Web.UI.WebControls.CheckBox { ID = "ConfirmAction", Checked = true, Enabled = true });
+            page.Controls.Add(new System.Web.UI.WebControls.Panel { ID = "AcademicReviewPanel", Visible = true });
+            typeof(PercentageEvaluationPage).GetMethod("ClearEditor", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic).Invoke(page, null);
+            Assert(page.Controls.OfType<System.Web.UI.WebControls.Literal>().All(field => field.Text == ""));
+            Assert(page.Controls.OfType<System.Web.UI.WebControls.HiddenField>().All(field => field.Value == ""));
+            Assert(page.Controls.OfType<System.Web.UI.WebControls.TextBox>().All(field => field.Text == "" && field.ReadOnly));
+            Assert(page.Controls.OfType<System.Web.UI.WebControls.Button>().All(field => !field.Enabled));
+            Assert(!((System.Web.UI.WebControls.CheckBox)page.FindControl("ConfirmAction")).Checked);
+            return Task.CompletedTask;
+        });
+
         foreach (var score in new decimal?[] { null, 0, 0.25m, 100 })
             await Test("percentage Draft accepts " + (score?.ToString() ?? "unanswered"), async () => { var repo = new InMemoryFinalEvaluationRepository(new[] { DecisionPolicy() }); await SavePercentage(PercentageFlow(repo), "null_etag", score, ""); Assert((await repo.GetPercentageAsync("fictional-internship")).Value.Current.Percentage == score); });
         foreach (var score in new[] { -0.01m, 100.01m })

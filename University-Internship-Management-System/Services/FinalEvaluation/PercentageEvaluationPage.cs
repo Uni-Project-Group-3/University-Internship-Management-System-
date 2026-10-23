@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
@@ -50,10 +50,24 @@ namespace University_Internship_Management_System.Services.FinalEvaluation
         protected void RequestRevision_Click(object sender, EventArgs e) { operation = "revision"; }
         protected void btnLogout_Click(object sender, EventArgs e) { FormsAuthentication.SignOut(); Session.Clear(); Session.Abandon(); Response.Redirect("~/Auth/Login.aspx", false); Context.ApplicationInstance.CompleteRequest(); }
         private static string H(string value) { return HttpUtility.HtmlEncode(value ?? ""); }
+        protected virtual void BindStatistics(int? assigned, int? drafts, int? awaiting, int? approved)
+        {
+            if (!Academic) return;
+            foreach (var item in new[] {
+                new { Id = "AssignedStudentCount", Value = assigned }, new { Id = "CompanyDraftCount", Value = drafts },
+                new { Id = "AwaitingReviewCount", Value = awaiting }, new { Id = "AcademicApprovalCount", Value = approved } })
+                Field<Literal>(item.Id).Text = item.Value.HasValue ? item.Value.Value.ToString(CultureInfo.InvariantCulture) : "—";
+        }
+        private void DisableActions()
+        {
+            foreach (var id in new[] { "SaveDraft", "ConfirmSubmission", "ApproveReview", "RequestRevision" }) Field<Button>(id).Enabled = false;
+            Field<CheckBox>("ConfirmAction").Enabled = false;
+        }
         private async Task LoadWorkflow()
         {
             var rows = Field<Literal>("traineeRows"); var availability = Field<Literal>("DraftAvailability");
             Field<HiddenField>("activePanel").Value = "";
+            BindStatistics(null, null, null, null);
             Field<Button>("ApproveReview").Visible = Field<Button>("RequestRevision").Visible = Academic;
             Field<Button>("SaveDraft").Visible = Field<Button>("ConfirmSubmission").Visible = !Academic;
             Field<Panel>("AcademicReviewPanel").Visible = false;
@@ -64,12 +78,18 @@ namespace University_Internship_Management_System.Services.FinalEvaluation
                 if (context == null || context.Workflow == null || string.IsNullOrWhiteSpace(context.UserId))
                 {
                     ClearEditor();
-                    availability.Text = "Firebase connection not configured. Final-evaluation data and actions are unavailable until the shared Firebase project and trusted identity mapping are enabled.";
+                    availability.Text = "Supervisor access integration is unavailable. Verified supervisor identity and assignment sources are not connected; Firebase records have not been loaded.";
                     rows.Text = "<tr><td colspan=3>No authorized students are connected.</td></tr>"; return;
                 }
                 availability.Text = context.DatasetPath != null ? "LOCAL-ONLY Firebase DEMO. Fictional data persists only at " + context.DatasetPath + ". No official Firebase paths. Test policy values are not university rules."
                     : context.IsDevelopment ? "LOCAL-ONLY isolated fictional test mode. Shared session memory; no Firebase writes. Fixture passing threshold is not a university rule." : "Authorized company percentage and academic review workflow.";
+                if (context.Placements == null)
+                {
+                    ClearEditor(); availability.Text = "Authorized placement information is unavailable. No empty-data conclusion can be made.";
+                    rows.Text = "<tr><td colspan=3>Placement records could not be verified.</td></tr>"; return;
+                }
                 var html = new StringBuilder();
+                bool incomplete = false;
                 var states = new Dictionary<string, RecordSnapshot<PercentageEvaluation>>();
                 foreach (var p in context.Placements ?? new CompletionPlacement[0])
                 {
@@ -93,18 +113,15 @@ namespace University_Internship_Management_System.Services.FinalEvaluation
                         html.Append("<tr data-evaluation-row=\"true\" data-status=\"").Append(H(status)).Append("\"><td><strong>").Append(H(p.DisplayName)).Append("</strong></td><td><span class=\"workspace-badge evaluation-chip\">").Append(H(status)).Append("</span></td><td class=\"trainee-action-cell\"><div class=\"dropdown\"><button type=\"button\" class=\"btn btn-outline-secondary dropdown-toggle\" data-bs-toggle=\"dropdown\" aria-expanded=\"false\" aria-label=\"Actions: ").Append(H(p.DisplayName)).Append("\">Actions</button><ul class=\"dropdown-menu\">").Append(menu).Append("</ul></div></td></tr>");
                     }
                     catch (UnauthorizedAccessException) { }
-                    catch (ArgumentException) { html.Append("<tr><td>").Append(H(p.DisplayName)).Append("</td><td colspan=2>Legacy or invalid evaluation: migration required; actions disabled.</td></tr>"); }
+                    catch (ArgumentException) { incomplete = true; html.Append("<tr><td>").Append(H(p.DisplayName)).Append("</td><td colspan=2>Legacy or invalid evaluation: migration required; actions disabled.</td></tr>"); }
                 }
                 rows.Text = html.Length == 0 ? "<tr><td colspan=3>No authorized students available.</td></tr>" : html.ToString();
-                var overview = Find(this, "OverviewCounts") as Literal;
-                if (overview != null) overview.Text = "Authorized students: " + states.Count + "; Company Drafts: " + states.Values.Count(s => PercentageEvaluationWorkflow.Status(s.Value) == "Draft") + "; Submitted awaiting review: " + states.Values.Count(s => PercentageEvaluationWorkflow.Status(s.Value) == "Submitted") + "; Academic approvals: " + states.Values.Count(s => PercentageEvaluationWorkflow.Status(s.Value) == "Approved");
-                if (Academic)
+                if (!incomplete)
                 {
-                    Field<Literal>("AssignedStudentCount").Text = states.Count.ToString(CultureInfo.InvariantCulture);
-                    Field<Literal>("CompanyDraftCount").Text = states.Values.Count(s => PercentageEvaluationWorkflow.Status(s.Value) == "Draft").ToString(CultureInfo.InvariantCulture);
-                    Field<Literal>("AwaitingReviewCount").Text = states.Values.Count(s => PercentageEvaluationWorkflow.Status(s.Value) == "Submitted").ToString(CultureInfo.InvariantCulture);
-                    Field<Literal>("AcademicApprovalCount").Text = states.Values.Count(s => PercentageEvaluationWorkflow.Status(s.Value) == "Approved").ToString(CultureInfo.InvariantCulture);
+                    var statistics = EvaluationPageStatistics.From(states.Values.Select(snapshot => snapshot.Value));
+                    BindStatistics(statistics.Assigned, statistics.Drafts, statistics.AwaitingReview, statistics.Approved);
                 }
+                else availability.Text += " Some evaluation records are invalid or require migration. Statistics are unavailable until all authorized records can be verified.";
                 string selection = null, panel = null;
                 foreach (var key in new[] { "openReports", "openDetails", "openEvaluation", "openRevision" })
                     if (!string.IsNullOrEmpty(Request.Unvalidated.Form[key])) { selection = Request.Unvalidated.Form[key]; panel = key; break; }
@@ -187,21 +204,39 @@ namespace University_Internship_Management_System.Services.FinalEvaluation
                 revision = revision && current?.SubmittedAtUtc != null;
                 bool editable = !Academic && (current?.SubmittedAtUtc == null || (revision && review?.Kind == AcademicReviewKind.RequestRevision));
                 Field<TextBox>("FinalPercentage").ReadOnly = Field<TextBox>("FinalComments").ReadOnly = !editable;
+                if (!Academic) Field<CheckBox>("ConfirmAction").Enabled = current != null && !current.SubmittedAtUtc.HasValue;
                 Field<Button>("SaveDraft").Enabled = editable;
                 Field<Button>("ConfirmSubmission").Enabled = !Academic && current != null && !current.SubmittedAtUtc.HasValue;
                 Field<Panel>("AcademicReviewPanel").Visible = Academic && review == null;
                 Field<Button>("ApproveReview").Enabled = Field<Button>("RequestRevision").Enabled = Academic && current?.SubmittedAtUtc != null && review == null;
                 if (!failed) { Field<TextBox>("FinalPercentage").Text = current?.Percentage?.ToString(CultureInfo.InvariantCulture) ?? ""; Field<TextBox>("FinalComments").Text = current?.Comments ?? ""; Field<HiddenField>("evaluationTicket").Value = Protect(new Ticket { InternshipId = selection, Version = state.Version, CompanyVersion = current?.VersionId, Revision = revision, DecisionId = Guid.NewGuid().ToString("N") }); }
             }
-            catch (UnauthorizedAccessException) { ClearEditor(); Response.StatusCode = 403; Response.TrySkipIisCustomErrors = true; availability.Text = "Access denied. A verified assigned supervisor is required."; }
-            catch (FirebaseException error) { availability.Text = error.Message; }
-            catch (Exception error) { availability.Text = "Data could not be verified. No success is reported; reopen when trusted services are available." + (context?.IsDevelopment == true ? " Local diagnostic: " + error.GetType().Name : ""); }
+            catch (UnauthorizedAccessException)
+            {
+                ClearEditor(); BindStatistics(null, null, null, null);
+                rows.Text = "<tr><td colspan=3>Access denied. No confidential records are displayed.</td></tr>";
+                Response.StatusCode = 403; Response.TrySkipIisCustomErrors = true;
+                availability.Text = "Access denied. A verified assigned supervisor is required.";
+            }
+            catch (Exception)
+            {
+                // Keep entered form values on read failures; disable every mutation and hide stale rows.
+                DisableActions(); BindStatistics(null, null, null, null);
+                Field<Literal>("OperationMessage").Text = "";
+                rows.Text = "<tr><td colspan=3>Evaluation records could not be loaded. Refresh to retry.</td></tr>";
+                availability.Text = "Evaluation data could not be verified. No success is reported. This is a read or integration failure, not a confirmed empty student list.";
+            }
         }
         private void ClearEditor()
         {
-            foreach (var id in new[] { "FinalPercentage", "FinalComments", "RevisionReason" }) { var field = Field<TextBox>(id); field.Text = ""; field.ReadOnly = true; }
-            foreach (var id in new[] { "SelectedName", "FinalStatus", "SubmissionTime", "ReviewStatus", "FinalOutcome", "OperationMessage", "InformationText", "InformationTitle" }) Field<Literal>(id).Text = "";
-            foreach (var id in new[] { "selectedInternship", "evaluationTicket", "activePanel" }) Field<HiddenField>(id).Value = "";
+            foreach (var id in new[] { "FinalPercentage", "FinalComments", "RevisionReason" }) { var field = Find(this, id) as TextBox; if (field != null) { field.Text = ""; field.ReadOnly = true; } }
+            foreach (var id in new[] { "SelectedName", "FinalStatus", "SubmissionTime", "ReviewStatus", "FinalOutcome", "OperationMessage", "InformationText", "InformationTitle", "CompanyPercentageDisplay", "ReviewTimestamp", "RecordedReviewReason", "EvaluationError" })
+            { var field = Find(this, id) as Literal; if (field != null) field.Text = ""; }
+            foreach (var id in new[] { "selectedInternship", "evaluationTicket", "activePanel", "reviewChoice" })
+            { var field = Find(this, id) as HiddenField; if (field != null) field.Value = ""; }
+            Field<CheckBox>("ConfirmAction").Checked = false;
+            Field<Panel>("AcademicReviewPanel").Visible = false;
+            DisableActions();
         }
         private sealed class Ticket { public string InternshipId, Version, CompanyVersion, DecisionId; public bool Revision; }
         private string Protect(Ticket ticket) { return Convert.ToBase64String(MachineKey.Protect(Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(ticket)), "PercentageEvaluationV2", Session.SessionID, context.UserId, Academic.ToString())); }
@@ -212,4 +247,19 @@ namespace University_Internship_Management_System.Services.FinalEvaluation
         }
         private bool SafeRevision(string id) { try { return ReadTicket(id).Revision; } catch { return false; } }
     }
+    public sealed class EvaluationPageStatistics
+    {
+        public int Assigned { get; private set; }
+        public int Drafts { get; private set; }
+        public int AwaitingReview { get; private set; }
+        public int Approved { get; private set; }
+        public static EvaluationPageStatistics From(IEnumerable<PercentageEvaluation> authorizedEvaluations)
+        {
+            if (authorizedEvaluations == null) throw new ArgumentNullException("authorizedEvaluations");
+            var statuses = authorizedEvaluations.Select(PercentageEvaluationWorkflow.Status).ToArray();
+            return new EvaluationPageStatistics { Assigned = statuses.Length, Drafts = statuses.Count(value => value == "Draft"),
+                AwaitingReview = statuses.Count(value => value == "Submitted"), Approved = statuses.Count(value => value == "Approved") };
+        }
+    }
+
 }
