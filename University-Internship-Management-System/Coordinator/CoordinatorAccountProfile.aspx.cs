@@ -69,12 +69,17 @@ namespace University_Internship_Management_System.Coordinator
             try
             {
                 var profile = await GetVerifiedProfileAsync();
+                if (profile == null) return;
+                var universityProfile = await new StudentFirebaseGateway()
+                    .ReadAsync("users/DEMO_UID_COORDINATOR_001") as JObject;
+                var universityDetails = ReadUniversityDetails(universityProfile);
+                string coordinatorId = First(profile, "id", "coordinatorId", "staffId");
                 ViewState["DisplayedProfile"] = new[]
                 {
-                    Text(profile, "fullName"), Text(profile, "phone"), Text(profile, "officeLocation"),
-                    Text(profile, "email"), First(profile, "universityName", "universityId"),
-                    First(profile, "collegeName", "collegeId"), First(profile, "departmentName", "departmentId"),
-                    First(profile, "coordinatorId", "staffId")
+                    First(profile, "fullName", "displayName"), Text(profile, "phone"), Text(profile, "officeLocation"),
+                    Text(profile, "email"), universityDetails[0],
+                    universityDetails[1], string.Empty,
+                    coordinatorId
                 };
                 LoadEditingFields();
                 SetEditing(false);
@@ -89,11 +94,31 @@ namespace University_Internship_Management_System.Coordinator
             }
         }
 
+        private static string[] ReadUniversityDetails(JObject profile)
+        {
+            if (profile == null)
+                throw new InvalidOperationException("The university information record was not found.");
+            string university = (string)UniversityField(profile, "University") ??
+                First(profile, "universityName", "university", "universityId");
+            string department = (string)UniversityField(UniversityField(profile, "College") as JObject, "department");
+            return new[] { university, department ?? Join(First(profile, "collegeName", "collegeId"),
+                First(profile, "departmentName", "department", "departmentId")) };
+        }
+
+        private static JToken UniversityField(JObject profile, string name)
+        {
+            if (profile == null) return null;
+            foreach (var field in profile.Properties())
+                if (string.Equals(field.Name.Trim(), name, StringComparison.OrdinalIgnoreCase))
+                    return field.Value;
+            return null;
+        }
+
         private async Task SaveProfileAsync(string name, string phone, string office)
         {
             try
             {
-                await GetVerifiedProfileAsync();
+                if (await GetVerifiedProfileAsync() == null) return;
                 string uid = Context.User.Identity.Name;
                 string token = Session["Uims.FirebaseIdToken"] as string;
                 await FirebaseSignInService.PatchDatabasePathAsync("users/" + StudentManagementService.Key(uid), new
@@ -183,25 +208,23 @@ namespace University_Internship_Management_System.Coordinator
             DisplayEmail.Text = Fallback(profile[3]);
             EditEmail.Text = Fallback(profile[3]);
             UniversityName.Text = Fallback(profile[4]);
+            UniversitySummary.Text = UniversityName.Text;
             CollegeDepartment.Text = Join(profile[5], profile[6]);
             CoordinatorId.Text = Fallback(profile[7]);
-            EditingHint.Text = EditProfileFields.Visible
-                ? "Update your permitted contact details. Your email, university, department and coordinator ID are protected."
-                : "Your account details are loaded from Firebase Realtime Database.";
-            EditingStatus.Text = EditProfileFields.Visible ? "Editing" : "Connected";
+            EditingHint.Text = "Update your permitted contact details. Your email, university, department and coordinator ID are protected.";
+            EditingStatus.Text = "Connected";
         }
 
         private void SetEditing(bool editing)
         {
-            ReadProfile.Visible = true;
-            EditProfileFields.Visible = editing;
-            FullName.ReadOnly = !editing;
-            Phone.ReadOnly = !editing;
-            Office.ReadOnly = !editing;
-            EditProfile.Visible = !editing;
-            SaveProfile.Visible = editing;
-            CancelEdit.Visible = editing;
-            if (editing) FullName.Focus();
+            ReadProfile.Visible = false;
+            EditProfileFields.Visible = true;
+            FullName.ReadOnly = false;
+            Phone.ReadOnly = false;
+            Office.ReadOnly = false;
+            EditProfile.Visible = false;
+            SaveProfile.Visible = true;
+            CancelEdit.Visible = false;
         }
 
         private void ShowValidationError(TextBox field, string message)
@@ -216,10 +239,14 @@ namespace University_Internship_Management_System.Coordinator
             return (string)value?[field] ?? string.Empty;
         }
 
-        private static string First(JObject value, string first, string second)
+        private static string First(JObject value, params string[] fields)
         {
-            string result = Text(value, first);
-            return result.Length == 0 ? Text(value, second) : result;
+            foreach (string field in fields)
+            {
+                string result = Text(value, field);
+                if (result.Length > 0) return result;
+            }
+            return string.Empty;
         }
 
         private static string Join(string first, string second)

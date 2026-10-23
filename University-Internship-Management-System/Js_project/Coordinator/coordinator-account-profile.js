@@ -173,16 +173,13 @@
         shell();
         
         render=()=>{
-            const user=view.user;all('.account-details > div').forEach(row=>{const label=row.querySelector('dt')?.textContent.toLowerCase(),target=row.querySelector('dd');if(!target)return;if(label?.includes('company name'))target.textContent=view.companies.find(c=>c.id===user.companyId)?.name||'Not linked';if(label?.includes('university'))target.textContent='Jordan University of Science and Technology';if(label?.includes('college'))target.textContent='Faculty of Information Technology';if(label?.includes('coordinator id'))target.textContent=user.id;});const reference=document.querySelector('.profile-reference');if(reference)reference.textContent='Demo identity: '+user.id+' · '+(user.companyId||'University coordinator');
+            const user=view.user;all('.account-details > div').forEach(row=>{const label=row.querySelector('dt')?.textContent.toLowerCase(),target=row.querySelector('dd');if(!target)return;if(label?.includes('company name'))target.textContent=view.companies.find(c=>c.id===user.companyId)?.name||'Not linked';if(label?.includes('coordinator id'))target.textContent=user.id;});const reference=document.querySelector('.profile-reference');if(reference)reference.textContent='Demo identity: '+user.id+' · '+(user.companyId||'University coordinator');
             all('[data-uims-profile]').forEach(el=>el.textContent=({name:user.name,email:user.email,phone:user.phone||'Not provided',office:user.office||'Not provided',initials:user.name.split(' ').slice(0,2).map(part=>part[0]).join('')}[el.dataset.uimsProfile]));
         };
         if(by('SaveProfile')){
             set('FullName',view.user.name);set('Phone',view.user.phone);set('Office',view.user.office);
             ['FullName','Phone','Office'].forEach(id=>{if(by(id))by(id).readOnly=false;});
-            open('profileEditDialog');
-            click('SaveProfile',()=>{if(!valid(['FullName','Phone','Office'],'profileEditDialog'))return;const name=value('FullName'),phone=value('Phone');if(name.length<2||name.length>80||phone&&!/^[+0-9() .-]{7,25}$/.test(phone)){error(Error('Enter a full name and valid phone number.'),by('profileEditDialog'));return;}transact('profile',{name,phone,office:value('Office')},'profileEditDialog');});
-            click('CancelEdit',()=>close('profileEditDialog'));
-            by('profileEditDialog').addEventListener('close',()=>location.href=location.pathname,{signal});
+            click('SaveProfile',()=>{if(!valid(['FullName','Phone','Office'],'profileEditDialog'))return;const name=value('FullName'),phone=value('Phone');if(name.length<2||name.length>80||phone&&!/^[+0-9() .-]{7,25}$/.test(phone)){error(Error('Enter a full name and valid phone number.'),by('profileEditDialog'));return;}transact('profile',{name,phone,office:value('Office')});});
         }
 
         render();

@@ -234,7 +234,14 @@ namespace UIMS.Services
             int status = (int)response.StatusCode;
             if (response.StatusCode == HttpStatusCode.Unauthorized || response.StatusCode == HttpStatusCode.Forbidden)
                 throw new FirebaseException(403, "Firebase Storage denied the " + operation + ". Check trusted server IAM and Storage Rules; no public access was attempted.");
-            if (response.StatusCode == HttpStatusCode.NotFound) throw new FirebaseException(404, "The requested file does not exist in Firebase Storage.");
+            if (response.StatusCode == HttpStatusCode.NotFound)
+            {
+                if (string.Equals(operation, "upload", StringComparison.OrdinalIgnoreCase))
+                    throw new FirebaseException(404, "The configured Firebase Storage bucket was not found. Create the bucket in Firebase Console or update FirebaseStorageBucket in Web.config to the exact bucket name shown under Storage > Files.");
+                if (string.Equals(operation, "download", StringComparison.OrdinalIgnoreCase))
+                    throw new FirebaseException(404, "The requested file does not exist in Firebase Storage.");
+                throw new FirebaseException(404, "The Firebase Storage bucket or requested object was not found during " + operation + ".");
+            }
             throw new FirebaseException(status >= 500 ? 502 : status, "Firebase Storage " + operation + " failed (HTTP " + status.ToString(CultureInfo.InvariantCulture) + ").");
         }
     }

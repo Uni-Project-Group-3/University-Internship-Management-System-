@@ -1,4 +1,4 @@
-﻿namespace University_Internship_Management_System.Company
+namespace University_Internship_Management_System.Company
 {
     public partial class CompanySupervisorAccount
     {
@@ -8,6 +8,7 @@
         protected global::System.Web.UI.WebControls.Literal CompanySummary;
         protected global::System.Web.UI.WebControls.Literal CompanyName;
         protected global::System.Web.UI.HtmlControls.HtmlForm form1;
+        protected global::University_Internship_Management_System.Shared.RoleSidebarBase RoleNavigation;
         protected global::System.Web.UI.WebControls.Literal ProfileInitials;
         protected global::System.Web.UI.WebControls.Literal ProfileName;
         protected global::System.Web.UI.WebControls.Literal OverviewEmail;

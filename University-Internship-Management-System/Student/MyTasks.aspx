@@ -106,12 +106,6 @@
                         </li>
                     </ul>
 
-                    <div class="side-promo">
-                        <i class="bi bi-mortarboard-fill" aria-hidden="true">
-                        </i>
-                        <p>Build your future<br />with real experience.</p>
-                        <a href="ExploreOpportunities.aspx">Explore opportunities &rarr;</a>
-                    </div>
                 </aside>
                 <div class="sidebar-backdrop" aria-hidden="true">
                 </div>
