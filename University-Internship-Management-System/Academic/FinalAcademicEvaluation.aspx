@@ -8,6 +8,7 @@
 
     <link runat="server" href="~/Assets/academic/final-academic-evaluation.css?v=20261022-review-ui" rel="stylesheet" />
     
+    <link href="../Assets/shared/workflow-ui.css?v=20261023" rel="stylesheet" />
 </head>
 <body class="dashboard-direct app-page evaluation-page" data-demo-role="academic">
     <form id="form1" runat="server" novalidate="novalidate">
@@ -128,5 +129,6 @@
 
 <script src="../Js_project/final-evaluation-v2.js?v=20261023-local-fixes" defer="defer"></script>
     <script src="<%= ResolveUrl("~/Js_project/Public/dashboard-navigation.js?v=20261021-original-ui") %>"></script>
-<script src="../Scripts/bootstrap.bundle.min.js"></script></body>
+<script src="../Scripts/bootstrap.bundle.min.js"></script><script src="../Js_project/final-report-summary.js?v=20261023"></script>
+</body>
 </html>

@@ -116,7 +116,14 @@
         }
         by('studentSubmissionHistory').innerHTML = submissions.map(sub => '<p>Revision ' + escapeHtml(sub.revision) + ' · ' + escapeHtml(sub.createdAt) + '<br>' + escapeHtml(sub.description) + (sub.link ? ' · <a href="' + escapeHtml(sub.link) + '" target="_blank" rel="noopener">Open work</a>' : '') + '</p>').join('') || '';
         by('studentTaskAttachments').textContent = 'Loading authorized task files…';
-        by('workDesc').value = readOnly ? (latest?.description || task.description) : '';
+        let taskInfo = by('studentTaskInstructions');
+        if (!taskInfo) { taskInfo = document.createElement('section'); taskInfo.id = 'studentTaskInstructions'; taskInfo.className = 'wr-detail-block'; by('workDesc').closest('.mb-4')?.prepend(taskInfo); if (!taskInfo.isConnected) by('workDesc').before(taskInfo); }
+        taskInfo.replaceChildren();
+        const heading = document.createElement('h3'); heading.textContent = 'Task instructions';
+        const description = document.createElement('p'); description.textContent = task.description || 'No description supplied.';
+        const instructions = document.createElement('p'); instructions.textContent = task.instructions || '';
+        taskInfo.append(heading, description, instructions);
+        by('workDesc').value = readOnly ? (latest?.description || '') : '';
         by('workLink').value = readOnly ? (latest?.link || '') : '';
         if (!readOnly) by('workFile').value = '';
         by('workDesc').readOnly = !!readOnly; by('workLink').readOnly = !!readOnly; by('workFile').disabled = !!readOnly;
@@ -142,6 +149,7 @@
         try {
             if (button.dataset.taskAction === 'details') { openSubmit(task, true); return; }
             if (button.dataset.taskAction === 'start') {
+                if (!await workflowConfirm('Start this task?', 'The task will be saved as in progress for your supervisor.', 'Start task')) return;
                 busy = true; button.disabled = true; await request('start', { assignmentId: task.id }); await refresh(); message('Task started and saved to Firebase.', false); return;
             }
             openSubmit(task, false);
@@ -151,7 +159,15 @@
     by('confirmSubmitBtn')?.addEventListener('click', async () => {
         if (busy || !selectedId) return;
         const description = by('workDesc').value.trim(), link = by('workLink').value.trim();
-        if (!description || !link) { by('modalError').textContent = 'Add a description and a work link before submitting.'; return; }
+        let firstInvalid = null;
+        for (const [id, value] of [['workDesc', description], ['workLink', link]]) {
+            const field = by(id); let error = by(id + 'Validation');
+            if (!error) { error = document.createElement('p'); error.id = id + 'Validation'; error.className = 'field-error'; field.after(error); field.setAttribute('aria-describedby', error.id); }
+            field.classList.toggle('is-invalid', !value); field.setAttribute('aria-invalid', String(!value)); error.textContent = value ? '' : 'This field is required.';
+            if (!value && !firstInvalid) firstInvalid = field;
+        }
+        if (firstInvalid) { firstInvalid.focus(); return; }
+        if (!await workflowConfirm('Submit your work?', 'Send this submission to your company supervisor for review?', 'Submit for review')) return;
         busy = true; by('confirmSubmitBtn').disabled = true; by('modalError').textContent = '';
         try {
             const file = by('workFile').files[0];

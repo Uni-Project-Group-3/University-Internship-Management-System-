@@ -211,5 +211,6 @@
 <script src="<%= ResolveUrl("~/Scripts/bootstrap.bundle.min.js") %>"></script>
     <script src="<%= ResolveUrl("~/Js_project/Public/dashboard-navigation.js?v=20261021-original-ui") %>"></script>
 <script src="../Js_project/Coordinator/coordinator-dashboard.js?v=20261021-original-ui"></script>
+<script src="../Js_project/final-report-summary.js?v=20261023"></script>
 </body>
 </html>

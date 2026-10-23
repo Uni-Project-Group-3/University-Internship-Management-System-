@@ -19,7 +19,7 @@ namespace UIMS.Tasks
     /// <summary>Company-authored weekly reports over the existing Firebase RTDB root and private Storage.</summary>
     public sealed class WeeklyReportService
     {
-        private static readonly HttpClient SharedClient = new HttpClient { Timeout = TimeSpan.FromSeconds(30) };
+        private static readonly HttpClient SharedClient = new HttpClient(new HttpClientHandler { MaxConnectionsPerServer = 12 }) { Timeout = TimeSpan.FromSeconds(30) };
         private static readonly Lazy<Task<GoogleCredential>> Credential = new Lazy<Task<GoogleCredential>>(() => GoogleCredential.GetApplicationDefaultAsync());
         private const string DocxMime = "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
         private readonly Func<string, string> setting;
@@ -60,9 +60,7 @@ namespace UIMS.Tasks
         private static bool IsTrue(string value) { return string.Equals(value, "true", StringComparison.OrdinalIgnoreCase); }
         private static async Task<string> GetAccessTokenAsync(CancellationToken cancellation)
         {
-            var credential = (await Credential.Value.ConfigureAwait(false)).CreateScoped("https://www.googleapis.com/auth/firebase.database");
-            cancellation.ThrowIfCancellationRequested();
-            return await credential.UnderlyingCredential.GetAccessTokenForRequestAsync().ConfigureAwait(false);
+            return await University_Internship_Management_System.Shared.FirebaseServerCredential.AccessTokenAsync(cancellation).ConfigureAwait(false);
         }
         private void Ensure(bool write, string requiredRole = null)
         {
@@ -76,8 +74,10 @@ namespace UIMS.Tasks
                 throw new UIMS.Services.FirebaseException(503, "Configure the central HTTPS FirebaseDatabaseUrl in Web.config.");
             if (actor == null || string.IsNullOrWhiteSpace(actor.Uid)) throw new UIMS.Services.FirebaseException(401, "A verified Firebase UID is required.");
             if (requiredRole != null && !string.Equals(actor.Role, requiredRole, StringComparison.Ordinal)) throw new UIMS.Services.FirebaseException(403, "This weekly report operation is not allowed for the signed-in role.");
-            if (write && !writesEnabled) throw new UIMS.Services.FirebaseException(503, "Weekly report writes are disabled until schema validation and development approval. No data was changed.");
-            if (write && (!IsTrue(setting("FirebaseStorageEnabled")) || !IsTrue(setting("FirebaseStorageLiveWritesEnabled")))) throw new UIMS.Services.FirebaseException(503, "Private Firebase Storage writes are disabled. No file was uploaded.");
+            bool reviewOnly = write && requiredRole == "academicSupervisor" && actor.Role == "academicSupervisor";
+            bool reviewAllowed = reviewOnly && IsTrue(setting("FirebaseLiveWritesEnabled")) && IsTrue(setting("WeeklyReportReviewsEnabled"));
+            if (write && !writesEnabled && !reviewAllowed) throw new UIMS.Services.FirebaseException(503, "Weekly report uploads are deferred until Storage is available. No data was changed.");
+            if (write && !reviewOnly && (!IsTrue(setting("FirebaseStorageEnabled")) || !IsTrue(setting("FirebaseStorageLiveWritesEnabled")))) throw new UIMS.Services.FirebaseException(503, "Private Firebase Storage writes are disabled. No file was uploaded.");
         }
 
         private string Url(string path)
@@ -131,7 +131,18 @@ namespace UIMS.Tasks
             {
                 request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
                 using (var response = await client.SendAsync(request, cancellation).ConfigureAwait(false))
-                { await EnsureResponseAsync(response, cancellation).ConfigureAwait(false); string json = await response.Content.ReadAsStringAsync().ConfigureAwait(false); return string.IsNullOrWhiteSpace(json) || json == "null" ? null : JToken.Parse(json); }
+                {
+                    string json = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+                    // Older configured Rules omit some equality indexes. Keep Rules private:
+                    // filter the same collection on the trusted server, never in the browser.
+                    if ((int)response.StatusCode == 400 && json.IndexOf("Index not defined", StringComparison.OrdinalIgnoreCase) >= 0)
+                    {
+                        var source = (await ReadAsync(path, cancellation).ConfigureAwait(false)).Value as JObject ?? new JObject();
+                        return new JObject(source.Properties().Where(p => p.Value is JObject && Text(p.Value, field) == value).Select(p => new JProperty(p.Name, p.Value.DeepClone())));
+                    }
+                    await EnsureResponseAsync(response, cancellation).ConfigureAwait(false);
+                    return string.IsNullOrWhiteSpace(json) || json == "null" ? null : JToken.Parse(json);
+                }
             }
         }
         private async Task<JObject> WriteAsync(string path, JObject value, string etag, HttpMethod method, CancellationToken cancellation)
@@ -196,8 +207,12 @@ namespace UIMS.Tasks
         private async Task<string> ResolveAcademicSupervisorAsync(string studentId, CancellationToken cancellation)
         {
             var records = new Dictionary<string, JObject>(StringComparer.Ordinal);
+            var current = await ReadAsync("supervisorAssignments", cancellation).ConfigureAwait(false);
+            if (current.Value is JObject currentRows)
+                foreach (var row in currentRows.Properties())
+                    if (row.Value is JObject assignment && Text(assignment, "studentId") == studentId && CurrentAcademicAssignment(assignment)) records["current-" + row.Name] = assignment;
             AddRecords(records, await ReadEqualAsync("assignments", "studentId", studentId, cancellation).ConfigureAwait(false));
-            var active = records.Values.Where(a => a.Value<bool?>("active") != false && Text(a, "studentId") == studentId)
+            var active = records.Values.Where(a => CurrentAcademicAssignment(a) && Text(a, "studentId") == studentId)
                 .Select(a => Text(a, "academicSupervisorId")).Where(id => id.Length > 0).Distinct(StringComparer.Ordinal).ToList();
             if (active.Count > 1) throw new UIMS.Services.FirebaseException(409, "The student has conflicting active academic supervisor assignments; coordinator review is required.");
             if (active.Count == 1) return active[0];
@@ -210,6 +225,11 @@ namespace UIMS.Tasks
             if (profileIds.Count > 1) throw new UIMS.Services.FirebaseException(409, "The student profile has conflicting academic supervisor assignments.");
             if (profileIds.Count == 1) return profileIds[0];
             throw new UIMS.Services.FirebaseException(409, "The student has no current academic supervisor assignment.");
+        }
+        private static bool CurrentAcademicAssignment(JObject assignment)
+        {
+            return assignment.Value<bool?>("active") != false && assignment.Value<bool?>("isActive") != false &&
+                !new[] { "inactive", "ended", "reassigned", "cancelled" }.Contains(Text(assignment, "status").ToLowerInvariant());
         }
         private async Task EnsureCurrentAssignmentAsync(string studentId, string expectedSupervisorId, CancellationToken cancellation)
         {
@@ -274,11 +294,22 @@ namespace UIMS.Tasks
             // Include historical reports where the student is now assigned to this supervisor, even if the original routing snapshot differs.
             var currentAssignments = new Dictionary<string, JObject>(StringComparer.Ordinal);
             AddRecords(currentAssignments, await ReadEqualAsync("assignments", "academicSupervisorId", actor.AcademicSupervisorId, cancellation).ConfigureAwait(false));
-            var studentIds = currentAssignments.Values.Where(a => a.Value<bool?>("active") != false).Select(a => Text(a, "studentId")).Where(s => s.Length > 0).Distinct(StringComparer.Ordinal).ToList();
+            var currentRoster = await ReadAsync("supervisorAssignments", cancellation).ConfigureAwait(false);
+            if (currentRoster.Value is JObject rosterRows)
+                foreach (var row in rosterRows.Properties())
+                    if (row.Value is JObject assignment && Text(assignment, "academicSupervisorId") == actor.AcademicSupervisorId && CurrentAcademicAssignment(assignment)) currentAssignments["current-" + row.Name] = assignment;
+            var studentIds = currentAssignments.Values.Where(CurrentAcademicAssignment).Select(a => Text(a, "studentId")).Where(s => s.Length > 0).Distinct(StringComparer.Ordinal).ToList();
+            // Existing profiles are also an established assignment source; every candidate
+            // is rechecked below so reassignment never grants historical access.
+            var assignedProfiles = new Dictionary<string, JObject>(StringComparer.Ordinal);
+            AddRecords(assignedProfiles, await ReadEqualAsync("users", "academicSupervisorId", actor.AcademicSupervisorId, cancellation).ConfigureAwait(false));
+            studentIds.AddRange(assignedProfiles.Values.Where(p => Text(p, "role") == "student").Select(p => Text(p, "studentId")).Where(id => id.Length > 0 && !studentIds.Contains(id)).Distinct());
             foreach (string studentId in studentIds) AddRecords(records, await ReadEqualAsync("weeklyReports", "studentId", studentId, cancellation).ConfigureAwait(false));
             var assignedStudents = new JArray();
             foreach (string studentId in studentIds)
             {
+                try { await EnsureCurrentAssignmentAsync(studentId, actor.AcademicSupervisorId, cancellation).ConfigureAwait(false); }
+                catch (UIMS.Services.FirebaseException e) when (e.StatusCode == 403 || e.StatusCode == 409) { continue; }
                 var profiles = new Dictionary<string, JObject>(StringComparer.Ordinal);
                 AddRecords(profiles, await ReadEqualAsync("users", "studentId", studentId, cancellation).ConfigureAwait(false));
                 var placements = new Dictionary<string, JObject>(StringComparer.Ordinal);

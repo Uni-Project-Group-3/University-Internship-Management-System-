@@ -18,6 +18,25 @@ internal static partial class Program
 {
     private static async Task RunWeeklyReportTests()
     {
+        await Test("academic review persists without enabling Storage or company report uploads", async () => {
+            var db = new WeeklyReportDb(); SeedWeekly(db);
+            var report = await NewWeeklyReport(WeeklyService(db, WeeklyCompanyActor()));
+            var settings = WeeklySettings(); settings["WeeklyReportsLiveWritesEnabled"] = "false"; settings["WeeklyReportReviewsEnabled"] = "true"; settings["FirebaseStorageEnabled"] = settings["FirebaseStorageLiveWritesEnabled"] = "false";
+            var reviewed = await WeeklyService(db, WeeklyAcademicActor(), settings).ReviewAsync((string)report["reportId"], (string)report["currentRevisionId"], "approved", "Reviewed exact revision", Guid.NewGuid().ToString("D"), CancellationToken.None);
+            Assert((string)reviewed["report"]["status"] == "approved");
+            await Reject<UIMS.Services.FirebaseException>(() => NewWeeklyReport(WeeklyService(db, WeeklyCompanyActor(), settings)));
+        });
+        await Test("academic weekly roster reads current supervisorAssignments and rejects conflicting assignments", async () => {
+            var db = new WeeklyReportDb();
+            db.Set("supervisorAssignments/CURRENT", new JObject { ["studentId"] = "ST-1", ["academicSupervisorId"] = "AC-1", ["isActive"] = true });
+            db.Set("users/U-ST1", new JObject { ["role"] = "student", ["studentId"] = "ST-1", ["academicSupervisorId"] = "AC-1", ["isActive"] = true });
+            var service = WeeklyService(db, WeeklyAcademicActor());
+            var data = await service.ListAcademicReportsAsync(CancellationToken.None);
+            Assert(data["assignedStudents"].Count() == 1);
+            db.Set("supervisorAssignments/CONFLICT", new JObject { ["studentId"] = "ST-1", ["academicSupervisorId"] = "AC-2", ["isActive"] = true });
+            data = await service.ListAcademicReportsAsync(CancellationToken.None);
+            Assert(data["assignedStudents"].Count() == 0);
+        });
         await Test("weekly reports persist company DOCX upload, review history and immutable resubmission revisions", WeeklyReportLifecycleOffline);
         await Test("weekly report authorization denies students, other companies and unassigned academic supervisors", WeeklyReportAuthorizationOffline);
         await Test("weekly report duplicate placement-week writes are conditional and retry-safe", WeeklyReportDuplicateConcurrencyOffline);

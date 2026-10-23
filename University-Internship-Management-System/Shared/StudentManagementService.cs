@@ -212,7 +212,7 @@ namespace University_Internship_Management_System.Shared
                 RequiredHours = profile.Value<int?>("requiredTrainingHours") ?? 0,
                 IsActive = active, MustChangePassword = profile.Value<bool?>("mustChangePassword") == true,
                 SupervisorId = supervisorId,
-                Supervisor = string.IsNullOrEmpty(supervisorId) ? "Unassigned" : Text(users[supervisorId], "fullName", "Unavailable supervisor"),
+                Supervisor = string.IsNullOrEmpty(supervisorId) ? "Unassigned" : Text(users[supervisorId] ?? users.Properties().FirstOrDefault(p => Text(p.Value, "academicSupervisorId") == supervisorId && Text(p.Value, "role") == "academicSupervisor")?.Value, "fullName", "Unavailable supervisor"),
                 CompletionStatus = status, ConfirmedAt = confirmed, DisableAt = disableAt,
                 CertificateId = Text(placement, "certificateId"),
                 AccountStatus = Text(profile, "deletionStatus") == "pending" ? "Deletion pending" :

@@ -69,9 +69,9 @@ namespace UIMS.Tasks
     }
 
     // Uses the established top-level /tasks records and server-resolved actors.
-    public sealed class TaskService
+    public sealed partial class TaskService
     {
-        private static readonly HttpClient Client = new HttpClient { Timeout = TimeSpan.FromSeconds(20) };
+        private static readonly HttpClient Client = new HttpClient(new HttpClientHandler { MaxConnectionsPerServer = 12 }) { Timeout = TimeSpan.FromSeconds(20) };
         private static readonly Lazy<Task<GoogleCredential>> ServerCredential = new Lazy<Task<GoogleCredential>>(() => GoogleCredential.GetApplicationDefaultAsync());
         private static readonly ConcurrentDictionary<string, SemaphoreSlim> AssignmentLocks = new ConcurrentDictionary<string, SemaphoreSlim>();
         private readonly HttpClient client;
@@ -106,9 +106,7 @@ namespace UIMS.Tasks
 
         private static async Task<string> GetServerAccessTokenAsync(CancellationToken cancellation)
         {
-            var credential = (await ServerCredential.Value.ConfigureAwait(false)).CreateScoped("https://www.googleapis.com/auth/firebase.database");
-            cancellation.ThrowIfCancellationRequested();
-            return await credential.UnderlyingCredential.GetAccessTokenForRequestAsync().ConfigureAwait(false);
+            return await University_Internship_Management_System.Shared.FirebaseServerCredential.AccessTokenAsync(cancellation).ConfigureAwait(false);
         }
 
         private void Ensure(bool write, string requiredRole = null)
@@ -326,9 +324,9 @@ namespace UIMS.Tasks
             if (role != actor.Role) throw new UIMS.Services.FirebaseException(403, "The requested task view does not match the verified account role.");
             // Imported tasks live at /tasks/{id}; legacy tasks link to placements by placementId.
             // Resolve those existing relations so old and new task records appear for the right roles.
-            var records = await ReadData("", cancellation).ConfigureAwait(false);
-            var placementRecords = await ReadAt("placements", "", cancellation).ConfigureAwait(false);
-            var userRecords = await ReadAt("users", "", cancellation).ConfigureAwait(false);
+            var taskRead = ReadData("", cancellation); var placementRead = ReadAt("placements", "", cancellation); var userRead = ReadAt("users", "", cancellation);
+            await Task.WhenAll(taskRead, placementRead, userRead).ConfigureAwait(false);
+            var records = await taskRead.ConfigureAwait(false); var placementRecords = await placementRead.ConfigureAwait(false); var userRecords = await userRead.ConfigureAwait(false);
             var placements = Rows(placementRecords.Data).Where(x => x.Value is JObject)
                 .ToDictionary(x => x.Name, x => (JObject)x.Value, StringComparer.Ordinal);
             var outputTasks = new JArray(); var outputSubs = new JArray(); var students = new JArray();
@@ -343,6 +341,7 @@ namespace UIMS.Tasks
                     var placementStatus = Text(row, "status");
                     var assignedStudent = Text(row, "studentId");
                     if (Text(row, "companySupervisorId") != actor.CompanySupervisorId ||
+                        (actor.CompanyId.Length > 0 && Text(row, "companyId") != actor.CompanyId) ||
                         (!placementStatus.Equals("active", StringComparison.OrdinalIgnoreCase) && !placementStatus.Equals("confirmed", StringComparison.OrdinalIgnoreCase)) || assignedStudent.Length == 0) continue;
                     var profile = FindStudentProfile(userRecords.Data, assignedStudent, assignedStudent);
                     if (profile == null || (Text(profile, "role").Length > 0 && University_Internship_Management_System.Shared.FirebaseSignInService.CanonicalRole(Text(profile, "role")) != "student")) continue;
@@ -1075,6 +1074,7 @@ namespace UIMS.Tasks
     {
         public static async Task<JObject> DispatchAsync(TaskService service, string method, string action, JObject data, CancellationToken cancellation)
         {
+            if (method == "GET" && action == "trainees") return await service.LoadTraineesAsync(cancellation).ConfigureAwait(false);
             if (service == null) throw new ArgumentNullException(nameof(service));
             data = data ?? new JObject();
             if (string.Equals(method, "GET", StringComparison.OrdinalIgnoreCase) && action == "board")

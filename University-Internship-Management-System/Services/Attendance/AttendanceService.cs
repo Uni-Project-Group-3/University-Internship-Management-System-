@@ -359,22 +359,7 @@ namespace UIMS.Attendance
                 return new AttendanceContext { Student = student, Date = Today() };
             var c = await Context(id, null, student, true, profileReady: profileReady);
             var history = await History(c.AssignmentId, id, c.HistoryRecords, c.HistorySchedules, c.Assignment);
-            long approvedMinutes = 0;
-            foreach (var item in history.Properties())
-                if (Text(item.Value, "hoursApprovalStatus") == "approved" && Text(item.Value, "studentId") == id &&
-                    Text(item.Value, "assignmentId") == c.AssignmentId && Number(item.Value, "checkOutAt") > Number(item.Value, "checkInAt") &&
-                    Text(item.Value, "companyId") == Text(c.Assignment, "companyId") &&
-                    Text(item.Value, "hoursApprovedById") != "" && Text(item.Value, "hoursApprovedById") == Text(item.Value, "companySupervisorId") &&
-                    (Text(item.Value, "status") == "completed" || Text(item.Value, "status") == "earlyDeparture") &&
-                    Number(item.Value, "checkOutAt") <= Now() && Number(item.Value, "workedMinutes") > 0 &&
-                    Number(item.Value, "checkInAt") > 0 && Number(item.Value, "workedMinutes") ==
-                    (Number(item.Value, "checkOutAt") - Number(item.Value, "checkInAt")) / 60000 && HasValidWorkedTime(item.Value, item.Name))
-                {
-                    long minutes = Number(item.Value, "workedMinutes");
-                    if (approvedMinutes > long.MaxValue - minutes)
-                        throw new InvalidOperationException("Approved training minutes exceed the supported range.");
-                    approvedMinutes += minutes;
-                }
+            long approvedMinutes = ApprovedTrainingMinutes.Calculate(history, c.AssignmentId, id, Text(c.Assignment, "companyId"), Now());
             bool checkIn = false, checkOut = false;
             try { CheckAction(c, "checkIn", Now()); checkIn = true; } catch (InvalidOperationException) { }
             try { CheckAction(c, "checkOut", Now()); checkOut = true; } catch (InvalidOperationException) { }

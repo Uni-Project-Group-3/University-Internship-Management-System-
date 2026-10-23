@@ -9,6 +9,7 @@
     <link runat="server" href="~/Assets/shared/colors.css" rel="stylesheet" />
     <link runat="server" href="~/Assets/company/reports-final-evaluation.css?v=20261022-statistics" rel="stylesheet" />
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet" />
+    <link href="../Assets/shared/workflow-ui.css?v=20261023" rel="stylesheet" />
 </head>
 <body class="app-page uims-workspace company-evaluation" data-demo-role="company">
     <form id="form1" runat="server" novalidate="novalidate">
@@ -55,5 +56,6 @@
 
 <script src="../Scripts/bootstrap.bundle.min.js"></script>
     <script src="../Js_project/final-evaluation-v2.js?v=20261023-local-fixes" defer="defer"></script>
+<script src="../Js_project/final-report-summary.js?v=20261023"></script>
 </body>
 </html>

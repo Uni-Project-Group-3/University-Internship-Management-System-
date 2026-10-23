@@ -126,9 +126,12 @@
         loadTaskFiles(task.id);
         modal('reviewModal')?.show();
     }
+    let refreshInFlight = false;
     async function refresh() {
-        try { state = await request(''); render(); connection('Connected to Firebase /tasks using your verified account.'); await refreshBoard(); return true; }
-        catch (error) {
+        if (refreshInFlight || boardBusy || document.querySelector(".dragging")) return false;
+        refreshInFlight = true;
+        try { state = await request(''); render(); connection('Connected to Firebase /tasks using your verified account.'); await refreshBoard(); refreshInFlight = false; return true; }
+        catch (error) { refreshInFlight = false;
             state = { tasks: [], submissions: [], students: [] };
             message(error.message, true); connection('Could not load task records from Firebase.');
             render();
@@ -215,8 +218,9 @@
         finally { boardBusy = false; draggedTaskId = null; }
     });
     by('taskSearch')?.addEventListener('input', render); by('statusFilter')?.addEventListener('change', render);
+    by('createTaskModal')?.addEventListener('show.bs.modal', refresh);
     window.addEventListener('focus', refresh); document.addEventListener('visibilitychange', () => { if (!document.hidden) refresh(); });
-    window.setInterval(() => { if (!document.hidden) refresh(); }, 30000);
+    window.setInterval(() => { if (!document.hidden) refresh(); }, 5000);
     if (window.Sys?.WebForms?.PageRequestManager) Sys.WebForms.PageRequestManager.getInstance().add_endRequest(refresh);
     refresh();
 })();

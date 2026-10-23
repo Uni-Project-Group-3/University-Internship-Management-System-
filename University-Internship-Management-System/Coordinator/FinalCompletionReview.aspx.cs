@@ -17,6 +17,11 @@ namespace University_Internship_Management_System.Coordinator
 {
     public partial class FinalCompletionReview : Page
     {
+        protected override void OnPreInit(EventArgs e)
+        {
+            UIMS.Services.FinalReportPageRoute.TransferIfEnabled(this, "coordinator");
+            base.OnPreInit(e);
+        }
         private CoordinatorReviewPageContext reviewContext;
         private string initializationError;
         private bool decisionPostback;

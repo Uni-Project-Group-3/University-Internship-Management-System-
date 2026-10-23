@@ -2,7 +2,24 @@
     'use strict';
     const api = '../TaskExamsApi.ashx', $ = id => document.getElementById(id), notice = $('notice'), list = $('examList'), panel = $('attemptPanel');
     let exam = null, attempt = null, answers = {}, saveTimer = null, busy = false;
-    function message(text, kind) { notice.textContent = text; notice.className = 'notice' + (kind ? ' ' + kind : ''); }
+    function message(text, kind) { notice.textContent = text; notice.className = 'notice' + (kind ? ' ' + kind : ''); const inside = $('attemptNotice'); inside.textContent = text; inside.className = notice.className; inside.hidden = false; }
+    function confirmAction(title, description, label) {
+        return new Promise(resolve => {
+            const dialog = $('examConfirmation'); $('examConfirmationTitle').textContent = title; $('examConfirmationText').textContent = description; $('examConfirmAccept').textContent = label || 'Confirm';
+            function finish(value) { dialog.close(); dialog.oncancel = null; resolve(value); }
+            $('examConfirmCancel').onclick = () => finish(false); $('examConfirmAccept').onclick = () => finish(true); dialog.oncancel = event => { event.preventDefault(); finish(false); }; dialog.showModal(); $('examConfirmCancel').focus();
+        });
+    }
+    async function closeAttempt() {
+        if (busy) return;
+        if (attempt?.status === 'inProgress') {
+            if (!await confirmAction('Leave the exam?', 'Save your current answers before closing? The exam timer continues while the popup is closed.', 'Save and close')) return;
+            if (!await saveAnswers(false)) return;
+        }
+        $('attemptDialog').close();
+    }
+    $('closeAttempt').onclick = closeAttempt;
+    $('attemptDialog').addEventListener('cancel', event => { event.preventDefault(); closeAttempt(); });
     async function call(action, data, method) {
         const response = await fetch(api + (action.indexOf('&') >= 0 ? '?action=' : '?action=') + action, { method: method || (data ? 'POST' : 'GET'), credentials: 'same-origin', cache: 'no-store', headers: data ? { 'Content-Type': 'application/json', 'Accept': 'application/json' } : { 'Accept': 'application/json' }, body: data ? JSON.stringify(data) : undefined });
         const result = await response.json(); if (!response.ok) throw new Error(result.message || 'Exam request failed.'); return result;
@@ -27,8 +44,11 @@
         } catch (e) { message(e.message, 'error'); }
     }
     async function startExam(id) {
+        if (busy || !await confirmAction('Start your exam?', 'The server will verify availability and start your timed attempt. Make sure you are ready.', 'Start exam')) return;
+        busy = true;
         try { exam = await call('exam&examId=' + encodeURIComponent(id)); attempt = await call('start', { examId: id }); answers = attempt.answers || {}; renderAttempt(); }
         catch (e) { message(e.message, 'error'); }
+        finally { busy = false; }
     }
     async function openExam(id, attemptId) {
         try { [exam, attempt] = await Promise.all([call('exam&examId=' + encodeURIComponent(id)), call('attempt&examId=' + encodeURIComponent(id) + '&attemptId=' + encodeURIComponent(attemptId))]); answers = attempt.answers || {}; renderAttempt(); }
@@ -47,15 +67,20 @@
         });
         const actions = document.createElement('div'); actions.className = 'actions'; const save = document.createElement('button'); save.className = 'secondary'; save.textContent = 'Save answers'; save.disabled = attempt.status !== 'inProgress'; save.onclick = () => saveAnswers(false); actions.appendChild(save); const submit = document.createElement('button'); submit.className = 'primary'; submit.textContent = attempt.status === 'inProgress' ? 'Submit exam' : 'Exam submitted'; submit.disabled = attempt.status !== 'inProgress'; submit.onclick = () => saveAnswers(true); actions.appendChild(submit); panel.appendChild(actions);
         if (attempt.status !== 'inProgress') { const score = document.createElement('p'); score.className = 'score'; score.textContent = attempt.score == null ? 'Submitted' : 'Score ' + attempt.score + ' / ' + attempt.maximumScore; panel.appendChild(score); }
-        panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        const dialog = $('attemptDialog'); if (!dialog.open) { $('attemptNotice').hidden = true; dialog.showModal(); } panel.scrollTop = 0;
     }
     function scheduleSave() { clearTimeout(saveTimer); saveTimer = setTimeout(() => saveAnswers(false), 800); }
     async function saveAnswers(submit) {
         if (!attempt || attempt.status !== 'inProgress') return;
+        if (submit) {
+            const unanswered = (exam.versionData?.questionOrder || []).filter(id => answers[id] === undefined || answers[id] === null || answers[id] === '').length;
+            if (!await confirmAction('Submit your exam?', 'You have ' + unanswered + ' unanswered question(s). Your answers will be locked after submission.', 'Confirm submission')) return false;
+        }
         if (busy) { clearTimeout(saveTimer); saveTimer = setTimeout(() => saveAnswers(submit), 500); return; }
         busy = true; clearTimeout(saveTimer);
         try { attempt = await call(submit ? 'submit' : 'answers', { examId: exam.id, attemptId: attempt.id, answers: answers }); const completed = attempt.status !== 'inProgress'; message(completed ? (attempt.status === 'expired' ? 'Time expired. The server graded the last saved answers.' : 'Exam answers submitted and graded by the server.') : 'Answers saved to Firebase.', 'success'); if (submit || completed) { renderAttempt(); await load(); } }
-        catch (e) { message(e.message, 'error'); } finally { busy = false; }
+        catch (e) { message(e.message, 'error'); return false; } finally { busy = false; }
+        return true;
     }
     load();
 }());

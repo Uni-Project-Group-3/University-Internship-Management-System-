@@ -11,7 +11,8 @@
 
         <link href="../Assets/shared/colors.css" rel="stylesheet" />
         <link href="../Assets/student/MyTasks.css?v=20261022-task-board" rel="stylesheet" />
-    </head>
+        <link href="../Assets/shared/workflow-ui.css?v=20261023" rel="stylesheet" />
+</head>
     <body data-demo-role="student">
         <form id="form1" runat="server">
             <div class="app">
@@ -282,7 +283,8 @@
         </form>
         <script src="../Scripts/bootstrap.bundle.min.js">
         </script>
-        <script src="../Js_project/Student/MyTasks.js?v=20261022-file-storage">
+        <script src="../Js_project/workflow-dialogs.js?v=20261023"></script>
+        <script src="../Js_project/Student/MyTasks.js?v=20261023-workflow">
         </script>
     </body>
 </html>
