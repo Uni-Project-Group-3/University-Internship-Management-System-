@@ -21,7 +21,7 @@
                         <span>Internships</span>
                     </span>
                 </a>
-                <button type="button" class="dash-sidebar-close" data-sidebar-close aria-label="Close navigation">
+                <button type="button" class="dash-sidebar-close" data-sidebar-close="" aria-label="Close navigation">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                         <path d="m6 6 12 12M6 18 18 6"/>
                     </svg>
@@ -56,7 +56,7 @@
                     <a href="<%= ResolveUrl("~/Coordinator/ManageStudents.aspx") %>">Add students &rarr;</a>
                 </div>
             </aside>
-            <button type="button" class="dash-sidebar-backdrop" data-sidebar-close aria-label="Close navigation" tabindex="-1" hidden>
+            <button type="button" class="dash-sidebar-backdrop" data-sidebar-close="" aria-label="Close navigation" tabindex="-1" hidden>
             </button>
             <div class="dash-main">
                 <header class="dash-topbar">
@@ -122,23 +122,23 @@
             </main></div>
         </div>
         <dialog id="companyEditor" class="companies-modal companies-modal--editor" aria-labelledby="editorTitle" aria-describedby="editorNotice">
-            <header class="companies-modal-header"><div><p class="companies-eyebrow">PARTNER MANAGEMENT</p><h2 id="editorTitle">Add company &amp; supervisor</h2><p>Build a new university partnership.</p></div><button type="button" class="companies-close" data-close aria-label="Close company form">&times;</button></header>
+            <header class="companies-modal-header"><div><p class="companies-eyebrow">PARTNER MANAGEMENT</p><h2 id="editorTitle">Add company &amp; supervisor</h2><p>Build a new university partnership.</p></div><button type="button" class="companies-close" data-close="" aria-label="Close company form">&times;</button></header>
             <div class="companies-modal-body"><p class="companies-inline-note" id="editorNotice">Enter company and supervisor details. Temporary sign-in details appear after saving; no email is sent.</p>
                 <section class="companies-form-section"><h3><span>01</span> Company information</h3><div class="companies-form-grid">
-                    <label class="companies-wide">Company name <span class="companies-required">*</span><input id="companyName" type="text" maxlength="160" autocomplete="organization" required data-company-field /></label>
-                    <label>Industry / Sector<input id="industry" type="text" maxlength="100" data-company-field /></label><label>Official email<input id="officialEmail" type="email" maxlength="254" autocomplete="email" data-company-field /></label>
-                    <label>Phone<input id="companyPhone" type="tel" maxlength="40" autocomplete="tel" data-company-field /></label><label>Website <span class="companies-optional">Optional</span><input id="companyWebsite" type="url" placeholder="https://" maxlength="300" data-company-field /></label>
-                    <label class="companies-wide">Address<input id="companyAddress" type="text" maxlength="300" autocomplete="street-address" data-company-field /></label><label class="companies-wide">Description <span class="companies-optional">Optional</span><textarea id="companyDescription" rows="2" maxlength="1000" data-company-field></textarea></label>
+                    <label class="companies-wide">Company name <span class="companies-required">*</span><input id="companyName" type="text" maxlength="160" autocomplete="organization" required data-company-field="" /></label>
+                    <label>Industry / Sector<input id="industry" type="text" maxlength="100" data-company-field="" /></label><label>Official email<input id="officialEmail" type="email" maxlength="254" autocomplete="email" data-company-field="" /></label>
+                    <label>Phone<input id="companyPhone" type="tel" maxlength="40" autocomplete="tel" data-company-field="" /></label><label>Website <span class="companies-optional">Optional</span><input id="companyWebsite" type="url" placeholder="https://" maxlength="300" data-company-field="" /></label>
+                    <label class="companies-wide">Address<input id="companyAddress" type="text" maxlength="300" autocomplete="street-address" data-company-field="" /></label><label class="companies-wide">Description <span class="companies-optional">Optional</span><textarea id="companyDescription" rows="2" maxlength="1000" data-company-field=""></textarea></label>
                 </div></section>
                 <section class="companies-form-section"><h3><span>02</span> Company supervisor</h3><div class="companies-form-grid">
-                    <label class="companies-wide">Full name <span class="companies-required">*</span><input id="supervisorName" type="text" maxlength="160" autocomplete="name" required data-company-field /></label><label>Email address <span class="companies-required">*</span><input id="supervisorEmail" type="email" maxlength="254" autocomplete="email" required data-company-field /></label><label>Phone number<input id="supervisorPhone" type="tel" maxlength="40" autocomplete="tel" data-company-field /></label>
+                    <label class="companies-wide">Full name <span class="companies-required">*</span><input id="supervisorName" type="text" maxlength="160" autocomplete="name" required data-company-field="" /></label><label>Email address <span class="companies-required">*</span><input id="supervisorEmail" type="email" maxlength="254" autocomplete="email" required data-company-field="" /></label><label>Phone number<input id="supervisorPhone" type="tel" maxlength="40" autocomplete="tel" data-company-field="" /></label>
                 </div><div class="companies-provisioning"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3m-4 5v2"/></svg><div><strong>Secure account provisioning</strong><p>Temporary credentials are generated securely when you save. New supervisors will be active and required to change their password on first login.</p></div></div></section>
                 <p class="companies-validation" id="companyValidation" aria-live="polite"></p>
             </div>
-            <footer class="companies-modal-footer"><span>Saved in Firebase. No welcome email will be sent.</span><div><button type="button" class="companies-button companies-button--secondary" data-close>Cancel</button><button type="button" class="companies-button" id="validateCompany">Check form</button><button type="button" class="companies-button" id="saveCompany">Create company</button></div></footer>
+            <footer class="companies-modal-footer"><span>Saved in Firebase. No welcome email will be sent.</span><div><button type="button" class="companies-button companies-button--secondary" data-close="">Cancel</button><button type="button" class="companies-button" id="validateCompany">Check form</button><button type="button" class="companies-button" id="saveCompany">Create company</button></div></footer>
         </dialog>
         <dialog id="accountPreview" class="companies-modal companies-modal--account" aria-labelledby="accountTitle">
-            <header class="companies-modal-header"><div><p class="companies-eyebrow">SUPERVISOR ACCOUNT</p><h2 id="accountTitle">Account actions</h2><p>Manage the selected Firebase supervisor account.</p></div><button type="button" class="companies-close" data-close aria-label="Close account actions">&times;</button></header>
+            <header class="companies-modal-header"><div><p class="companies-eyebrow">SUPERVISOR ACCOUNT</p><h2 id="accountTitle">Account actions</h2><p>Manage the selected Firebase supervisor account.</p></div><button type="button" class="companies-close" data-close="" aria-label="Close account actions">&times;</button></header>
             <div class="companies-modal-body"><div class="companies-account-target"><span aria-hidden="true">&#9675;</span><div><strong>No supervisor selected</strong><p>A verified supervisor name and email will appear here.</p></div><span class="companies-badge">Preview</span></div>
                 <div class="companies-action-list" role="group" aria-label="Supervisor actions">
                     <button type="button" data-account-action="details"><span><strong>View Details</strong><small>Company link, contact information, and account status</small></span><span aria-hidden="true">&#8599;</span></button>
@@ -147,10 +147,10 @@
                     <button type="button" data-account-action="enable"><span><strong>Enable Account</strong><small>Restore access to the same account</small></span><span aria-hidden="true">&#8594;</span></button>
                     <button type="button" class="companies-danger-action" data-account-action="delete"><span><strong>Delete Account</strong><small>Remove sign-in access while preserving academic history</small></span><span aria-hidden="true">&#8594;</span></button>
                 </div>
-            </div><footer class="companies-modal-footer"><span>Changes affect only the selected supervisor.</span><button type="button" class="companies-button companies-button--secondary" data-close>Close</button></footer>
+            </div><footer class="companies-modal-footer"><span>Changes affect only the selected supervisor.</span><button type="button" class="companies-button companies-button--secondary" data-close="">Close</button></footer>
         </dialog>
         <dialog id="accountConfirmation" class="companies-modal companies-modal--confirmation" aria-labelledby="confirmationTitle" aria-describedby="confirmationDescription">
-            <header class="companies-modal-header"><div><p class="companies-eyebrow">CONFIRM ACTION</p><h2 id="confirmationTitle">Account action</h2></div><button type="button" class="companies-close" data-close aria-label="Close confirmation">&times;</button></header>
+            <header class="companies-modal-header"><div><p class="companies-eyebrow">CONFIRM ACTION</p><h2 id="confirmationTitle">Account action</h2></div><button type="button" class="companies-close" data-close="" aria-label="Close confirmation">&times;</button></header>
             <div class="companies-modal-body"><div class="companies-account-target"><div><strong>No supervisor selected</strong><p>Name and email will be verified before this action.</p></div></div><p id="confirmationDescription" class="companies-confirmation-copy"></p><div id="companyCredentials" hidden><label>Sign-in email<input id="companyCredentialEmail" type="text" readonly autocomplete="off" /></label><label>Temporary password<input id="companyCredentialPassword" type="text" readonly autocomplete="off" /></label><button type="button" id="copyCompanyPassword" class="companies-button companies-button--secondary">Copy password</button><span id="companyCopyStatus" role="status"></span></div></div>
             <footer class="companies-modal-footer"><button type="button" class="companies-button companies-button--secondary" id="backToActions">Close</button><button type="button" class="companies-button" id="confirmAccountAction" disabled>Confirm</button></footer>
         </dialog>

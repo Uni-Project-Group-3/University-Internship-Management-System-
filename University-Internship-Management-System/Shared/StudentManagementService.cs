@@ -236,7 +236,13 @@ namespace University_Internship_Management_System.Shared
             var version = await database.ReadVersionAsync(operationPath);
             var operation = version.Value ?? new JObject();
             if (Text(operation, "state") == "complete")
-                throw new StudentManagementException("This student already has an account.");
+            {
+                // A historical completion marker is not an account. Older page-only
+                // deletion removed Auth/profile without updating this marker.
+                if (users[uid] != null || await authentication.FindAsync(uid) != null)
+                    throw new StudentManagementException("This student already has an account.");
+                operation = new JObject();
+            }
             var oldProfile = users[uid] as JObject;
             if (oldProfile != null && Text(operation, "kind") != "create")
                 throw new StudentManagementException("This account exists and cannot be replaced.");
