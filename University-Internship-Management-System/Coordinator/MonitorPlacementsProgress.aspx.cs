@@ -4,6 +4,8 @@ using System.Net;
 using System.Web.Script.Serialization;
 using System.Web.Security;
 using System.Web.UI;
+using System.Threading.Tasks;
+using University_Internship_Management_System.Shared;
 
 namespace University_Internship_Management_System.Coordinator
 {
@@ -13,28 +15,30 @@ namespace University_Internship_Management_System.Coordinator
 
         protected void Page_Load(object sender, EventArgs e)
         {
-            if (!Request.IsAuthenticated) { Response.Redirect("~/Auth/Login.aspx", false); Context.ApplicationInstance.CompleteRequest(); return; }
-            try { System.Threading.Tasks.Task.Run(() => new University_Internship_Management_System.Shared.StudentManagementService(gateway, gateway, new University_Internship_Management_System.Shared.StudentCredentialMailer()).RequireCoordinatorAsync(User.Identity.Name)).GetAwaiter().GetResult(); }
-            catch (UnauthorizedAccessException) { Response.StatusCode = 403; Response.TrySkipIisCustomErrors = true; lblMessage.Text = "An active coordinator account is required."; return; }
+            var identity=Context.User?.Identity as FormsIdentity;
+            if(identity==null||!identity.IsAuthenticated||FirebaseSignInService.CanonicalRole(identity.Ticket.UserData)!="coordinator") throw new System.Web.HttpException(403,"Coordinator access required.");
             if (!IsPostBack)
             {
-                LoadDashboardData();
+                RegisterAsyncTask(new PageAsyncTask(LoadDashboardData));
             }
         }
 
-        private void LoadDashboardData()
+        private async Task LoadDashboardData()
         {
             try
             {
                 using (WebClient client = new WebClient { Encoding = System.Text.Encoding.UTF8 })
                 {
+                    var gateway = new StudentFirebaseGateway();
+                    var identity = Context.User.Identity as FormsIdentity;
+                    if (!await gateway.IsActiveAuthenticationUidAsync(identity.Name) || FirebaseSignInService.ProfileResult(identity.Name, await gateway.ReadAsync("users/" + StudentManagementService.Key(identity.Name)) as Newtonsoft.Json.Linq.JObject).Role != "coordinator") throw new UnauthorizedAccessException();
                     JavaScriptSerializer serializer = new JavaScriptSerializer();
 
-                    string usersJson = DownloadSafe(client, "users.json");
-                    string placementsJson = DownloadSafe(client, "placements.json");
-                    string companiesJson = DownloadSafe(client, "companies.json");
-                    string tasksJson = DownloadSafe(client, "tasks.json");
-                    string attendanceJson = DownloadSafe(client, "uimsAttendance/attendance.json");
+                    string usersJson = (await gateway.ReadAsync("users")).ToString(Newtonsoft.Json.Formatting.None);
+                    string placementsJson = (await gateway.ReadAsync("placements")).ToString(Newtonsoft.Json.Formatting.None);
+                    string companiesJson = (await gateway.ReadAsync("companies")).ToString(Newtonsoft.Json.Formatting.None);
+                    string tasksJson = (await gateway.ReadAsync("tasks")).ToString(Newtonsoft.Json.Formatting.None);
+                    string attendanceJson = (await gateway.ReadAsync("uimsAttendance/attendance")).ToString(Newtonsoft.Json.Formatting.None);
 
                     var users = ParseJson<Dictionary<string, UserData>>(serializer, usersJson) ?? new Dictionary<string, UserData>();
                     var placements = ParseJson<Dictionary<string, PlacementData>>(serializer, placementsJson) ?? new Dictionary<string, PlacementData>();
@@ -99,7 +103,7 @@ namespace University_Internship_Management_System.Coordinator
                             {
                                 row.CompanySupervisor = u.Value.fullName;
                             }
-                            else if (u.Value.role == "academicSupervisor" && u.Key == pData.academicSupervisorId)
+                            else if (u.Value.role == "academicSupervisor" && (u.Key == pData.academicSupervisorId || u.Value.academicSupervisorId == pData.academicSupervisorId))
                             {
                                 row.AcademicSupervisor = u.Value.fullName;
                             }
@@ -177,7 +181,7 @@ namespace University_Internship_Management_System.Coordinator
             return serializer.Deserialize<T>(json);
         }
 
-        public class UserData { public string fullName { get; set; } public string role { get; set; } public string studentId { get; set; } public string majorId { get; set; } public string department { get; set; } }
+        public class UserData { public string fullName { get; set; } public string role { get; set; } public string studentId { get; set; } public string academicSupervisorId { get; set; } public string majorId { get; set; } public string department { get; set; } }
         public class PlacementData { public string studentId { get; set; } public string companyId { get; set; } public string companySupervisorId { get; set; } public string academicSupervisorId { get; set; } public string status { get; set; } public int requiredHours { get; set; } }
         public class CompanyData { public string name { get; set; } }
         public class TaskData { public string studentId { get; set; } public string placementId { get; set; } public string status { get; set; } }

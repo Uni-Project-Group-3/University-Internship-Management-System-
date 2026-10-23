@@ -9,6 +9,7 @@
     <link runat="server" href="~/Assets/shared/colors.css" rel="stylesheet" />
     <link runat="server" href="~/Assets/student/my-progress-evaluation.css?v=20261021-original-ui" rel="stylesheet" />
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet" />
+    <link href="../Assets/shared/workflow-ui.css?v=20261023" rel="stylesheet" />
 </head>
 <body class="app-page uims-workspace student-progress">
     <form id="form1" runat="server">

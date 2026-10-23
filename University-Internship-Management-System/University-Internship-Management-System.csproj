@@ -505,7 +505,7 @@
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <Import Project="$(VSToolsPath)\WebApplications\Microsoft.WebApplication.targets" Condition="'$(VSToolsPath)' != ''" />
   <Import Project="$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v10.0\WebApplications\Microsoft.WebApplication.targets" Condition="false" />
-  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
+  <!-- To modify your build process, add your task inside one of the targets below and uncomment it.
        Other similar extension points exist, see Microsoft.Common.targets.
   <Target Name="BeforeBuild">
   </Target>
@@ -674,6 +674,10 @@
     </Compile>
     <Content Include="Assets\company\ManageTasks.css" />
     <Content Include="Js_project\Company\ManageTasks.js" />
+    <Content Include="Js_project\Company\TaskComposer.js" />
+    <Content Include="Js_project\task-dialogs.js" />
+    <Content Include="Js_project\weekly-task-context.js" />
+    <Content Include="Assets\task-workspace.css" />
     <Content Include="Student\MyTasks.aspx" />
     <Compile Include="Student\MyTasks.aspx.cs">
       <DependentUpon>MyTasks.aspx</DependentUpon>
@@ -781,8 +785,25 @@
     <Compile Include="Services\FirebaseConfiguration.cs" />
     <Compile Include="Services\FirebaseApiHandler.cs" />
     <Compile Include="Services\ApplicationWorkflowService.cs" />
+<Compile Include="Services\AcademicAssignmentService.cs" />
+<Compile Include="Services\AcademicAssignmentsApi.cs" />
     <Compile Include="Services\FirebaseFileStorageService.cs" />
     <Compile Include="Services\TaskService.cs" />
+    <Compile Include="Shared\FirebaseServerCredential.cs" />
+    <Compile Include="Services\Attendance\ApprovedTrainingMinutes.cs" />
+    <Compile Include="Services\FinalEvaluation\FinalReportWorkflow.cs" />
+    <Compile Include="Services\FinalEvaluation\FinalReportApi.cs" />
+    <Content Include="AcademicAssignmentsApi.ashx" />
+<Content Include="Assets\coordinator\academic-assignment.css" />
+<Content Include="FinalReportsApi.ashx" />
+    <Content Include="FinalReports.aspx" />
+    <Content Include="Assets\final-reports.css" />
+    <Content Include="Assets\shared\workflow-ui.css" />
+    <Content Include="Js_project\final-reports.js" />
+    <Content Include="Js_project\final-report-summary.js" />
+    <Content Include="Js_project\workflow-dialogs.js" />
+    <Compile Include="Services\CompanyTraineesService.cs" />
+    <Compile Include="Services\TaskChangeFeed.cs" />
     <Compile Include="Services\TaskExamService.cs" />
     <Compile Include="Services\TaskExamsApiHandler.cs" />
     <Compile Include="Services\WeeklyReportService.cs" />

@@ -1,0 +1,8 @@
+{
+  "rules": {
+    "finalEvaluationWorkflows": { ".read": false, ".write": false, ".indexOn": ["studentId", "companyId", "academicSupervisorId", "status"] },
+    "finalTrainingOutcomes": { ".read": false, ".write": false },
+    "notifications": { ".read": false, ".write": false },
+    "uimsAttendance": { "trainingAssignments": { ".indexOn": ["placementId"] } }
+  }
+}

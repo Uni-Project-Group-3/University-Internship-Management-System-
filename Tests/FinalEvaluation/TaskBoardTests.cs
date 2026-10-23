@@ -76,6 +76,14 @@ internal static partial class Program
         var races = await Task.WhenAll(BoardMoveStatus(raceA, "op-race-a"), BoardMoveStatus(raceB, "op-race-b"));
         Assert(races.Count(x => x == 200) == 1 && races.Count(x => x == 409) == 1 && collision.BoardWrites == 1);
         Assert((string)collision.Task["status"] == "Submitted");
+        var positionsBefore = ((JObject)db.Records["taskBoards/PLACE-1"])["positions"].DeepClone();
+        await OfflineTaskService(db, company, settings).ReorderColumnsAsync("PLACE-1", new JArray("done", "review", "inProgress", "todo"), "column-reorder", CancellationToken.None);
+        var reordered = await OfflineTaskService(db, company, settings).LoadBoardAsync("PLACE-1", CancellationToken.None);
+        Assert((string)reordered["columns"][0]["id"] == "done");
+        Assert((string)reordered["tasks"].First(t => (string)t["id"] == "TASK-C")["columnId"] == "todo");
+        Assert(JToken.DeepEquals(positionsBefore["TASK-A"], db.Records["taskBoards/PLACE-1"]["positions"]["TASK-A"]));
+        Assert((bool)(await OfflineTaskService(db, company, settings).ReorderColumnsAsync("PLACE-1", new JArray("done", "review", "inProgress", "todo"), "column-reorder", CancellationToken.None))["duplicate"]);
+        await Reject<UIMS.Services.FirebaseException>(() => OfflineTaskService(db, student, settings).ReorderColumnsAsync("PLACE-1", new JArray("done", "review", "inProgress", "todo"), "denied-columns", CancellationToken.None));
         Assert(db.AllRequestsAuthenticated);
     }
 

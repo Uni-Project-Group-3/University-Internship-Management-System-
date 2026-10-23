@@ -11,7 +11,8 @@
 
         <link href="../Assets/shared/colors.css" rel="stylesheet" />
         <link href="../Assets/company/ManageTasks.css?v=20261022-task-board" rel="stylesheet" />
-    </head>
+        <link href="../Assets/shared/workflow-ui.css?v=20261023" rel="stylesheet" />
+</head>
     <body data-demo-role="company">
         <form id="form1" runat="server">
             <div class="app">
@@ -195,9 +196,10 @@
                                 <select id="statusFilter" aria-label="Filter by task status" class="form-select">
                                     <option value="all">All Statuses</option>
                                     <option value="submitted">Awaiting Review</option>
-                                    <option value="revision">Revision Requested</option>
+                                    <option value="revision">Not complete</option>
                                     <option value="completed">Completed</option>
-                                    <option value="assigned">In Progress</option>
+                                    <option value="assigned">New</option>
+                                    <option value="inprogress">In Progress</option>
                                 </select>
                             </div>
                         </div>
@@ -205,8 +207,9 @@
                         <!-- TASKS LIST -->
                         <div class="d-flex justify-content-between align-items-center mb-3"><h4 class="m-0 fw-bold fs-5">Tasks</h4><span id="taskCount" class="badge badge-primary-soft fs-6">Loading…</span></div>
                         <div class="task-board-toolbar" id="taskBoardToolbar">
-                            <label for="boardPlacementSelect">Trainee placement</label>
-                            <select id="boardPlacementSelect" class="form-select" aria-label="Select trainee task board"></select>
+                            <label class="board-filter-field" for="deadlineFilter">Deadline<select id="deadlineFilter" class="form-select"><option value="all">Any deadline</option><option value="overdue">Overdue</option><option value="week">Due in 7 days</option></select></label>
+                            <label class="board-filter-field" for="batchFilter">Assignment batch<select id="batchFilter" class="form-select"><option value="all">All assignment batches</option></select></label>
+                            <label class="board-filter-field" for="boardPlacementSelect">Trainee placement<select id="boardPlacementSelect" class="form-select" aria-label="Select trainee task board"></select></label>
                             <div class="btn-group" role="group" aria-label="Task view">
                                 <button type="button" class="btn btn-primary" id="boardModeButton" aria-pressed="true">Board</button>
                                 <button type="button" class="btn btn-outline-primary" id="listModeButton" aria-pressed="false">List</button>
@@ -231,46 +234,56 @@
             </div>
 
             <!-- ============ CREATE TASK MODAL ============ -->
-            <div class="modal" id="createTaskModal" tabindex="-1" aria-hidden="true">
+            <div class="modal fade" id="createTaskModal" tabindex="-1" aria-labelledby="createTaskHeading" aria-hidden="true" data-bs-backdrop="static">
                 <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-lg">
                     <div class="modal-content custom-modal">
                         <div class="modal-header pb-0 border-0 pt-4 px-4">
-                            <h5 class="modal-title fw-bold template-style-10">Create New Task</h5>
+                            <div><span class="task-compose-eyebrow">COMPANY WORKSPACE / NEW ASSIGNMENT</span><h5 id="createTaskHeading" class="modal-title fw-bold template-style-10">Create a task</h5><p class="task-compose-intro">Set clear expectations. Each selected student receives an independent task.</p></div>
                             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
                             </button>
                         </div>
                         <div class="modal-body p-4">
                             <div id="createTaskError" class="alert alert-danger" role="alert" hidden>
                             </div>
-                            <div class="mb-4">
-                                <label class="form-label custom-label">Task Title</label>
+                            <div class="task-compose-grid"><section class="task-compose-section"><h6>01 <span>Task details</span></h6>
+                            <div class="mb-3">
+                                <label for="newTaskTitle" class="form-label custom-label">Task title <span aria-hidden="true">*</span></label>
                                 <input type="text" class="form-control custom-input" id="newTaskTitle" required maxlength="150" placeholder="e.g. RESTful API Integration">
                             </div>
                             <div class="mb-4">
-                                <label class="form-label custom-label">Description & Requirements</label>
+                                <label for="newTaskDescription" class="form-label custom-label">Description <span aria-hidden="true">*</span></label>
                                 <textarea class="form-control custom-input" rows="3" id="newTaskDescription" required maxlength="3000" placeholder="Describe requirements clearly...">
                                 </textarea>
                             </div>
-                            <div class="row mb-4">
+                            <div class="mb-3"><label for="newTaskCriteria" class="form-label custom-label">Instructions &amp; assessment criteria <span aria-hidden="true">*</span></label><textarea class="form-control custom-input" id="newTaskCriteria" rows="4" required maxlength="500" placeholder="Explain the steps, deliverables and how the work will be assessed."></textarea><small>Clear instructions for the student · up to 500 characters.</small></div>
+                            <div class="row mb-3">
                                 <div class="col-md-6">
-                                    <label class="form-label custom-label">Deadline</label>
-                                    <input type="date" id="newTaskDeadline" required class="form-control custom-input">
+                                    <label for="newTaskDeadline" class="form-label custom-label">Deadline date &amp; time <span aria-hidden="true">*</span></label>
+                                    <input type="datetime-local" id="newTaskDeadline" required class="form-control custom-input"><small class="task-timezone"></small>
                                 </div>
-                                <div class="col-md-6">
-                                    <label class="form-label custom-label">Assigned Student</label>
-                                    <select id="newTaskStudent" class="form-control custom-input">
+                                <div class="col-md-6"><label class="form-label custom-label" for="newTaskMaximum">Maximum grade <span aria-hidden="true">*</span></label><input type="number" id="newTaskMaximum" class="form-control custom-input" min="1" max="1000" step="1" value="10" required /><small>Whole number from 1 to 1000.</small></div>
+                            </div></section>
+                            <section class="task-compose-section task-compose-students"><h6>02 <span>Assign students</span></h6>
+                                    <label for="studentSearch" class="form-label custom-label">Eligible students <span aria-hidden="true">*</span></label>
+                                    <select id="newTaskStudent" class="form-control custom-input" hidden>
                                         <option value="">Loading active trainee placements…</option>
                                     </select>
-                                </div>
-                            </div>
-                            <div class="mb-2">
-                                <label class="form-label custom-label">Evaluation Criteria (Preview)</label>
-                                <label class="form-label custom-label" for="newTaskMaximum">Maximum task score</label><input type="number" id="newTaskMaximum" class="form-control custom-input" min="1" value="10" required /><input type="text" class="form-control custom-input" id="newTaskCriteria" required placeholder="e.g. Code Quality">
-                            </div>
+                                    <div id="studentPicker" class="student-picker">
+                                        <input id="studentSearch" type="search" class="form-control" placeholder="Search students by name" aria-label="Search eligible students" />
+                                        <div class="d-flex gap-2 mt-2"><button type="button" id="selectAllStudents" class="btn btn-light btn-sm">Select all</button><button type="button" id="clearStudents" class="btn btn-light btn-sm">Clear</button><span id="selectedStudentCount" role="status">0 selected</span></div>
+                                        <div id="studentChips" class="student-chips mt-2"></div>
+                                        <div id="studentOptions" class="student-picker-list"></div>
+                                        <span id="studentSelectionError" class="field-error" role="alert"></span>
+                                    </div>
+                                    <p class="task-compose-help">Select one, several or all students. Submissions, grades and board positions stay separate.</p>
+                            </section>
+                            <section class="task-compose-section"><h6>03 <span>Resources</span> <small>Optional</small></h6><label for="createTaskResources" class="form-label custom-label">Supporting files</label><div class="task-compose-upload"><i class="bi bi-cloud-arrow-up" aria-hidden="true"></i><input id="createTaskResources" type="file" multiple class="form-control" accept=".pdf,.docx,.xlsx,.pptx,.txt,.png,.jpg,.jpeg" /><small>PDF, Office documents, text or images · up to 10 MiB each.</small></div></section>
+                            <section class="task-compose-section"><h6>04 <span>Examination</span> <small>Optional</small></h6><label class="task-compose-exam"><input type="checkbox" id="configureTaskExam" /><span><strong>Add an examination</strong><small>Build MCQ, True / False and image questions inside this popup after creating the assignments.</small></span></label></section></div>
+                            <div id="taskExamBuilder" class="task-builder" hidden></div>
                         </div>
                         <div class="modal-footer border-0 pb-4 px-4">
                             <button type="button" class="btn btn-light custom-btn-light" data-bs-dismiss="modal">Cancel</button>
-                            <button type="button" class="btn custom-btn-primary" id="publishTaskBtn">Publish Task</button>
+                            <button type="button" class="btn custom-btn-primary" id="publishTaskBtn">Create task</button>
                         </div>
                     </div>
                 </div>
@@ -278,24 +291,36 @@
 
             <!-- ============ REVIEW MODAL ============ -->
             <div class="modal" id="reviewModal" tabindex="-1" aria-hidden="true">
-                <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+                <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable company-task-dialog">
                     <div class="modal-content custom-modal">
                         <div class="modal-header pb-0 border-0 pt-4 px-4">
                             <h5 class="modal-title fw-bold template-style-10">Review & Grade Submission</h5>
                             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
                             </button>
                         </div>
+                        <nav class="company-task-tabs" role="tablist" aria-label="Review task sections">
+                            <button type="button" role="tab" data-company-tab="details" aria-selected="true">Details</button>
+                            <button type="button" role="tab" data-company-tab="submission" aria-selected="false">Submission</button>
+                            <button type="button" role="tab" data-company-tab="exam" aria-selected="false">Exam results</button>
+                            <button type="button" role="tab" data-company-tab="files" aria-selected="false">Files</button>
+                            <button type="button" role="tab" data-company-tab="grading" aria-selected="false">Task grading</button>
+                            <button type="button" role="tab" data-company-tab="history" aria-selected="false">History</button>
+                        </nav>
                         <div class="modal-body p-4">
                             <div id="modalErrorContainer" class="alert alert-danger custom-alert template-style-11">
                             </div>
-
+                            <section data-company-panel="details"><div id="taskFullDetails"></div></section>
+                            <section data-company-panel="exam" hidden><h6>Examination review</h6><div id="companyTaskExams" aria-live="polite"></div></section>
+                            <section data-company-panel="history" hidden><h6>Submission and instruction history</h6><div id="companyTaskHistory"></div></section>
+                            <section data-company-panel="submission" hidden>
                             <div class="submission-details-box mb-4">
                                 <strong class="d-block mb-1 text-dark">Student Description:</strong>
                                 <p class="mb-3 text-muted">Submission details load from Firebase when a task is opened.</p>
                                 <strong class="d-block mb-1 text-dark">Submitted Link:</strong>
                                 <span class="text-muted">Submission link and attachment details load from Firebase.</span>
                             </div>
-
+                            </section>
+                            <section data-company-panel="files" hidden>
                             <div class="mb-4">
                                 <strong class="d-block mb-2 text-dark">Task files and submission attachments</strong>
                                 <div id="companyTaskAttachments" class="small mb-3" aria-live="polite">Loading authorized files…</div>
@@ -304,17 +329,19 @@
                                 <small class="text-muted mt-2 d-block">PDF, DOCX, XLSX, PPTX, TXT, PNG or JPEG · maximum 10 MiB.</small>
                                 <button type="button" class="btn btn-light mt-2" id="uploadTaskFileBtn">Upload to Firebase Storage</button>
                             </div>
-
+                            </section>
+                            <section data-company-panel="grading" hidden>
                             <div class="mb-4">
                                 <label for="gradeInput" class="form-label custom-label">Task score</label>
                                 <p class="text-muted small">The score range follows the assigned task.</p>
-                                <input type="number" id="gradeInput" class="form-control custom-input" min="0" max="100" placeholder="e.g. 95">
+                                <input type="number" id="gradeInput" class="form-control custom-input" min="0" max="100" step="1" required placeholder="e.g. 95">
                             </div>
                             <div class="mb-2">
-                                <label class="form-label custom-label">Supervisor Feedback / Notes</label>
+                                <label for="feedbackInput" class="form-label custom-label">Supervisor Feedback / Notes (optional)</label>
                                 <textarea id="feedbackInput" class="form-control custom-input" rows="3" placeholder="Write feedback or request modifications...">
                                 </textarea>
                             </div>
+                            </section>
                         </div>
                         <div class="modal-footer border-0 pb-4 px-4 d-flex justify-content-between">
                             <button type="button" class="btn custom-btn-danger" id="requestRevisionBtn">Request Revision</button>
@@ -327,7 +354,8 @@
         </form>
         <script src="../Scripts/bootstrap.bundle.min.js">
         </script>
-        <script src="../Js_project/Company/ManageTasks.js?v=20261022-file-storage">
+        <script src="../Js_project/Company/ManageTasks.js?v=20261023-company-trainees">
         </script>
+        <script src="../Js_project/Company/TaskComposer.js?v=20261023-publish-fix"></script>
     </body>
 </html>

@@ -1,0 +1,1 @@
+<%@ WebHandler Language="C#" Class="UIMS.Services.AcademicAssignmentsApi" %>

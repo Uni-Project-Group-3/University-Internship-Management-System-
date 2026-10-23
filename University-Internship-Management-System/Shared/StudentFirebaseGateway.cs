@@ -15,7 +15,7 @@ namespace University_Internship_Management_System.Shared
 {
     public sealed class StudentFirebaseGateway : IStudentDatabase, ICompanyAuthentication
     {
-        private static readonly HttpClient Client = new HttpClient { Timeout = TimeSpan.FromSeconds(25) };
+        private static readonly HttpClient Client = new HttpClient(new HttpClientHandler { MaxConnectionsPerServer = 12 }) { Timeout = TimeSpan.FromSeconds(25) };
         private static readonly object Initialization = new object();
         private readonly UIMS.Services.FirebaseConfiguration firebaseConfiguration;
         public StudentFirebaseGateway() : this(new UIMS.Services.FirebaseConfiguration()) { }
@@ -55,9 +55,7 @@ namespace University_Internship_Management_System.Shared
             if (!Uri.TryCreate(configured, UriKind.Absolute, out baseUri) || baseUri.Scheme != "https" ||
                 !string.IsNullOrEmpty(baseUri.Query) || !string.IsNullOrEmpty(baseUri.UserInfo))
                 throw new InvalidOperationException("Configure a valid HTTPS FirebaseDatabaseUrl.");
-            var credential = (await GoogleCredential.GetApplicationDefaultAsync().ConfigureAwait(false)).CreateScoped(
-                "https://www.googleapis.com/auth/firebase.database", "https://www.googleapis.com/auth/userinfo.email");
-            string token = await credential.UnderlyingCredential.GetAccessTokenForRequestAsync().ConfigureAwait(false);
+            string token = await FirebaseServerCredential.AccessTokenAsync(System.Threading.CancellationToken.None).ConfigureAwait(false);
             var request = new HttpRequestMessage(method, configured.TrimEnd('/') + "/" + path + ".json");
             request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
             if (value != null) request.Content = new StringContent(JsonConvert.SerializeObject(value), Encoding.UTF8, "application/json");
@@ -141,6 +139,7 @@ namespace University_Internship_Management_System.Shared
         {
             using (var request = await RequestAsync(HttpMethod.Put, path, value).ConfigureAwait(false))
             {
+                if (value == null) request.Content = new StringContent("null", Encoding.UTF8, "application/json");
                 request.Headers.TryAddWithoutValidation("if-match", etag);
                     using (var response = await Client.SendAsync(request).ConfigureAwait(false))
                 {

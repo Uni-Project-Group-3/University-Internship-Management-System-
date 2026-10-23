@@ -22,6 +22,11 @@ namespace University_Internship_Management_System.Services.FinalEvaluation
     // Shared Web Forms orchestration only; authorization and persistence stay in C# workflows.
     public abstract class PercentageEvaluationPage : Page
     {
+        protected override void OnPreInit(EventArgs e)
+        {
+            UIMS.Services.FinalReportPageRoute.TransferIfEnabled(this, Academic ? "academicSupervisor" : "companySupervisor");
+            base.OnPreInit(e);
+        }
         private static readonly HttpClient FirebaseReadClient = new HttpClient { Timeout = TimeSpan.FromSeconds(15) };
         protected abstract bool Academic { get; }
         private string operation;

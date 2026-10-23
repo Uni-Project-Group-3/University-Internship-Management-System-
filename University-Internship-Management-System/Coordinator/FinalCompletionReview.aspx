@@ -20,6 +20,7 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet" />
     <link href="../Assets/shared/colors.css" rel="stylesheet" />
     <link runat="server" href="~/Assets/coordinator/final-completion-review.css?v=bc8409d2f5de" rel="stylesheet" />
+    <link href="../Assets/shared/workflow-ui.css?v=20261023" rel="stylesheet" />
 </head>
 <body class="standalone-shell">
     <form id="reviewForm" runat="server">
@@ -207,5 +208,6 @@
     </form>
     <script src="../Scripts/bootstrap.bundle.min.js"></script>
     <script src="../Js_project/Coordinator/final-completion-review.js?v=20261023-dashboard"></script>
+<script src="../Js_project/final-report-summary.js?v=20261023"></script>
 </body>
 </html>

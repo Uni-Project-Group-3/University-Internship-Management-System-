@@ -34,6 +34,7 @@ namespace UIMS.Tasks
                     {
                         JObject result;
                         if (action == "list") result = await service.ListAsync(cancellation).ConfigureAwait(false);
+                        else if (action == "eligibility") result = await service.EligibilityAsync(context.Request.QueryString["examId"], cancellation).ConfigureAwait(false);
                         else if (action == "exam") result = actor.Role == "companySupervisor" ? await service.GetCompanyExamAsync(context.Request.QueryString["examId"], cancellation).ConfigureAwait(false) : await service.GetStudentExamAsync(context.Request.QueryString["examId"], cancellation).ConfigureAwait(false);
                         else if (action == "attempts") result = await service.ListAttemptsAsync(context.Request.QueryString["examId"], cancellation).ConfigureAwait(false);
                         else if (action == "attempt") result = await service.GetMyAttemptAsync(context.Request.QueryString["examId"], context.Request.QueryString["attemptId"], cancellation).ConfigureAwait(false);
@@ -73,6 +74,9 @@ namespace UIMS.Tasks
                         case "create": response = await service.CreateDraftAsync(body, cancellation).ConfigureAwait(false); break;
                         case "save": response = await service.SaveDraftAsync((string)body["examId"], body["draft"] as JObject, body["revision"] == null ? null : body["revision"].ToString(), cancellation).ConfigureAwait(false); break;
                         case "publish": response = await service.PublishAsync((string)body["examId"], cancellation).ConfigureAwait(false); break;
+                        case "release": response = await service.ReleaseResultAsync((string)body["examId"], (string)body["studentId"], (string)body["attemptId"], (string)body["feedback"] ?? "", cancellation).ConfigureAwait(false); break;
+                        case "hideResult": response = await service.HideResultAsync((string)body["examId"], (string)body["studentId"], (string)body["attemptId"], cancellation).ConfigureAwait(false); break;
+                        case "revision": response = await service.RequestExamRevisionAsync((string)body["examId"], (string)body["studentId"], (string)body["attemptId"], (string)body["reason"], (string)body["deadline"], cancellation).ConfigureAwait(false); break;
                         case "start": response = await service.StartAttemptAsync((string)body["examId"], cancellation).ConfigureAwait(false); break;
                         case "answers": response = await service.SaveAnswersAsync((string)body["examId"], (string)body["attemptId"], body["answers"] as JObject, false, cancellation).ConfigureAwait(false); break;
                         case "submit": response = await service.SaveAnswersAsync((string)body["examId"], (string)body["attemptId"], body["answers"] as JObject, true, cancellation).ConfigureAwait(false); break;
@@ -105,6 +109,6 @@ namespace UIMS.Tasks
         private static async Task WriteJsonAsync(HttpContext context, JToken value, CancellationToken cancellation)
         { context.Response.StatusCode = 200; await context.Response.Output.WriteAsync(value.ToString(Formatting.None)).ConfigureAwait(false); }
         private static void WriteError(HttpContext context, int status, string message)
-        { context.Response.StatusCode = status; context.Response.TrySkipIisCustomErrors = true; context.Response.ContentType = "application/json; charset=utf-8"; context.Response.Write(new JObject { ["success"] = false, ["message"] = message }.ToString(Formatting.None)); }
+        { context.Response.SuppressFormsAuthenticationRedirect = true; context.Response.StatusCode = status; context.Response.TrySkipIisCustomErrors = true; context.Response.ContentType = "application/json; charset=utf-8"; context.Response.Write(new JObject { ["success"] = false, ["message"] = message }.ToString(Formatting.None)); }
     }
 }
