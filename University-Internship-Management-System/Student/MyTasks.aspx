@@ -298,6 +298,10 @@
         </form>
         <script src="../Scripts/bootstrap.bundle.min.js">
         </script>
+        <link href="../Assets/task-workspace.css?v=20261023-task-connection" rel="stylesheet" />
+        <script src="../Js_project/firebase-client.js?v=20261023-task-connection"></script>
+        <script src="../Js_project/task-dialogs.js?v=20261023-task-connection"></script>
+        <script src="../Js_project/Student/TaskExams.js?v=20261023-task-connection"></script>
         <script src="../Js_project/workflow-dialogs.js?v=20261023"></script>
         <script src="../Js_project/Student/MyTasks.js?v=20261023-workflow">
         </script>

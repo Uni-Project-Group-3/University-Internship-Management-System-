@@ -354,7 +354,11 @@
         </form>
         <script src="../Scripts/bootstrap.bundle.min.js">
         </script>
-        <script src="../Js_project/Company/ManageTasks.js?v=20261023-company-trainees">
+        <link href="../Assets/task-workspace.css?v=20261023-task-connection" rel="stylesheet" />
+        <script src="../Js_project/firebase-client.js?v=20261023-task-connection"></script>
+        <script src="../Js_project/task-dialogs.js?v=20261023-task-connection"></script>
+        <script src="../Js_project/Company/TaskExams.js?v=20261023-task-connection"></script>
+        <script src="../Js_project/Company/ManageTasks.js?v=20261023-task-connection">
         </script>
         <script src="../Js_project/Company/TaskComposer.js?v=20261023-publish-fix"></script>
     </body>

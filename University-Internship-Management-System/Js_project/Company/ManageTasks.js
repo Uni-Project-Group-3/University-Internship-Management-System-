@@ -233,10 +233,10 @@
     }
     let refreshingWorkspace;
     function refresh() { return refreshingWorkspace || (refreshingWorkspace = loadWorkspace().finally(() => { refreshingWorkspace = null; })); }
-    async function loadExamStates() { try { const response = await fetch('../TaskExamsApi.ashx?action=list', { credentials: 'same-origin', cache: 'no-store' }); if (response.ok) examStates = new Map(Object.values(await response.json()).map(exam => [exam.taskId, exam])); } catch (_) { /* Task records remain usable during an exam service outage. */ } }
+    async function loadExamStates() { try { const response = await fetch('../TaskExamsApi.ashx?action=list', { credentials: 'same-origin', cache: 'no-store', signal: AbortSignal.timeout(10000) }); if (response.ok) examStates = new Map(Object.values(await response.json()).map(exam => [exam.taskId, exam])); } catch (_) { /* Task records remain usable during an exam service outage. */ } }
     async function loadWorkspace() {
         loadingTasks = true;
-        try { [state] = await Promise.all([request(''), loadExamStates()]); if (state.serverNow) serverOffset = Date.parse(state.serverNow) - Date.now(); boardLoadError = ''; loadingTasks = false; render(); connection('Connected to Firebase /tasks using your verified account.'); await refreshBoard(); if (by('reviewModal').classList.contains('show')) { const task = state.tasks.find(item => item.id === selectedId); if (task) { const canReview = task.status === 'submitted' && state.submissions.some(item => item.taskId === task.id); by('approveTaskBtn').disabled = !canReview; by('requestRevisionBtn').disabled = !canReview; by('gradeInput').disabled = !canReview; by('feedbackInput').disabled = !canReview; } } if (window.CompanyExamResults) await CompanyExamResults.refresh().catch(error => message(error.message, true)); return true; }
+        try { state = await request(''); loadExamStates().then(() => { if (!busy && !boardBusy) render(); }); if (state.serverNow) serverOffset = Date.parse(state.serverNow) - Date.now(); boardLoadError = ''; loadingTasks = false; render(); connection('Connected to Firebase /tasks using your verified account.'); await refreshBoard(); if (by('reviewModal').classList.contains('show')) { const task = state.tasks.find(item => item.id === selectedId); if (task) { const canReview = task.status === 'submitted' && state.submissions.some(item => item.taskId === task.id); by('approveTaskBtn').disabled = !canReview; by('requestRevisionBtn').disabled = !canReview; by('gradeInput').disabled = !canReview; by('feedbackInput').disabled = !canReview; } } if (window.CompanyExamResults) await CompanyExamResults.refresh().catch(error => message(error.message, true)); return true; }
         catch (error) {
             state = { tasks: [], submissions: [], students: [] };
             boardState = null; boardLoadError = error.message; loadingTasks = false;
@@ -375,6 +375,54 @@
     });
     by('taskSearch')?.addEventListener('input', render); by('statusFilter')?.addEventListener('change', render);
     by('createTaskModal')?.addEventListener('show.bs.modal', refresh);
+    async function editTask(task, resubmit = false) {
+        if (!task || task.score != null) { message('Graded task instructions are locked.', true); return; }
+        if (editingTask) return; editingTask = true;
+        try {
+        const content = document.createElement('div');
+        content.innerHTML = '<label>Title<input name="title" required maxlength="150"></label><label>Description<textarea name="description" required maxlength="3000"></textarea></label><label>Instructions<input name="criteria" required maxlength="500"></label><label>New deadline<input name="deadline" type="datetime-local" required></label><label>Apply to<select name="scope"><option value="one">This student only</option>' + (task.batchId ? '<option value="all">All ungraded students in this batch</option>' : '') + '</select></label><label>Submitted work<select name="submission"><option value="keep">Keep current submission under review</option><option value="resubmit">Request a new submission</option></select></label><p>Graded instances are excluded. Existing submissions and instruction versions are preserved.</p>';
+        const field = n => content.querySelector('[name="' + n + '"]');
+        ['title', 'description', 'criteria'].forEach(n => field(n).value = task[n] || '');
+        const date = new Date(task.deadline); date.setMinutes(date.getMinutes() - date.getTimezoneOffset()); if (!isNaN(date)) field('deadline').value = date.toISOString().slice(0, 16);
+        field('submission').value = resubmit ? 'resubmit' : 'keep';
+        const resourceLabel = document.createElement('label'), resources = document.createElement('input'); resourceLabel.textContent = 'Add resources to affected tasks'; resources.type = 'file'; resources.multiple = true; resources.accept = '.pdf,.docx,.xlsx,.pptx,.txt,.png,.jpg,.jpeg'; resourceLabel.append(resources); content.append(resourceLabel);
+        const group = task.batchId ? state.tasks.filter(t => t.batchId === task.batchId) : [task];
+        const deadlines = document.createElement('details'), heading = document.createElement('summary'); heading.textContent = 'Individual student deadlines'; deadlines.append(heading);
+        group.filter(t => t.score == null).forEach(t => { const label = document.createElement('label'), input = document.createElement('input'); label.textContent = t.studentName; input.type = 'datetime-local'; input.dataset.taskDeadline = t.id; label.append(input); deadlines.append(label); }); content.append(deadlines);
+        if (!await TaskDialogs.open('Edit task · ' + task.studentName, content, { confirm: 'Review changes' })) return;
+        const targets = field('scope').value === 'all' ? group : [task], affected = targets.filter(t => t.score == null), excluded = targets.filter(t => t.score != null);
+        if (!await TaskDialogs.confirm('Confirm task changes', 'Affected: ' + affected.map(t => t.studentName).join(', ') + '. Excluded (graded): ' + (excluded.map(t => t.studentName).join(', ') || 'None') + '. ' + field('submission').selectedOptions[0].text + '. Default deadline: ' + field('deadline').value, 'Save changes')) return;
+        const individual = Object.fromEntries([...content.querySelectorAll('[data-task-deadline]')].filter(el => el.value).map(el => [el.dataset.taskDeadline, new Date(el.value).toISOString()]));
+        try {
+            const result = await request('edit', { taskId: task.id, title: field('title').value, description: field('description').value, criteria: field('criteria').value, deadline: new Date(field('deadline').value).toISOString(), deadlines: individual, all: field('scope').value === 'all', resubmit: field('submission').value === 'resubmit' });
+            for (const taskId of result.affected) for (const file of resources.files) await upload('attach', { taskId }, file);
+            await refresh();
+            const failures = (result.failed || []).map(item => (state.tasks.find(t => t.id === item.taskId)?.studentName || item.taskId) + ': ' + item.message);
+            const outcome = result.affected.length + ' updated; ' + result.excluded.length + ' graded instances excluded.' + (failures.length ? ' Not updated: ' + failures.join(' ') : '');
+            message(outcome, failures.length > 0); by('modalErrorContainer').textContent = outcome;
+            if (!failures.length) modal('reviewModal').hide();
+        }
+        catch (error) { message(error.message, true); }
+        } finally { editingTask = false; }
+    }
+    const editButton = document.createElement('button'); editButton.type = 'button'; editButton.className = 'btn btn-light'; editButton.textContent = 'Edit task'; editButton.onclick = () => editTask(state.tasks.find(t => t.id === selectedId)); by('reviewModal').querySelector('.modal-footer').prepend(editButton);
+    const archiveButton = document.createElement('button'); archiveButton.type = 'button'; archiveButton.className = 'btn btn-outline-danger'; archiveButton.textContent = 'Archive task';
+    archiveButton.onclick = async () => { const task = state.tasks.find(t => t.id === selectedId); if (!task || task.archived || busy) return; if (!await TaskDialogs.confirm('Archive this task?', 'Move this student’s task to read-only history? Submissions, grades, resources and board positions are preserved.', 'Archive task')) return; busy = true; archiveButton.disabled = true; try { await request('archive', { taskId: task.id }); modal('reviewModal').hide(); await refresh(); message('Task archived. Choose the Archived status in List view to see its history.', false); } catch (error) { by('modalErrorContainer').textContent = error.message; } finally { busy = false; archiveButton.disabled = false; } }; by('reviewModal').querySelector('.modal-footer').prepend(archiveButton);
+    const extensionButton = document.createElement('button'); extensionButton.type = 'button'; extensionButton.className = 'btn btn-light'; extensionButton.textContent = 'Review extension';
+    extensionButton.onclick = async () => {
+        const task = state.tasks.find(t => t.id === selectedId); if (task?.extension?.status !== 'pending') { by('modalErrorContainer').textContent = 'No pending extension request.'; return; }
+        const body = document.createElement('div'), reason = document.createElement('p'); reason.textContent = task.extension.reason; body.append(reason);
+        body.insertAdjacentHTML('beforeend', '<label>Decision<select name="decision"><option value="approve">Approve</option><option value="reject">Reject permanently</option></select></label><label>Final deadline<input type="datetime-local" name="deadline"></label><label>Decision reason<textarea name="reason" maxlength="3000"></textarea></label>');
+        const updateRequirements = () => { const approve = body.querySelector('select').value === 'approve'; body.querySelector('input').required = approve; body.querySelector('textarea').required = !approve; }; body.querySelector('select').onchange = updateRequirements; updateRequirements();
+        if (!await TaskDialogs.open('Extension request · ' + task.studentName, body, { confirm: 'Review decision' })) return;
+        const approve = body.querySelector('select').value === 'approve', date = body.querySelector('input').value;
+        if (approve && !date) { message('A final deadline is required.', true); return; }
+        if (!await TaskDialogs.confirm('Confirm extension decision?', approve ? 'Reopen this student’s submission until the selected deadline.' : 'Rejection is final. The student cannot request another extension.', approve ? 'Approve' : 'Reject permanently')) return;
+        try { await request('extension', { taskId: task.id, approve, deadline: date ? new Date(date).toISOString() : '', reason: body.querySelector('textarea').value }); await refresh(); message('Extension decision saved.', false); } catch (error) { message(error.message, true); }
+    }; by('reviewModal').querySelector('.modal-footer').prepend(extensionButton);
+    by('taskBoard').addEventListener('dragstart', e => e.target.closest('.task-board-card')?.classList.add('dragging'));
+    by('taskBoard').addEventListener('dragend', () => document.querySelectorAll('.dragging,.drop-target').forEach(el => el.classList.remove('dragging', 'drop-target')));
+    by('taskBoard').addEventListener('dragover', e => { document.querySelectorAll('.drop-target').forEach(el => el.classList.remove('drop-target')); e.target.closest('.task-board-column')?.classList.add('drop-target'); });
     window.addEventListener('focus', refresh); document.addEventListener('visibilitychange', () => { if (!document.hidden) refresh(); });
     window.setInterval(() => { if (!document.hidden) refresh(); }, 5000);
     if (window.Sys?.WebForms?.PageRequestManager) Sys.WebForms.PageRequestManager.getInstance().add_endRequest(refresh);
