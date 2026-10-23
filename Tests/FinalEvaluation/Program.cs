@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
@@ -167,6 +167,14 @@ internal static partial class Program
         await Reject<UIMS.Services.FirebaseException>(() => service.DecideAsync("other-company-auth", id, "accepted", ""));
         await service.DecideAsync("company-auth", id, "accepted", "Accepted for the placement");
         Assert((string)(await db.ReadAsync("applications/" + id) as Newtonsoft.Json.Linq.JObject)?["status"] == "accepted");
+        // Approved calendar and active supervisor mappings are prerequisites; no generated defaults.
+        db.Seed("users/AS-4", "{\"role\":\"academicSupervisor\",\"isActive\":true}");
+        db.Seed("uimsAttendance/companies/CO-9", "{\"status\":\"active\"}");
+        db.Seed("uimsAttendance/companySupervisors/CS-3", "{\"status\":\"active\",\"companyId\":\"CO-9\",\"firebaseUid\":\"company-auth\"}");
+        string expectedPlacement = "PLC-" + id;
+        db.Seed("uimsAttendance/schedules/" + expectedPlacement, new Newtonsoft.Json.Linq.JObject {
+            ["2030-02-01"] = new Newtonsoft.Json.Linq.JObject { ["assignmentId"] = expectedPlacement, ["attendanceDate"] = "2030-02-01", ["timeZone"] = "Asia/Amman", ["version"] = 1, ["isTrainingDay"] = false }
+        }.ToString());
         string placementId = await service.ConfirmOfferAsync("student-auth", id);
         Assert((string)(await db.ReadAsync("placements/" + placementId) as Newtonsoft.Json.Linq.JObject)?["studentId"] == "ST-101");
         Assert((string)(await db.ReadAsync("applications/" + id) as Newtonsoft.Json.Linq.JObject)?["status"] == "confirmed");
@@ -340,6 +348,7 @@ internal static partial class Program
         await Test("task submissions preserve array and keyed-object history and enforce ownership/concurrency", TaskSubmissionCompatibilityTests);
         await Test("task board positions persist independently with authorization, retries, ordering and ETag conflicts", TaskBoardTests);
         await RunFirebaseFileStorageTests();
+        await RunPrivateReportFileTests();
         await RunTaskExamTests();
         await RunWeeklyReportTests();
         await RunFirebaseDemoTests();

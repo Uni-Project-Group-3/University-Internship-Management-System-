@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
@@ -27,6 +27,9 @@ namespace UIMS.Tasks
         private readonly TaskActor actor;
         private readonly Func<CancellationToken, Task<string>> tokenProvider;
         private readonly UIMS.Services.FirebaseFileStorageService storage;
+        private readonly UIMS.Services.PrivateReportFileStore privateFiles;
+        private readonly string fileProvider;
+        private readonly bool downloadOverridden;
         private readonly Func<string, string, string, byte[], CancellationToken, Task<UIMS.Services.StoredFile>> upload;
         private readonly Func<string, CancellationToken, Task<byte[]>> download;
         private readonly Func<string, CancellationToken, Task> delete;
@@ -48,9 +51,14 @@ namespace UIMS.Tasks
             actor = verifiedActor;
             tokenProvider = accessTokenProvider ?? GetAccessTokenAsync;
             storage = fileStorage ?? new UIMS.Services.FirebaseFileStorageService(setting, httpClient);
-            upload = uploadOverride ?? storage.UploadAsync;
+            privateFiles = new UIMS.Services.PrivateReportFileStore(setting);
+            fileProvider = setting("WeeklyReportFileProvider") ?? "FirebaseStorage";
+            if (fileProvider != "FirebaseStorage" && fileProvider != "PrivateDisk")
+                throw new UIMS.Services.FirebaseException(503, "The configured weekly report file provider is unavailable.");
+            downloadOverridden = downloadOverride != null;
+            upload = uploadOverride ?? (fileProvider == "PrivateDisk" ? (Func<string, string, string, byte[], CancellationToken, Task<UIMS.Services.StoredFile>>)privateFiles.UploadAsync : storage.UploadAsync);
             download = downloadOverride ?? storage.DownloadAsync;
-            delete = deleteOverride ?? storage.DeleteObjectAsync;
+            delete = deleteOverride ?? (fileProvider == "PrivateDisk" ? (Func<string, CancellationToken, Task>)privateFiles.DeleteObjectAsync : storage.DeleteObjectAsync);
             root = (setting("FirebaseDatabaseUrl") ?? "").TrimEnd('/');
             enabled = IsTrue(setting("FirebaseEnabled")) && IsTrue(setting("WeeklyReportsEnabled"));
             writesEnabled = IsTrue(setting("FirebaseLiveWritesEnabled")) && IsTrue(setting("WeeklyReportsLiveWritesEnabled"));
@@ -77,7 +85,8 @@ namespace UIMS.Tasks
             if (actor == null || string.IsNullOrWhiteSpace(actor.Uid)) throw new UIMS.Services.FirebaseException(401, "A verified Firebase UID is required.");
             if (requiredRole != null && !string.Equals(actor.Role, requiredRole, StringComparison.Ordinal)) throw new UIMS.Services.FirebaseException(403, "This weekly report operation is not allowed for the signed-in role.");
             if (write && !writesEnabled) throw new UIMS.Services.FirebaseException(503, "Weekly report writes are disabled until schema validation and development approval. No data was changed.");
-            if (write && (!IsTrue(setting("FirebaseStorageEnabled")) || !IsTrue(setting("FirebaseStorageLiveWritesEnabled")))) throw new UIMS.Services.FirebaseException(503, "Private Firebase Storage writes are disabled. No file was uploaded.");
+            if (write && fileProvider == "FirebaseStorage" && (!IsTrue(setting("FirebaseStorageEnabled")) || !IsTrue(setting("FirebaseStorageLiveWritesEnabled")))) throw new UIMS.Services.FirebaseException(503, "Private Firebase Storage writes are disabled. No file was uploaded.");
+            if (write && fileProvider == "PrivateDisk" && !IsTrue(setting("WeeklyReportPrivateDiskWritesEnabled"))) throw new UIMS.Services.FirebaseException(503, "Private report uploads are unavailable on this server.");
         }
 
         private string Url(string path)
@@ -107,7 +116,7 @@ namespace UIMS.Tasks
         {
             if (response.IsSuccessStatusCode) return;
             if (response.StatusCode == HttpStatusCode.Unauthorized || response.StatusCode == HttpStatusCode.Forbidden)
-                throw new UIMS.Services.FirebaseException(403, "Firebase denied the weekly report request. Verify trusted credentials and least-privilege database/Storage Rules.");
+                throw new UIMS.Services.FirebaseException(503, "Firebase denied the weekly report request. Verify trusted credentials and least-privilege database/Storage Rules.");
             if ((int)response.StatusCode == 412) throw new UIMS.Services.FirebaseException(409, "This weekly report changed concurrently. Refresh and retry.");
             if ((int)response.StatusCode == 429 || (int)response.StatusCode >= 500) throw new UIMS.Services.FirebaseException(503, "Firebase is temporarily unavailable for weekly reports.");
             throw new UIMS.Services.FirebaseException((int)response.StatusCode, "Firebase rejected the weekly report request.");
@@ -195,22 +204,15 @@ namespace UIMS.Tasks
         }
         private async Task<string> ResolveAcademicSupervisorAsync(string studentId, CancellationToken cancellation)
         {
-            var records = new Dictionary<string, JObject>(StringComparer.Ordinal);
-            AddRecords(records, await ReadEqualAsync("assignments", "studentId", studentId, cancellation).ConfigureAwait(false));
-            var active = records.Values.Where(a => a.Value<bool?>("active") != false && Text(a, "studentId") == studentId)
-                .Select(a => Text(a, "academicSupervisorId")).Where(id => id.Length > 0).Distinct(StringComparer.Ordinal).ToList();
-            if (active.Count > 1) throw new UIMS.Services.FirebaseException(409, "The student has conflicting active academic supervisor assignments; coordinator review is required.");
-            if (active.Count == 1) return active[0];
-
-            // Existing student profiles also carry academicSupervisorId. Use a scoped equality query, never a root dump.
-            var profiles = new Dictionary<string, JObject>(StringComparer.Ordinal);
-            AddRecords(profiles, await ReadEqualAsync("users", "studentId", studentId, cancellation).ConfigureAwait(false));
-            var profileIds = profiles.Values.Where(p => Text(p, "role").Equals("student", StringComparison.OrdinalIgnoreCase))
-                .Select(p => Text(p, "academicSupervisorId")).Where(id => id.Length > 0).Distinct(StringComparer.Ordinal).ToList();
-            if (profileIds.Count > 1) throw new UIMS.Services.FirebaseException(409, "The student profile has conflicting academic supervisor assignments.");
-            if (profileIds.Count == 1) return profileIds[0];
-            throw new UIMS.Services.FirebaseException(409, "The student has no current academic supervisor assignment.");
+            try
+            {
+                return await UIMS.Attendance.AttendanceAcademicSupervisor.Resolve(studentId, null,
+                    async path => (await ReadAsync(path, cancellation).ConfigureAwait(false)).Value,
+                    (path, field, value) => ReadEqualAsync(path, field, value, cancellation)).ConfigureAwait(false);
+            }
+            catch (UIMS.Attendance.AttendanceSetupException error) { throw new UIMS.Services.FirebaseException(409, error.Message); }
         }
+
         private async Task EnsureCurrentAssignmentAsync(string studentId, string expectedSupervisorId, CancellationToken cancellation)
         {
             string assigned = await ResolveAcademicSupervisorAsync(studentId, cancellation).ConfigureAwait(false);
@@ -230,7 +232,7 @@ namespace UIMS.Tasks
             if (actor.CompanyId.Length > 0) AddRecords(placements, await ReadEqualAsync("placements", "companyId", actor.CompanyId, cancellation).ConfigureAwait(false));
             AddRecords(placements, await ReadEqualAsync("placements", "companySupervisorId", actor.CompanySupervisorId, cancellation).ConfigureAwait(false));
             AddRecords(placements, await ReadEqualAsync("placements", "supervisorId", actor.CompanySupervisorId, cancellation).ConfigureAwait(false));
-            var result = new JArray();
+            var result = new JArray(); var warnings = new JArray();
             foreach (var pair in placements)
             {
                 var placement = pair.Value; string studentId = Text(placement, "studentId", "studentProfileId", "traineeId");
@@ -240,12 +242,18 @@ namespace UIMS.Tasks
                 var profiles = new Dictionary<string, JObject>(StringComparer.Ordinal);
                 AddRecords(profiles, await ReadEqualAsync("users", "studentId", studentId, cancellation).ConfigureAwait(false));
                 var profile = profiles.Values.FirstOrDefault(p => Text(p, "role").Equals("student", StringComparison.OrdinalIgnoreCase));
-                result.Add(new JObject { ["placementId"] = pair.Key, ["studentId"] = studentId,
-                    ["studentName"] = profile == null ? studentId : Text(profile, "fullName", "displayName", "name"),
-                    ["companyId"] = Text(placement, "companyId"), ["status"] = Text(placement, "status", "placementStatus"),
-                    ["academicSupervisorId"] = await ResolveAcademicSupervisorAsync(studentId, cancellation).ConfigureAwait(false) });
+                try
+                {
+                    string academicId = await ResolveAcademicSupervisorAsync(studentId, cancellation).ConfigureAwait(false);
+                    if (Text(placement, "academicSupervisorId") != academicId) throw new UIMS.Services.FirebaseException(409, "The placement academic supervisor conflicts with the current coordinator assignment.");
+                    result.Add(new JObject { ["placementId"] = pair.Key, ["studentId"] = studentId,
+                        ["studentName"] = profile == null ? studentId : Text(profile, "fullName", "displayName", "name"),
+                        ["companyId"] = Text(placement, "companyId"), ["status"] = Text(placement, "status", "placementStatus"), ["academicSupervisorId"] = academicId });
+                }
+                catch (UIMS.Services.FirebaseException error) when (error.StatusCode == 409)
+                { warnings.Add(new JObject { ["studentId"] = studentId, ["placementId"] = pair.Key, ["message"] = error.Message }); }
             }
-            return new JObject { ["placements"] = result };
+            return new JObject { ["placements"] = result, ["setupWarnings"] = warnings };
         }
 
         public async Task<JObject> ListCompanyReportsAsync(CancellationToken cancellation)
@@ -260,7 +268,7 @@ namespace UIMS.Tasks
                 string reportCompany = Text(pair.Value, "companyId");
                 if (Text(pair.Value, "companySupervisorId") != actor.CompanySupervisorId && (actor.CompanyId.Length == 0 || reportCompany != actor.CompanyId)) continue;
                 try { await EnsureCompanyStudentPlacementAsync(Text(pair.Value, "placementId"), Text(pair.Value, "studentId"), cancellation).ConfigureAwait(false); }
-                catch (UIMS.Services.FirebaseException) { continue; }
+                catch (UIMS.Services.FirebaseException error) when (error.StatusCode == 403 || error.StatusCode == 404 || error.StatusCode == 409) { continue; }
                 result[pair.Key] = PublicReport(pair.Value);
             }
             return new JObject { ["reports"] = result };
@@ -273,12 +281,21 @@ namespace UIMS.Tasks
             AddRecords(records, await ReadEqualAsync("weeklyReports", "academicSupervisorId", actor.AcademicSupervisorId, cancellation).ConfigureAwait(false));
             // Include historical reports where the student is now assigned to this supervisor, even if the original routing snapshot differs.
             var currentAssignments = new Dictionary<string, JObject>(StringComparer.Ordinal);
+            AddRecords(currentAssignments, await ReadEqualAsync("supervisorAssignments", "academicSupervisorId", actor.AcademicSupervisorId, cancellation).ConfigureAwait(false));
             AddRecords(currentAssignments, await ReadEqualAsync("assignments", "academicSupervisorId", actor.AcademicSupervisorId, cancellation).ConfigureAwait(false));
-            var studentIds = currentAssignments.Values.Where(a => a.Value<bool?>("active") != false).Select(a => Text(a, "studentId")).Where(s => s.Length > 0).Distinct(StringComparer.Ordinal).ToList();
+            var studentIds = new HashSet<string>(StringComparer.Ordinal);
+            foreach (string assignedId in currentAssignments.Values.Where(a => a.Value<bool?>("active") != false).Select(a => Text(a, "studentId")).Where(s => s.Length > 0).Distinct(StringComparer.Ordinal))
+            {
+                var uidProfile = (await ReadAsync("users/" + assignedId, cancellation).ConfigureAwait(false)).Value;
+                string canonical = University_Internship_Management_System.Shared.FirebaseSignInService.CanonicalRole(Text(uidProfile, "role")) == "student" ? Text(uidProfile, "studentId") : "";
+                studentIds.Add(canonical.Length == 0 ? assignedId : canonical);
+            }
             foreach (string studentId in studentIds) AddRecords(records, await ReadEqualAsync("weeklyReports", "studentId", studentId, cancellation).ConfigureAwait(false));
             var assignedStudents = new JArray();
             foreach (string studentId in studentIds)
             {
+                try { await EnsureCurrentAssignmentAsync(studentId, actor.AcademicSupervisorId, cancellation).ConfigureAwait(false); }
+                catch (UIMS.Services.FirebaseException error) when (error.StatusCode == 403 || error.StatusCode == 404 || error.StatusCode == 409) { continue; }
                 var profiles = new Dictionary<string, JObject>(StringComparer.Ordinal);
                 AddRecords(profiles, await ReadEqualAsync("users", "studentId", studentId, cancellation).ConfigureAwait(false));
                 var placements = new Dictionary<string, JObject>(StringComparer.Ordinal);
@@ -301,7 +318,7 @@ namespace UIMS.Tasks
             foreach (var pair in records)
             {
                 try { await EnsureCurrentAssignmentAsync(Text(pair.Value, "studentId"), actor.AcademicSupervisorId, cancellation).ConfigureAwait(false); }
-                catch (UIMS.Services.FirebaseException) { continue; }
+                catch (UIMS.Services.FirebaseException error) when (error.StatusCode == 403 || error.StatusCode == 404 || error.StatusCode == 409) { continue; }
                 result[pair.Key] = PublicReport(pair.Value);
             }
             return new JObject { ["assignedStudents"] = assignedStudents, ["reports"] = result };
@@ -385,13 +402,13 @@ namespace UIMS.Tasks
             if (stored == null || stored.ObjectPath != objectPath || stored.ContentType != DocxMime || stored.SizeBytes != bytes.LongLength)
             {
                 try { await delete(objectPath, CancellationToken.None).ConfigureAwait(false); } catch { }
-                throw new UIMS.Services.FirebaseException(502, "Firebase Storage did not confirm the exact weekly report upload.");
+                throw new UIMS.Services.FirebaseException(502, "Private file storage did not confirm the exact weekly report upload.");
             }
             string now = UtcNow();
             var metadata = new JObject { ["id"] = fileId, ["purpose"] = "weeklyReport", ["status"] = "ready", ["reportId"] = reportId, ["revisionId"] = revisionId,
                 ["placementId"] = placementId, ["studentId"] = studentId, ["ownerUid"] = actor.Uid, ["ownerProfileId"] = actor.CompanySupervisorId,
                 ["fileName"] = stored.FileName, ["contentType"] = stored.ContentType, ["sizeBytes"] = stored.SizeBytes, ["sha256"] = stored.Sha256,
-                ["storagePath"] = stored.ObjectPath, ["storageGeneration"] = stored.Generation, ["createdAt"] = now };
+                ["storagePath"] = stored.ObjectPath, ["storageProvider"] = fileProvider, ["storageGeneration"] = stored.Generation, ["createdAt"] = now };
 
             bool reportWriteAttempted = false;
             try
@@ -459,7 +476,7 @@ namespace UIMS.Tasks
         {
             return new JObject { ["revisionId"] = revisionId, ["revisionNumber"] = number, ["fileId"] = fileId, ["fileName"] = file.FileName,
                 ["contentType"] = file.ContentType, ["sizeBytes"] = file.SizeBytes, ["sha256"] = file.Sha256, ["storagePath"] = file.ObjectPath,
-                ["storageGeneration"] = file.Generation, ["companyComments"] = string.IsNullOrWhiteSpace(comments) ? null : comments.Trim(),
+                ["storageGeneration"] = file.Generation, ["storageProvider"] = fileProvider, ["companyComments"] = string.IsNullOrWhiteSpace(comments) ? null : comments.Trim(),
                 ["submittedAt"] = submittedAt, ["uploadedByUid"] = actor.Uid };
         }
         private static JObject PublicReport(JObject report)
@@ -549,7 +566,11 @@ namespace UIMS.Tasks
             if (string.IsNullOrWhiteSpace(revisionId)) revisionId = Text(report, "currentRevisionId");
             var revision = report["revisions"]?[revisionId] as JObject; if (revision == null) throw new UIMS.Services.FirebaseException(404, "The report revision was not found.");
             string path = Text(revision, "storagePath"); if (path.Length == 0 || Text(revision, "contentType") != DocxMime) throw new UIMS.Services.FirebaseException(404, "The private Word report is unavailable.");
-            byte[] contents = await download(path, cancellation).ConfigureAwait(false);
+            // Persist the provider per revision: changing the deployment default cannot redirect old files.
+            string provider = Text(revision, "storageProvider");
+            if (provider.Length == 0) provider = "FirebaseStorage";
+            if (provider != "FirebaseStorage" && provider != "PrivateDisk") throw new UIMS.Services.FirebaseException(503, "This report file provider is unavailable.");
+            byte[] contents = await (downloadOverridden ? download(path, cancellation) : provider == "PrivateDisk" ? privateFiles.DownloadAsync(path, cancellation) : storage.DownloadAsync(path, cancellation)).ConfigureAwait(false);
             UIMS.Services.FirebaseFileStorageService.ValidateFile(Text(revision, "fileName"), DocxMime, contents);
             string hash; using (var sha = SHA256.Create()) hash = BitConverter.ToString(sha.ComputeHash(contents)).Replace("-", "").ToLowerInvariant();
             if (contents.LongLength != (long?)revision["sizeBytes"] || !string.Equals(hash, Text(revision, "sha256"), StringComparison.OrdinalIgnoreCase))
@@ -581,33 +602,35 @@ namespace UIMS.Tasks
                     results.Add(new JObject { ["examId"] = exam.Key, ["attemptId"] = attempt.Name, ["status"] = item["status"], ["score"] = item["score"], ["maximumScore"] = item["maximumScore"], ["submittedAt"] = item["submittedAt"], ["gradedAt"] = item["gradedAt"] });
                 }
             }
+            // Cumulative approved hours for THIS placement, including historical assignments.
+            var placement = await RequirePlacementAsync(placementId, cancellation, requireActive: false).ConfigureAwait(false);
+            if (Text(placement, "studentId", "studentProfileId") != studentId)
+                throw new UIMS.Services.FirebaseException(409, "The report and placement student do not agree.");
+            var linked = (await ReadAsync("uimsAttendance/trainingAssignments", cancellation).ConfigureAwait(false)).Value as JObject ?? new JObject();
+            var matches = linked.Properties().Where(p => p.Value is JObject && Text(p.Value, "studentId") == studentId && Text(p.Value, "placementId") == placementId).ToList();
+            if (matches.Count != 1) throw new UIMS.Services.FirebaseException(409, "Attendance setup for this report placement is missing or ambiguous. Reconcile the persisted mapping; zero hours cannot be assumed.");
+            string attendanceAssignmentId = matches[0].Name;
+            var attendanceAssignment = (JObject)matches[0].Value;
+            foreach (string field in new[] { "companyId", "companySupervisorId", "academicSupervisorId" })
+                if (Text(placement, field).Length == 0 || Text(attendanceAssignment, field) != Text(placement, field))
+                    throw new UIMS.Services.FirebaseException(409, "The report placement and attendance assignment bindings disagree.");
+            DateTime assignmentStart, assignmentEnd;
+            string firstDay = Text(attendanceAssignment, "startDate"), lastDay = Text(attendanceAssignment, "endDate");
+            if (!DateTime.TryParseExact(firstDay, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out assignmentStart) ||
+                !DateTime.TryParseExact(lastDay, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out assignmentEnd) || assignmentEnd < assignmentStart)
+                throw new UIMS.Services.FirebaseException(409, "The report attendance assignment needs validated training dates.");
             long approvedMinutes = 0;
-            var attendanceStudent = await ReadAsync("uimsAttendance/students/" + studentId, cancellation).ConfigureAwait(false);
-            string attendanceAssignmentId = Text(attendanceStudent.Value, "activeAssignmentId");
-            if (attendanceAssignmentId.Length > 0)
+            var days = (await ReadAsync("uimsAttendance/attendance/" + attendanceAssignmentId, cancellation).ConfigureAwait(false)).Value as JObject;
+            if (days != null) foreach (var day in days.Properties())
             {
-                var attendanceAssignment = await ReadAsync("uimsAttendance/trainingAssignments/" + attendanceAssignmentId, cancellation).ConfigureAwait(false);
-                if (Text(attendanceAssignment.Value, "studentId") != studentId || Text(attendanceAssignment.Value, "status") != "active")
-                    throw new UIMS.Services.FirebaseException(409, "The existing attendance assignment is not active for this student.");
-                var attendance = await ReadAsync("uimsAttendance/attendance/" + attendanceAssignmentId, cancellation).ConfigureAwait(false);
-                var days = attendance.Value as JObject;
-                if (days != null) foreach (var day in days.Properties())
-                {
-                    var row = day.Value as JObject;
-                    if (row == null || Text(row, "assignmentId") != attendanceAssignmentId || Text(row, "studentId") != studentId ||
-                        Text(row, "hoursApprovalStatus") != "approved" || !(Text(row, "status") == "completed" || Text(row, "status") == "earlyDeparture")) continue;
-                    long minutes = (long?)row["workedMinutes"] ?? 0L;
-                    if (minutes <= 0)
-                    {
-                        long startAt = (long?)row["checkInAt"] ?? 0L, endAt = (long?)row["checkOutAt"] ?? 0L;
-                        if (startAt > 0 && endAt > startAt) minutes = (endAt - startAt) / 60000;
-                    }
-                    if (minutes > 0)
-                    {
-                        if (approvedMinutes > long.MaxValue - minutes) throw new UIMS.Services.FirebaseException(409, "Approved attendance minutes exceed the supported range.");
-                        approvedMinutes += minutes;
-                    }
-                }
+                var row = day.Value as JObject;
+                if (row == null || string.CompareOrdinal(day.Name, firstDay) < 0 || string.CompareOrdinal(day.Name, lastDay) > 0 || Text(row, "assignmentId") != attendanceAssignmentId || Text(row, "studentId") != studentId ||
+                    Text(row, "attendanceDate") != day.Name || Text(row, "companyId") != Text(attendanceAssignment, "companyId") ||
+                    Text(row, "companySupervisorId") != Text(attendanceAssignment, "companySupervisorId") ||
+                    Text(row, "hoursApprovedById") != Text(attendanceAssignment, "companySupervisorId") || row.Value<bool?>("isTestData") == true ||
+                    Text(row, "hoursApprovalStatus") != "approved" || !(Text(row, "status") == "completed" || Text(row, "status") == "earlyDeparture") ||
+                    !UIMS.Attendance.AttendanceService.HasValidWorkedTime(row, day.Name)) continue;
+                approvedMinutes = checked(approvedMinutes + UIMS.Attendance.AttendanceService.Number(row, "workedMinutes"));
             }
             return new JObject { ["tasks"] = visibleTasks, ["examResults"] = results, ["approvedTrainingMinutes"] = approvedMinutes,
                 ["approvedTrainingHours"] = Math.Round(approvedMinutes / 60.0, 2), ["attendanceSource"] = "uimsAttendance/attendance" };

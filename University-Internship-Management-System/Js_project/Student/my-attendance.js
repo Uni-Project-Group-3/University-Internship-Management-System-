@@ -191,7 +191,7 @@ function renderStudentProgress(type, data) {
             document.getElementById("historyRows").replaceChildren();
             document.getElementById("historyEmpty").textContent = "Loading attendance…";
             document.getElementById("historyEmpty").hidden = false;
-            ["approvedHours", "remainingHours", "progressText", "todayStatus", "companyName", "supervisorName"].forEach(function (id) {
+            ["approvedHours", "remainingHours", "progressText", "todayStatus", "companyName", "supervisorName", "academicSupervisorName"].forEach(function (id) {
                 document.getElementById(id).textContent = "Loading…";
             });
             document.getElementById("actualCheckIn").textContent = "—";
@@ -203,6 +203,7 @@ function renderStudentProgress(type, data) {
     } else if (type === "profile") {
         document.getElementById("companyName").textContent = data.company.name;
         document.getElementById("supervisorName").textContent = data.supervisor.name;
+        document.getElementById("academicSupervisorName").textContent = data.academicSupervisor ? data.academicSupervisor.name : "Setup required";
         document.getElementById("requiredHours").textContent = data.assignment.requiredHours + " h";
     }
 }
@@ -224,6 +225,7 @@ function renderStudent(data) {
     document.getElementById("studentName").textContent = data.student.name + (data.student.studentNumber ? " · " + data.student.studentNumber : "");
     document.getElementById("companyName").textContent = assigned ? data.company.name : "No active assignment";
     document.getElementById("supervisorName").textContent = assigned ? data.supervisor.name : "Not assigned";
+    document.getElementById("academicSupervisorName").textContent = assigned && data.academicSupervisor ? data.academicSupervisor.name : "Not assigned";
     document.getElementById("requiredHours").textContent = assigned ? required + " h" : "—";
     document.getElementById("approvedHours").textContent = assigned ? approved.toFixed(2) + " h" : "—";
     document.getElementById("remainingHours").textContent = assigned ? Math.max(0, required - approved).toFixed(2) + " h" : "—";
@@ -232,7 +234,8 @@ function renderStudent(data) {
     progress.max = required || 1;
     progress.value = Math.min(required, approved);
     document.getElementById("scheduleDate").textContent = data.today + " · Asia/Amman" +
-        (assignment.startDate && assignment.endDate ? " · Training: " + assignment.startDate + " – " + assignment.endDate : "");
+        (assignment.startDate && assignment.endDate ? " · Training: " + assignment.startDate + " – " + assignment.endDate : "") +
+        (assignment.usesAttendanceDefaults ? " · Default attendance setup; confirm dates and required hours with your supervisor." : "");
     document.getElementById("scheduledStart").textContent = time(schedule.scheduledStartAt);
     document.getElementById("scheduledEnd").textContent = time(schedule.scheduledEndAt);
     document.getElementById("actualCheckIn").textContent = time(record.checkInAt);
@@ -246,7 +249,7 @@ function renderStudent(data) {
     document.getElementById("checkOutButton").disabled = saving || !data.canCheckOut;
     document.getElementById("earlyButton").disabled = saving || !data.canRequestEarly;
     document.getElementById("earlyStatus").textContent = request.status ? "Early departure: " + label(request.status) + "." : "";
-    document.getElementById("scheduleHelp").textContent = !assigned ? "Your account is verified. No approved training assignment is linked yet. Attendance actions are unavailable."
+    document.getElementById("scheduleHelp").textContent = !assigned ? "Your account is verified. Apply for an opportunity, wait for company acceptance, then use Confirm offer in My Applications. Attendance becomes available after a confirmed placement is linked."
         : !data.actionsEnabled ? "Attendance actions are disabled in Firebase settings. Reading history remains available."
         : !schedule.assignmentId ? "No schedule exists for today. Ask your supervisor to configure it."
         : !schedule.isTrainingDay ? "Scheduled day off. No absence is counted."
@@ -271,7 +274,7 @@ function renderHistory() {
     });
     rows.forEach(function (record) {
         const row = document.createElement("tr");
-        const status = record.status === "checkedIn" && !record.checkOutAt && Number(record.scheduledEndAt) < Date.now() ? "missingCheckOut" : record.status;
+        const status = record.attendanceMode !== "flexible" && record.status === "checkedIn" && !record.checkOutAt && Number(record.scheduledEndAt) < Date.now() ? "missingCheckOut" : record.status;
         [record.attendanceDate, time(record.checkInAt), time(record.checkOutAt),
             record.checkOutAt ? (Number(record.workedMinutes) / 60).toFixed(2) + " h" : "—",
             label(status) + (record.isLate ? " · Late" : ""), label(record.hoursApprovalStatus)].forEach(function (value) { addCell(row, value); });

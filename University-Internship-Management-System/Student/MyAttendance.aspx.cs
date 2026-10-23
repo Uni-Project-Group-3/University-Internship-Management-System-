@@ -74,7 +74,7 @@ namespace University_Internship_Management_System.Student
             return new JObject
             {
                 ["student"] = state.Student, ["hasAssignment"] = true, ["assignment"] = state.Assignment,
-                ["company"] = state.Company, ["supervisor"] = state.Supervisor, ["today"] = state.Date,
+                ["company"] = state.Company, ["supervisor"] = state.Supervisor, ["academicSupervisor"] = state.AcademicSupervisor, ["today"] = state.Date,
                 ["schedule"] = state.Schedule, ["record"] = AttendanceService.ForDisplay(state.Record), ["earlyRequest"] = state.Request,
                 ["history"] = new JArray(state.AttendanceHistory.Properties().Where(p => p.Value is JObject)
                     .OrderByDescending(p => p.Name).Select(p => p.Value)),

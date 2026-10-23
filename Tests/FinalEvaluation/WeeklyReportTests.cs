@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.IO.Compression;
@@ -60,8 +60,10 @@ internal static partial class Program
     }
     private static void SeedWeekly(WeeklyReportDb db)
     {
-        db.Set("placements/PL-1", new JObject { ["studentId"] = "ST-1", ["companyId"] = "CO-1", ["companyName"] = "Fictional Company", ["companySupervisorId"] = "CS-1", ["status"] = "confirmed" });
-        db.Set("placements/PL-2", new JObject { ["studentId"] = "ST-2", ["companyId"] = "CO-2", ["companySupervisorId"] = "CS-2", ["status"] = "active" });
+        db.Set("placements/PL-1", new JObject { ["studentId"] = "ST-1", ["companyId"] = "CO-1", ["academicSupervisorId"] = "AC-1", ["companyName"] = "Fictional Company", ["companySupervisorId"] = "CS-1", ["status"] = "confirmed" });
+        db.Set("placements/PL-2", new JObject { ["studentId"] = "ST-2", ["companyId"] = "CO-2", ["companySupervisorId"] = "CS-2", ["academicSupervisorId"] = "AC-2", ["status"] = "active" });
+        db.Set("users/AC-1", new JObject { ["role"] = "academicSupervisor", ["isActive"] = true });
+        db.Set("users/AC-2", new JObject { ["role"] = "academicSupervisor", ["isActive"] = true });
         db.Set("assignments/A-1", new JObject { ["studentId"] = "ST-1", ["academicSupervisorId"] = "AC-1", ["active"] = true });
         db.Set("assignments/A-2", new JObject { ["studentId"] = "ST-2", ["academicSupervisorId"] = "AC-2", ["active"] = true });
         db.Set("users/U-ST1", new JObject { ["role"] = "student", ["studentId"] = "ST-1", ["academicSupervisorId"] = "AC-1", ["isActive"] = true });
@@ -70,8 +72,8 @@ internal static partial class Program
         db.Set("taskExams/E-1", new JObject { ["placementId"] = "PL-1", ["status"] = "published" });
         db.Set("taskExamAttempts/E-1/ST-1/ATT-1", new JObject { ["studentId"] = "ST-1", ["status"] = "submitted", ["score"] = 9, ["maximumScore"] = 10, ["answers"] = new JObject { ["Q1"] = "answer-key-must-not-leak" } });
         db.Set("uimsAttendance/students/ST-1", new JObject { ["status"] = "active", ["activeAssignmentId"] = "TA-1" });
-        db.Set("uimsAttendance/trainingAssignments/TA-1", new JObject { ["studentId"] = "ST-1", ["companySupervisorId"] = "CS-1", ["status"] = "active" });
-        db.Set("uimsAttendance/attendance/TA-1/2026-10-21", new JObject { ["studentId"] = "ST-1", ["assignmentId"] = "TA-1", ["status"] = "completed", ["hoursApprovalStatus"] = "approved", ["workedMinutes"] = 90 });
+        db.Set("uimsAttendance/trainingAssignments/TA-1", new JObject { ["studentId"] = "ST-1", ["placementId"] = "PL-1", ["companyId"] = "CO-1", ["companySupervisorId"] = "CS-1", ["academicSupervisorId"] = "AC-1", ["startDate"] = "2026-10-01", ["endDate"] = "2026-12-31", ["status"] = "active" });
+        db.Set("uimsAttendance/attendance/TA-1/2026-10-21", new JObject { ["studentId"] = "ST-1", ["assignmentId"] = "TA-1", ["status"] = "completed", ["hoursApprovalStatus"] = "approved", ["workedMinutes"] = 90, ["companyId"] = "CO-1", ["companySupervisorId"] = "CS-1", ["hoursApprovedById"] = "CS-1", ["attendanceDate"] = "2026-10-21", ["checkInAt"] = new DateTimeOffset(2026, 10, 21, 9, 0, 0, TimeSpan.FromHours(3)).ToUnixTimeMilliseconds(), ["checkOutAt"] = new DateTimeOffset(2026, 10, 21, 10, 30, 0, TimeSpan.FromHours(3)).ToUnixTimeMilliseconds() });
     }
     private static byte[] WeeklyDocx()
     {
@@ -140,6 +142,8 @@ internal static partial class Program
         var company = await WeeklyService(db, WeeklyCompanyActor(), null, files).DownloadAsync(id, revision, CancellationToken.None); Assert(company.Content.SequenceEqual(WeeklyDocx()));
         var academic = await WeeklyService(db, WeeklyAcademicActor(), null, files).DownloadAsync(id, revision, CancellationToken.None); Assert(academic.Content.SequenceEqual(WeeklyDocx()));
         await Reject<UIMS.Services.FirebaseException>(() => WeeklyService(db, WeeklyStudentActor(), null, files).DownloadAsync(id, revision, CancellationToken.None));
+        db.Set("users/AC-1", new JObject { ["role"] = "academicSupervisor", ["isActive"] = true });
+        db.Set("users/AC-2", new JObject { ["role"] = "academicSupervisor", ["isActive"] = true });
         db.Set("assignments/A-1", new JObject { ["studentId"] = "ST-1", ["academicSupervisorId"] = "AC-2", ["active"] = true });
         await Reject<UIMS.Services.FirebaseException>(() => WeeklyService(db, WeeklyAcademicActor(), null, files).DownloadAsync(id, revision, CancellationToken.None));
     }

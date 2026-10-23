@@ -73,7 +73,7 @@ namespace University_Internship_Management_System.Company
             supervisor = supervisor ?? await service.LoadSupervisor(supervisorId);
             var groups = await service.LoadSupervisorAttendance(supervisorId, supervisor, studentReady);
             return new JObject { ["supervisor"] = supervisor, ["today"] = AttendanceService.Today(),
-                ["students"] = groups[0], ["requests"] = groups[1], ["records"] = groups[2] };
+                ["students"] = groups[0], ["requests"] = groups[1], ["records"] = groups[2], ["setupWarnings"] = groups.Length > 3 ? groups[3] : new JArray() };
         }
 
         private Task<JObject> ScanAttendance(string supervisorId)

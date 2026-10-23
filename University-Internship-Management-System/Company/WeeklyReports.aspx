@@ -1,4 +1,4 @@
-<%@ Page Language="C#" AutoEventWireup="true" %>
+﻿<%@ Page Language="C#" AutoEventWireup="true" ResponseEncoding="utf-8" %>
 <%@ Import Namespace="System.Web.Security" %>
 <%@ Import Namespace="University_Internship_Management_System.Shared" %>
 <script runat="server">
@@ -21,7 +21,7 @@
 <section class="wr-card"><h2>Submit a weekly report</h2><p class="wr-muted">Reports are routed to the student’s currently assigned academic supervisor. Each training week can have one report; requested changes create a new preserved revision.</p>
 <div class="wr-grid"><label>Active trainee placement<select id="placementSelect" required><option value="">Loading assigned students…</option></select></label><label>Training week<input id="weekNumber" type="number" min="1" max="60" required /></label><label>Week starts<input id="weekStart" type="date" required /></label><label>Week ends<input id="weekEnd" type="date" required /></label></div>
 <label>Company performance comments <span class="wr-muted">(optional)</span><textarea id="companyComments" rows="3" maxlength="3000" placeholder="Describe the student’s work and progress this week…"></textarea></label>
-<label>Word report (.docx)<input id="reportFile" type="file" accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document" required /><small>Microsoft Word DOCX only · maximum 10 MiB · stored privately in Firebase Storage.</small></label>
+<label>Word report (.docx)<input id="reportFile" type="file" accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document" required /><small>Microsoft Word DOCX only · maximum 10 MiB · stored privately on the server. Downloads require an authorized supervisor account.</small></label>
 <button id="submitReport" class="wr-primary" type="button">Submit weekly report</button></section>
 <section class="wr-card"><div class="wr-card-heading"><div><h2>Report history</h2><p class="wr-muted">View revisions, academic decisions, and download previously submitted files.</p></div><button id="refreshCompany" class="wr-secondary" type="button">Refresh</button></div><div id="companyReports" class="wr-report-list"><p class="wr-empty">Loading reports…</p></div></section>
 </div></main></div></form><script src="../Js_project/Company/WeeklyReports.js"></script></body></html>

@@ -1,0 +1,24 @@
+<!-- REVIEW ONLY: merge into a deployment COPY after its trusted HTTPS endpoint exists.
+     This is NOT a replacement Web.config. Never apply to the current HTTP localhost site. -->
+<configuration>
+  <appSettings>
+    <!-- Replace with the actual approved DNS name, no scheme/path/wildcards.
+         Set in the deployment's local override too; that override wins. -->
+    <add key="AttendanceAllowedHttpsHosts" value="REPLACE_WITH_APPROVED_HOST" />
+    <!-- Preserve the existing private-disk provider and permanent root for that server.
+         Keep FirebaseStorageEnabled and FirebaseStorageLiveWritesEnabled false. -->
+  </appSettings>
+  <system.web>
+    <authentication mode="Forms">
+      <!-- Retain the team's other existing forms options; add requireSSL=true. -->
+      <forms requireSSL="true" />
+    </authentication>
+    <httpCookies requireSSL="true" httpOnlyCookies="true" />
+  </system.web>
+  <system.webServer>
+    <security>
+      <!-- IIS must actually terminate TLS; a forwarded header is not proof of HTTPS. -->
+      <access sslFlags="Ssl" />
+    </security>
+  </system.webServer>
+</configuration>

@@ -230,7 +230,10 @@ function renderSupervisor(data) {
     document.getElementById("recordsDate").textContent = "Today: " + data.today + " · Asia/Amman";
     document.getElementById("assignedStudents").textContent = data.students.length
         ? "Assigned trainees: " + data.students.map(function (student) { return student.name; }).join(", ")
-        : "No active trainees are assigned to this supervisor.";
+        : "No active trainees are assigned to this supervisor. Students must confirm an accepted offer in My Applications first.";
+    if (data.setupWarnings && data.setupWarnings.length) {
+        document.getElementById("assignedStudents").textContent += " · Setup required: " + data.setupWarnings.map(function (w) { return w.studentId + ": " + w.message; }).join("; ");
+    }
     renderRequests();
     renderRecords();
 }
@@ -315,7 +318,7 @@ function renderRecords() {
         return (record.studentName + " " + record.attendanceDate + " " + record.status).toLowerCase().includes(query);
     }).sort(function (a, b) { return b.attendanceDate.localeCompare(a.attendanceDate); }).forEach(function (record) {
         const row = document.createElement("tr");
-        const status = record.status === "checkedIn" && !record.checkOutAt && Number(record.scheduledEndAt) < Date.now()
+        const status = record.attendanceMode !== "flexible" && record.status === "checkedIn" && !record.checkOutAt && Number(record.scheduledEndAt) < Date.now()
             ? "missingCheckOut" : record.status;
         [record.attendanceDate, record.studentName, time(record.checkInAt), time(record.checkOutAt),
             record.checkOutAt ? (Number(record.workedMinutes) / 60).toFixed(2) + " h" : "—",

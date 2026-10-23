@@ -1,0 +1,159 @@
+/* Loaded only by the two QR Attendance pages. Brand tokens come from colors.css. */
+.attendance-workspace .attendance-guide { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 18px; list-style: none; margin: 0 0 24px; padding: 20px; border: 1px solid var(--border); border-radius: 16px; background: var(--surface); }
+.attendance-workspace .attendance-guide li { display: flex; align-items: flex-start; gap: 12px; min-width: 0; }
+.attendance-workspace .guide-number { display: grid; place-items: center; flex: 0 0 32px; height: 32px; border-radius: 50%; color: var(--primary); background: var(--primary-soft); font-weight: 800; font-family: var(--font-heading); }
+.attendance-workspace .attendance-guide strong { font-size: 13px; }
+.attendance-workspace .attendance-guide p { color: var(--text-secondary); font-size: 12px; line-height: 1.7; margin: 3px 0 0; }
+.attendance-workspace .student-qr-actions { padding: 20px; background: var(--primary-soft); border: 1px solid var(--primary-light); border-radius: 14px; margin-block: 20px 4px; }
+.attendance-workspace .action-heading { display: flex; align-items: center; gap: 10px; font-weight: 700; color: var(--primary); margin: 0; }
+.attendance-workspace .student-qr-actions .attendance-actions { margin-top: 16px; }
+.attendance-workspace .student-qr-actions button { flex: 1; }
+.attendance-workspace .qr-display-dialog { width: min(600px,calc(100% - 24px)); padding: 0; }
+.attendance-workspace .qr-dialog-header { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 24px 28px 12px; }
+.attendance-workspace .qr-dialog-header .eyebrow { font-size: 10px; margin-bottom: 4px; }
+.attendance-workspace .qr-dialog-header h2 { font-size: 24px; }
+.attendance-workspace .qr-display-help { margin: 0; padding: 0 28px 16px; color: var(--text-secondary); }
+.attendance-workspace .qr-display-dialog .qr-placeholder { margin: 0 24px; padding: 12px; background: #fff; border: 1px solid var(--border); border-radius: 16px; }
+.attendance-workspace .qr-display-dialog #qrCode { padding: 0; width: 100%; min-height: 40px; display: grid; place-items: center; background: #fff; }
+.attendance-workspace .qr-display-dialog #qrCode svg { display: block; max-height: 48dvh; max-width: 100%; }
+.attendance-workspace .qr-validity { display: flex; justify-content: center; align-items: center; gap: 8px; margin: 16px 24px 0; padding: 10px 14px; border-radius: 10px; background: var(--primary-soft); color: var(--primary); font-size: 13px; text-align: center; font-variant-numeric: tabular-nums; }
+.attendance-workspace .qr-identity { padding: 0 24px; text-align: center; overflow-wrap: anywhere; font-weight: 600; margin-block: 14px; }
+.attendance-workspace .qr-scan-tip { display: flex; align-items: flex-start; gap: 10px; margin: 0 24px 20px; color: var(--text-secondary); }
+.attendance-workspace .qr-scan-tip p { font-size: 12px; margin: 0; }
+.attendance-workspace .qr-dialog-footer { display: flex; gap: 18px; align-items: center; justify-content: space-between; background: var(--surface-alt); border-top: 1px solid var(--border-light); padding: 16px 24px; }
+.attendance-workspace .qr-dialog-footer p { font-size: 11px; color: var(--text-secondary); margin: 0; max-width: 34ch; }
+.attendance-workspace .qr-dialog-footer button { flex-shrink: 0; }
+.attendance-workspace .qr-issue-dialog { width: min(660px,calc(100% - 24px)); }
+.attendance-workspace .qr-student-heading { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; margin-top: 24px; font-size: 13px; }
+.attendance-workspace .qr-student-heading label { display: flex; align-items: center; gap: 8px; color: var(--primary); cursor: pointer; }
+.attendance-workspace .qr-issue-dialog #qrStudentList { max-height: 32dvh; overflow-y: auto; overscroll-behavior: contain; padding: 6px; border: 1px solid var(--border); border-radius: 12px; }
+.attendance-workspace #qrStudentList p { margin-bottom: 4px; }
+.attendance-workspace #qrStudentList label { font-size: 13px; overflow-wrap: anywhere; }
+.attendance-workspace #qrStudentList label:has(input:checked) { background: var(--primary-soft); color: var(--primary); outline: 1px solid var(--primary-light); }
+.attendance-workspace .issue-dialog-actions { position: sticky; bottom: -28px; padding-block: 16px; background: var(--surface); border-top: 1px solid var(--border-light); }
+@media(max-width:767.98px) {
+ .attendance-workspace .attendance-guide { grid-template-columns: 1fr; gap: 16px; padding: 18px; }
+ .attendance-workspace .attendance-guide p { margin-top: 0; }
+ .attendance-workspace .qr-display-dialog { padding: 0; }
+ .attendance-workspace .qr-dialog-header { padding: 20px 20px 10px; }
+ .attendance-workspace .qr-display-help { padding-inline: 20px; }
+ .attendance-workspace .qr-display-dialog .qr-placeholder { margin-inline: 16px; padding: 8px; }
+ .attendance-workspace .qr-dialog-footer { padding: 16px; gap: 12px; }
+ .attendance-workspace .student-qr-actions { padding: 16px; }
+}
+.attendance-workspace { line-height: 1.6; }
+.attendance-workspace .sidebar { width: 264px; padding: 24px 14px 16px; border-right: 1px solid var(--border); }
+.attendance-workspace .uims-side-brand { display: flex; align-items: center; gap: 12px; padding: 4px 14px 24px; color: var(--primary); }
+.attendance-workspace .uims-side-logo { object-fit: contain; flex-shrink: 0; }
+.attendance-workspace .uims-side-brandtext { display: flex; flex-direction: column; line-height: 1.25; }
+.attendance-workspace .uims-side-brandtext strong { font-family: var(--font-heading); font-size: 22px; font-weight: 800; }
+.attendance-workspace .uims-side-brandtext small { color: var(--text-secondary); font-size: 12px; }
+.attendance-workspace .uims-side-role { padding: 0 14px 12px; color: var(--text-secondary); font-size: 10px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; }
+.attendance-workspace .uims-side-links { list-style: none; margin: 0; padding: 0; }
+.attendance-workspace .uims-side-link { display: flex; align-items: center; gap: 11px; padding: 11px 13px; margin-bottom: 4px; border-radius: 11px; color: var(--text-secondary); font-size: 13px; font-weight: 500; min-height: 44px; transition: background .18s, color .18s; }
+.attendance-workspace .uims-side-icon { width: 19px; height: 19px; flex-shrink: 0; }
+.attendance-workspace .uims-side-link:hover { background: var(--primary-soft); color: var(--primary); }
+.attendance-workspace .uims-side-link.is-active { background: var(--surface); color: var(--primary); font-weight: 700; box-shadow: 0 3px 12px #24284408; }
+.attendance-workspace .uims-side-footer { margin-top: auto; padding-top: 16px; border-top: 1px solid var(--border); }
+.attendance-workspace .uims-side-navigation { padding-bottom: 20px; }
+.attendance-workspace .uims-side-logout { color: var(--danger); }
+.attendance-workspace .topbar { border-bottom: 1px solid var(--border-light); padding-block: 18px; gap: 16px; }
+.attendance-workspace .search { max-width: 480px; }
+.attendance-workspace .search input { min-height: 46px; border-color: var(--border); }
+.attendance-workspace .content { padding-top: 32px; }
+.attendance-workspace .page-heading { margin-bottom: 20px; }
+.attendance-workspace h1 { letter-spacing: -.035em; font-weight: 800; }
+.attendance-workspace .page-heading p:last-child { max-width: 62ch; font-size: 14px; }
+.attendance-workspace .date-chip { border: 1px solid var(--border); white-space: normal; text-align: center; }
+.attendance-workspace .refresh-action { margin-bottom: 20px; min-height: 44px; }
+.attendance-workspace .panel-heading .refresh-action { margin-bottom: 0; }
+.attendance-workspace .attendance-panel { border-color: var(--border); padding: 26px; box-shadow: 0 4px 20px #24284403; }
+.attendance-workspace .metric-card { padding: 24px; border-color: var(--border); }
+.attendance-workspace .metric-card strong { font-size: clamp(28px, 3vw, 38px); line-height: 1.3; letter-spacing: -.035em; }
+.attendance-workspace .metric-card small { display: block; font-size: 11px; line-height: 1.6; }
+.attendance-workspace .schedule-grid { background: var(--surface-alt); border: 1px solid var(--border-light); border-radius: 12px; padding: 20px; gap: 24px; }
+.attendance-workspace .schedule-grid strong { font-variant-numeric: tabular-nums; }
+.attendance-workspace .attendance-actions { gap: 10px; }
+.attendance-workspace .primary-action, .attendance-workspace .secondary-action { min-height: 44px; border-radius: 10px; }
+.attendance-workspace .text-action { min-height: 44px; text-decoration: underline; text-underline-offset: 4px; }
+.attendance-workspace .attendance-table thead th { background: var(--surface-alt); font-size: 11px; font-weight: 600; padding-block: 14px; }
+.attendance-workspace .attendance-table td { padding-block: 18px; }
+.attendance-workspace .attendance-table tbody tr:hover { --bs-table-bg: var(--primary-soft); }
+.attendance-workspace .table-responsive { border: 1px solid var(--border-light); border-radius: 10px; }
+.attendance-workspace .section-note { font-size: 13px; }
+.attendance-workspace .assignment-list dd { line-height: 1.7; }
+.attendance-workspace .page-notice { overflow-wrap: anywhere; }
+.attendance-workspace .scanner-frame { min-height: 300px; }
+.attendance-workspace .verification-empty { min-height: 300px; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+.attendance-workspace .attendance-dialog { padding: 28px; box-shadow: 0 24px 80px #24284430; }
+.attendance-workspace .dialog-close { min-width: 44px; min-height: 44px; }
+.attendance-workspace #qrStudentList { margin-block: 16px; }
+.attendance-workspace #qrStudentList label { display: flex; align-items: flex-start; gap: 10px; padding: 10px 8px; border-radius: 8px; cursor: pointer; }
+.attendance-workspace #qrStudentList label:hover { background: var(--primary-soft); }
+.attendance-workspace input[type="checkbox"] { accent-color: var(--primary); width: 17px; height: 17px; flex-shrink: 0; margin-top: 4px; }
+.attendance-workspace #assignedStudents { max-width: 100%; }
+.attendance-workspace .uims-unified-backdrop { display: none; }
+@media (min-width: 1200px) { .attendance-workspace .assignment-panel { border-top: 3px solid var(--primary); } }
+@media (max-width: 991.98px) {
+  .attendance-workspace .sidebar { width: min(290px, 88vw); }
+  .attendance-workspace .topbar { padding-block: 12px; }
+  .attendance-workspace .content { padding-top: 24px; }
+  .attendance-workspace.sidebar-open .uims-unified-backdrop { display: block; }
+}
+@media (max-width: 575.98px) {
+  .attendance-workspace .content { padding-inline: 14px; }
+  .attendance-workspace .topbar { padding-inline: 14px; gap: 8px; }
+  .attendance-workspace .icon-btn { display: none; }
+  .attendance-workspace .attendance-panel { padding: 18px; border-radius: 14px; margin-bottom: 18px; }
+  .attendance-workspace .page-heading { gap: 12px; }
+  .attendance-workspace .date-chip { font-size: 11px; }
+  .attendance-workspace .metric-card { padding: 18px; }
+  .attendance-workspace .metric-row { --bs-gutter-y: 10px; }
+  .attendance-workspace .metric-card strong { margin-block: 4px; }
+  .attendance-workspace .metric-card small { font-size: 11px; }
+  .attendance-workspace .schedule-grid { padding: 14px; gap: 20px 12px; }
+  .attendance-workspace .schedule-grid strong { font-size: 20px; }
+  .attendance-workspace .attendance-actions > button { flex: 1 1 auto; }
+  .attendance-workspace .panel-heading { gap: 12px; }
+  .attendance-workspace .filter-label { width: 100%; justify-content: space-between; }
+  .attendance-workspace .attendance-dialog { padding: 20px; }
+  .attendance-workspace .scanner-frame { min-height: 240px; }
+}
+@media (prefers-reduced-motion: reduce) { .attendance-workspace .uims-side-link { transition: none; } }
+.attendance-workspace #qrDialog { padding: 0; }
+/* Supervisor layout only: retain the existing attendance actions and event bindings. */
+.supervisor-workspace .workspace-context { display: flex; align-items: center; gap: 12px; color: var(--primary); font-size: 13px; font-weight: 700; }
+.supervisor-workspace .workspace-context > i { display: grid; place-items: center; width: 40px; height: 40px; border-radius: 12px; background: var(--primary-light); font-size: 19px; }
+.supervisor-workspace .workspace-context small { display: block; font-size: 11px; color: var(--text-secondary); font-weight: 400; }
+.supervisor-workspace .supervisor-section-nav { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 24px; }
+.supervisor-workspace .supervisor-section-nav button { display: flex; gap: 8px; align-items: center; min-height: 44px; padding: 8px 14px; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; color: var(--text-secondary); font-size: 12px; font-weight: 600; }
+.supervisor-workspace .supervisor-section-nav button:hover { color: var(--primary); border-color: var(--primary); }
+.supervisor-workspace .supervisor-section-nav button span { display: grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; background: var(--primary-soft); color: var(--primary); font-size: 11px; }
+.supervisor-workspace .prepare-attendance { display: flex; align-items: center; justify-content: space-between; gap: 28px; border-top: 3px solid var(--primary); }
+.supervisor-workspace .prepare-copy { flex: 1; min-width: 0; }
+.supervisor-workspace .prepare-copy > .section-note { max-width: 72ch; }
+.supervisor-workspace .assigned-trainees { padding: 12px 14px; margin-bottom: 0; background: var(--surface-alt); border: 1px solid var(--border-light); border-radius: 10px; max-height: 160px; overflow-y: auto; }
+.supervisor-workspace .prepare-actions { display: flex; flex-direction: column; gap: 10px; flex-shrink: 0; }
+.supervisor-workspace .prepare-actions .refresh-action { margin: 0; }
+.supervisor-workspace .prepare-actions i { margin-right: 6px; }
+.supervisor-workspace .supervisor-scan-row > div { display: flex; }
+.supervisor-workspace .supervisor-scan-row .attendance-panel { width: 100%; }
+.supervisor-workspace .supervisor-scan-row .panel-heading { align-items: flex-start; }
+.supervisor-workspace .supervisor-scan-row .eyebrow { font-size: 10px; margin-bottom: 5px; }
+.supervisor-workspace #scanAttendance, .supervisor-workspace #prepareAttendance, .supervisor-workspace #reviewAttendance, .supervisor-workspace #attendanceRecords { scroll-margin-top: 110px; }
+.supervisor-workspace .records-toolbar { display: flex; align-items: center; gap: 18px; justify-content: space-between; margin-bottom: 18px; }
+.supervisor-workspace .records-toolbar .search { max-width: 420px; }
+.supervisor-workspace .records-toolbar p { font-size: 12px; text-align: right; }
+.supervisor-workspace .supervisor-review .section-note { max-width: 78ch; }
+@media(max-width:767.98px) {
+ .supervisor-workspace .prepare-attendance { flex-direction: column; align-items: stretch; gap: 18px; }
+ .supervisor-workspace .prepare-actions { flex-direction: row; flex-wrap: wrap; }
+ .supervisor-workspace .prepare-actions button { flex: 1 1 auto; }
+ .supervisor-workspace .supervisor-section-nav { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); }
+ .supervisor-workspace .supervisor-section-nav button { padding-inline: 10px; font-size: 11px; }
+ .supervisor-workspace .records-toolbar { flex-direction: column; align-items: stretch; gap: 4px; }
+ .supervisor-workspace .records-toolbar .search { max-width: none; }
+ .supervisor-workspace .records-toolbar .search input::placeholder { color: var(--text-secondary); }
+ .supervisor-workspace .records-toolbar p { text-align: left; }
+ .supervisor-workspace .workspace-context { font-size: 12px; gap: 8px; }
+}

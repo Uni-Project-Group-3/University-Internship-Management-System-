@@ -19,9 +19,13 @@ namespace UIMS.Attendance
         // حقن الاتصال يسمح باختبار القواعد دون الوصول إلى Firebase الحقيقي.
         public AttendanceService(AttendanceFirebase database) : this(database, LoadQrSigningKey) { }
         public AttendanceService(AttendanceFirebase database, Func<byte[]> qrSigningKey)
+            : this(database, qrSigningKey, key => System.Configuration.ConfigurationManager.AppSettings[key]) { }
+
+        public AttendanceService(AttendanceFirebase database, Func<byte[]> qrSigningKey, Func<string, string> settings)
         {
             this.database = database ?? throw new ArgumentNullException(nameof(database));
             this.qrSigningKey = qrSigningKey ?? throw new ArgumentNullException(nameof(qrSigningKey));
+            if (settings == null) throw new ArgumentNullException(nameof(settings));
         }
 
         private static byte[] LoadQrSigningKey()
@@ -57,7 +61,7 @@ namespace UIMS.Attendance
         public static string Text(JToken value, string field)
         {
             var item = value is JObject ? value[field] : null;
-            return item != null && item.Type == JTokenType.String ? (string)item : "";
+            return item != null && item.Type == JTokenType.String ? ((string)item ?? "") : "";
         }
         public static long Number(JToken value, string field)
         {
@@ -91,11 +95,24 @@ namespace UIMS.Attendance
             internal ReadScope(Action release) { this.release = release; }
             public void Dispose() { release(); }
         }
-        private async Task<JObject> ReadData(string path) { return (await database.Read(path)).Data; }
+        private async Task<JObject> ReadData(string path)
+        {
+            // Reads never invent or silently persist placement mappings/calendars.
+            return (await database.Read(path)).Data;
+        }
+
+        private static bool ConfirmedPlacement(JObject placement)
+        {
+            string status = Text(placement, "status");
+            return (status == "confirmed" || status == "active") && !Flag(placement, "isTestData");
+        }
+
         private async Task<JObject> Get(string path)
         {
             if (string.IsNullOrWhiteSpace(path)) throw new InvalidOperationException("An attendance database path is required.");
-            foreach (string key in path.Split('/')) AttendanceFirebase.CheckKey(key);
+            foreach (string key in path.Split('/'))
+                try { AttendanceFirebase.CheckKey(key); }
+                catch (InvalidOperationException) { throw new AttendanceSetupException("An attendance record has an invalid identifier."); }
             if (requestReads == null) return await ReadData(path);
             Task<JObject> read;
             lock (requestReads)
@@ -200,13 +217,20 @@ namespace UIMS.Attendance
                 c.Supervisor = await supervisorRead;
                 if (Text(c.Company, "status") != "active" || Text(c.Supervisor, "status") != "active" || Text(c.Supervisor, "companyId") != companyId)
                     throw new InvalidOperationException("The assigned company or supervisor is inactive or inconsistent.");
+                await database.ValidatePlacementBinding(c.Assignment, Text(c.Student, "firebaseUid"));
+                await database.ValidateStudentEligibility(studentId, Text(c.Student, "firebaseUid"));
+                c.AcademicSupervisor = await database.ReadAcademicSupervisor(studentId, Text(c.Student, "firebaseUid"), Text(c.Assignment, "academicSupervisorId"));
+                DateTime assignmentStart, assignmentEnd;
+                if (!DateTime.TryParseExact(Text(c.Assignment, "startDate"), "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out assignmentStart) ||
+                    !DateTime.TryParseExact(Text(c.Assignment, "endDate"), "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out assignmentEnd) || assignmentEnd < assignmentStart)
+                    throw new AttendanceSetupException("The attendance assignment needs validated training dates.");
                 if (Number(c.Assignment, "requiredHours") <= 0)
                     throw new InvalidOperationException("The assignment must specify its required training hours.");
                 if (loadHistory && profileReady != null)
                     await profileReady(new JObject
                     {
                         ["student"] = c.Student, ["hasAssignment"] = true, ["assignment"] = c.Assignment,
-                        ["company"] = c.Company, ["supervisor"] = c.Supervisor, ["today"] = c.Date
+                        ["company"] = c.Company, ["supervisor"] = c.Supervisor, ["academicSupervisor"] = c.AcademicSupervisor, ["today"] = c.Date
                     });
                 await Task.WhenAll(scheduleRead, recordRead, requestRead, settingsRead);
                 var schedules = await scheduleRead;
@@ -340,7 +364,8 @@ namespace UIMS.Attendance
                 if (records[entry.Name] is JObject || Text(schedule, "assignmentId") != assignmentId ||
                     Text(schedule, "attendanceDate") != entry.Name || string.CompareOrdinal(entry.Name, Today()) > 0) continue;
                 bool training = Flag(schedule, "isTrainingDay");
-                if (training && (Number(schedule, "scheduledEndAt") <= 0 || Number(schedule, "scheduledEndAt") >= Now())) continue;
+                // اليوم المرن لا يعد غيابًا قبل انتهائه، حتى لو انتهت ساعات العرض المرجعية.
+                if (training && (entry.Name == Today() || Number(schedule, "scheduledEndAt") <= 0 || Number(schedule, "scheduledEndAt") >= Now())) continue;
                 records[entry.Name] = new JObject
                 {
                     ["assignmentId"] = assignmentId, ["studentId"] = studentId, ["attendanceDate"] = entry.Name,
@@ -362,12 +387,17 @@ namespace UIMS.Attendance
             if (Text(student, "status") != "active")
                 throw new InvalidOperationException("Student account is inactive or missing.");
             if (Text(student, "activeAssignmentId") == "")
+            {
+                var pending = await database.ReadConfirmedPlacements("studentId", id);
+                if (pending.Properties().Any(p => p.Value is JObject && ConfirmedPlacement((JObject)p.Value)))
+                    throw new AttendanceSetupException("Your confirmed placement is awaiting persisted attendance setup. Retry offer confirmation or ask the coordinator to reconcile its approved calendar and mappings.");
                 return new AttendanceContext { Student = student, Date = Today() };
+            }
             var c = await Context(id, null, student, true, profileReady: profileReady);
             var history = await History(c.AssignmentId, id, c.HistoryRecords, c.HistorySchedules, c.Assignment);
             long approvedMinutes = 0;
             foreach (var item in history.Properties())
-                if (Text(item.Value, "hoursApprovalStatus") == "approved" && Text(item.Value, "studentId") == id &&
+                if (string.CompareOrdinal(item.Name, Text(c.Assignment, "startDate")) >= 0 && string.CompareOrdinal(item.Name, Text(c.Assignment, "endDate")) <= 0 && Text(item.Value, "hoursApprovalStatus") == "approved" && Text(item.Value, "studentId") == id &&
                     Text(item.Value, "assignmentId") == c.AssignmentId && Number(item.Value, "checkOutAt") > Number(item.Value, "checkInAt") &&
                     Text(item.Value, "companyId") == Text(c.Assignment, "companyId") &&
                     Text(item.Value, "hoursApprovedById") != "" && Text(item.Value, "hoursApprovedById") == Text(item.Value, "companySupervisorId") &&
@@ -736,6 +766,14 @@ namespace UIMS.Attendance
             if (Text(await Get("companies/" + companyId), "status") != "active")
                 throw new InvalidOperationException("The supervisor's company is inactive or missing.");
             var assignments = await Get("trainingAssignments");
+            var warnings = new JArray();
+            var placements = await database.ReadConfirmedPlacements("companySupervisorId", id);
+            foreach (var entry in placements.Properties())
+            {
+                if (!(entry.Value is JObject) || Text(entry.Value, "companySupervisorId") != id || Text(entry.Value, "companyId") != companyId || !ConfirmedPlacement((JObject)entry.Value)) continue;
+                if (!assignments.Properties().Any(a => Text(a.Value, "placementId") == entry.Name && Text(a.Value, "studentId") == Text(entry.Value, "studentId")))
+                    warnings.Add(new JObject { ["studentId"] = Text(entry.Value, "studentId"), ["message"] = "Confirmed placement attendance setup is not persisted. Retry offer confirmation or ask the coordinator to reconcile it." });
+            }
             var students = new JArray(); var requests = new JArray(); var records = new JArray();
             // نحدد التكليفات المسموحة أولاً، ونحمّل أربعة طلاب كحد أقصى بالتوازي.
             var allowed = assignments.Properties().Where(entry =>
@@ -748,11 +786,15 @@ namespace UIMS.Attendance
                     await slots.WaitAsync();
                     try
                     {
-                        AttendanceFirebase.CheckKey(entry.Name);
+                        try { AttendanceFirebase.CheckKey(entry.Name); }
+                        catch (InvalidOperationException) { throw new AttendanceSetupException("The attendance assignment identifier is invalid."); }
                         var groupStudents = new JArray(); var groupRequests = new JArray(); var groupRecords = new JArray();
                         var student = await Get("students/" + Text(entry.Value, "studentId"));
                         if (Text(student, "activeAssignmentId") != entry.Name || Text(student, "status") != "active" || AttendanceConfiguration.IsLocalDevelopment(HttpContext.Current) && !Flag(student, "isTestData"))
-                            return new[] { groupStudents, groupRequests, groupRecords };
+                            throw new AttendanceSetupException("The student attendance mapping is inactive or points to another assignment.");
+                        await database.ValidatePlacementBinding((JObject)entry.Value, Text(student, "firebaseUid"));
+                        await database.ValidateStudentEligibility(Text(entry.Value, "studentId"), Text(student, "firebaseUid"));
+                        await database.ReadAcademicSupervisor(Text(entry.Value, "studentId"), Text(student, "firebaseUid"), Text(entry.Value, "academicSupervisorId"));
                         groupStudents.Add(new JObject { ["id"] = Text(entry.Value, "studentId"), ["name"] = Text(student, "name"), ["assignmentId"] = entry.Name, ["requiredHours"] = Number(entry.Value, "requiredHours") });
                         var historyRead = History(entry.Name, Text(entry.Value, "studentId"), assignment: (JObject)entry.Value);
                         var earlyRead = Get("earlyCheckoutRequests/" + entry.Name);
@@ -788,6 +830,11 @@ namespace UIMS.Attendance
                             }
                         return new[] { groupStudents, groupRequests, groupRecords };
                     }
+                    catch (AttendanceSetupException error)
+                    {
+                        lock (warnings) warnings.Add(new JObject { ["studentId"] = Text(entry.Value, "studentId"), ["message"] = error.Message });
+                        return new[] { new JArray(), new JArray(), new JArray() };
+                    }
                     finally { slots.Release(); }
                 }));
                 foreach (var group in groups)
@@ -797,7 +844,7 @@ namespace UIMS.Attendance
                     foreach (var item in group[2]) records.Add(item);
                 }
             }
-            return new[] { students, requests, records };
+            return new[] { students, requests, records, warnings };
         }
 
         public async Task Review(string supervisorId, string assignmentId, string date, string decision)
@@ -842,7 +889,7 @@ namespace UIMS.Attendance
                 throw new InvalidOperationException("This record was already changed. Refresh before reviewing it again.");
         }
 
-        private static bool HasValidWorkedTime(JToken row, string date)
+        public static bool HasValidWorkedTime(JToken row, string date)
         {
             long start = Number(row, "checkInAt"), end = Number(row, "checkOutAt"), minutes = Number(row, "workedMinutes");
             if (start <= 0 || end <= start || end > Now() || minutes <= 0 || minutes != (end - start) / 60000) return false;
@@ -865,6 +912,7 @@ namespace UIMS.Attendance
         public JObject Assignment { get; set; }
         public JObject Company { get; set; }
         public JObject Supervisor { get; set; }
+        public JObject AcademicSupervisor { get; set; }
         public JObject Schedule { get; set; }
         public JObject Record { get; set; }
         public JObject Request { get; set; }

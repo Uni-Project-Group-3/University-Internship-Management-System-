@@ -1,10 +1,11 @@
-using System;
+﻿using System;
 using System.Globalization;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
 using Newtonsoft.Json.Linq;
+using UIMS.Attendance;
 using University_Internship_Management_System.Shared;
 
 namespace UIMS.Services
@@ -25,7 +26,11 @@ namespace UIMS.Services
         public Task<JToken> ReadAsync(string path) { return gateway.ReadAsync(path); }
         public Task<JToken> ReadEqualAsync(string path, string field, string value) { return gateway.ReadEqualAsync(path, field, value); }
         public Task<StudentVersion> ReadVersionAsync(string path) { return gateway.ReadVersionAsync(path); }
-        public Task<bool> CompareWriteAsync(string path, object value, string etag) { return gateway.CompareWriteAsync(path, value, etag); }
+        public Task<bool> CompareWriteAsync(string path, object value, string etag)
+        {
+            if (path.StartsWith("uimsAttendance/", StringComparison.Ordinal)) AttendanceProvisioningWrite.Validate(path, value, etag);
+            return gateway.CompareWriteAsync(path, value, etag);
+        }
         public Task<bool> IsActiveAuthenticationUidAsync(string uid) { return gateway.IsActiveAuthenticationUidAsync(uid); }
     }
 
@@ -191,21 +196,27 @@ namespace UIMS.Services
 
         public async Task<string> ConfirmOfferAsync(string uid, string applicationId)
         {
+            try { return await ConfirmOfferCoreAsync(uid, applicationId).ConfigureAwait(false); }
+            catch (AttendanceSetupException error) { throw new FirebaseException(409, error.Message); }
+        }
+
+        private async Task<string> ConfirmOfferCoreAsync(string uid, string applicationId)
+        {
             var actor = await ResolveAsync(uid, "student").ConfigureAwait(false);
             string id = Key(applicationId);
             var app = await database.ReadVersionAsync("applications/" + id).ConfigureAwait(false);
             if (app.Value == null || (string)app.Value["studentId"] != actor.StudentId) throw new FirebaseException(404, "Accepted application not found for this student.");
-            if (string.Equals((string)app.Value["status"], "confirmed", StringComparison.OrdinalIgnoreCase)) return (string)app.Value["placementId"] ?? "PLC-" + id;
+            if (string.Equals((string)app.Value["status"], "confirmed", StringComparison.OrdinalIgnoreCase))
+            {
+                string confirmedId = Key((string)app.Value["placementId"] ?? "PLC-" + id);
+                var confirmed = await database.ReadAsync("placements/" + confirmedId).ConfigureAwait(false) as JObject;
+                if ((string)confirmed?["applicationId"] != id || (string)confirmed?["studentId"] != actor.StudentId)
+                    throw new FirebaseException(409, "The confirmed application and placement do not agree.");
+                await new AttendanceProvisioner(database).Ensure(confirmedId, uid).ConfigureAwait(false);
+                return confirmedId;
+            }
             if (!string.Equals((string)app.Value["status"], "accepted", StringComparison.OrdinalIgnoreCase)) throw new FirebaseException(409, "Only an accepted application can be confirmed.");
-            var assignment = await database.ReadEqualAsync("supervisorAssignments", "studentId", actor.StudentId).ConfigureAwait(false) as JObject;
-            if ((assignment == null || !assignment.HasValues) && !string.Equals(actor.StudentId, uid, StringComparison.Ordinal))
-                assignment = await database.ReadEqualAsync("supervisorAssignments", "studentId", uid).ConfigureAwait(false) as JObject;
-            string assignedAcademicId = assignment?.Properties().Select(p => (string)(p.Value as JObject)?["academicSupervisorId"]).FirstOrDefault(x => !string.IsNullOrWhiteSpace(x));
-            string profileAcademicId = (string)actor.Profile["academicSupervisorId"] ?? (string)actor.Profile["supervisorId"];
-            if (!string.IsNullOrWhiteSpace(profileAcademicId) && !string.IsNullOrWhiteSpace(assignedAcademicId) && !string.Equals(profileAcademicId, assignedAcademicId, StringComparison.Ordinal))
-                throw new FirebaseException(409, "The student profile and supervisor assignment disagree. Ask the coordinator to reconcile the assignment.");
-            string academicId = assignedAcademicId ?? profileAcademicId;
-            if (string.IsNullOrWhiteSpace(academicId)) throw new FirebaseException(409, "Assign an academic supervisor to this student before confirming the placement.");
+            string academicId = await AttendanceAcademicSupervisor.Resolve(actor.StudentId, uid, database.ReadAsync, database.ReadEqualAsync).ConfigureAwait(false);
             string placementId = "PLC-" + id;
             var existingForStudent = await database.ReadEqualAsync("placements", "studentId", actor.StudentId).ConfigureAwait(false) as JObject;
             Merge(existingForStudent = existingForStudent ?? new JObject(), await database.ReadEqualAsync("placements", "studentId", uid).ConfigureAwait(false) as JObject);
@@ -221,6 +232,28 @@ namespace UIMS.Services
             if (claim.Value != null && (string)claim.Value["applicationId"] != id)
                 throw new FirebaseException(409, "This student already has a confirmed placement.");
             if (claim.Value != null && !string.IsNullOrWhiteSpace((string)claim.Value["placementId"])) placementId = (string)claim.Value["placementId"];
+            var existingPlacement = await database.ReadVersionAsync("placements/" + placementId).ConfigureAwait(false);
+            if (existingPlacement.Value != null && !string.Equals((string)existingPlacement.Value["applicationId"], id, StringComparison.Ordinal))
+                throw new FirebaseException(409, "The placement identifier is already linked to a different application.");
+            JObject proposedPlacement = null;
+            if (existingPlacement.Value == null)
+            {
+                var opportunity = await database.ReadAsync("opportunities/" + Key((string)app.Value["opportunityId"])).ConfigureAwait(false) as JObject;
+                if (opportunity == null) throw new FirebaseException(409, "The accepted opportunity record is unavailable.");
+                proposedPlacement = new JObject {
+                    ["id"] = placementId, ["applicationId"] = id, ["opportunityId"] = (string)app.Value["opportunityId"],
+                    ["studentId"] = actor.StudentId, ["studentUid"] = uid, ["companyId"] = (string)app.Value["companyId"],
+                    ["companySupervisorId"] = (string)app.Value["companySupervisorId"] ?? "",
+                    ["academicSupervisorId"] = academicId, ["status"] = "confirmed",
+                    ["startDate"] = (string)opportunity["startDate"] ?? (string)opportunity["start"] ?? "",
+                    ["endDate"] = (string)opportunity["endDate"],
+                    ["durationWeeks"] = opportunity.Value<int?>("durationWeeks") ?? opportunity.Value<int?>("duration") ?? 0,
+                    ["requiredHours"] = opportunity.Value<int?>("requiredHours") ?? 0,
+                    ["createdAt"] = DateTime.UtcNow.ToString("o", CultureInfo.InvariantCulture)
+                };
+                await new AttendanceProvisioner(database).Ensure(placementId, uid, proposedPlacement, validateOnly: true).ConfigureAwait(false);
+            }
+            else await new AttendanceProvisioner(database).Ensure(placementId, uid, validateOnly: true).ConfigureAwait(false);
             if (claim.Value == null)
             {
                 var claimRecord = new JObject { ["studentId"] = actor.StudentId, ["applicationId"] = id, ["placementId"] = placementId, ["claimedAt"] = DateTime.UtcNow.ToString("o", CultureInfo.InvariantCulture) };
@@ -230,26 +263,10 @@ namespace UIMS.Services
                     if ((string)claim.Value?["applicationId"] != id) throw new FirebaseException(409, "Another offer was confirmed at the same time.");
                 }
             }
-            var existingPlacement = await database.ReadVersionAsync("placements/" + placementId).ConfigureAwait(false);
-            if (existingPlacement.Value != null && !string.Equals((string)existingPlacement.Value["applicationId"], id, StringComparison.Ordinal))
-                throw new FirebaseException(409, "The placement identifier is already linked to a different application.");
-            if (existingPlacement.Value == null)
-            {
-                var opportunity = await database.ReadAsync("opportunities/" + Key((string)app.Value["opportunityId"])).ConfigureAwait(false) as JObject;
-                if (opportunity == null) throw new FirebaseException(409, "The accepted opportunity record is unavailable.");
-                var placement = new JObject {
-                    ["id"] = placementId, ["applicationId"] = id, ["opportunityId"] = (string)app.Value["opportunityId"],
-                    ["studentId"] = actor.StudentId, ["studentUid"] = uid, ["companyId"] = (string)app.Value["companyId"],
-                    ["companySupervisorId"] = (string)app.Value["companySupervisorId"] ?? "",
-                    ["academicSupervisorId"] = academicId, ["status"] = "confirmed",
-                    ["startDate"] = (string)opportunity["startDate"] ?? (string)opportunity["start"] ?? "",
-                    ["durationWeeks"] = opportunity.Value<int?>("durationWeeks") ?? opportunity.Value<int?>("duration") ?? 0,
-                    ["requiredHours"] = opportunity.Value<int?>("requiredHours") ?? 0,
-                    ["createdAt"] = DateTime.UtcNow.ToString("o", CultureInfo.InvariantCulture)
-                };
-                if (string.IsNullOrWhiteSpace(existingPlacement.ETag) || !await database.CompareWriteAsync("placements/" + placementId, placement, existingPlacement.ETag).ConfigureAwait(false))
-                    throw new FirebaseException(409, "The placement is being created by another request. Retry to finish confirmation.");
-            }
+            if (proposedPlacement != null && (string.IsNullOrWhiteSpace(existingPlacement.ETag) ||
+                !await database.CompareWriteAsync("placements/" + placementId, proposedPlacement, existingPlacement.ETag).ConfigureAwait(false)))
+                throw new FirebaseException(409, "The placement is being created by another request. Retry to finish confirmation.");
+            await new AttendanceProvisioner(database).Ensure(placementId, uid).ConfigureAwait(false);
             app.Value["status"] = "confirmed";
             app.Value["placementId"] = placementId;
             app.Value["confirmedAt"] = DateTime.UtcNow.ToString("o", CultureInfo.InvariantCulture);

@@ -152,6 +152,64 @@ namespace UIMS.Attendance
                 return true;
             }
         }
+
+        // قراءة الربط الذي أنشأه مسار قبول العرض؛ لا نكتب في بيانات الفريق من خدمة الحضور.
+        public virtual async Task<JObject> ReadConfirmedPlacements(string field, string value)
+        {
+            if (field != "studentId" && field != "companySupervisorId") throw new InvalidOperationException("Invalid placement query.");
+            CheckKey(value);
+            return await new University_Internship_Management_System.Shared.StudentFirebaseGateway()
+                .ReadEqualAsync("placements", field, value).ConfigureAwait(false) as JObject ?? new JObject();
+        }
+
+        public virtual async Task<JObject> ReadPlacement(string placementId)
+        {
+            CheckKey(placementId);
+            return await new University_Internship_Management_System.Shared.StudentFirebaseGateway()
+                .ReadAsync("placements/" + placementId).ConfigureAwait(false) as JObject ?? new JObject();
+        }
+
+        public virtual async Task ValidatePlacementBinding(JObject assignment, string studentUid)
+        {
+            string id = AttendanceService.Text(assignment, "placementId");
+            if (id == "") throw new AttendanceSetupException("The attendance assignment needs a persisted placement mapping before new attendance actions.");
+            CheckKey(id);
+            AttendanceProvisioner.ValidatePlacementBinding(await ReadPlacement(id).ConfigureAwait(false), assignment, studentUid);
+        }
+
+        public virtual async Task ValidateStudentEligibility(string studentId, string uid)
+        {
+            CheckKey(studentId); CheckKey(uid);
+            var gateway = new University_Internship_Management_System.Shared.StudentFirebaseGateway();
+            if (!await gateway.IsActiveAuthenticationUidAsync(uid).ConfigureAwait(false))
+                throw new AttendanceSetupException("The attendance UID has no enabled Firebase Authentication account. Coordinator reconciliation is required.");
+            var profile = await ReadPlacementStudentProfile(uid).ConfigureAwait(false);
+            if (AttendanceService.Text(profile, "studentId") != studentId ||
+                University_Internship_Management_System.Shared.FirebaseSignInService.CanonicalRole(AttendanceService.Text(profile, "role")) != "student" ||
+                !AttendanceService.Flag(profile, "isActive") || AttendanceService.Flag(profile, "mustChangePassword") ||
+                (AttendanceService.Text(profile, "accountSetupStatus") != "" && AttendanceService.Text(profile, "accountSetupStatus") != "complete"))
+                throw new AttendanceSetupException("The student profile, UID, or account setup is not eligible for attendance.");
+        }
+
+        public virtual async Task<JObject> ReadAcademicSupervisor(string studentId, string uid, string expectedId)
+        {
+            var gateway = new University_Internship_Management_System.Shared.StudentFirebaseGateway();
+            string id = await AttendanceAcademicSupervisor.Resolve(studentId, uid, gateway.ReadAsync, gateway.ReadEqualAsync).ConfigureAwait(false);
+            if (id != expectedId) throw new AttendanceSetupException("The attendance academic supervisor conflicts with the coordinator assignment.");
+            var name = await gateway.ReadAsync("users/" + id + "/fullName").ConfigureAwait(false);
+            return new JObject { ["id"] = id, ["name"] = name?.Type == JTokenType.String ? (string)name : id };
+        }
+
+        public virtual async Task<JObject> ReadPlacementStudentProfile(string uid)
+        {
+            CheckKey(uid);
+            var gateway = new University_Internship_Management_System.Shared.StudentFirebaseGateway();
+            string[] fields = { "studentId", "role", "isActive", "accountSetupStatus", "mustChangePassword", "fullName" };
+            var values = await Task.WhenAll(fields.Select(field => gateway.ReadAsync("users/" + uid + "/" + field))).ConfigureAwait(false);
+            var profile = new JObject();
+            for (int i = 0; i < fields.Length; i++) profile[fields[i]] = values[i];
+            return profile;
+        }
     }
 
     public sealed class AttendanceConfiguration
@@ -272,14 +330,14 @@ namespace UIMS.Attendance
             var actor = WriteRequest.Value;
             var parts = (path ?? "").Split('/');
             DateTime date;
-            if (context == null || !context.Request.IsLocal || context.Request.HttpMethod != "POST" ||
+            if (context == null || !AttendanceDeployment.AllowedWriteTransport(context.Request) || context.Request.HttpMethod != "POST" ||
                 actor == null || string.IsNullOrWhiteSpace(actor.Uid) || string.IsNullOrWhiteSpace(actor.Id) ||
                 parts.Length != 3 || (parts[0] != "attendance" && parts[0] != "earlyCheckoutRequests") ||
                 !DateTime.TryParseExact(parts[2], "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out date) ||
                 string.CompareOrdinal(parts[2], AttendanceService.Today()) > 0 || data == null ||
                 (string)data["assignmentId"] != parts[1] || (string)data["attendanceDate"] != parts[2] ||
                 data["isTestData"] == null || data["isTestData"].Type != JTokenType.Boolean || (bool)data["isTestData"])
-                throw new UIMS.Services.FirebaseException(403, "Production attendance write is outside the authenticated local request scope.");
+                throw new UIMS.Services.FirebaseException(403, "Production attendance write is outside the authenticated HTTPS deployment scope.");
             foreach (string field in new[] { "studentId", "companyId", "companySupervisorId", "assignmentId" })
                 AttendanceFirebase.CheckKey(AttendanceService.Text(data, field));
             bool student = actor.Role == "student" && actor.Action == "requestEarly" &&

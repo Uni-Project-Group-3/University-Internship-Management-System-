@@ -475,6 +475,7 @@
     <Compile Include="Services\Attendance\AttendanceFirebase.cs" />
     <Compile Include="Services\Attendance\AttendanceService.cs" />
     <Compile Include="Services\Attendance\AttendancePage.cs" />
+    <Compile Include="Services\Attendance\AttendanceIntegration.cs" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="App_Data\" />
@@ -774,6 +775,7 @@
     <Compile Include="Services\FirebaseApiHandler.cs" />
     <Compile Include="Services\ApplicationWorkflowService.cs" />
     <Compile Include="Services\FirebaseFileStorageService.cs" />
+    <Compile Include="Services\PrivateReportFileStore.cs" />
     <Compile Include="Services\TaskService.cs" />
     <Compile Include="Services\TaskExamService.cs" />
     <Compile Include="Services\TaskExamsApiHandler.cs" />
@@ -913,5 +915,11 @@
       <SpecificVersion>True</SpecificVersion>
       <Private>True</Private>
     </Reference>
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Shared\RoleSidebarBase.cs" />
+    <Content Include="Shared\StudentSidebar.ascx" />
+    <Content Include="Shared\CompanySidebar.ascx" />
+    <Content Include="Assets\shared\attendance-workspace.css" />
   </ItemGroup>
 </Project>

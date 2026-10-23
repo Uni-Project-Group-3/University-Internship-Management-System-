@@ -38,7 +38,7 @@
     <Compile Include="AcademicDraftTests.cs" />
     <Compile Include="AcademicSubmissionTests.cs" />
     <Compile Include="CoordinatorReadinessTests.cs" />
-    <Compile Include="CompletionDecisionTests.cs" /><Compile Include="CompletionReportTests.cs" /><Compile Include="StudentCompletionTests.cs" /><Compile Include="TaskCompatibilityTests.cs" /><Compile Include="TaskBoardTests.cs" /><Compile Include="FirebaseFileStorageTests.cs" />
+    <Compile Include="CompletionDecisionTests.cs" /><Compile Include="CompletionReportTests.cs" /><Compile Include="StudentCompletionTests.cs" /><Compile Include="TaskCompatibilityTests.cs" /><Compile Include="TaskBoardTests.cs" /><Compile Include="FirebaseFileStorageTests.cs" /><Compile Include="PrivateReportFileTests.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>
