@@ -381,8 +381,12 @@
       <DependentUpon>Default.aspx</DependentUpon>
     </Compile>
     <Compile Include="Services\FinalEvaluation\LiveFirebaseIntegration.cs" />
-    <Compile Include="Shared\LiveDashboardPage.cs" />
-    <Compile Include="Shared\AuthenticatedFirebaseClient.cs" />
+    <Compile Include="Shared\LiveDashboardPage.cs">
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="Shared\AuthenticatedFirebaseClient.cs">
+      <SubType>Component</SubType>
+    </Compile>
     <Compile Include="Global.asax.cs">
       <DependentUpon>Global.asax</DependentUpon>
     </Compile>
@@ -785,8 +789,8 @@
     <Compile Include="Services\FirebaseConfiguration.cs" />
     <Compile Include="Services\FirebaseApiHandler.cs" />
     <Compile Include="Services\ApplicationWorkflowService.cs" />
-<Compile Include="Services\AcademicAssignmentService.cs" />
-<Compile Include="Services\AcademicAssignmentsApi.cs" />
+    <Compile Include="Services\AcademicAssignmentService.cs" />
+    <Compile Include="Services\AcademicAssignmentsApi.cs" />
     <Compile Include="Services\FirebaseFileStorageService.cs" />
     <Compile Include="Services\TaskService.cs" />
     <Compile Include="Shared\FirebaseServerCredential.cs" />
@@ -794,8 +798,8 @@
     <Compile Include="Services\FinalEvaluation\FinalReportWorkflow.cs" />
     <Compile Include="Services\FinalEvaluation\FinalReportApi.cs" />
     <Content Include="AcademicAssignmentsApi.ashx" />
-<Content Include="Assets\coordinator\academic-assignment.css" />
-<Content Include="FinalReportsApi.ashx" />
+    <Content Include="Assets\coordinator\academic-assignment.css" />
+    <Content Include="FinalReportsApi.ashx" />
     <Content Include="FinalReports.aspx" />
     <Content Include="Assets\final-reports.css" />
     <Content Include="Assets\shared\workflow-ui.css" />
