@@ -114,6 +114,33 @@ namespace University_Internship_Management_System.Academic
         protected global::System.Web.UI.WebControls.Literal lblDetReqHours;
 
         /// <summary>
+        /// rptTasks control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.Repeater rptTasks;
+
+        /// <summary>
+        /// lblNoTasks control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.Label lblNoTasks;
+
+        /// <summary>
+        /// lblCompanyEval control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.Literal lblCompanyEval;
+
+        /// <summary>
         /// txtFeedback control.
         /// </summary>
         /// <remarks>
