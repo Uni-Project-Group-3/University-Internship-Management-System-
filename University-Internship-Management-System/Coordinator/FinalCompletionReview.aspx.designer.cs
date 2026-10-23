@@ -2,6 +2,12 @@ namespace University_Internship_Management_System.Coordinator
 {
     public partial class FinalCompletionReview
     {
+        protected global::System.Web.UI.WebControls.Literal readyCount;
+        protected global::System.Web.UI.WebControls.Literal inReviewCount;
+        protected global::System.Web.UI.WebControls.Literal completedCount;
+        protected global::System.Web.UI.WebControls.Literal returnedCount;
+        protected global::System.Web.UI.WebControls.Literal completionRows;
+        protected global::System.Web.UI.WebControls.HiddenField detailsVisible;
         protected global::System.Web.UI.HtmlControls.HtmlButton openCompletionChanges;
         protected global::System.Web.UI.HtmlControls.HtmlButton openCompletionReject;
 

@@ -1,4 +1,4 @@
-// Updated requirements: one shared session, actual Web Forms postbacks, no Firebase.
+﻿// Updated requirements: one shared session, actual Web Forms postbacks, no Firebase.
 const assert = require('node:assert/strict');
 const origin = new URL(process.argv[2] || 'http://localhost:61873');
 assert(['localhost','127.0.0.1'].includes(origin.hostname));
@@ -15,7 +15,7 @@ async function click(role,html,button,fields={}){const data=form(html);data.set(
 function value(html,id){return form(html).get(id)||(id==='FinalPercentage' ? html.match(/id="FinalPercentageDisplay"[^>]*>([0-9.]+)%/)?.[1] : '')||'';}
 (async()=>{
  let c=await page('company');
- if(process.argv.includes('--disabled')){assert(c.includes('Official operations disabled')&&!c.includes('dropdown-toggle'));pass('Company fails closed without explicit local opt-in');let a=await page('academic');assert(a.includes('Official operations disabled')&&!a.includes('AcademicScore'));pass('Academic has no independent score UI or enabled official actions');const data=form(c);data.set('openEvaluation','dev-company-internship');data.set('role','company');data.set('supervisorId','local-company');c=await page('company',data);assert(c.includes('Official operations disabled'));pass('browser identities cannot activate fixtures');console.log(count+' v2 disabled checks passed.');return;}
+ if(process.argv.includes('--disabled')){assert(c.includes('Supervisor access integration is unavailable')&&!c.includes('dropdown-toggle'));pass('Company fails closed without explicit local opt-in');let a=await page('academic');assert(a.includes('Supervisor access integration is unavailable')&&!a.includes('AcademicScore'));pass('Academic has no independent score UI or enabled official actions');const data=form(c);data.set('openEvaluation','dev-company-internship');data.set('role','company');data.set('supervisorId','local-company');c=await page('company',data);assert(c.includes('Supervisor access integration is unavailable'));pass('browser identities cannot activate fixtures');console.log(count+' v2 disabled checks passed.');return;}
  assert(c.includes('LOCAL-ONLY isolated fictional')&&(c.match(/dropdown-toggle/g)||[]).length===3);pass('one Actions dropdown per authorized Company trainee');
  c=await open('company',c,'openReports');assert(value(c,'activePanel')==='informationDialog'&&c.includes('No report documents are configured'));pass('View Reports opens an honest empty state without invented reports');
  c=await open('company',c,'openDetails');assert(c.includes('Approved hours: 10')&&value(c,'activePanel')==='informationDialog');pass('View Details uses selected fictional trusted data');

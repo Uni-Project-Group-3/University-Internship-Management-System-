@@ -1,5 +1,7 @@
 using System;
 using System.Globalization;
+using System.Collections.Generic;
+using System.Web;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Web.UI;
@@ -61,6 +63,15 @@ namespace University_Internship_Management_System.Coordinator
             initializationError = "Access denied. An authorized Coordinator and internship scope are required.";
             Response.StatusCode = 403; Response.TrySkipIisCustomErrors = true;
             reviewContext = null; studentSelect.Items.Clear();
+            completionRows.Text = "<tr><td colspan=6 class=completion-empty>Access denied. No confidential records are displayed.</td></tr>";
+            readyCount.Text = inReviewCount.Text = completedCount.Text = returnedCount.Text = "—";
+            detailsVisible.Value = "";
+            foreach (var field in new[] { studentName, studentNumber, studentMajor, companyName, internshipTitle, companySupervisor, academicSupervisor,
+                companyStatus, companyDate, companyRecommendation, companyFeedback, companyScores, academicStatus, academicDate, academicRecommendation, academicFeedback, academicScores, hoursText }) field.InnerText = "Not available";
+            requirementsList.Controls.Clear(); decisionHistory.Controls.Clear(); savedDecision.InnerText = "";
+            decisionTicket.Value = ""; reviewNotes.Text = decisionReason.Text = "";
+            approveButton.Disabled = true; confirmApproval.Enabled = generateCompletionReport.Enabled = false;
+            requestCompletionChanges.Visible = rejectCompletion.Visible = openCompletionChanges.Visible = openCompletionReject.Visible = false;
         }
         private async Task LoadReviewAsync()
         {
@@ -72,6 +83,9 @@ namespace University_Internship_Management_System.Coordinator
             approveButton.Disabled = true; confirmApproval.Enabled = false; reviewNotes.Enabled = false; decisionReason.Enabled = false; reviewAcknowledgment.Enabled = false;
             if (reviewContext == null || reviewContext.Decisions == null)
             { reviewNotes.Text = ""; decisionReason.Text = ""; reviewAcknowledgment.Checked = false; decisionTicket.Value = ""; }
+            completionRows.Text = "<tr><td colspan=6 class=completion-empty>No authorized Firebase records are available. Trusted Coordinator scope and data integrations must be connected.</td></tr>";
+            readyCount.Text = inReviewCount.Text = completedCount.Text = returnedCount.Text = "—";
+            detailsVisible.Value = "";
             reviewStatus.InnerText = "Blocked";
             generateCompletionReport.Enabled = false;
             eligibilityMessage.InnerText = initializationError ?? "Trusted review integrations are not connected.";
@@ -84,17 +98,26 @@ namespace University_Internship_Management_System.Coordinator
                 // Async services run without blocking the ASP.NET synchronization context.
                 // Posted selection is validated explicitly below after rebuilding authorized options.
                 var placements = await reviewContext.GetAuthorizedPlacementsAsync();
+                studentSelect.Items.Clear();
+                if (placements.Length == 0)
+                {
+                    readyCount.Text = inReviewCount.Text = completedCount.Text = returnedCount.Text = "0";
+                    completionRows.Text = "<tr><td colspan=6 class=completion-empty>No students are assigned to your authorized review scope.</td></tr>";
+                    eligibilityMessage.InnerText = "No authorized placement is available for review.";
+                    return;
+                }
                 foreach (var placement in placements) studentSelect.Items.Add(new ListItem(placement.DisplayName ?? placement.InternshipId, placement.InternshipId));
-                string id = Request.Form[studentSelect.UniqueID] ?? Request.QueryString["internshipId"] ?? studentSelect.SelectedValue;
+                string id = Request.Form["openPlacement"] ?? Request.Form[studentSelect.UniqueID] ?? Request.QueryString["internshipId"] ?? studentSelect.SelectedValue;
                 if (string.IsNullOrWhiteSpace(id) || studentSelect.Items.FindByValue(id) == null) throw new UnauthorizedAccessException();
                 studentSelect.SelectedValue = id;
+                detailsVisible.Value = !string.IsNullOrEmpty(Request.Form["openPlacement"]) || !string.IsNullOrEmpty(Request.QueryString["internshipId"]) || IsPostBack ? "true" : "";
                 if (!decisionPostback && Request.Form["__EVENTTARGET"] == studentSelect.UniqueID)
                 { reviewNotes.Text = ""; decisionReason.Text = ""; reviewAcknowledgment.Checked = false; }
                 var decisionView = reviewContext.Decisions == null ? null : await reviewContext.Decisions.LoadAsync(id);
                 var result = decisionView == null ? await reviewContext.Workflow.ReviewAsync(id) : decisionView.Readiness;
                 if (reportPostback)
                 {
-                    if (reviewContext.GenerateReportAsync == null) reportGenerationMessage.Text = "Private report generation integration is unavailable. No PDF was created.";
+                    if (!WritesEnabled() || reviewContext.GenerateReportAsync == null) reportGenerationMessage.Text = "Private report generation integration is unavailable. No PDF was created.";
                     else try { await reviewContext.GenerateReportAsync(id); reportGenerationMessage.Text = "Completion Report generated/verified through the private service. It is available to the authorized Student. No certificate or public URL was created."; }
                     catch (Exception) { reportGenerationMessage.Text = "The report could not be authorized or confirmed. Completion approval is unchanged; private storage may be unavailable."; }
                     decisionView = reviewContext.Decisions == null ? null : await reviewContext.Decisions.LoadAsync(id);
@@ -105,6 +128,7 @@ namespace University_Internship_Management_System.Coordinator
                 {
                     try
                     {
+                        if (!WritesEnabled()) throw new InvalidOperationException("Live completion writes are disabled.");
                         if (reviewContext.Decisions == null) throw new InvalidOperationException("Trusted completion decision integrations are not connected.");
                         var ticket = ReadTicket(id);
                         var saved = await reviewContext.Decisions.DecideAsync(new CompletionDecisionRequest {
@@ -127,7 +151,7 @@ namespace University_Internship_Management_System.Coordinator
                     studentNumber.InnerText = result.Placement.StudentId; internshipTitle.InnerText = result.Placement.InternshipId;
                 }
                 var evaluation = result.Evaluations?.PercentageEvaluation;
-                var current = evaluation?.Current; var academicReview = PercentageEvaluationWorkflow.CurrentReview(evaluation);
+                var current = evaluation?.Current?.SubmittedAtUtc.HasValue == true ? evaluation.Current : null; var academicReview = PercentageEvaluationWorkflow.CurrentReview(evaluation);
                 companyStatus.InnerText = PercentageEvaluationWorkflow.Status(evaluation);
                 companyDate.InnerText = current?.SubmittedAtUtc?.ToString("u") ?? "Not submitted";
                 companyRecommendation.InnerText = "Company version: " + (current?.VersionId ?? "Unavailable");
@@ -153,9 +177,53 @@ namespace University_Internship_Management_System.Coordinator
                 foreach (string reason in result.IsReady ? new[] { "Current Company submission academically approved; passing policy, eligibility, approved hours, tasks and reports verified. Academic approval alone does not approve completion." } : result.Blockers)
                 { var item = new HtmlGenericControl("li"); item.InnerText = reason; requirementsList.Controls.Add(item); }
                 RenderDecision(decisionView, acknowledged, saveConfirmed, id);
+                await LoadDashboardAsync(placements, id);
             }
             catch (UnauthorizedAccessException) { Deny(); eligibilityMessage.InnerText = initializationError; }
             catch (Exception) { eligibilityMessage.InnerText = "Readiness could not be verified. Refresh when trusted services are available. No completion decision was made."; }
+        }
+        private bool WritesEnabled()
+        {
+            if (reviewContext == null) return false;
+            if (reviewContext.IsDevelopment) return true; // Only explicitly injected isolated test contexts.
+            try { new UIMS.Services.FirebaseConfiguration().EnsureWritesAllowed(); return true; }
+            catch (UIMS.Services.FirebaseException) { return false; }
+        }
+        private static string Encode(string value) { return HttpUtility.HtmlEncode(value ?? "Unavailable"); }
+        private async Task LoadDashboardAsync(CompletionPlacement[] placements, string selected)
+        {
+            int ready = 0, reviewing = 0, completed = 0, returned = 0;
+            bool incomplete = false;
+            var html = new StringBuilder();
+            foreach (var placement in placements)
+            {
+                try
+                {
+                    var view = reviewContext.Decisions == null ? null : await reviewContext.Decisions.LoadAsync(placement.InternshipId);
+                    var readiness = view == null ? await reviewContext.Workflow.ReviewAsync(placement.InternshipId) : view.Readiness;
+                    var record = view == null ? null : view.Record.Value;
+                    CompletionStatus? status = record == null ? (CompletionStatus?)null : record.Status;
+                    var state = CoordinatorDashboardPresentation.CompletionLabel(status, readiness.IsReady, view != null);
+                    var academic = PercentageEvaluationWorkflow.CurrentReview(readiness.Evaluations?.PercentageEvaluation);
+                    string approval = academic == null ? "Pending Review" : academic.Kind == AcademicReviewKind.Approve ? "Approved" : "Revision Requested";
+                    if (state == "Ready for Final Review") ready++;
+                    if (status == CompletionStatus.UnderReview) reviewing++;
+                    if (status == CompletionStatus.Approved) completed++;
+                    if (status == CompletionStatus.ChangesRequested) returned++;
+                    html.Append("<tr data-completion-row data-academic=\"").Append(Encode(approval)).Append("\" data-completion=\"").Append(Encode(state)).Append("\" aria-selected=\"").Append(placement.InternshipId == selected ? "true" : "false").Append("\"><td><strong>").Append(Encode(placement.DisplayName ?? placement.StudentId)).Append("</strong><small>").Append(Encode(placement.StudentId)).Append("</small></td><td>Unavailable</td><td><span class=\"status-badge ").Append(approval == "Approved" ? "status-success" : "status-pending").Append("\">").Append(Encode(approval)).Append("</span></td><td><span class=\"status-badge ").Append(status == CompletionStatus.Approved ? "status-success" : "status-pending").Append("\">").Append(Encode(state)).Append("</span></td><td>Unavailable</td><td><button type=\"submit\" class=\"review-row-button\" name=\"openPlacement\" value=\"").Append(Encode(placement.InternshipId)).Append("\">").Append(status == CompletionStatus.Approved || status == CompletionStatus.Rejected ? "View" : "Review").Append("</button></td></tr>");
+                }
+                catch (UnauthorizedAccessException) { throw; }
+                catch (Exception)
+                {
+                    incomplete = true;
+                    html.Append("<tr data-completion-row data-academic=\"Unavailable\" data-completion=\"Unavailable\"><td>").Append(Encode(placement.DisplayName ?? placement.StudentId)).Append("</td><td>Unavailable</td><td>Unavailable</td><td>Read could not be verified</td><td>Unavailable</td><td><button type=button disabled title=\"Refresh after trusted services recover\">Unavailable</button></td></tr>");
+                }
+            }
+            completionRows.Text = html.ToString();
+            readyCount.Text = incomplete || reviewContext.Decisions == null ? "—" : ready.ToString(CultureInfo.InvariantCulture);
+            inReviewCount.Text = incomplete || reviewContext.Decisions == null ? "—" : reviewing.ToString(CultureInfo.InvariantCulture);
+            completedCount.Text = incomplete || reviewContext.Decisions == null ? "—" : completed.ToString(CultureInfo.InvariantCulture);
+            returnedCount.Text = incomplete || reviewContext.Decisions == null ? "—" : returned.ToString(CultureInfo.InvariantCulture);
         }
         private sealed class DecisionTicket
         {
@@ -190,22 +258,23 @@ namespace University_Internship_Management_System.Coordinator
                 if (record.Status == CompletionStatus.Approved || record.Status == CompletionStatus.Rejected)
                 { reviewStatus.InnerText = record.Status.ToString(); eligibilityMessage.InnerText = "The saved completion decision is " + record.Status + ". Further decisions are locked. No document generation or delivery is implied."; }
             }
+            if (record == null) savedDecision.InnerText = "No saved completion decision is available.";
             var policy = view == null ? null : view.Readiness.ApplicablePolicy;
             var rule = policy == null || policy.CompletionDecisions == null ? null : policy.CompletionDecisions.Approve;
-            bool canApprove = reviewContext.Decisions != null && reviewContext.Decisions.IsConfigured && view != null && view.Readiness.IsReady && policy.IsApproved && rule != null && rule.Enabled &&
+            bool canApprove = WritesEnabled() && reviewContext.Decisions != null && reviewContext.Decisions.IsConfigured && view != null && view.Readiness.IsReady && policy.IsApproved && rule != null && rule.Enabled &&
                 (record == null || (record.Status != CompletionStatus.Approved && record.Status != CompletionStatus.Rejected));
             approveButton.Disabled = !canApprove; confirmApproval.Enabled = canApprove; reviewAcknowledgment.Enabled = canApprove; reviewNotes.Enabled = canApprove; decisionReason.Enabled = canApprove;
             bool nonterminal = record == null || (record.Status != CompletionStatus.Approved && record.Status != CompletionStatus.Rejected);
-            generateCompletionReport.Enabled = record != null && record.Status == CompletionStatus.Approved && reviewContext.GenerateReportAsync != null && policy?.CompletionReport?.Enabled == true;
+            generateCompletionReport.Enabled = WritesEnabled() && record != null && record.Status == CompletionStatus.Approved && reviewContext.GenerateReportAsync != null && policy?.CompletionReport?.Enabled == true;
             if (!generateCompletionReport.Enabled) reportGenerationMessage.Text = "Report generation requires saved Coordinator approval, approved report policy and an authorized private storage service. Print/certificates are not enabled.";
-            bool decisionsAvailable = reviewContext.Decisions != null && reviewContext.Decisions.IsConfigured && policy != null && policy.IsApproved && nonterminal;
+            bool decisionsAvailable = WritesEnabled() && reviewContext.Decisions != null && reviewContext.Decisions.IsConfigured && policy != null && policy.IsApproved && nonterminal;
             requestCompletionChanges.Visible = requestCompletionChanges.Enabled = decisionsAvailable && policy.CompletionDecisions?.RequestChanges?.Enabled == true;
             rejectCompletion.Visible = rejectCompletion.Enabled = decisionsAvailable && policy.CompletionDecisions?.Reject?.Enabled == true;
             openCompletionChanges.Visible = requestCompletionChanges.Visible; openCompletionChanges.Disabled = !requestCompletionChanges.Enabled;
             openCompletionReject.Visible = rejectCompletion.Visible; openCompletionReject.Disabled = !rejectCompletion.Enabled;
             reviewAcknowledgment.Enabled = reviewNotes.Enabled = decisionReason.Enabled = canApprove || requestCompletionChanges.Enabled || rejectCompletion.Enabled;
             approvalSummary.InnerText = canApprove ? "Readiness checks currently pass. The server will recheck current authoritative data at confirmation. " + (rule.RequireReason ? "A reason is required. " : "") + (rule.RequireSupportingNotes ? "Supporting notes are required." : "") : "Approval is disabled because readiness, policy, integrations or current decision state do not permit it.";
-            if (view != null && (!decisionPostback || confirmed))
+            if (view?.Readiness?.Placement != null && (!decisionPostback || confirmed))
             {
                 var ticket = new DecisionTicket { UserId = reviewContext.UserId, InternshipId = id, StudentId = view.Readiness.Placement.StudentId, PolicyId = view.Readiness.Placement.PolicyId,
                     PolicyVersion = view.Readiness.Placement.PolicyVersion, Version = view.Record.Version, DecisionId = Guid.NewGuid().ToString("N") };
@@ -226,4 +295,17 @@ namespace University_Internship_Management_System.Coordinator
                 "; Criterion feedback: " + (criterionFeedback == null || criterionFeedback.Count == 0 ? "None supplied" : string.Join("; ", criterionFeedback.Select(pair => pair.Key + ": " + pair.Value)));
         }
     }
+    public static class CoordinatorDashboardPresentation
+    {
+        public static string CompletionLabel(CompletionStatus? status, bool ready, bool decisionReadAvailable)
+        {
+            if (status == CompletionStatus.Approved) return "Completed";
+            if (status == CompletionStatus.Rejected) return "Rejected";
+            if (status == CompletionStatus.ChangesRequested) return "Returned for Revision";
+            if (status == CompletionStatus.UnderReview) return "In Review";
+            if (!decisionReadAvailable) return "Unavailable";
+            return ready ? "Ready for Final Review" : "Pending";
+        }
+    }
+
 }

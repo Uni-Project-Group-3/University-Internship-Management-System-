@@ -39,6 +39,23 @@ internal static partial class Program
     private static bool Blocked(CompletionReadiness value, string text) { return !value.IsReady && value.Blockers.Any(x => x.Contains(text)); }
     private static async Task RunReadinessTests()
     {
+        await Test("Coordinator dashboard never treats readiness or missing decision data as completion", () => {
+            Func<CompletionStatus?, bool, bool, string> label = University_Internship_Management_System.Coordinator.CoordinatorDashboardPresentation.CompletionLabel;
+            Assert(label(null, true, false) == "Unavailable");
+            Assert(label(null, true, true) == "Ready for Final Review");
+            Assert(label(null, false, true) == "Pending");
+            Assert(label(CompletionStatus.Pending, true, true) != "Completed");
+            return Task.CompletedTask;
+        });
+        await Test("Coordinator dashboard labels reflect saved states even if readiness changes", () => {
+            Func<CompletionStatus?, bool, bool, string> label = University_Internship_Management_System.Coordinator.CoordinatorDashboardPresentation.CompletionLabel;
+            Assert(label(CompletionStatus.Approved, false, true) == "Completed");
+            Assert(label(CompletionStatus.Rejected, true, true) == "Rejected");
+            Assert(label(CompletionStatus.ChangesRequested, true, true) == "Returned for Revision");
+            Assert(label(CompletionStatus.UnderReview, true, true) == "In Review");
+            return Task.CompletedTask;
+        });
+
         await Test("readiness authorized Coordinator sees actual submitted records and verified requirements", async () => {
             var result = await ReadinessFlow(ReadinessRepo()).ReviewAsync("fictional-internship");
             Assert(result.IsReady && result.Evaluations.PercentageEvaluation.Current.Percentage == 80 && PercentageEvaluationWorkflow.CurrentReview(result.Evaluations.PercentageEvaluation).Kind == AcademicReviewKind.Approve && result.ApprovedHours == 10 && result.RequiredHours == 10);

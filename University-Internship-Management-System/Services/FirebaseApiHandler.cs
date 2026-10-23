@@ -204,6 +204,7 @@ namespace UIMS
 
         private static void Write(HttpContext context, int status, object body)
         {
+            context.Response.SuppressFormsAuthenticationRedirect = true;
             context.Response.StatusCode = status;
             context.Response.TrySkipIisCustomErrors = true;
             context.Response.Write(JsonConvert.SerializeObject(body));

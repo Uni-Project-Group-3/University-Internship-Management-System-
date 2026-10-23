@@ -33,6 +33,7 @@
                     <p class="workspace-muted">Review published task grades, supervisor feedback, and approved training progress.</p>
                 </header>
                 <div class="workspace-note" role="status"><asp:Literal ID="StudentAccessMessage" runat="server" Mode="Encode" Text="Loading authorized completion information..." /></div>
+                <div class="workspace-actions"><asp:Button ID="RefreshProgress" runat="server" ClientIDMode="Static" Text="Refresh progress" CssClass="workspace-button secondary" OnClick="RefreshProgress_Click" CausesValidation="false" /><span id="progressLoading" role="status" hidden>Refreshing authorized progress…</span></div>
                 <asp:Panel ID="DemoStudentPanel" runat="server" Visible="false" CssClass="workspace-note"><asp:Label runat="server" AssociatedControlID="DemoStudentChoice" Text="LOCAL DEMO Student (this dataset only)" /><asp:DropDownList ID="DemoStudentChoice" runat="server" AutoPostBack="true" OnSelectedIndexChanged="DemoStudentChoice_Changed" CssClass="workspace-input"><asp:ListItem Value="0">Student A — Lina (fictional)</asp:ListItem><asp:ListItem Value="1">Student B — Omar (fictional)</asp:ListItem><asp:ListItem Value="2">Student C — Noor (fictional)</asp:ListItem></asp:DropDownList></asp:Panel>
                 <dl class="workspace-stats">
                     <div class="workspace-stat"><dt>Approved training hours</dt><dd><span data-uims-progress="ApprovedHours"><asp:Literal ID="ApprovedHours" runat="server" /></span></dd><small>Verified approved time entries</small></div>
@@ -48,7 +49,7 @@
                         <progress id="HoursProgress" runat="server" max="100" value="0" aria-label="Approved training hours progress"></progress>
                         <p class="workspace-hint">Task completion does not approve training hours. Only approved time entries count.</p>
                         <span class="workspace-badge success"><span data-uims-progress="HoursApprovalStatus"><asp:Literal ID="HoursApprovalStatus" runat="server" Mode="Encode" /></span> approved hours</span>
-                        <span class="workspace-badge warning"><span data-uims-progress="PendingHours"><asp:Literal ID="PendingHours" runat="server" Mode="Encode" /></span> pending hours (integration unavailable)</span>
+                        <span class="workspace-badge warning"><span data-uims-progress="PendingHours"><asp:Literal ID="PendingHours" runat="server" Mode="Encode" /></span> pending hours</span><p class="workspace-hint"><asp:Literal ID="PendingHoursNotice" runat="server" Mode="Encode" /></p>
                     </section>
                     <section class="workspace-card" aria-labelledby="completionTitle">
                         <div class="workspace-heading"><h2 id="completionTitle">Completion status</h2><span class="workspace-badge warning"><asp:Literal ID="CompletionStatusText" runat="server" Mode="Encode" /></span></div>
@@ -85,7 +86,7 @@
                         <asp:Panel ID="SelectExamNotice" runat="server" CssClass="workspace-empty">Choose View details beside an exam to read its published result and both supervisors' permitted feedback.</asp:Panel>
                     </asp:Panel>
                 </section>
-                <dialog id="examDialog" class="workspace-dialog" aria-labelledby="examDetailTitle"><button type="button" class="popup-close" data-close-exam aria-label="Close exam details">×</button><asp:Panel ID="ExamDetails" runat="server" ClientIDMode="Static" Visible="false" CssClass="workspace-card exam-details" role="region" tabindex="-1" aria-labelledby="examDetailTitle">
+                <dialog id="examDialog" runat="server" visible="false" class="workspace-dialog" aria-labelledby="examDetailTitle"><button type="button" class="popup-close" data-close-exam aria-label="Close exam details">×</button><asp:Panel ID="ExamDetails" runat="server" ClientIDMode="Static" Visible="false" CssClass="workspace-card exam-details" role="region" tabindex="-1" aria-labelledby="examDetailTitle">
                     <div class="workspace-heading"><div><span class="workspace-eyebrow">Published result · illustrative preview</span><h2 id="examDetailTitle"><asp:Literal ID="ExamTitle" runat="server" Mode="Encode" /></h2></div><button type="button" class="workspace-button secondary" data-close-exam>Back to exam results</button></div>
                     <p><asp:Literal ID="ExamDescription" runat="server" Mode="Encode" /></p>
                     <dl class="exam-facts">
@@ -149,6 +150,6 @@
     </form>
 
 <script src="../Scripts/bootstrap.bundle.min.js"></script>
-    <script src="<%= ResolveUrl("~/Js_project/Student/my-progress-evaluation.js?v=20261022-task-filter-v2") %>" defer="defer"></script>
+    <script src="<%= ResolveUrl("~/Js_project/Student/my-progress-evaluation.js?v=20261023-progress-state") %>" defer="defer"></script>
 </body>
 </html>

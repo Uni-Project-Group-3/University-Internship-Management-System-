@@ -6,6 +6,8 @@ namespace University_Internship_Management_System.Student
         protected global::System.Web.UI.WebControls.DropDownList DemoStudentChoice;
 
         protected global::System.Web.UI.WebControls.Literal StudentAccessMessage;
+        protected global::System.Web.UI.WebControls.Button RefreshProgress;
+        protected global::System.Web.UI.WebControls.Literal PendingHoursNotice;
         protected global::System.Web.UI.WebControls.Literal CompletionStatusText;
         protected global::System.Web.UI.WebControls.Literal CompletionStatusMessage;
         protected global::System.Web.UI.WebControls.Literal CompletionApprovalDate;

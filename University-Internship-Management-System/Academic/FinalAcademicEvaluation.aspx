@@ -126,7 +126,7 @@
         
     </form>
 
-<script src="../Js_project/final-evaluation-v2.js?v=4" defer="defer"></script>
+<script src="../Js_project/final-evaluation-v2.js?v=20261023-local-fixes" defer="defer"></script>
     <script src="<%= ResolveUrl("~/Js_project/Public/dashboard-navigation.js?v=20261021-original-ui") %>"></script>
 <script src="../Scripts/bootstrap.bundle.min.js"></script></body>
 </html>

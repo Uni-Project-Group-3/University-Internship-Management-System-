@@ -19,7 +19,7 @@
     <link href="../Content/bootstrap.min.css" rel="stylesheet" />
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet" />
     <link href="../Assets/shared/colors.css" rel="stylesheet" />
-    <link href="../Assets/coordinator/final-completion-review.css?v=20261021-original-ui" rel="stylesheet" />
+    <link runat="server" href="~/Assets/coordinator/final-completion-review.css?v=bc8409d2f5de" rel="stylesheet" />
 </head>
 <body class="standalone-shell">
     <form id="reviewForm" runat="server">
@@ -84,21 +84,42 @@
                 </header>
                 <p id="navbarNotice" class="navbar-notice" role="status" hidden></p>
         <main class="review-page">
+            <asp:HiddenField ID="detailsVisible" runat="server" ClientIDMode="Static" />
             <header class="page-heading">
                 <p class="eyebrow">JUST / COORDINATOR WORKSPACE</p>
-                <h1>Final Completion Review</h1>
-                <p>Review submitted evaluations and completion readiness. Decisions require verified policy and trusted integrations.</p>
+                <h1><i class="bi bi-clipboard-check" aria-hidden="true"></i> Final Completion Review</h1>
+                <p>Review approved evaluations and verify every requirement before completing an internship.</p>
             </header>
 
             <p class="preview-note"><asp:Literal ID="integrationNotice" runat="server" Mode="Encode" /></p>
 
-            <section class="selection-panel" aria-label="Select student">
-                <div><label for="studentSelect" class="form-label">Student to review</label><asp:DropDownList ID="studentSelect" runat="server" ClientIDMode="Static" CssClass="form-select" AutoPostBack="true" OnSelectedIndexChanged="StudentSelect_Changed" /><asp:Button ID="refreshReview" runat="server" Text="Refresh readiness" CssClass="secondary-button" OnClick="RefreshReview_Click" CausesValidation="false" /></div>
-                <span id="reviewStatus" runat="server" ClientIDMode="Static" class="status-badge status-pending" role="status">Awaiting review</span>
+            <section class="completion-statistics" aria-label="Authorized completion statistics">
+                <article class="completion-stat stat-ready"><i class="bi bi-people" aria-hidden="true"></i><div><strong><asp:Literal ID="readyCount" runat="server" Mode="Encode" Text="—" /></strong><h2>Ready for Final Review</h2><p>All readiness checks satisfied</p></div></article>
+                <article class="completion-stat stat-review"><i class="bi bi-clock" aria-hidden="true"></i><div><strong><asp:Literal ID="inReviewCount" runat="server" Mode="Encode" Text="—" /></strong><h2>In Review</h2><p>Saved UnderReview status</p></div></article>
+                <article class="completion-stat stat-complete"><i class="bi bi-check-circle" aria-hidden="true"></i><div><strong><asp:Literal ID="completedCount" runat="server" Mode="Encode" Text="—" /></strong><h2>Completed Internships</h2><p>Saved Approved decisions</p></div></article>
+                <article class="completion-stat stat-returned"><i class="bi bi-file-earmark-text" aria-hidden="true"></i><div><strong><asp:Literal ID="returnedCount" runat="server" Mode="Encode" Text="—" /></strong><h2>Returned for Revision</h2><p>Saved ChangesRequested decisions</p></div></article>
             </section>
-
-            <div class="row g-4 align-items-start">
-                <div class="col-lg-8">
+            <section class="completion-filters" aria-label="Filter authorized students">
+                <label>Search students<input type="search" id="completionSearch" placeholder="Student name or ID" class="form-control" /></label>
+                <label>Academic approval<select id="academicFilter" class="form-select"><option value="">All statuses</option><option>Approved</option><option>Pending Review</option><option>Revision Requested</option><option>Unavailable</option></select></label>
+                <label>Final completion<select id="completionFilter" class="form-select"><option value="">All statuses</option><option>Ready for Final Review</option><option>Pending</option><option>In Review</option><option>Completed</option><option>Returned for Revision</option><option>Rejected</option><option>Unavailable</option></select></label>
+                <label>Placement period<select id="periodFilter" class="form-select" disabled aria-describedby="periodExplanation"><option value="">Unavailable</option></select></label>
+                <button type="button" id="clearCompletionFilters" class="primary-button">Clear filters</button>
+                <p id="periodExplanation" class="filter-note">Placement periods are unavailable from the current trusted review contract.</p>
+            </section>
+            <p id="completionLoading" role="status" hidden><span class="spinner-border spinner-border-sm" aria-hidden="true"></span> Loading authorized review…</p>
+            <div class="completion-dashboard">
+            <section class="review-card completion-list" aria-labelledby="completionListTitle">
+                <div class="completion-list-heading"><h2 id="completionListTitle">Students for Final Completion Review</h2><span id="completionResultCount" role="status"></span><button type="button" id="showStudentDetails" class="secondary-button">Show details</button></div>
+                <div class="completion-table-scroll"><table class="table completion-table"><thead><tr><th scope="col">Student</th><th scope="col">Company</th><th scope="col">Academic Approval</th><th scope="col">Final Completion</th><th scope="col">Placement Period</th><th scope="col">Actions</th></tr></thead><tbody><asp:Literal ID="completionRows" runat="server" /></tbody></table></div>
+                <p id="noCompletionMatches" role="status" hidden>No authorized students match your filters.</p>
+                <details class="completion-selector"><summary>Select a student or refresh readiness</summary><label for="studentSelect" class="form-label">Student to review</label><asp:DropDownList ID="studentSelect" runat="server" ClientIDMode="Static" CssClass="form-select" AutoPostBack="true" OnSelectedIndexChanged="StudentSelect_Changed" /><asp:Button ID="refreshReview" runat="server" Text="Refresh readiness" CssClass="secondary-button" OnClick="RefreshReview_Click" CausesValidation="false" /></details>
+            </section>
+            <section id="studentDetailsPanel" class="completion-details" aria-labelledby="studentDetailsTitle" tabindex="-1">
+                <div class="details-heading"><h2 id="studentDetailsTitle">Student Details</h2><button type="button" id="closeStudentDetails" class="btn-close" aria-label="Close student details"></button></div>
+                <span id="reviewStatus" runat="server" ClientIDMode="Static" class="status-badge status-pending" role="status">Unavailable</span>
+            <div class="completion-detail-content">
+                <div class="completion-evaluation-content">
                     <section class="review-card" aria-labelledby="studentHeading">
                         <div class="section-heading"><span class="section-number" aria-hidden="true">01</span><h2 id="studentHeading">Student &amp; placement</h2></div>
                         <dl class="information-grid">
@@ -113,7 +134,19 @@
                         </dl>
                     </section>
 
-                    <!-- التقييمان مخصصان للمنسق، ولا يعرضان للطالب -->
+                    <div class="completion-tabs" role="tablist" aria-label="Student review sections">
+                        <button type="button" role="tab" id="evaluationTab" aria-controls="evaluationTabPanel" aria-selected="true" tabindex="0" data-review-tab="evaluationTabPanel">Evaluation Details</button>
+                        <button type="button" role="tab" id="documentsTab" aria-controls="documentsTabPanel" aria-selected="false" tabindex="-1" data-review-tab="documentsTabPanel">Documents</button>
+                        <button type="button" role="tab" id="historyTab" aria-controls="historyTabPanel" aria-selected="false" tabindex="-1" data-review-tab="historyTabPanel">History</button>
+                    </div>
+                    <div role="tabpanel" id="documentsTabPanel" aria-labelledby="documentsTab" hidden>                        <div class="report-section">
+                            <h3>Official completion report</h3>
+                            <p class="section-description">Generate a private Completion Report after saved Coordinator approval. Availability depends on approved policy, trusted profile data and private storage.</p>
+                            <asp:Button ID="generateCompletionReport" runat="server" Text="Generate / Verify Completion Report PDF" CssClass="secondary-button" Enabled="false" OnClick="GenerateCompletionReport_Click" /><p role="status"><asp:Literal ID="reportGenerationMessage" runat="server" Mode="Encode" /></p>
+                            <p class="preview-note">Student delivery requires the existing authorized private report integration.</p>
+                        </div><p class="preview-note">Coordinator PDF viewing and downloading are unavailable: no authorized Coordinator download adapter is configured.</p><button type="button" class="secondary-button" disabled aria-describedby="pdfUnavailable">View / Download PDF</button><p id="pdfUnavailable" class="preview-note">A verified private document locator and Coordinator download authorization are required.</p></div>
+                    <div role="tabpanel" id="historyTabPanel" aria-labelledby="historyTab" hidden><h3>Decision history</h3><p id="savedDecision" runat="server" ClientIDMode="Static" class="section-description"></p><ul id="decisionHistory" runat="server" ClientIDMode="Static" class="requirements-list"></ul><p id="historyEmpty" class="preview-note">No authorized decision history is available.</p></div>
+                    <div role="tabpanel" id="evaluationTabPanel" aria-labelledby="evaluationTab">
                     <section class="review-card" aria-labelledby="companyHeading">
                         <div class="evaluation-heading"><h2 id="companyHeading">Company final evaluation</h2><span id="companyStatus" runat="server" ClientIDMode="Static" class="status-badge"></span></div>
                         <p class="section-description">Submitted information is read-only and visible only to authorized Coordinators.</p>
@@ -137,9 +170,10 @@
                         <ul id="requirementsList" runat="server" ClientIDMode="Static" class="requirements-list"></ul>
                         <p class="preview-note">Requirements come from trusted sources for the applicable policy. Missing data blocks readiness.</p>
                     </section>
+                    </div>
                 </div>
 
-                <aside class="col-lg-4" aria-labelledby="decisionHeading">
+                <aside class="completion-decision" aria-labelledby="decisionHeading">
                     <section class="review-card decision-panel">
                         <p class="eyebrow">FINAL STEP</p>
                         <h2 id="decisionHeading">Completion readiness</h2>
@@ -147,18 +181,13 @@
                         <label for="reviewNotes" class="form-label">Coordinator notes <span>(see applicable policy)</span></label>
                         <asp:TextBox ID="reviewNotes" runat="server" ClientIDMode="Static" TextMode="MultiLine" Rows="4" MaxLength="1000" CssClass="form-control" ValidateRequestMode="Disabled" Enabled="false" />
                         <label for="decisionReason" class="form-label">Decision reason (required for Request Changes / Reject)</label><asp:TextBox ID="decisionReason" runat="server" ClientIDMode="Static" TextMode="MultiLine" Rows="3" MaxLength="1000" CssClass="form-control" ValidateRequestMode="Disabled" Enabled="false" /><div class="form-check review-check"><asp:CheckBox ID="reviewAcknowledgment" runat="server" ClientIDMode="Static" Enabled="false" /><label for="reviewAcknowledgment" class="form-check-label">I reviewed the current Company evaluation, Academic Review, and completion requirements.</label></div>
-                        <button runat="server" ClientIDMode="Static" type="button" id="approveButton" class="primary-button" data-bs-toggle="modal" data-bs-target="#approvalModal" disabled>Approve completion <span aria-hidden="true">&rarr;</span></button>
-                        <div class="report-section">
-                            <h3>Official completion report</h3>
-                            <p class="section-description">Generate a private Completion Report after saved Coordinator approval. Firebase DEMO persists metadata only; PDF bytes remain in private server memory.</p>
-                            <asp:Button ID="generateCompletionReport" runat="server" Text="Generate / Verify Completion Report PDF" CssClass="secondary-button" Enabled="false" OnClick="GenerateCompletionReport_Click" /><p role="status"><asp:Literal ID="reportGenerationMessage" runat="server" Mode="Encode" /></p>
-                            <p class="preview-note">Printing/certificates are not enabled. The authorized Student can download a generated PDF.</p>
-                        </div>
+                        <button runat="server" ClientIDMode="Static" type="button" id="approveButton" class="primary-button" data-bs-toggle="modal" data-bs-target="#approvalModal" disabled>Complete Final Review <span aria-hidden="true">&rarr;</span></button>
+
                     </section>
                 </aside>
             </div>
 
-            <div class="review-actions"><button ID="openCompletionChanges" runat="server" ClientIDMode="Static" type="button" class="secondary-button" data-bs-toggle="modal" data-bs-target="#changesModal" Visible="false">Request Changes</button><button ID="openCompletionReject" runat="server" ClientIDMode="Static" type="button" class="secondary-button" data-bs-toggle="modal" data-bs-target="#rejectModal" Visible="false">Reject Completion</button></div><div id="approvalNotice" class="approval-notice" role="status" tabindex="-1" hidden></div><p role="status" aria-live="polite"><asp:Literal ID="decisionMessage" runat="server" Mode="Encode" /></p><p id="savedDecision" runat="server" ClientIDMode="Static" class="section-description"></p><ul id="decisionHistory" runat="server" ClientIDMode="Static" class="requirements-list"></ul><asp:HiddenField ID="decisionTicket" runat="server" ClientIDMode="Static" />
+            <div class="review-actions"><button ID="openCompletionChanges" runat="server" ClientIDMode="Static" type="button" class="secondary-button" data-bs-toggle="modal" data-bs-target="#changesModal" Visible="false">Request Changes</button><button ID="openCompletionReject" runat="server" ClientIDMode="Static" type="button" class="secondary-button" data-bs-toggle="modal" data-bs-target="#rejectModal" Visible="false">Reject Completion</button></div><div id="approvalNotice" class="approval-notice" role="status" tabindex="-1" hidden></div><p role="status" aria-live="polite"><asp:Literal ID="decisionMessage" runat="server" Mode="Encode" /></p><asp:HiddenField ID="decisionTicket" runat="server" ClientIDMode="Static" />
 
             <!-- هذا القسم وحده يظهر عند الطباعة، دون التقييمات أو ملاحظات المنسق -->
             
@@ -170,12 +199,13 @@
                     <div class="modal-footer"><button type="button" class="secondary-button" data-bs-dismiss="modal">Keep reviewing</button><asp:Button ID="confirmApproval" runat="server" ClientIDMode="Static" Enabled="false" CssClass="primary-button" Text="Confirm approval" OnClick="ConfirmApproval_Click" CausesValidation="false" /></div>
                 </div></div>
             </div>
+            </section></div>
             <noscript><p>Readiness is rendered by the server. Use Refresh readiness after selecting a placement when JavaScript is disabled.</p></noscript>
         </main>
             </div>
         </div>
     </form>
     <script src="../Scripts/bootstrap.bundle.min.js"></script>
-    <script src="../Js_project/Coordinator/final-completion-review.js?v=20261022-decisions"></script>
+    <script src="../Js_project/Coordinator/final-completion-review.js?v=20261023-dashboard"></script>
 </body>
 </html>
