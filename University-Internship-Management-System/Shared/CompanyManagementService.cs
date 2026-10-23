@@ -144,6 +144,7 @@ namespace University_Internship_Management_System.Shared
             Validate(f);
             string path = "companies/" + Key(f.Id);
             var company = await db.ReadAsync(path) as JObject;
+            if (T(company, "deletionStatus") == "pending") throw new StudentManagementException("Finish deleting this company before creating another account.");
             var previousOp = await db.ReadAsync("companyAccountOperations/" + Key(f.Id)) as JObject;
             bool retry = previousOp != null && T(previousOp, "requestId") == f.RequestId && T(previousOp, "kind") == "save";
             if (retry && T(previousOp, "state") == "complete")
@@ -187,7 +188,11 @@ namespace University_Internship_Management_System.Shared
                         if (!await db.CompareWriteAsync(path, draft, "null_etag")) throw new StudentManagementException("A company already uses this ID. Refresh the directory.");
                     }
                     password = StudentManagementService.GeneratePassword();
-                    if (account == null) await auth.CreateAsync(uid, f.SupervisorEmail, f.SupervisorName, password);
+                    if (account == null)
+                    {
+                        await AccountHistoryCleanup.CompanySupervisorAsync(db, uid, f.Id);
+                        await auth.CreateAsync(uid, f.SupervisorEmail, f.SupervisorName, password);
+                    }
                     else await auth.UpdateAsync(uid, true, password);
                     var user = new JObject { ["fullName"] = f.SupervisorName, ["email"] = f.SupervisorEmail, ["phone"] = f.SupervisorPhone,
                         ["role"] = "companySupervisor", ["companyId"] = f.Id, ["isActive"] = false, ["mustChangePassword"] = true,
@@ -217,9 +222,9 @@ namespace University_Internship_Management_System.Shared
         public async Task<JObject> ActAsync(string id, string uid, string action, string actor)
         {
             var company = await CompanyAsync(id);
-            if (!new[] { "enable", "disable", "delete", "activateCompany", "deactivateCompany", "archiveCompany", "restoreCompany" }.Contains(action))
+            if (!new[] { "enable", "disable", "delete", "activateCompany", "deactivateCompany", "archiveCompany", "restoreCompany", "deleteCompany" }.Contains(action))
                 throw new StudentManagementException("Unsupported company action.");
-            if (company.Value<bool?>("isArchived") == true && action != "restoreCompany" && action != "delete" && action != "archiveCompany")
+            if (company.Value<bool?>("isArchived") == true && action != "restoreCompany" && action != "delete" && action != "archiveCompany" && action != "deleteCompany")
                 throw new StudentManagementException("Restore this archived company before changing supervisor access.");
             if (uid == actor) throw new StudentManagementException("You cannot change your own account here.");
             bool companyAction = action.EndsWith("Company", StringComparison.Ordinal);
@@ -228,7 +233,23 @@ namespace University_Internship_Management_System.Shared
             try
             {
                 string password = null, email = null;
-                if (action == "archiveCompany")
+                if (action == "deleteCompany")
+                {
+                    var users = await db.ReadAsync("users") as JObject ?? new JObject();
+                    var linked = users.Properties().Where(p => IsCompanyUser(p.Value as JObject) && T(p.Value, "companyId") == id).ToArray();
+                    if (linked.Any(user => user.Name == actor)) throw new StudentManagementException("You cannot delete your own account.");
+                    await db.PatchAsync("companies/" + Key(id), new { isActive = false, deletionStatus = "pending" });
+                    foreach (var user in linked)
+                    {
+                        if (user.Name == actor) throw new StudentManagementException("You cannot delete your own account.");
+                        await db.PatchAsync("users/" + Key(user.Name), new { isActive = false, deletionStatus = "pending" });
+                        await auth.DeleteAsync(user.Name);
+                    }
+                    await AccountHistoryCleanup.CompanyAsync(db, id);
+                    foreach (var user in linked) await db.DeleteAsync("users/" + Key(user.Name));
+                    await db.DeleteAsync("companies/" + Key(id));
+                }
+                else if (action == "archiveCompany")
                 {
                     var users = await db.ReadAsync("users") as JObject ?? new JObject();
                     foreach (var user in users.Properties().Where(p => IsCompanyUser(p.Value as JObject) && T(p.Value, "companyId") == id))
@@ -251,6 +272,7 @@ namespace University_Internship_Management_System.Shared
                     {
                         await db.PatchAsync("users/" + Key(uid), new { isActive = false, deletionStatus = "pending" });
                         await auth.DeleteAsync(uid);
+                        await AccountHistoryCleanup.CompanySupervisorAsync(db, uid, id);
                         await db.DeleteAsync("users/" + Key(uid));
                     }
                     else
@@ -271,7 +293,7 @@ namespace University_Internship_Management_System.Shared
                     }
                 }
                 await CompleteAsync(id, op);
-                return new JObject { ["message"] = action == "archiveCompany" ? "Company archived and linked supervisor logins disabled. All records and history were retained." : action == "restoreCompany" ? "Company restored as inactive. Supervisor logins remain disabled until you enable them individually." : action == "delete" ? "Supervisor login and profile deleted. Company records and internship history were retained." : "Status updated.",
+                return new JObject { ["message"] = action == "deleteCompany" ? "Company, supervisor accounts and linked internship history deleted." : action == "archiveCompany" ? "Company archived and linked supervisor logins disabled. All records and history were retained." : action == "restoreCompany" ? "Company restored as inactive. Supervisor logins remain disabled until you enable them individually." : action == "delete" ? "Supervisor account and its linked internship history deleted. Other supervisor accounts were retained." : "Status updated.",
                     ["temporaryPassword"] = password, ["email"] = password == null ? null : email };
             }
             finally { await ReleaseAsync(id); }

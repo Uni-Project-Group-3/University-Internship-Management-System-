@@ -60,7 +60,7 @@ namespace UIMS.Tasks
         private static bool IsTrue(string value) { return string.Equals(value, "true", StringComparison.OrdinalIgnoreCase); }
         private static async Task<string> GetAccessTokenAsync(CancellationToken cancellation)
         {
-            var credential = (await Credential.Value.ConfigureAwait(false)).CreateScoped("https://www.googleapis.com/auth/firebase.database");
+            var credential = (await Credential.Value.ConfigureAwait(false)).CreateScoped("https://www.googleapis.com/auth/firebase.database", "https://www.googleapis.com/auth/userinfo.email");
             cancellation.ThrowIfCancellationRequested();
             return await credential.UnderlyingCredential.GetAccessTokenForRequestAsync().ConfigureAwait(false);
         }

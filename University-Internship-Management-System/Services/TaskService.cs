@@ -106,7 +106,7 @@ namespace UIMS.Tasks
 
         private static async Task<string> GetServerAccessTokenAsync(CancellationToken cancellation)
         {
-            var credential = (await ServerCredential.Value.ConfigureAwait(false)).CreateScoped("https://www.googleapis.com/auth/firebase.database");
+            var credential = (await ServerCredential.Value.ConfigureAwait(false)).CreateScoped("https://www.googleapis.com/auth/firebase.database", "https://www.googleapis.com/auth/userinfo.email");
             cancellation.ThrowIfCancellationRequested();
             return await credential.UnderlyingCredential.GetAccessTokenForRequestAsync().ConfigureAwait(false);
         }

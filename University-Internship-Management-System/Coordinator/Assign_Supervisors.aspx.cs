@@ -1,4 +1,5 @@
-﻿using System;
+using University_Internship_Management_System.Shared;
+using System;
 using System.Collections.Generic;
 using System.Net;
 using System.Web.Script.Serialization;
@@ -10,10 +11,12 @@ namespace University_Internship_Management_System.Coordinator
 {
     public partial class Assign_Supervisors : Page
     {
-        private const string FirebaseUrl = "https://just-project-4af15-default-rtdb.firebaseio.com/";
+        private static string FirebaseUrl { get { return AuthenticatedFirebaseClient.DatabaseUrl; } }
 
+        protected void Page_Init(object sender, EventArgs e) { Session["FirebasePageBinding"] = true; ViewStateUserKey = Session.SessionID; }
         protected void Page_Load(object sender, EventArgs e)
         {
+            AuthenticatedFirebaseClient.RequireRole(Context, "coordinator");
             if (!IsPostBack)
             {
                 LoadGroupsFromFirebase();
@@ -25,7 +28,7 @@ namespace University_Internship_Management_System.Coordinator
         {
             try
             {
-                using (WebClient client = new WebClient { Encoding = System.Text.Encoding.UTF8 })
+                using (WebClient client = new AuthenticatedFirebaseClient { Encoding = System.Text.Encoding.UTF8 })
                 {
                     JavaScriptSerializer serializer = new JavaScriptSerializer();
 
@@ -115,7 +118,7 @@ namespace University_Internship_Management_System.Coordinator
         {
             try
             {
-                using (WebClient client = new WebClient { Encoding = System.Text.Encoding.UTF8 })
+                using (WebClient client = new AuthenticatedFirebaseClient { Encoding = System.Text.Encoding.UTF8 })
                 {
                     JavaScriptSerializer serializer = new JavaScriptSerializer();
                     string usersJson = client.DownloadString(FirebaseUrl + "users.json");
@@ -192,11 +195,12 @@ namespace University_Internship_Management_System.Coordinator
             string groupName = newGroupName.Text.Trim();
             string department = newGroupDept.SelectedValue;
             if (string.IsNullOrEmpty(groupName) || string.IsNullOrEmpty(department)) return;
+            University_Internship_Management_System.Services.FinalEvaluation.FirebaseKey.Require(groupName);
 
             try
             {
                 var newGroup = new CreatedGroupData { department = department, createdAt = DateTime.Now.ToString("o"), academicSupervisorId = "" };
-                using (WebClient client = new WebClient { Encoding = System.Text.Encoding.UTF8 })
+                using (WebClient client = new AuthenticatedFirebaseClient { Encoding = System.Text.Encoding.UTF8 })
                 {
                     client.Headers[HttpRequestHeader.ContentType] = "application/json";
                     client.UploadString(FirebaseUrl + "groups/" + groupName + ".json", "PUT", new JavaScriptSerializer().Serialize(newGroup));
@@ -214,11 +218,12 @@ namespace University_Internship_Management_System.Coordinator
         {
             string studentId = Request.Form[ddlUnassignedStudents.UniqueID];
             string groupId = hfSelectedGroupId.Value;
+            if (!string.IsNullOrEmpty(groupId)) University_Internship_Management_System.Services.FinalEvaluation.FirebaseKey.Require(groupId);
             if (string.IsNullOrEmpty(studentId) || string.IsNullOrEmpty(groupId)) return;
 
             try
             {
-                using (WebClient client = new WebClient { Encoding = System.Text.Encoding.UTF8 })
+                using (WebClient client = new AuthenticatedFirebaseClient { Encoding = System.Text.Encoding.UTF8 })
                 {
                     JavaScriptSerializer serializer = new JavaScriptSerializer();
 
@@ -248,11 +253,12 @@ namespace University_Internship_Management_System.Coordinator
         {
             string supervisorId = Request.Form[ddlSupervisors.UniqueID];
             string groupId = hfAssignGroupId.Value;
+            if (!string.IsNullOrEmpty(groupId)) University_Internship_Management_System.Services.FinalEvaluation.FirebaseKey.Require(groupId);
             if (string.IsNullOrEmpty(supervisorId)) return;
 
             try
             {
-                using (WebClient client = new WebClient { Encoding = System.Text.Encoding.UTF8 })
+                using (WebClient client = new AuthenticatedFirebaseClient { Encoding = System.Text.Encoding.UTF8 })
                 {
                     JavaScriptSerializer serializer = new JavaScriptSerializer();
 
@@ -284,11 +290,12 @@ namespace University_Internship_Management_System.Coordinator
         protected void btnDeleteGroupConfirm_Click(object sender, EventArgs e)
         {
             string groupId = hfDeleteGroupId.Value;
+            if (!string.IsNullOrEmpty(groupId)) University_Internship_Management_System.Services.FinalEvaluation.FirebaseKey.Require(groupId);
             if (string.IsNullOrEmpty(groupId)) return;
 
             try
             {
-                using (WebClient client = new WebClient { Encoding = System.Text.Encoding.UTF8 })
+                using (WebClient client = new AuthenticatedFirebaseClient { Encoding = System.Text.Encoding.UTF8 })
                 {
                     JavaScriptSerializer serializer = new JavaScriptSerializer();
                     string groupJson = "";
@@ -328,6 +335,8 @@ namespace University_Internship_Management_System.Coordinator
 
         private void AssignStudentToSupervisorInBackend(WebClient client, JavaScriptSerializer serializer, string studentId, string supervisorId)
         {
+            University_Internship_Management_System.Services.FinalEvaluation.FirebaseKey.Require(studentId);
+            University_Internship_Management_System.Services.FinalEvaluation.FirebaseKey.Require(supervisorId);
             var newAssignment = new AssignmentData
             {
                 id = "ASG-" + studentId,
@@ -336,6 +345,7 @@ namespace University_Internship_Management_System.Coordinator
                 active = true
             };
             client.UploadString(FirebaseUrl + $"supervisorAssignments/ASG-{studentId}.json", "PUT", serializer.Serialize(newAssignment));
+            client.UploadString(FirebaseUrl + $"assignments/ASG-{studentId}.json", "PUT", serializer.Serialize(newAssignment));
 
             string usersJson = client.DownloadString(FirebaseUrl + "users.json");
             var users = serializer.Deserialize<Dictionary<string, UserData>>(usersJson);

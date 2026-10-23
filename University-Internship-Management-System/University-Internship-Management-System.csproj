@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="..\packages\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.2.0.1\build\net46\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.props" Condition="Exists('..\packages\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.2.0.1\build\net46\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.props')" />
   <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
@@ -380,6 +380,9 @@
     <Compile Include="Default.aspx.designer.cs">
       <DependentUpon>Default.aspx</DependentUpon>
     </Compile>
+    <Compile Include="Services\FinalEvaluation\LiveFirebaseIntegration.cs" />
+    <Compile Include="Shared\LiveDashboardPage.cs" />
+    <Compile Include="Shared\AuthenticatedFirebaseClient.cs" />
     <Compile Include="Global.asax.cs">
       <DependentUpon>Global.asax</DependentUpon>
     </Compile>
@@ -439,6 +442,7 @@
     <Compile Include="Shared\FirebaseDatabaseVersion.cs" />
     <Compile Include="Shared\StudentFirebaseGateway.cs" />
     <Compile Include="Shared\StudentManagementService.cs" />
+    <Compile Include="Shared\AccountHistoryCleanup.cs" />
     <Compile Include="Shared\CompanyManagementService.cs" />
     <Compile Include="Shared\AcademicSupervisorService.cs" />
     <Compile Include="Shared\Sidebar.ascx.cs">

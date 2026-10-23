@@ -22,6 +22,7 @@ namespace University_Internship_Management_System
         }
         protected void Application_Start(object sender, EventArgs e)
         {
+            University_Internship_Management_System.Services.FinalEvaluation.LiveFirebaseIntegration.Register();
             RouteConfig.RegisterRoutes(RouteTable.Routes);
             BundleConfig.RegisterBundles(BundleTable.Bundles);
 

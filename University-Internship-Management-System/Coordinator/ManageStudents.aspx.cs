@@ -248,7 +248,7 @@ namespace University_Internship_Management_System.Coordinator
                 studentDetailsContent.Text = "";
                 studentsGrid.SelectedIndex = -1;
                 await LoadStudentsAsync();
-                studentListMessage.Text = "Student login and account profile deleted. University records and academic history were retained.";
+                studentListMessage.Text = "Student account and linked internship history deleted. Official university records were retained; recreating this student starts fresh.";
             })));
         }
         private StudentCandidate Candidate()

@@ -1,3 +1,4 @@
+using University_Internship_Management_System.Shared;
 using System;
 using System.Collections.Generic;
 using System.Net;
@@ -9,30 +10,14 @@ namespace University_Internship_Management_System.Academic
 {
     public partial class StudentProgressMonitor : Page
     {
-        private const string FirebaseUrl = "https://just-project-4af15-default-rtdb.firebaseio.com/";
+        private static string FirebaseUrl { get { return AuthenticatedFirebaseClient.DatabaseUrl; } }
 
-        // الاعتماد على Session["FullName"] أو الـ ID التجريبي كقيمة افتراضية متوافقة مع الداشبورد
-        private string CurrentSupervisorId
-        {
-            get
-            {
-                // إذا كان هناك ID مخزن مسبقاً في الجلسة
-                if (Session["UserId"] != null) return Session["UserId"].ToString();
+        private string CurrentSupervisorId { get { return User.Identity.Name; } }
 
-                // قيمة افتراضية متوافقة مع الـ Demo الحالي في النظام
-                return "AS-DEMO-001";
-            }
-        }
-
+        protected void Page_Init(object sender, EventArgs e) { Session["FirebasePageBinding"] = true; ViewStateUserKey = Session.SessionID; }
         protected void Page_Load(object sender, EventArgs e)
         {
-            // Role Guard المتبع في المشروع (تم تركيبه ليتوافق مع أسلوبهم)
-            // if (Session["Role"] as string != "Academic" && Session["UserRole"] as string != "academicSupervisor")
-            // {
-            //     Response.Redirect("~/Auth/Login.aspx");
-            //     return;
-            // }
-
+            AuthenticatedFirebaseClient.RequireRole(Context, "academicSupervisor");
             if (!IsPostBack)
             {
                 LoadAssignedStudents();
@@ -43,11 +28,11 @@ namespace University_Internship_Management_System.Academic
         {
             try
             {
-                using (WebClient client = new WebClient { Encoding = System.Text.Encoding.UTF8 })
+                using (WebClient client = new AuthenticatedFirebaseClient { Encoding = System.Text.Encoding.UTF8 })
                 {
                     JavaScriptSerializer serializer = new JavaScriptSerializer();
 
-                    string assignmentsJson = DownloadSafe(client, "supervisorAssignments.json");
+                    string assignmentsJson = DownloadSafe(client, "assignments.json");
                     string usersJson = DownloadSafe(client, "users.json");
                     string placementsJson = DownloadSafe(client, "placements.json");
                     string tasksJson = DownloadSafe(client, "tasks.json");
@@ -155,12 +140,13 @@ namespace University_Internship_Management_System.Academic
             if (e.CommandName == "ViewDetails")
             {
                 string studentId = e.CommandArgument.ToString();
+                RequireStudentScope(studentId);
                 hfCurrentStudentId.Value = studentId;
                 lblFeedbackMsg.Text = "";
 
                 try
                 {
-                    using (WebClient client = new WebClient { Encoding = System.Text.Encoding.UTF8 })
+                    using (WebClient client = new AuthenticatedFirebaseClient { Encoding = System.Text.Encoding.UTF8 })
                     {
                         JavaScriptSerializer serializer = new JavaScriptSerializer();
 
@@ -251,12 +237,13 @@ namespace University_Internship_Management_System.Academic
         protected void btnSaveFeedback_Click(object sender, EventArgs e)
         {
             string studentId = hfCurrentStudentId.Value;
+            RequireStudentScope(studentId);
             string feedback = txtFeedback.Text.Trim();
             if (string.IsNullOrEmpty(studentId)) return;
 
             try
             {
-                using (WebClient client = new WebClient { Encoding = System.Text.Encoding.UTF8 })
+                using (WebClient client = new AuthenticatedFirebaseClient { Encoding = System.Text.Encoding.UTF8 })
                 {
                     client.UploadString(FirebaseUrl + $"academicFeedback/{studentId}.json", "PUT", new JavaScriptSerializer().Serialize(feedback));
                 }
@@ -272,7 +259,17 @@ namespace University_Internship_Management_System.Academic
             }
         }
 
-        private string DownloadSafe(WebClient client, string path) { try { return client.DownloadString(FirebaseUrl + path); } catch { return ""; } }
+        private void RequireStudentScope(string studentId)
+        {
+            University_Internship_Management_System.Services.FinalEvaluation.FirebaseKey.Require(studentId);
+            using (var client = new AuthenticatedFirebaseClient())
+            {
+                var assignments = Newtonsoft.Json.Linq.JObject.Parse(client.DownloadString(FirebaseUrl + "assignments.json"));
+                if (!System.Linq.Enumerable.Any(assignments.Properties(), p => (string)p.Value["studentId"] == studentId && (string)p.Value["academicSupervisorId"] == CurrentSupervisorId && (bool?)p.Value["active"] != false))
+                    throw new System.Web.HttpException(403, "This student is not currently assigned to you.");
+            }
+        }
+        private string DownloadSafe(WebClient client, string path) { return client.DownloadString(FirebaseUrl + path); }
         private T ParseJson<T>(JavaScriptSerializer serializer, string json) { if (string.IsNullOrEmpty(json) || json == "null") return default(T); return serializer.Deserialize<T>(json); }
 
         public class AssignmentData { public string academicSupervisorId { get; set; } public string studentId { get; set; } }
