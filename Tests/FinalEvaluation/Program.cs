@@ -372,6 +372,21 @@ internal static partial class Program
         await Test("opportunity reads fail closed before Firebase transport when disabled", OpportunityServiceHonorsDisabledFirebase);
         await Test("applications, company decisions, and placement confirmation preserve authorization and idempotency", ApplicationPlacementLifecycleUsesAuthorizedRecords);
         await Test("task API resolves roles and executes authorized task lifecycle with mocked Firebase REST", TaskApiOfflineTests);
+        await Test("expired task sessions return JSON 401 without a login-page redirect", async () => {
+            var output = new System.IO.StringWriter();
+            var context = new System.Web.HttpContext(new System.Web.HttpRequest("", "http://localhost/TasksApi.ashx", ""), new System.Web.HttpResponse(output));
+            context.User = new System.Security.Principal.GenericPrincipal(new System.Security.Principal.GenericIdentity(""), new string[0]);
+            await new UIMS.Tasks.TasksApiHandler().ProcessRequestAsync(context);
+            Assert(context.Response.StatusCode == 401 && context.Response.SuppressFormsAuthenticationRedirect);
+            Assert(context.Response.ContentType == "application/json" && (string)Newtonsoft.Json.Linq.JObject.Parse(output.ToString())["message"] == "Your sign-in expired. Sign in again to load your tasks.");
+        });
+        await Test("recreated student without placements receives empty task arrays", async () => {
+            var db = new TaskDatabaseHandler();
+            var student = UIMS.Tasks.TaskActor.FromVerifiedProfile("new-student-uid", "student", Newtonsoft.Json.Linq.JObject.Parse("{\"role\":\"student\",\"isActive\":true,\"studentId\":\"NEW-STUDENT\"}"));
+            db.Records["tasks/foreign"] = TaskFixture("foreign", "Assigned", null, "OTHER-STUDENT", "DELETED-PLACEMENT");
+            var result = await OfflineTaskService(db, student, EnabledTaskSettings()).LoadAsync("student", CancellationToken.None);
+            Assert(((Newtonsoft.Json.Linq.JArray)result["tasks"]).Count == 0 && ((Newtonsoft.Json.Linq.JArray)result["submissions"]).Count == 0);
+        });
         await Test("task submissions preserve array and keyed-object history and enforce ownership/concurrency", TaskSubmissionCompatibilityTests);
         await Test("task board positions persist independently with authorization, retries, ordering and ETag conflicts", TaskBoardTests);
         await RunFirebaseFileStorageTests();

@@ -37,8 +37,10 @@
             method, cache: 'no-store', credentials: 'same-origin', headers: method === 'POST' ? { 'Content-Type': 'application/json' } : {},
             body: method === 'POST' ? JSON.stringify(data || {}) : undefined
         });
+        if (response.status === 401 || (response.redirected && /\/Auth\/Login(?:\.aspx)?(?:[/?]|$)/i.test(new URL(response.url).pathname)))
+            throw new Error('Your sign-in expired. Sign in again to load your tasks.');
         let result;
-        try { result = await response.json(); } catch (_) { throw new Error('Firebase returned an unreadable response.'); }
+        try { result = await response.json(); } catch (_) { throw new Error('The task service returned an unexpected response (HTTP ' + response.status + '). Refresh or sign in again.'); }
         if (!response.ok) throw new Error(result.message || ('Firebase request failed (' + response.status + ').'));
         return result;
     }
@@ -201,7 +203,7 @@
     function refresh() { return workspaceLoading || (workspaceLoading = loadWorkspace().finally(() => { workspaceLoading = null; })); }
     async function loadWorkspace() {
         loadingTasks = true;
-        try { const examRefresh = window.StudentTaskExams ? StudentTaskExams.refresh().catch(error => message(error.message, true)) : Promise.resolve(); state = await request(''); if (state.serverNow) serverOffset = Date.parse(state.serverNow) - Date.now(); boardLoadError = ''; loadingTasks = false; render(); connection('Connected to Firebase /tasks using your verified account.' + (state.identity ? ' Student ID: ' + state.identity : '')); await Promise.all([refreshBoard(), examRefresh]); return true; }
+        try { const examRefresh = window.StudentTaskExams ? StudentTaskExams.refresh().catch(error => message(error.message, true)) : Promise.resolve(); state = await request(''); if (!Array.isArray(state.tasks) || !Array.isArray(state.submissions)) throw new Error('The task service returned an invalid task list. Refresh and try again.'); if (state.serverNow) serverOffset = Date.parse(state.serverNow) - Date.now(); boardLoadError = ''; loadingTasks = false; render(); connection('Connected to Firebase /tasks using your verified account.' + (state.identity ? ' Student ID: ' + state.identity : '')); await Promise.all([refreshBoard(), examRefresh]); return true; }
         catch (error) {
             state = { tasks: [], submissions: [] }; boardState = null; boardLoadError = error.message; loadingTasks = false; render();
             message(error.message, true); connection('Could not load task records from Firebase.');

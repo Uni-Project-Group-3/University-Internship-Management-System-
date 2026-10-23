@@ -275,6 +275,12 @@ namespace University_Internship_Management_System.Shared
                     throw new StudentManagementException("An existing login uses this account ID. Manual review is required.");
                 if (account != null && !string.Equals(account.Email, student.email.Trim(), StringComparison.OrdinalIgnoreCase))
                     throw new StudentManagementException("The existing login email differs from the university record.");
+                if (operation.Value<bool?>("historyCleaned") != true)
+                {
+                    await AccountHistoryCleanup.StudentAsync(database, uid, studentId);
+                    operation["historyCleaned"] = true;
+                    await database.WriteAsync(operationPath, operation);
+                }
                 if (!mailAccepted)
                 {
                     if (string.IsNullOrEmpty(password) || password.Length < 12)
@@ -358,6 +364,7 @@ namespace University_Internship_Management_System.Shared
             {
                 await database.PatchAsync("users/" + uid, new { isActive = false, deletionStatus = "pending" });
                 await authentication.DeleteAsync(uid); // Adapter treats an already-missing account as success.
+                await AccountHistoryCleanup.StudentAsync(database, uid, Text(profile, "studentId"));
                 operation["state"] = "deleted";
                 operation["deletedAtUtc"] = now().ToString("o");
                 operation["deletedBy"] = coordinatorUid;

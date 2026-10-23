@@ -107,6 +107,12 @@ namespace University_Internship_Management_System.Shared
                 // Recheck the official source after acquiring the lease, before any Auth change.
                 var fresh=await LookupAsync(record.StaffId);
                 if(!JToken.DeepEquals(JObject.FromObject(record),JObject.FromObject(fresh))) throw new StudentManagementException("The official record changed. Find the supervisor again.");
+                if(!resume || op.Value<bool?>("historyCleaned") != true)
+                {
+                    op["historyCleaned"]=false;await db.WriteAsync("academicAccountOperations/"+Key(uid),op);
+                    await AccountHistoryCleanup.AcademicAsync(db,uid);
+                    op["historyCleaned"]=true;await db.WriteAsync("academicAccountOperations/"+Key(uid),op);
+                }
                 if(account==null) await auth.CreateAsync(uid,record.Email,record.FullName,password);
                 else await auth.UpdateAsync(uid,true,password);
                 var profile=Profile(record);profile["isActive"]=false;profile["mustChangePassword"]=true;profile["accountSetupStatus"]="pending";
@@ -165,7 +171,9 @@ namespace University_Internship_Management_System.Shared
                 {
                     if(await HasAssignmentsAsync(uid)) throw new StudentManagementException("Reassign this supervisor's active students and groups before deleting the account.");
                     await db.PatchAsync("users/"+Key(uid),new{isActive=false,deletionStatus="pending"});
-                    await auth.DeleteAsync(uid);await db.DeleteAsync("users/"+Key(uid));
+                    await auth.DeleteAsync(uid);
+                    await AccountHistoryCleanup.AcademicAsync(db,uid);
+                    await db.DeleteAsync("users/"+Key(uid));
                 }
                 else
                 {
@@ -189,7 +197,7 @@ namespace University_Internship_Management_System.Shared
                     }
                 }
                 await CompleteAsync(uid,op);
-                return action=="delete"?"Supervisor login and profile deleted. Official university records and academic history were retained.":action=="sync"?"Supervisor details refreshed from university records.":"Supervisor account status updated.";
+                return action=="delete"?"Supervisor account, old assignments and linked supervisor history deleted. Official university records were retained.":action=="sync"?"Supervisor details refreshed from university records.":"Supervisor account status updated.";
             }
             finally{await ReleaseAsync(uid);}
         }

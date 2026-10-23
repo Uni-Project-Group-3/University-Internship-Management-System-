@@ -191,7 +191,7 @@ namespace University_Internship_Management_System.Coordinator
         {
             if (reviewContext == null) return false;
             if (reviewContext.IsDevelopment) return true; // Only explicitly injected isolated test contexts.
-            try { new UIMS.Services.FirebaseConfiguration().EnsureWritesAllowed(); return true; }
+            try { new FirebaseFinalEvaluationConfiguration().EnsureWritesAllowed(); return true; }
             catch (UIMS.Services.FirebaseException) { return false; }
         }
         private static string Encode(string value) { return HttpUtility.HtmlEncode(value ?? "Unavailable"); }

@@ -7,15 +7,15 @@
     <title>Manage Companies | JUST UIMS</title>
     <link runat="server" href="~/Assets/shared/colors.css" rel="stylesheet" />
 
-    <link runat="server" href="~/Assets/coordinator/manage-companies.css?v=20261022-firebase" rel="stylesheet" />
+    <link runat="server" href="~/Assets/coordinator/manage-companies.css?v=20261023-unified" rel="stylesheet" />
     
 </head>
-<body class="dashboard-direct app-page companies-page" data-page="manage-companies">
+<body class="dashboard-direct app-page companies-page management-page" data-page="manage-companies">
     <form id="form1" runat="server" novalidate="novalidate"><asp:HiddenField ID="companyCsrf" runat="server" ClientIDMode="Static" />
         <div class="app-layout">
                         <aside class="dash-sidebar" id="dashboardSidebar" aria-label="Coordinator navigation">
                 <a href="<%= ResolveUrl("~/Coordinator/CoordinatorDashboard.aspx") %>" class="dash-brand">
-                    <span class="dash-brand-logo">J</span>
+                    <img class="dash-brand-logo" src="../Assets/shared/images/JUST-Logo-01.png" alt="JUST logo" width="48" height="48" />
                     <span class="dash-brand-text">
                         <strong>JUST</strong>
                         <span>Internships</span>
@@ -103,7 +103,7 @@
                     </header>
             <main class="app-content companies-main">
 
-                <section class="companies-heading" aria-labelledby="pageTitle"><div><p class="companies-eyebrow">PARTNERS &amp; PEOPLE</p><h1 id="pageTitle">Manage Companies</h1><p>Manage partner companies and supervisor accounts.</p></div><button type="button" class="companies-button" data-open="addCompany"><span aria-hidden="true">+</span> Add Company</button></section>
+                <section class="companies-heading management-hero" aria-labelledby="pageTitle"><div><p class="companies-eyebrow">PARTNERS &amp; PEOPLE</p><h1 id="pageTitle">Manage Companies</h1><p>Manage partner companies and supervisor accounts.</p></div><button type="button" class="companies-button" data-open="addCompany"><span aria-hidden="true">+</span> Add Company</button></section>
                 <div class="companies-notice" role="status"><span aria-hidden="true">&#9432;</span><div><strong>Company management</strong><span id="companyPageNotice">Loading your company directory...</span></div></div>
                 <section class="companies-stats" aria-label="Company summary">
                     <article><div class="companies-stat-top"><span>Total Companies</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 21V4h11v17M15 9h5v12M1 21h22M8 8h3m-3 4h3m-3 4h3"/></svg></div><strong>&mdash;</strong><small>All university partners</small></article>
@@ -117,7 +117,7 @@
                     <div class="companies-table-wrap" role="region" aria-label="Company directory table" tabindex="0"><table><thead><tr><th scope="col">Company / Industry</th><th scope="col">Company email</th><th scope="col">Company status</th><th scope="col">Supervisor</th><th scope="col">Supervisor email</th><th scope="col">Account status</th><th scope="col">Actions</th></tr></thead><tbody id="companyRows"></tbody></table></div><div class="companies-empty"><div class="companies-empty-icon"><svg viewBox="0 0 48 48" aria-hidden="true"><path d="M12 41V9h21v32M33 20h7v21M6 41h38M19 16h7m-7 7h7m-7 7h7m-6 11v-5h6v5"/></svg></div><h3 id="companyEmptyTitle">Your next partnership starts here</h3><p id="companyEmptyMessage">Company profiles and their linked supervisors will appear here once the database is connected.</p><button type="button" class="companies-button companies-button--secondary" data-open="addCompany">Explore the company form <span aria-hidden="true">&#8594;</span></button></div>
                     <div class="companies-pagination"><span aria-live="polite" id="companyPageSummary">Loading records...</span><button type="button" class="companies-text-button" id="refreshCompanies">Refresh</button><div><label for="companyPageSize">Rows per page</label><select id="companyPageSize"><option>10</option><option>25</option><option>50</option></select><button type="button" aria-label="Previous page" id="companyPrevious" disabled>&larr;</button><span id="companyPageNumber">1 / 1</span><button type="button" aria-label="Next page" id="companyNext" disabled>&rarr;</button></div></div>
                 </section>
-                <section class="companies-context" aria-label="Account management guidance"><div><span aria-hidden="true">&#9678;</span><p><strong>Company and account status are separate.</strong> Managing one supervisor will not change other supervisors or the company.</p></div><div><span aria-hidden="true">&#9633;</span><p><strong>Academic history stays intact.</strong> Account removal and company removal are separate operations.</p></div></section>
+                <section class="companies-context" aria-label="Account management guidance"><div><span aria-hidden="true">&#9678;</span><p><strong>Company and account status are separate.</strong> Managing one supervisor will not change other supervisors or the company.</p></div><div><span aria-hidden="true">&#9633;</span><p><strong>Delete starts fresh.</strong> Deleting clears linked history. Archiving retains it.</p></div></section>
                 <footer class="companies-footer"><span>&copy; 2026 Jordan University of Science and Technology</span><span>University Internship Management System</span></footer>
             </main></div>
         </div>
@@ -145,7 +145,7 @@
                     <button type="button" data-account-action="edit"><span><strong>Edit</strong><small>Update company and supervisor information</small></span><span aria-hidden="true">&#8599;</span></button>
                     <button type="button" data-account-action="disable"><span><strong>Disable Account</strong><small>Block access for this supervisor only</small></span><span aria-hidden="true">&#8594;</span></button>
                     <button type="button" data-account-action="enable"><span><strong>Enable Account</strong><small>Restore access to the same account</small></span><span aria-hidden="true">&#8594;</span></button>
-                    <button type="button" class="companies-danger-action" data-account-action="delete"><span><strong>Delete Account</strong><small>Remove sign-in access while preserving academic history</small></span><span aria-hidden="true">&#8594;</span></button>
+                    <button type="button" class="companies-danger-action" data-account-action="delete"><span><strong>Delete Account</strong><small>Remove sign-in access and linked supervisor history</small></span><span aria-hidden="true">&#8594;</span></button>
                 </div>
             </div><footer class="companies-modal-footer"><span>Changes affect only the selected supervisor.</span><button type="button" class="companies-button companies-button--secondary" data-close="">Close</button></footer>
         </dialog>
@@ -155,7 +155,7 @@
             <footer class="companies-modal-footer"><button type="button" class="companies-button companies-button--secondary" id="backToActions">Close</button><button type="button" class="companies-button" id="confirmAccountAction" disabled>Confirm</button></footer>
         </dialog>
     </form>
-<script src="<%= ResolveUrl("~/Js_project/Coordinator/manage-companies.js?v=20261022-firebase-companies-final") %>"></script>
+<script src="<%= ResolveUrl("~/Js_project/Coordinator/manage-companies.js?v=20261023-clean-delete") %>"></script>
     <script src="<%= ResolveUrl("~/Js_project/Public/dashboard-navigation.js?v=20261021-original-ui") %>"></script>
 </body>
 </html>

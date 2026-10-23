@@ -1,4 +1,4 @@
-﻿<%@ Page Language="C#" AutoEventWireup="true" CodeBehind="AcademicDashboard.aspx.cs" Inherits="UIMS.Academic.AcademicDashboard" %>
+<%@ Page Language="C#" AutoEventWireup="true" Async="true" CodeBehind="AcademicDashboard.aspx.cs" Inherits="UIMS.Academic.AcademicDashboard" %>
 
 <!DOCTYPE html>
 <html lang="en">
@@ -81,7 +81,7 @@
                                 <div class="stat-icon"><i class="bi bi-people"></i></div>
                                 <div class="stat-label">My Students</div>
                                 <div class="stat-value"><asp:Label ID="lblStudents" runat="server" /></div>
-                                <div class="stat-note">Group CS-2026-A</div>
+                                <div class="stat-note">Live Firebase records</div>
                             </div>
                         </div>
                         <div class="col-6 col-xl-3">
@@ -89,7 +89,7 @@
                                 <div class="stat-icon"><i class="bi bi-briefcase"></i></div>
                                 <div class="stat-label">In Training</div>
                                 <div class="stat-value"><asp:Label ID="lblInTraining" runat="server" /></div>
-                                <div class="stat-note">At 7 companies</div>
+                                <div class="stat-note">Live Firebase records</div>
                             </div>
                         </div>
                         <div class="col-6 col-xl-3">
@@ -97,7 +97,7 @@
                                 <div class="stat-icon danger"><i class="bi bi-exclamation-triangle"></i></div>
                                 <div class="stat-label">Delayed</div>
                                 <div class="stat-value"><asp:Label ID="lblDelayed" runat="server" /></div>
-                                <div class="stat-note">Need follow-up</div>
+                                <div class="stat-note">Live Firebase records</div>
                             </div>
                         </div>
                         <div class="col-6 col-xl-3">
@@ -105,7 +105,7 @@
                                 <div class="stat-icon success"><i class="bi bi-clipboard-check"></i></div>
                                 <div class="stat-label">Evaluations Due</div>
                                 <div class="stat-value"><asp:Label ID="lblEvalDue" runat="server" /></div>
-                                <div class="stat-note">Company eval received</div>
+                                <div class="stat-note">Live Firebase records</div>
                             </div>
                         </div>
                     </div>
@@ -117,88 +117,15 @@
                         <p>Review company evaluations and send your final academic evaluation to the coordinator.</p>
                         <a href="FinalAcademicEvaluation.aspx" class="btn-hero">Open evaluations <i class="bi bi-arrow-right"></i></a>
                     </section>
-
-                    <div class="row g-3">
-                        <!-- Students overview -->
-                        <div class="col-lg-7">
-                            <div class="panel">
-                                <div class="panel-head">
-                                    <h3>My Students</h3>
-                                    <a href="StudentProgressMonitor.aspx">View all</a>
-                                </div>
-                                <div class="list-row">
-                                    <div class="avatar">AS</div>
-                                    <div class="row-body">
-                                        <div class="row-title">Ahmad Saleem</div>
-                                        <div class="row-sub">Zain Jordan · 96 / 280 h</div>
-                                        <div class="progress-slim"><span style="width: 34%"></span></div>
-                                    </div>
-                                    <div class="row-meta"><span class="status info">On track</span></div>
-                                </div>
-                                <div class="list-row">
-                                    <div class="avatar">RS</div>
-                                    <div class="row-body">
-                                        <div class="row-title">Rana Saleh</div>
-                                        <div class="row-sub">Orange Jordan · 280 / 280 h</div>
-                                        <div class="progress-slim"><span class="success" style="width: 100%"></span></div>
-                                    </div>
-                                    <div class="row-meta"><span class="status success">Completed</span></div>
-                                </div>
-                                <div class="list-row">
-                                    <div class="avatar">YN</div>
-                                    <div class="row-body">
-                                        <div class="row-title">Yazan Nasser</div>
-                                        <div class="row-sub">Aramex · 40 / 280 h</div>
-                                        <div class="progress-slim"><span class="warning" style="width: 14%"></span></div>
-                                    </div>
-                                    <div class="row-meta"><span class="status danger">Delayed</span></div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Evaluations ready -->
-                        <div class="col-lg-5">
-                            <div class="panel">
-                                <div class="panel-head">
-                                    <h3>Ready for Academic Evaluation</h3>
-                                    <a href="FinalAcademicEvaluation.aspx">View all</a>
-                                </div>
-                                <div class="list-row">
-                                    <div class="row-icon soft"><i class="bi bi-clipboard-data"></i></div>
-                                    <div class="row-body">
-                                        <div class="row-title">Rana Saleh</div>
-                                        <div class="row-sub">Company evaluation received Oct 19</div>
-                                    </div>
-                                    <a href="FinalAcademicEvaluation.aspx" class="btn btn-soft">Evaluate</a>
-                                </div>
-                                <div class="list-row">
-                                    <div class="row-icon soft"><i class="bi bi-clipboard-data"></i></div>
-                                    <div class="row-body">
-                                        <div class="row-title">Hala Mahmoud</div>
-                                        <div class="row-sub">Company evaluation received Oct 17</div>
-                                    </div>
-                                    <a href="FinalAcademicEvaluation.aspx" class="btn btn-soft">Evaluate</a>
-                                </div>
-                                <div class="list-row">
-                                    <div class="row-icon soft"><i class="bi bi-send-check"></i></div>
-                                    <div class="row-body">
-                                        <div class="row-title">Sami Odeh</div>
-                                        <div class="row-sub">Sent to coordinator Oct 14</div>
-                                    </div>
-                                    <span class="status success">Sent</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </main>
+<div class="mt-4"><%= DashboardContent %></div>
+</main>
             </div>
         </div>
     </form>
 
-    <script src="../Js_project/Demo/demo-store.js?v=20261021-original-ui"></script>
+
 <script src="<%= ResolveUrl("~/Scripts/bootstrap.bundle.min.js") %>"></script>
     <script src="<%= ResolveUrl("~/Js_project/Public/dashboard-navigation.js?v=20261021-original-ui") %>"></script>
-<script src="../Js_project/Academic/academic-dashboard.js?v=20261021-original-ui"></script>
 <script src="../Js_project/final-report-summary.js?v=20261023"></script>
 </body>
 </html>

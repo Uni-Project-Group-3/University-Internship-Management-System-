@@ -11,7 +11,7 @@ namespace University_Internship_Management_System.Coordinator
 {
     public partial class MonitorPlacementsProgress : Page
     {
-        private const string FirebaseUrl = "https://just-project-4af15-default-rtdb.firebaseio.com/";
+        private readonly University_Internship_Management_System.Shared.StudentFirebaseGateway gateway = new University_Internship_Management_System.Shared.StudentFirebaseGateway();
 
         protected void Page_Load(object sender, EventArgs e)
         {
@@ -172,8 +172,7 @@ namespace University_Internship_Management_System.Coordinator
 
         private string DownloadSafe(WebClient client, string path)
         {
-            try { return client.DownloadString(FirebaseUrl + path); }
-            catch { return ""; }
+            return System.Threading.Tasks.Task.Run(() => gateway.ReadAsync(path.EndsWith(".json", StringComparison.Ordinal) ? path.Substring(0, path.Length - 5) : path)).GetAwaiter().GetResult().ToString(Newtonsoft.Json.Formatting.None);
         }
 
         private T ParseJson<T>(JavaScriptSerializer serializer, string json)

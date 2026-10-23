@@ -1345,9 +1345,12 @@ namespace UIMS.Tasks
 
         public override async Task ProcessRequestAsync(HttpContext context)
         {
+            context.Response.SuppressFormsAuthenticationRedirect = true;
             context.Response.Cache.SetNoStore(); context.Response.ContentType = "application/json";
             try
             {
+                if (context.User?.Identity?.IsAuthenticated != true)
+                    throw new UIMS.Services.FirebaseException(401, "Your sign-in expired. Sign in again to load your tasks.");
                 var config = new UIMS.Services.FirebaseConfiguration();
                 context.Items["TaskApiStage"] = "validate-firebase-authentication";
                 config.EnsureAuthenticationEnabled();

@@ -1,4 +1,4 @@
-﻿<%@ Page Language="C#" AutoEventWireup="true" CodeBehind="MyTasks.aspx.cs" Inherits="University_Internship_Management_System.Student.MyTasks" %>
+<%@ Page Language="C#" AutoEventWireup="true" CodeBehind="MyTasks.aspx.cs" Inherits="University_Internship_Management_System.Student.MyTasks" %>
 
 <!DOCTYPE html>
 <html lang="en">
@@ -150,7 +150,7 @@
                                     </i>
                                 </div>
                                 <div class="stat-details">
-                                    <h3>4</h3>
+                                    <h3>&#8212;</h3>
                                     <span>Total Tasks</span>
                                 </div>
                             </div>
@@ -160,7 +160,7 @@
                                     </i>
                                 </div>
                                 <div class="stat-details">
-                                    <h3>1</h3>
+                                    <h3>&#8212;</h3>
                                     <span>In Progress</span>
                                 </div>
                             </div>
@@ -170,7 +170,7 @@
                                     </i>
                                 </div>
                                 <div class="stat-details">
-                                    <h3>1</h3>
+                                    <h3>&#8212;</h3>
                                     <span>Awaiting Review</span>
                                 </div>
                             </div>
@@ -180,7 +180,7 @@
                                     </i>
                                 </div>
                                 <div class="stat-details">
-                                    <h3 class="text-danger">1</h3>
+                                    <h3 class="text-danger">&#8212;</h3>
                                     <span class="text-danger fw-semibold">Revision Requested</span>
                                 </div>
                             </div>
