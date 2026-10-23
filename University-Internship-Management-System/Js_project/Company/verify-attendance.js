@@ -4,6 +4,7 @@ let supervisorData = null;
 let loading = false;
 let saving = false;
 let dataVersion = 0;
+let serverSessionVerified = false;
 let refreshAfterLoad = false;
 let cameraStream = null;
 let cameraOpening = false;
@@ -89,6 +90,7 @@ function addCell(row, value) {
 
 // الطلبات تذهب إلى C# بنفس الصفحة؛ التوكن السري الخاص بقاعدة البيانات لا يصل للمتصفح.
 async function api(action, values, onProgress) {
+    if (action === "load") serverSessionVerified = false;
     const url = new URL(window.location.href);
     url.search = "?attendanceApi=1";
     const body = new URLSearchParams(Object.assign({
@@ -97,7 +99,23 @@ async function api(action, values, onProgress) {
     }, values || {}));
     if (action === "load" && onProgress) body.set("stream", "1");
     const localDevelopment = JSON.parse(document.getElementById("attendanceBootstrap").textContent).localDemo;
-    const idToken = localDevelopment ? null : await window.UimsFirebase.getIdToken();
+    let idToken = null;
+    let useServerSession = false;
+    if (!localDevelopment) {
+        try {
+            idToken = await window.UimsFirebase.getIdToken();
+            if (typeof idToken !== "string" || !idToken.trim())
+                throw new Error("The Firebase authentication session is incomplete. Sign in again.");
+        } catch (error) {
+            const missingSession = error && error.message === "Sign in with your Firebase account to load attendance.";
+            // القراءة أولاً؛ C# يوثق توكن Session ويطابق UID ودور المشرف، ولا يكتفي بالـ Cookie.
+            if (!missingSession || (action !== "load" && !serverSessionVerified)) {
+                serverSessionVerified = false;
+                throw error;
+            }
+            useServerSession = true;
+        }
+    }
     const controller = new AbortController();
     const timeout = setTimeout(function () { controller.abort(); }, 130000);
     try {
@@ -149,7 +167,11 @@ async function api(action, values, onProgress) {
             if (action === "scan") scannerDiagnostic("response.rejected", { status: response.status });
             throw new Error(result && result.message || "Attendance request failed.");
         }
+        if (useServerSession && action === "load") serverSessionVerified = true;
         return result.data;
+    } catch (error) {
+        serverSessionVerified = false;
+        throw error;
     } finally { clearTimeout(timeout); }
 }
 function connected(data, name) {

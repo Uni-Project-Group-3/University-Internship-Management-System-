@@ -30,7 +30,7 @@ namespace University_Internship_Management_System.Company
                 if (action == "newTest")
                     throw new InvalidOperationException("Local test setup requires the local student page.");
 
-                string supervisorId = attendanceRequest.ResolveIdentity("company", action);
+                string supervisorId = await attendanceRequest.ResolveIdentityAsync("company", action);
                 string uid = attendanceRequest.VerifiedUid ?? "";
                 var supervisor = await attendanceService.Identity("company", supervisorId, uid, LocalDemoAllowed);
                 await attendanceRequest.StartLoad("company", supervisorId, supervisor);

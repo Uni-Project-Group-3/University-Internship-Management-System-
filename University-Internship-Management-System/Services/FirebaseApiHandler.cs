@@ -29,6 +29,7 @@ namespace UIMS
 
         public override async Task ProcessRequestAsync(HttpContext context)
         {
+            context.Response.SuppressFormsAuthenticationRedirect = true;
             context.Response.Cache.SetCacheability(HttpCacheability.NoCache);
             context.Response.Cache.SetNoStore();
             context.Response.ContentType = "application/json; charset=utf-8";
