@@ -1,0 +1,72 @@
+/* Used only by pages opting into the shared workspace shell. */
+.shared-workspace-shell { overflow-x: clip; }
+.shared-workspace-shell .uims-fixed-sidebar {
+    display: flex;
+    flex-direction: column;
+    flex: 0 0 270px;
+    width: 270px;
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    height: 100dvh;
+    padding: 26px 16px;
+    overflow-y: auto;
+    background: var(--sidebar-bg);
+    border-right: 1px solid var(--border);
+    z-index: 40;
+}
+.shared-workspace-shell .uims-side-brand { justify-content: flex-start; margin: 0 8px 26px; padding: 0; color: var(--primary); }
+.shared-workspace-shell .uims-side-brandtext { display: block; }
+.shared-workspace-shell .uims-side-brandtext strong { font-size: 22px; font-weight: 800; }
+.shared-workspace-shell .uims-side-brandtext small { color: var(--text-secondary); font-size: 12px; margin-top: 3px; }
+.shared-workspace-shell .uims-side-role { display: block; margin: 0 8px 14px; padding: 0; font-size: 10px; letter-spacing: .7px; }
+.shared-workspace-shell .uims-side-links { display: grid; gap: 4px; }
+.shared-workspace-shell .uims-side-link { display: flex; align-items: center; justify-content: flex-start; gap: 11px; margin: 0; padding: 12px; min-height: 44px; border: 1px solid transparent; border-radius: 12px; color: var(--text-secondary); font-size: 12px; font-weight: 600; line-height: 1.5; text-decoration: none; }
+.shared-workspace-shell .uims-side-link:hover,
+.shared-workspace-shell .uims-side-link.active { background: var(--surface); color: var(--primary); border-color: var(--border); }
+.shared-workspace-shell .uims-side-icon { display: block; width: 20px; height: 20px; flex: 0 0 20px; }
+.shared-workspace-shell .uims-side-link > span { display: inline; }
+.shared-workspace-shell .uims-side-footer { margin-top: 24px; }
+.shared-workspace-shell .uims-sidebar-close { display: none; }
+.shared-workspace-shell .uims-unified-backdrop { display: none; }
+.shared-workspace-shell .dash-main { flex: 1; min-width: 0; }
+.shared-workspace-shell .workspace-navbar { display: flex; align-items: center; gap: 18px; width: 100%; min-height: 64px; margin: 0 0 24px; padding: 0; background: transparent; border: 0; box-shadow: none; }
+.shared-workspace-shell .workspace-navbar svg { width: 21px; height: 21px; flex-shrink: 0; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+.shared-workspace-shell .workspace-search { display: flex; align-items: center; gap: 12px; flex: 0 1 560px; width: auto; min-width: 0; height: 48px; margin: 0; padding: 0 16px; border: 1px solid var(--border); border-radius: 14px; background: var(--surface); color: var(--muted); }
+.shared-workspace-shell .workspace-search input { flex: 1; min-width: 0; width: 100%; height: 100%; margin: 0; padding: 0; border: 0; outline: 0; background: transparent; color: var(--text); font: 400 13px var(--font-body); }
+.shared-workspace-shell .workspace-search:focus-within { outline: 2px solid var(--primary); outline-offset: 2px; }
+.shared-workspace-shell .workspace-navbar-actions { display: flex; align-items: center; gap: 18px; margin-left: auto; }
+.shared-workspace-shell .workspace-notifications { display: grid; place-items: center; width: 28px; height: 36px; color: var(--muted); }
+.shared-workspace-shell .workspace-user-chip { display: flex; align-items: center; gap: 10px; margin: 0; padding: 5px 12px 5px 5px; border: 1px solid transparent; border-radius: 999px; background: var(--surface); color: var(--primary); text-decoration: none; }
+.shared-workspace-shell .workspace-user-chip:hover { border-color: var(--border); }
+.shared-workspace-shell .workspace-user-chip:focus-visible,
+.shared-workspace-shell .workspace-menu-toggle:focus-visible,
+.shared-workspace-shell .uims-sidebar-close:focus-visible { outline: 2px solid var(--primary); outline-offset: 3px; }
+.shared-workspace-shell .workspace-avatar { display: grid; place-items: center; flex: 0 0 38px; width: 38px; height: 38px; margin: 0; border: 0; border-radius: 50%; background: var(--primary); color: #fff; font-size: 12px; font-weight: 700; }
+.shared-workspace-shell .workspace-account-text { display: grid; gap: 2px; }
+.shared-workspace-shell .workspace-account-text strong { font-size: 12px; font-weight: 700; }
+.shared-workspace-shell .workspace-account-text small { color: var(--text-secondary); font-size: 10px; }
+.shared-workspace-shell .workspace-account-arrow { width: 15px; height: 15px; }
+.shared-workspace-shell .workspace-menu-toggle { display: none; }
+.workspace-sr-only { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
+@media (max-width: 991.98px) {
+    .shared-workspace-shell .uims-fixed-sidebar { position: fixed; left: 0; top: 0; width: min(290px, calc(100vw - 48px)); max-width: none; padding: 26px 16px; transform: translateX(-100%); visibility: hidden; transition: transform .2s ease, visibility .2s; z-index: 1100; }
+    .shared-workspace-shell.workspace-sidebar-open { overflow: hidden; }
+    .shared-workspace-shell.workspace-sidebar-open .uims-fixed-sidebar { transform: translateX(0); visibility: visible; }
+    .shared-workspace-shell .uims-sidebar-close { display: grid; place-items: center; position: absolute; right: 12px; top: 10px; width: 30px; height: 30px; border: 0; border-radius: 8px; background: transparent; color: var(--primary); font-size: 25px; cursor: pointer; }
+    .shared-workspace-shell.workspace-sidebar-open .uims-unified-backdrop { display: block; position: fixed; inset: 0; background: rgba(20, 34, 74, .4); z-index: 1090; }
+    .shared-workspace-shell .dash-main { width: 100%; margin: 0; padding: 18px 18px 32px; }
+    .shared-workspace-shell .workspace-navbar { gap: 12px; }
+    .shared-workspace-shell .workspace-menu-toggle { display: grid; place-items: center; flex: 0 0 40px; width: 40px; height: 40px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); color: var(--primary); cursor: pointer; }
+    .shared-workspace-shell .workspace-navbar-actions { gap: 10px; }
+    .shared-workspace-shell .workspace-account-text,
+    .shared-workspace-shell .workspace-account-arrow { display: none; }
+    .shared-workspace-shell .workspace-user-chip { padding: 4px; }
+}
+@media (max-width: 550px) {
+    .shared-workspace-shell .workspace-navbar { flex-wrap: wrap; }
+    .shared-workspace-shell .workspace-search { order: 3; flex: 1 0 100%; height: 44px; }
+    .shared-workspace-shell .workspace-navbar-actions { margin-left: auto; }
+}
+@media (prefers-reduced-motion: reduce) { .shared-workspace-shell .uims-fixed-sidebar { transition: none; } }
+.shared-workspace-shell .workspace-navbar .workspace-search { display: none; }
