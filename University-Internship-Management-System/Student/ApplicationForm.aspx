@@ -1,6 +1,6 @@
 ﻿<%@ Page Language="C#" AutoEventWireup="true" CodeBehind="ApplicationForm.aspx.cs" Inherits="University_Internship_Management_System.Student.ApplicationForm" %>
 
-<script src="../Js_project/Demo/demo-store.js?v=20261021-original-ui"></script>
+<script src="../Js_project/Demo/demo-store.js?v=20261023-hide-unavailable-notice"></script>
 <script runat="server">
     protected void btnLogout_Click(object sender, System.EventArgs e)
     {
@@ -49,20 +49,11 @@
                 <ul class="side-nav"><li><a href="../Contact.aspx"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="m8 12 3 3 5-6"/></svg><span>Help &amp; contact</span></a></li>
 </ul>
 
-                <div class="side-promo">
-                    <i class="bi bi-mortarboard-fill"></i>
-                    <p>Build your future<br />with real experience.</p>
-                    <a href="ExploreOpportunities.aspx">Explore opportunities &rarr;</a>
-                </div>
             </aside>
             <div id="sidebarBackdrop" class="sidebar-backdrop" aria-hidden="true"></div>
             <div class="main" id="studentMain">
                 <header class="topbar">
                     <button type="button" class="menu-btn" id="openSidebar" aria-label="Open navigation" aria-controls="studentSidebar" aria-expanded="false"><i class="bi bi-list"></i></button>
-                    <div class="search">
-                        <i class="bi bi-search"></i>
-                        <input id="navbarSearch" type="search" aria-label="Workspace search" placeholder="Search for internships, companies, or skills..." />
-                    </div>
                     <div class="topbar-actions">
                         <button type="button" class="icon-btn" id="navbarNotifications" aria-label="Notifications preview"><i class="bi bi-bell"></i><span class="dot"></span></button>
                         <div class="dropdown">

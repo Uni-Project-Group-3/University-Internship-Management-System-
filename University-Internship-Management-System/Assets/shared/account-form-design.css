@@ -1,0 +1,237 @@
+/* Shared account form styling. Scoped to account content; navigation stays untouched. */
+.student-profile-page .profile-sections,
+.supervisor-account-page .account-sections,
+.company-account .profile-columns,
+.coordinator-profile .profile-columns {
+    --account-field-bg: #f5f6f9;
+    --account-field-border: #e1e5ed;
+}
+
+.student-profile-page .profile-card,
+.supervisor-account-page .account-card,
+.company-account main .workspace-card,
+.coordinator-profile main .workspace-card {
+    border-radius: 16px;
+}
+
+.student-profile-page .profile-detail dd,
+.supervisor-account-page .account-info dd,
+.company-account main .profile-values dd,
+.company-account main .account-details dd,
+.coordinator-profile main .profile-values dd,
+.coordinator-profile main .account-details dd {
+    box-sizing: border-box;
+    min-height: 48px;
+    padding: 10px 14px;
+    background: var(--account-field-bg);
+    border: 1px solid var(--account-field-border);
+    border-radius: 10px;
+}
+
+.student-profile-page .profile-field input:not(.profile-file-input),
+.student-profile-page .profile-field textarea,
+.supervisor-account-page .account-field input,
+.company-account main .workspace-input,
+.coordinator-profile main .workspace-input {
+    min-height: 48px;
+    padding: 12px 14px;
+    background: var(--account-field-bg);
+    border: 1px solid var(--account-field-border);
+    border-radius: 10px;
+}
+
+.company-account main .profile-edit-form,
+.coordinator-profile main .profile-edit-form {
+    width: 100%;
+    max-width: none;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    color: inherit;
+    background: transparent;
+}
+
+.company-account main .profile-overview-actions #EditProfile,
+.coordinator-profile main .profile-overview-actions #EditProfile {
+    display: none;
+}
+
+.company-account main .profile-fields,
+.coordinator-profile main .profile-fields {
+    margin-top: 18px;
+}
+
+.company-account main .profile-columns,
+.coordinator-profile main .profile-columns {
+    grid-template-columns: minmax(0, 1fr);
+}
+
+.company-account main .profile-columns > .profile-account-card,
+.coordinator-profile main .profile-columns > .profile-account-card {
+    display: block;
+}
+
+.student-profile-page .profile-sections,
+.supervisor-account-page .account-sections,
+.company-account main .profile-columns,
+.coordinator-profile main .profile-columns {
+    counter-reset: account-section;
+}
+
+.student-profile-page .profile-sections > .profile-card,
+.supervisor-account-page .account-sections > .account-card,
+.company-account main .profile-columns > section.workspace-card,
+.coordinator-profile main .profile-columns > section.workspace-card,
+.company-account main .profile-account-card > section,
+.coordinator-profile main .profile-account-card > section {
+    counter-increment: account-section;
+}
+
+.student-profile-page .profile-section-heading h2,
+.supervisor-account-page .account-section-heading h2,
+.supervisor-account-page .account-access h2,
+.company-account main .profile-columns > section.workspace-card .workspace-heading h2,
+.coordinator-profile main .profile-columns > section.workspace-card .workspace-heading h2,
+.company-account main .profile-account-card > section > h2,
+.coordinator-profile main .profile-account-card > section > h2 {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.student-profile-page .profile-section-heading h2::before,
+.supervisor-account-page .account-section-heading h2::before,
+.supervisor-account-page .account-access h2::before,
+.company-account main .profile-columns > section.workspace-card .workspace-heading h2::before,
+.coordinator-profile main .profile-columns > section.workspace-card .workspace-heading h2::before,
+.company-account main .profile-account-card > section > h2::before,
+.coordinator-profile main .profile-account-card > section > h2::before {
+    content: counter(account-section, decimal-leading-zero);
+    display: inline-grid;
+    flex: 0 0 28px;
+    width: 28px;
+    height: 28px;
+    place-items: center;
+    border-radius: 8px;
+    color: #24477f;
+    background: #eaf2fc;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0;
+}
+
+.company-account main .profile-fields .workspace-label,
+.coordinator-profile main .profile-fields .workspace-label {
+    color: #68768d;
+    font-size: 12px;
+    font-weight: 500;
+}
+
+@media (max-width: 600px) {
+    .student-profile-page .profile-card,
+    .supervisor-account-page .account-card,
+    .company-account main .workspace-card,
+    .coordinator-profile main .workspace-card {
+        padding: 20px 17px;
+    }
+}
+
+/* Account pages: compact identity card on the left, editable details on the right. */
+.company-account main .account-profile-layout,
+.coordinator-profile main .account-profile-layout,
+.student-profile-page .profile-layout,
+.supervisor-account-page .account-layout {
+    display: grid;
+    grid-template-columns: 280px minmax(0, 1fr);
+    gap: 26px;
+    align-items: start;
+}
+.company-account main .account-profile-details,
+.coordinator-profile main .account-profile-details,
+.student-profile-page .profile-sections,
+.supervisor-account-page .account-sections {
+    grid-column: 2;
+    grid-row: 1;
+    min-width: 0;
+}
+.company-account main .profile-overview,
+.coordinator-profile main .profile-overview,
+.student-profile-page .profile-summary,
+.supervisor-account-page .account-summary {
+    grid-column: 1;
+    grid-row: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 0;
+    width: 100%;
+    min-width: 0;
+    margin: 0;
+    padding: 28px 22px;
+    border: 1px solid var(--border);
+    border-radius: 22px;
+    background: var(--surface);
+    text-align: center;
+    overflow-wrap: anywhere;
+    box-shadow: 0 5px 20px rgba(30, 40, 76, .025);
+}
+.company-account main .profile-overview .profile-heading,
+.coordinator-profile main .profile-overview .profile-heading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 18px;
+    width: 100%;
+    text-align: center;
+}
+.company-account main .profile-overview .profile-avatar,
+.coordinator-profile main .profile-overview .profile-avatar,
+.student-profile-page .profile-summary .profile-avatar,
+.supervisor-account-page .account-summary .account-avatar {
+    display: grid;
+    place-items: center;
+    flex: 0 0 auto;
+    width: 80px;
+    height: 80px;
+    margin: 0 auto 18px;
+    border: 1px solid var(--border);
+    border-radius: 22px;
+    background: var(--primary-soft);
+    color: var(--primary);
+    font-size: 28px;
+}
+.company-account main .profile-overview .profile-avatar,
+.coordinator-profile main .profile-overview .profile-avatar { margin-bottom: 0; }
+.company-account main .profile-identity,
+.coordinator-profile main .profile-identity { width: 100%; min-width: 0; }
+.company-account main .profile-identity h2,
+.coordinator-profile main .profile-identity h2,
+.student-profile-page .profile-summary h2,
+.supervisor-account-page .account-summary h2 { margin: 0 0 10px; font-size: 21px; line-height: 1.4; }
+.company-account main .profile-email,
+.coordinator-profile main .profile-email { display: block; font-size: 12px; line-height: 1.8; overflow-wrap: anywhere; }
+.company-account main .profile-company,
+.coordinator-profile main .profile-university { display: block; margin-top: 10px; color: var(--text-secondary); font-size: 12px; line-height: 1.8; }
+.company-account main .profile-overview-actions,
+.coordinator-profile main .profile-overview-actions { display: flex; flex-direction: column; align-items: center; width: 100%; gap: 12px; margin-top: 22px; padding-top: 20px; border-top: 1px solid var(--border); }
+.company-account main .profile-message:empty,
+.coordinator-profile main .profile-message:empty { display: none; }
+.student-profile-page .profile-summary-divider { align-self: stretch; }
+.company-account main .profile-overview-actions,
+.coordinator-profile main .profile-overview-actions { display: none; }
+@media (max-width: 1100px) {
+    .company-account main .account-profile-layout,
+    .coordinator-profile main .account-profile-layout,
+    .student-profile-page .profile-layout,
+    .supervisor-account-page .account-layout { grid-template-columns: minmax(0, 1fr); gap: 22px; }
+    .company-account main .profile-overview,
+    .coordinator-profile main .profile-overview,
+    .student-profile-page .profile-summary,
+    .supervisor-account-page .account-summary { grid-column: 1; grid-row: 1; }
+    .company-account main .account-profile-details,
+    .coordinator-profile main .account-profile-details,
+    .student-profile-page .profile-sections,
+    .supervisor-account-page .account-sections { grid-column: 1; grid-row: 2; }
+}

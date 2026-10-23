@@ -179,10 +179,7 @@
         if(by('SaveProfile')){
             set('FullName',view.user.name);set('Phone',view.user.phone);set('Office',view.user.office);
             ['FullName','Phone','Office'].forEach(id=>{if(by(id))by(id).readOnly=false;});
-            open('profileEditDialog');
-            click('SaveProfile',()=>{if(!valid(['FullName','Phone','Office'],'profileEditDialog'))return;const name=value('FullName'),phone=value('Phone');if(name.length<2||name.length>80||phone&&!/^[+0-9() .-]{7,25}$/.test(phone)){error(Error('Enter a full name and valid phone number.'),by('profileEditDialog'));return;}transact('profile',{name,phone,office:value('Office')},'profileEditDialog');});
-            click('CancelEdit',()=>close('profileEditDialog'));
-            by('profileEditDialog').addEventListener('close',()=>location.href=location.pathname,{signal});
+            click('SaveProfile',()=>{if(!valid(['FullName','Phone'],'profileEditDialog'))return;const name=value('FullName'),phone=value('Phone');if(name.length<2||name.length>80||phone&&!/^[+0-9() .-]{7,25}$/.test(phone)){error(Error('Enter a full name and valid phone number.'),by('profileEditDialog'));return;}transact('profile',{name,phone});});
         }
 
         render();
