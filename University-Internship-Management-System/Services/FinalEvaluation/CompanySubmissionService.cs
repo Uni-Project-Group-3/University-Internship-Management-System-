@@ -32,7 +32,7 @@ namespace University_Internship_Management_System.Services.FinalEvaluation
     {
         public static void Validate(CompanyFinalEvaluation candidate, EvaluationPolicy policy)
         {
-            if (policy == null || !policy.IsApproved || !policy.CompanyCommentsRequired.HasValue)
+            if (policy == null || !policy.IsProductionApproved || !policy.CompanyCommentsRequired.HasValue)
                 throw new ArgumentException("An approved policy with an explicit company comment requirement is required.");
             FinalEvaluationValidation.Evaluation(candidate, policy, true, true);
             if (policy.CompanyCommentsRequired.Value && string.IsNullOrWhiteSpace(candidate.Feedback))

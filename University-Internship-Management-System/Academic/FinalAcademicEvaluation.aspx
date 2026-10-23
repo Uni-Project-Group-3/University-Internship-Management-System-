@@ -1,61 +1,20 @@
-﻿<%@ Page Language="C#" AutoEventWireup="true" Async="true" EnableViewState="false" ViewStateEncryptionMode="Always" CodeBehind="FinalAcademicEvaluation.aspx.cs" Inherits="University_Internship_Management_System.Academic.FinalAcademicEvaluation" %>
+<%@ Page Language="C#" AutoEventWireup="true" Async="true" EnableViewState="false" ViewStateEncryptionMode="Always" CodeBehind="FinalAcademicEvaluation.aspx.cs" Inherits="University_Internship_Management_System.Academic.FinalAcademicEvaluation" %>
+<%@ Register Src="~/Shared/AcademicSidebar.ascx" TagPrefix="uims" TagName="AcademicSidebar" %>
 <!DOCTYPE html>
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en">
 <head runat="server">
     <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Company Final Evaluation Review | JUST UIMS</title>
+    <title>Final Academic Evaluation | JUST UIMS</title>
     <link runat="server" href="~/Content/bootstrap.min.css" rel="stylesheet" /><link runat="server" href="~/Assets/shared/colors.css" rel="stylesheet" />
 
-    <link runat="server" href="~/Assets/academic/final-academic-evaluation.css?v=20261022-review-ui" rel="stylesheet" />
+    <link runat="server" href="~/Assets/academic/final-academic-evaluation.css?v=20261024-academic-footer" rel="stylesheet" />
+    <link runat="server" href="~/Assets/shared/evaluation-workspace.css?v=20261023" rel="stylesheet" />
     
 </head>
 <body class="dashboard-direct app-page evaluation-page" data-demo-role="academic">
     <form id="form1" runat="server" novalidate="novalidate">
                                 <div class="app-layout">
-                        <aside class="dash-sidebar" id="dashboardSidebar" aria-label="Academic navigation">
-                <a href="<%= ResolveUrl("~/Academic/AcademicDashboard.aspx") %>" class="dash-brand">
-                    <span class="dash-brand-logo">J</span>
-                    <span class="dash-brand-text">
-                        <strong>JUST</strong>
-                        <span>Internships</span>
-                    </span>
-                </a>
-                <button type="button" class="dash-sidebar-close" data-sidebar-close aria-label="Close navigation">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                        <path d="m6 6 12 12M6 18 18 6"/>
-                    </svg>
-                </button>
-                <nav aria-label="Workspace navigation">
-                    <ul class="dash-side-nav" aria-label="Academic pages">
-<li><a href="AcademicDashboard.aspx"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m3 10 9-7 9 7v10h-6v-7H9v7H3V10Z"/></svg><span>Dashboard</span></a></li>
-<li><a href="StudentProgressMonitor.aspx"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12h5l3-9 4 18 3-9h5"/></svg><span>Student Progress Monitor</span></a></li>
-<li><a href="FinalAcademicEvaluation.aspx" class="active" aria-current="page"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="m8 12 3 3 5-6"/></svg><span>Final Academic Evaluation</span></a></li>
-<li><a href="AcademicSupervisorAccount.aspx"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="m8 12 3 3 5-6"/></svg><span>My Account</span></a></li>
-</ul>
-                    <div class="dash-side-divider">
-                    </div>
-                    <ul class="dash-side-nav">
-                        
-                        <li>
-                            <a href="<%= ResolveUrl("~/Contact.aspx") %>">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                                    <circle cx="12" cy="12" r="9"/>
-                                    <path d="M9 8a3 3 0 0 1 6 0c0 2-3 2-3 5m0 3v1"/>
-                                </svg>
-                                <span>Help</span>
-                            </a>
-                        </li>
-                    </ul>
-                </nav>
-                <div class="dash-side-promo">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                        <rect x="5" y="3" width="14" height="18" rx="2"/>
-                        <path d="m8 12 3 3 5-6"/>
-                    </svg>
-                    <p>Support your students.<br />Review their training journey.</p>
-                    <a href="FinalAcademicEvaluation.aspx">Review evaluations &rarr;</a>
-                </div>
-            </aside>
+                        <uims:AcademicSidebar ID="academicSidebar" runat="server" SidebarId="dashboardSidebar" />
             <button type="button" class="dash-sidebar-backdrop" data-sidebar-close aria-label="Close navigation" tabindex="-1" hidden>
             </button>
             <div class="dash-main">
@@ -103,12 +62,47 @@
                     </header>
             
 <main class="app-content workspace-content evaluation-main" id="companyWorkspace">
-<header class="workspace-header evaluation-page-header"><h1>Company Final Evaluation Review</h1><p>Company percentage → Academic review → Coordinator completion.</p></header>
-<p class="workspace-note evaluation-inline-note" role="status"><asp:Literal ID="DraftAvailability" runat="server" Mode="Encode" /></p>
+<section class="uims-page-hero" aria-labelledby="academicEvaluationTitle">
+<div class="uims-hero-copy"><p class="uims-hero-eyebrow">JUST / ACADEMIC SUPERVISOR WORKSPACE</p><h1 id="academicEvaluationTitle">Final Academic Evaluation</h1><p>Review submitted Company Final Evaluations and record the academic decision for assigned students.</p></div>
+<section class="academic-review-stats uims-hero-stats" aria-label="Authorized evaluation statistics"><article class="uims-hero-stat"><h2>Assigned Students</h2><strong data-stat="AssignedStudentCount"><asp:Literal ID="AssignedStudentCount" runat="server" Mode="Encode" Text="—" /></strong></article><article class="uims-hero-stat"><h2>Company Drafts</h2><strong data-stat="CompanyDraftCount"><asp:Literal ID="CompanyDraftCount" runat="server" Mode="Encode" Text="—" /></strong></article><article class="uims-hero-stat"><h2>Awaiting Academic Review</h2><strong data-stat="AwaitingReviewCount"><asp:Literal ID="AwaitingReviewCount" runat="server" Mode="Encode" Text="—" /></strong></article><article class="uims-hero-stat"><h2>Academic Approvals</h2><strong data-stat="AcademicApprovalCount"><asp:Literal ID="AcademicApprovalCount" runat="server" Mode="Encode" Text="—" /></strong></article></section></section>
+<asp:Literal ID="DraftAvailability" runat="server" Mode="Encode" Visible="false" />
 <asp:HiddenField ID="selectedInternship" runat="server" /><asp:HiddenField ID="evaluationTicket" runat="server" EnableViewState="false" /><asp:HiddenField ID="activePanel" runat="server" ClientIDMode="Static" />
-<section class="evaluation-stats academic-review-stats" aria-label="Evaluation statistics"><article><div>Assigned Students</div><strong data-stat="AssignedStudentCount"><asp:Literal ID="AssignedStudentCount" runat="server" Mode="Encode" Text="—" /></strong></article><article><div>Company Drafts</div><strong data-stat="CompanyDraftCount"><asp:Literal ID="CompanyDraftCount" runat="server" Mode="Encode" Text="—" /></strong></article><article><div>Awaiting Academic Review</div><strong data-stat="AwaitingReviewCount"><asp:Literal ID="AwaitingReviewCount" runat="server" Mode="Encode" Text="—" /></strong></article><article><div>Academic Approvals</div><strong data-stat="AcademicApprovalCount"><asp:Literal ID="AcademicApprovalCount" runat="server" Mode="Encode" Text="—" /></strong></article></section>
-<section class="workspace-card evaluation-panel"><div class="workspace-heading evaluation-panel-heading"><h2>Assigned trainees</h2></div><div class="workspace-filter-grid evaluation-toolbar"><label class="workspace-field">Search trainees<input type="search" id="traineeSearch" class="workspace-input" /></label><label class="workspace-field">Evaluation status<select id="evaluationFilter" class="workspace-input"><option value="">All statuses</option><option>Not Started</option><option>Draft</option><option>Submitted</option><option>Revision Requested</option><option>Approved</option></select></label><button type="button" class="workspace-button secondary" id="clearEvaluationFilters">Clear filters</button></div><div class="workspace-table-scroll evaluation-table-wrap"><table class="table workspace-table"><thead><tr><th>Student / internship</th><th>Evaluation status</th><th>Actions</th></tr></thead><tbody><asp:Literal ID="traineeRows" runat="server" /></tbody></table></div></section>
-<div class="modal fade" id="informationDialog" tabindex="-1" aria-labelledby="informationTitle" aria-hidden="true"><div class="modal-dialog modal-dialog-centered modal-dialog-scrollable"><div class="modal-content"><div class="modal-header"><h2 class="modal-title fs-5" id="informationTitle"><asp:Literal ID="InformationTitle" runat="server" Mode="Encode" /></h2><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close information"></button></div><div class="modal-body"><asp:Literal ID="InformationText" runat="server" Mode="Encode" /></div></div></div></div>
+
+<section class="workspace-card evaluation-panel academic-trainees-card">
+    <div class="workspace-heading evaluation-panel-heading"><div><p class="academic-card-eyebrow">SUPERVISOR WORKSPACE</p><h2>Assigned Trainees</h2><p>Search authorized students and review their company evaluation status.</p></div></div>
+    <div class="workspace-filter-grid evaluation-toolbar academic-evaluation-toolbar">
+        <label class="workspace-field academic-search-field"><span>Search trainees</span><span class="academic-search-control"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="10.8" cy="10.8" r="6.8" /><path d="m16 16 5 5" /></svg><input type="search" id="traineeSearch" class="workspace-input" autocomplete="off" /></span></label>
+        <label class="workspace-field academic-status-field"><span>Evaluation status</span><select id="evaluationFilter" class="workspace-input"><option value="">All statuses</option><option>Not Started</option><option>Draft</option><option>Submitted</option><option>Revision Requested</option><option>Approved</option></select></label>
+        <button type="button" class="workspace-button secondary academic-clear-filters" id="clearEvaluationFilters"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h16l-6.3 7.2v5.1l-3.4 1.8v-6.9L4 5Z" /><path d="m17 17 4 4m0-4-4 4" /></svg><span>Clear Filters</span></button>
+    </div>
+    <div class="workspace-table-scroll evaluation-table-wrap academic-trainees-table-wrap"><table class="table workspace-table academic-trainees-table"><thead><tr><th>Student</th><th>Company</th><th>Company Evaluation</th><th>Academic Review</th><th>Actions</th></tr></thead><tbody><asp:Literal ID="traineeRows" runat="server" /></tbody></table></div>
+    <footer class="academic-trainee-footer" id="academicTraineeFooter" aria-live="polite" aria-atomic="true">
+        <div class="academic-trainee-count"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg><span id="academicTraineeSummary">Showing — of — trainees</span></div>
+        <span class="academic-authorized-badge" id="academicAuthorizedCount">— authorized</span>
+    </footer>
+</section>
+<div class="modal fade academic-details-modal" id="informationDialog" tabindex="-1" aria-labelledby="informationTitle" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable academic-details-dialog">
+        <div class="modal-content academic-details-content">
+            <div class="modal-header academic-details-header">
+                <div class="academic-details-heading-copy">
+                    <span class="academic-details-eyebrow">JUST / ACADEMIC SUPERVISOR WORKSPACE</span>
+                    <h2 class="modal-title" id="informationTitle"><asp:Literal ID="InformationTitle" runat="server" Mode="Encode" /></h2>
+                    <p class="academic-details-subtitle">Complete information about the student's internship placement.</p>
+                </div>
+                <button type="button" class="academic-details-icon-close" data-bs-dismiss="modal" aria-label="Close Student and Internship Details">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18" /></svg>
+                </button>
+            </div>
+            <div class="modal-body academic-details-body">
+                <div id="informationContent" class="academic-details-content-grid"><asp:Literal ID="InformationText" runat="server" Mode="Encode" /></div>
+            </div>
+            <div class="modal-footer academic-details-footer">
+                <button type="button" class="academic-details-close-button" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
 <div class="modal fade" id="evaluationDialog" tabindex="-1" aria-labelledby="evaluationTitle" aria-hidden="true"><div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable"><div class="modal-content">
 <div class="modal-header"><h2 class="modal-title fs-5" id="evaluationTitle">Company Final Evaluation — <asp:Literal ID="SelectedName" runat="server" Mode="Encode" /></h2><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close evaluation"></button></div>
 <div class="modal-body"><p>Status: <strong><asp:Literal ID="FinalStatus" runat="server" Mode="Encode" /></strong></p><p>Submitted UTC: <asp:Literal ID="SubmissionTime" runat="server" Mode="Encode" /></p>
@@ -127,6 +121,69 @@
     </form>
 
 <script src="../Js_project/final-evaluation-v2.js?v=20261023-local-fixes" defer="defer"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        var modal = document.getElementById('informationDialog');
+        var title = document.getElementById('informationTitle');
+        var subtitle = modal && modal.querySelector('.academic-details-subtitle');
+        if (!modal || !title || title.textContent.trim().toLowerCase() !== 'student and internship details') {
+            if (subtitle) subtitle.hidden = true;
+            return;
+        }
+
+        title.textContent = 'Student & Internship Details';
+        var sections = modal.querySelectorAll('.company-details-section');
+        var sectionNames = ['student', 'placement', 'supervisors', 'timeline'];
+        var sectionIcons = [
+            '<circle cx="9" cy="8" r="3.5"/><path d="M3 20v-1.5A4.5 4.5 0 0 1 7.5 14h3A4.5 4.5 0 0 1 15 18.5V20"/><path d="M16 5.5a3.5 3.5 0 0 1 0 6.8M18 14.5a4.5 4.5 0 0 1 3 4.2V20"/>',
+            '<path d="M3 21h18M5 21V7l7-4 7 4v14M9 9h.01M15 9h.01M9 13h.01M15 13h.01M10 21v-4h4v4"/>',
+            '<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20v-1.5A4.5 4.5 0 0 1 7 14h4a4.5 4.5 0 0 1 4.5 4.5V20M16 5a3.5 3.5 0 0 1 0 6.8M18 14.5a4.5 4.5 0 0 1 3.5 4.4V20"/>',
+            '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 10h18m-12 4h6m-6 3h4"/>'
+        ];
+        sections.forEach(function (section, index) {
+            section.classList.add('academic-detail-section', 'academic-detail-section--' + (sectionNames[index] || 'other'));
+            var heading = section.querySelector('h3');
+            if (heading && !heading.querySelector('.academic-detail-section-mark')) {
+                var mark = document.createElement('span');
+                mark.className = 'academic-detail-section-mark';
+                mark.setAttribute('aria-hidden', 'true');
+                var icon = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+                icon.setAttribute('viewBox', '0 0 24 24');
+                icon.setAttribute('fill', 'none');
+                icon.setAttribute('stroke', 'currentColor');
+                icon.setAttribute('stroke-width', '1.65');
+                icon.setAttribute('stroke-linecap', 'round');
+                icon.setAttribute('stroke-linejoin', 'round');
+                icon.innerHTML = sectionIcons[index] || sectionIcons[0];
+                mark.appendChild(icon);
+                heading.prepend(mark);
+            }
+        });
+
+        modal.querySelectorAll('.company-details-grid > div').forEach(function (row) {
+            var label = row.querySelector('dt');
+            var value = row.querySelector('dd');
+            if (!label || !value || !/^(company|academic) supervisor$/i.test(label.textContent.trim())) return;
+            var identifier = value.textContent.trim();
+            value.textContent = 'Name unavailable';
+            if (!identifier || /^(unavailable|not available|name unavailable)$/i.test(identifier)) return;
+
+            var disclosure = document.createElement('details');
+            disclosure.className = 'academic-id-disclosure';
+            var summary = document.createElement('summary');
+            summary.textContent = 'Authorized troubleshooting identifier';
+            var code = document.createElement('code');
+            code.textContent = identifier;
+            disclosure.append(summary, code);
+            value.appendChild(disclosure);
+        });
+    });
+    document.addEventListener('DOMContentLoaded', function () {
+        document.querySelectorAll('.academic-trainees-table .workspace-badge').forEach(function (badge) {
+            badge.dataset.academicStatus = badge.textContent.trim().toLowerCase().replace(/\s+/g, '-');
+        });
+    });
+</script>
     <script src="<%= ResolveUrl("~/Js_project/Public/dashboard-navigation.js?v=20261021-original-ui") %>"></script>
 <script src="../Scripts/bootstrap.bundle.min.js"></script></body>
 </html>

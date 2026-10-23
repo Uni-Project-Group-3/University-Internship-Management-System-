@@ -34,11 +34,15 @@ namespace University_Internship_Management_System.Services.FinalEvaluation
     }
     public static class CoordinatorReviewPageIntegration
     {
-        // Only trusted server composition may register this. No production adapter is registered.
+        // Only trusted server composition may replace this. The built-in Firebase scope is
+        // registered separately and remains disabled until CoordinatorAssignmentScopeEnabled.
         public static Func<HttpContext, CoordinatorReviewPageContext> Factory { get; set; }
         public static Func<HttpContext, Task<CoordinatorReviewPageContext>> AsyncFactory { get; set; }
         public static Task<CoordinatorReviewPageContext> ResolveAsync(HttpContext context)
-        { return Factory != null ? Task.FromResult(Factory(context)) : AsyncFactory != null ? AsyncFactory(context) : Task.FromResult<CoordinatorReviewPageContext>(null); }
+        {
+            if (Factory == null && AsyncFactory == null) FinalEvaluationFirebaseIntegration.Register();
+            return Factory != null ? Task.FromResult(Factory(context)) : AsyncFactory != null ? AsyncFactory(context) : Task.FromResult<CoordinatorReviewPageContext>(null);
+        }
         public static CoordinatorReviewPageContext Resolve(HttpContext context)
         {
             // No runtime demo users or in-memory business records.

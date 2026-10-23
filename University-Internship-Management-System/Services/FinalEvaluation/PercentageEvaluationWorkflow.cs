@@ -17,6 +17,15 @@ namespace University_Internship_Management_System.Services.FinalEvaluation
         Task<bool> CanAcademicAsync(string userId, CompletionPlacement placement);
         Task<bool> IsEligibleAsync(CompletionPlacement placement);
     }
+    // Record state is separate from whether the production persistence integration is enabled.
+    // The page combines these permissions with its global write-readiness blocker.
+    public sealed class CompanyPercentageWriteState
+    {
+        public string EvaluationStatus { get; internal set; }
+        public bool CompletionFinalized { get; internal set; }
+        public bool CanEditDraft { get; internal set; }
+        public bool CanSubmit { get; internal set; }
+    }
     public sealed class PercentageEvaluationWorkflow
     {
         private readonly IFinalEvaluationRepository repository;
@@ -54,12 +63,50 @@ namespace University_Internship_Management_System.Services.FinalEvaluation
                 throw new ArgumentException("Legacy evaluation detected. An authorized, audited migration is required; old scores are not academic approval.");
             return snapshot;
         }
+        public async Task<CompanyPercentageWriteState> GetCompanyWriteStateAsync(string id, bool revisionIntent = false)
+        {
+            var placement = await Authorize(id, false);
+            var snapshot = await LoadAsync(id, false);
+            var completion = await repository.GetCompletionReviewAsync(id);
+            if (completion != null && (completion.InternshipId != id || completion.StudentId != placement.StudentId))
+                throw new RepositoryException("Completion state does not match the authorized placement.");
+
+            var value = snapshot.Value;
+            var current = value == null ? null : value.Current;
+            var review = CurrentReview(value);
+            bool completionFinalized = completion != null &&
+                (completion.Status == CompletionStatus.Approved || completion.Status == CompletionStatus.Rejected);
+            bool submitted = current != null && current.SubmittedAtUtc.HasValue;
+            bool revisionAllowed = revisionIntent && submitted && review != null && review.Kind == AcademicReviewKind.RequestRevision;
+            bool currentSupervisorOwnsRecord = current == null || current.CompanySupervisorId == user.UserId;
+            bool statusAllowsDraft = !completionFinalized && currentSupervisorOwnsRecord && (!submitted || revisionAllowed);
+            bool matchingPolicy = !string.IsNullOrWhiteSpace(placement.PolicyId) && !string.IsNullOrWhiteSpace(placement.PolicyVersion);
+            bool approvedPolicy = false;
+
+            // Saving a draft still uses the policy-bound record contract; submission additionally
+            // requires verified internship eligibility. The mutation methods repeat all checks.
+            if (matchingPolicy)
+            {
+                var policy = await repository.GetPolicyAsync(placement.PolicyId);
+                matchingPolicy = policy != null && policy.PolicyId == placement.PolicyId && policy.Version == placement.PolicyVersion;
+                approvedPolicy = matchingPolicy && policy.IsProductionApproved;
+            }
+            bool canSubmit = statusAllowsDraft && current != null && !submitted && approvedPolicy &&
+                await access.IsEligibleAsync(placement);
+            return new CompanyPercentageWriteState
+            {
+                EvaluationStatus = Status(value),
+                CompletionFinalized = completionFinalized,
+                CanEditDraft = statusAllowsDraft && matchingPolicy,
+                CanSubmit = canSubmit
+            };
+        }
         public async Task SaveDraftAsync(string id, string version, decimal? percentage, string comments, bool openRevision = false)
         {
             var p = await Authorize(id, false); var old = await LoadAsync(id); CheckVersion(old, version);
             using (var lease = await Mutation(id)) {
             old = await LoadAsync(id); CheckVersion(old, version);
-            var policy = await Policy(p); ValidatePercentage(percentage); Comments(comments);
+            var policy = await DraftPolicy(p); ValidatePercentage(percentage); Comments(comments);
             var value = old.Value ?? new PercentageEvaluation { InternshipId = id, StudentId = p.StudentId, PolicyId = p.PolicyId, PolicyVersion = p.PolicyVersion };
             if (value.Current != null && value.Current.CompanySupervisorId != user.UserId) throw new UnauthorizedAccessException();
             if (value.Current != null && value.Current.SubmittedAtUtc.HasValue)
@@ -105,8 +152,19 @@ namespace University_Internship_Management_System.Services.FinalEvaluation
         {
             if (string.IsNullOrWhiteSpace(p.PolicyId) || string.IsNullOrWhiteSpace(p.PolicyVersion)) throw new ArgumentException("An explicit placement/evaluation policy reference is required. No default university policy is selected.");
             var policy = await repository.GetPolicyAsync(p.PolicyId);
-            if (policy == null || !policy.IsApproved || policy.PolicyId != p.PolicyId || policy.Version != p.PolicyVersion) throw new ArgumentException("An applicable approved university policy is required.");
+            if (policy == null || !policy.IsProductionApproved || policy.PolicyId != p.PolicyId || policy.Version != p.PolicyVersion) throw new ArgumentException("An applicable approved university policy is required.");
             if (policy.PassingThreshold.HasValue && (policy.PassingThreshold < 0 || policy.PassingThreshold > 100)) throw new ArgumentException("Policy passing percentage is invalid.");
+            return policy;
+        }
+        private async Task<EvaluationPolicy> DraftPolicy(CompletionPlacement p)
+        {
+            if (string.IsNullOrWhiteSpace(p.PolicyId) || string.IsNullOrWhiteSpace(p.PolicyVersion))
+                throw new ArgumentException("An explicit placement/evaluation policy reference is required to save a Draft.");
+            var policy = await repository.GetPolicyAsync(p.PolicyId);
+            if (policy == null || policy.PolicyId != p.PolicyId || policy.Version != p.PolicyVersion)
+                throw new ArgumentException("The placement's exact evaluation policy version is unavailable; the Draft was not saved.");
+            if (policy.PassingThreshold.HasValue && (policy.PassingThreshold < 0 || policy.PassingThreshold > 100))
+                throw new ArgumentException("Policy passing percentage is invalid.");
             return policy;
         }
         public async Task<string> OutcomeAsync(string id, bool academic = false)
@@ -114,7 +172,7 @@ namespace University_Internship_Management_System.Services.FinalEvaluation
             var p = await Authorize(id, academic); var snapshot = await LoadAsync(id, academic);
             if (string.IsNullOrWhiteSpace(p.PolicyId) || string.IsNullOrWhiteSpace(p.PolicyVersion)) return "Cannot yet be determined: an explicit applicable policy reference is required.";
             var policy = await repository.GetPolicyAsync(p.PolicyId);
-            if (policy == null || !policy.IsApproved || policy.PolicyId != p.PolicyId || policy.Version != p.PolicyVersion || !policy.PassingThreshold.HasValue || policy.PassingThreshold < 0 || policy.PassingThreshold > 100 || snapshot.Value?.Current.SubmittedAtUtc == null)
+            if (policy == null || !policy.IsProductionApproved || policy.PolicyId != p.PolicyId || policy.Version != p.PolicyVersion || !policy.PassingThreshold.HasValue || policy.PassingThreshold < 0 || policy.PassingThreshold > 100 || snapshot.Value?.Current.SubmittedAtUtc == null)
                 return "Cannot yet be determined: submitted result and approved passing threshold are required.";
             return (snapshot.Value.Current.Percentage >= policy.PassingThreshold ? "Pass" : "Fail") + " against the applicable approved passing threshold (" + policy.PassingThreshold.Value.ToString(System.Globalization.CultureInfo.InvariantCulture) + "%). Academic review and Coordinator completion remain separate decisions.";
         }

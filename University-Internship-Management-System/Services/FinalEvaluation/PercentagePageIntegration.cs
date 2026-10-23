@@ -27,7 +27,10 @@ namespace University_Internship_Management_System.Services.FinalEvaluation
         public static Func<HttpContext, bool, Task<PercentagePageContext>> Factory { get; set; }
         public static Task<PercentagePageContext> Resolve(HttpContext context, bool academic)
         {
-            // Application_Start registers the verified Firebase composition. Tests may inject a trusted factory.
+            // Application_Start normally registers the verified Firebase composition. Ensure it is
+            // also available when an IIS app-domain or test host reaches a page before that hook.
+            // Register is idempotent and preserves any explicitly installed trusted factory.
+            if (Factory == null) FinalEvaluationFirebaseIntegration.Register();
             return Factory == null ? Task.FromResult<PercentagePageContext>(null) : Factory(context, academic);
         }
     }

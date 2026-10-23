@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Net.Http;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Web;
 using System.Web.Security;
@@ -15,12 +16,23 @@ namespace University_Internship_Management_System.Services.FinalEvaluation
 {
     public sealed class EvaluationIntegrationUnavailableException : InvalidOperationException
     { public EvaluationIntegrationUnavailableException(string message) : base(message) { } }
+    // Safe failure categories only: never attach a UID, email, token, or database payload.
+    public sealed class EvaluationAuthorizationFailureException : UnauthorizedAccessException
+    {
+        public string ReasonCode { get; private set; }
+        public EvaluationAuthorizationFailureException(string reasonCode) : base("Evaluation access is not authorized.") { ReasonCode = reasonCode; }
+    }
 
     // Request-scoped reads only. Missing university authorization/requirements are never inferred.
     public static class FinalEvaluationFirebaseIntegration
     {
         private static readonly HttpClient Client = new HttpClient(new HttpClientHandler { AllowAutoRedirect = false }) { Timeout = TimeSpan.FromSeconds(20) };
-        public static Func<HttpContext, ICoordinatorEvaluationAccess> CoordinatorScopeFactory { get; set; }
+        private static readonly GoogleAdcAccessTokenProvider Tokens = new GoogleAdcAccessTokenProvider();
+        private const string RequestBudgetKey = "UIMS.FinalEvaluation.FirebaseReadBudget";
+        private static readonly TimeSpan PageReadBudget = TimeSpan.FromSeconds(35);
+        // The production adapter is opt-in until the proposed assignment contract is approved
+        // and populated. Explicit trusted host factories retain precedence.
+        public static Func<HttpContext, IApplicationDatabase, ICoordinatorEvaluationAccess> CoordinatorScopeFactory { get; set; }
         public static Func<HttpContext, IRequiredTasksReader> RequiredTasksFactory { get; set; }
         public static Func<HttpContext, IRequiredReportsReader> RequiredReportsFactory { get; set; }
         public static Func<HttpContext, IStudentVisibleTaskReader> PublishedTasksFactory { get; set; }
@@ -32,25 +44,42 @@ namespace University_Internship_Management_System.Services.FinalEvaluation
             if (PercentagePageIntegration.Factory == null) PercentagePageIntegration.Factory = PercentageAsync;
             if (CoordinatorReviewPageIntegration.AsyncFactory == null) CoordinatorReviewPageIntegration.AsyncFactory = CoordinatorAsync;
             if (StudentCompletionPageIntegration.Factory == null) StudentCompletionPageIntegration.Factory = StudentAsync;
+            if (CoordinatorScopeFactory == null) CoordinatorScopeFactory = (context, database) =>
+                string.Equals(System.Configuration.ConfigurationManager.AppSettings["CoordinatorAssignmentScopeEnabled"], "true", StringComparison.OrdinalIgnoreCase)
+                    ? (ICoordinatorEvaluationAccess)new FirebaseCoordinatorPlacementScope(context, database)
+                    : null;
         }
         private static string SignedUid(HttpContext context, string role)
         {
             var identity = context?.User?.Identity as FormsIdentity;
             if (identity == null || !identity.IsAuthenticated || identity.Ticket.Expired ||
-                FirebaseSignInService.CanonicalRole(identity.Ticket.UserData) != role) throw new UnauthorizedAccessException();
+                FirebaseSignInService.CanonicalRole(identity.Ticket.UserData) != role) throw new EvaluationAuthorizationFailureException("signed_identity_or_role");
             return FirebaseKey.Require(identity.Name);
+        }
+        internal static CancellationToken RequestBudget(HttpContext context)
+        {
+            var budget = context.Items[RequestBudgetKey] as CancellationTokenSource;
+            if (budget == null)
+            {
+                budget = CancellationTokenSource.CreateLinkedTokenSource(context.Response.ClientDisconnectedToken);
+                budget.CancelAfter(PageReadBudget);
+                context.Items[RequestBudgetKey] = budget;
+                context.AddOnRequestCompleted(_ => budget.Dispose());
+            }
+            return budget.Token;
         }
         private static async Task<LiveEvaluationSources> ProductionAsync(HttpContext context, string role)
         {
             SignedUid(context, role); // Never make an administrative request for an anonymous/browser role.
             var config = new FirebaseConfiguration(); config.EnsureEnabled(); config.EnsureAuthenticationEnabled();
-            try { await new GoogleAdcAccessTokenProvider().GetAccessTokenAsync().ConfigureAwait(false); }
-            catch (RepositoryException) { throw new EvaluationIntegrationUnavailableException("Firebase server credentials are unavailable. Configure authorized Application Default Credentials outside the project and restart IIS Express."); }
-            var gateway = new StudentFirebaseGateway(config);
-            var repository = new FirebaseFinalEvaluationRepository(Client, new GoogleAdcAccessTokenProvider(), new FirebaseFinalEvaluationConfiguration(config));
+            var requestCancellation = RequestBudget(context);
+            var gateway = new StudentFirebaseGateway(config, Tokens, requestCancellation);
+            var repository = new FirebaseFinalEvaluationRepository(Client, Tokens, new FirebaseFinalEvaluationConfiguration(config),
+                TimeSpan.FromSeconds(12), TimeSpan.FromSeconds(8), requestCancellation);
             try { return await CreateSourcesAsync(context, role, new FirebaseApplicationDatabase(gateway), repository).ConfigureAwait(false); }
             catch (UnauthorizedAccessException) { throw; }
             catch (EvaluationIntegrationUnavailableException) { throw; }
+            catch (RepositoryException error) { throw new EvaluationIntegrationUnavailableException(error.Message); }
             catch (Exception) { throw new EvaluationIntegrationUnavailableException("Authorized Firebase records could not be read. Verify server permissions, query indexes, profile mappings and database configuration. No records were changed."); }
         }
         // Injectable I/O is for isolated tests and trusted server composition, never HTTP input.
@@ -58,12 +87,16 @@ namespace University_Internship_Management_System.Services.FinalEvaluation
         {
             string uid = SignedUid(context, role);
             if (database == null || repository == null) throw new ArgumentNullException();
-            if (!await database.IsActiveAuthenticationUidAsync(uid).ConfigureAwait(false)) throw new UnauthorizedAccessException();
+            if (!await database.IsActiveAuthenticationUidAsync(uid).ConfigureAwait(false)) throw new EvaluationAuthorizationFailureException("firebase_auth_uid");
             var profile = await database.ReadAsync("users/" + FirebaseKey.Require(uid)).ConfigureAwait(false) as JObject;
-            FirebaseLoginResult account;
-            try { account = FirebaseSignInService.ProfileResult(uid, profile); }
-            catch (FirebaseLoginException) { throw new UnauthorizedAccessException(); }
-            if (account.Role != role || account.MustChangePassword) throw new UnauthorizedAccessException();
+            if (profile == null) throw new EvaluationAuthorizationFailureException("profile_missing");
+            if (profile.Value<bool?>("isActive") != true) throw new EvaluationAuthorizationFailureException("profile_inactive");
+            string setupStatus = StudentManagementService.Text(profile, "accountSetupStatus");
+            if (setupStatus != "" && setupStatus != "complete") throw new EvaluationAuthorizationFailureException("profile_setup_incomplete");
+            if (StudentManagementService.Text(profile, "deletionStatus") == "pending") throw new EvaluationAuthorizationFailureException("profile_deletion_pending");
+            string profileRole = FirebaseSignInService.CanonicalRole(StudentManagementService.Text(profile, "role"));
+            if (profileRole == null || profileRole != role) throw new EvaluationAuthorizationFailureException("profile_role_mismatch");
+            if (profile.Value<bool?>("mustChangePassword") == true) throw new EvaluationAuthorizationFailureException("password_change_required");
             var source = new LiveEvaluationSources(uid, role, profile, database, repository, context);
             await source.InitializeAsync().ConfigureAwait(false);
             return source;
@@ -73,7 +106,9 @@ namespace University_Internship_Management_System.Services.FinalEvaluation
             var source = await ProductionAsync(context, academic ? "academicSupervisor" : "companySupervisor").ConfigureAwait(false);
             return new PercentagePageContext { UserId = source.UserId, Placements = source.Placements,
                 Workflow = new PercentageEvaluationWorkflow(source.Repository, source, source, source),
-                WriteBlocker = "Read-only Firebase access. Saving and submission remain disabled until live-write approval and a trusted evaluation/completion concurrency guard are connected.",
+                WriteBlocker = academic
+                    ? "Academic approval and revision decisions are disabled in live Firebase until live-write approval, an approved production policy, validated schema, and the trusted cross-workflow concurrency guard are connected."
+                    : "Read-only Firebase access. Saving and submission remain disabled until live-write approval and a trusted evaluation/completion concurrency guard are connected.",
                 ReadReportsAsync = academic ? (Func<string, Task<string>>)null : source.ReportsAsync,
                 ReadDetailsAsync = source.DetailsAsync };
         }
@@ -109,6 +144,8 @@ namespace University_Internship_Management_System.Services.FinalEvaluation
         private readonly Dictionary<string, Binding> bindings = new Dictionary<string, Binding>(StringComparer.Ordinal);
         private readonly Dictionary<string, Task<HourEvidence>> hourReads = new Dictionary<string, Task<HourEvidence>>(StringComparer.Ordinal);
         private ICoordinatorEvaluationAccess coordinatorScope;
+        private string resolvedCompanyId;
+        private string resolvedSupervisorId;
         public string UserId { get; private set; }
         public string DisplayName { get { return Text(profile, "fullName"); } }
         public IFinalEvaluationRepository Repository { get; private set; }
@@ -116,24 +153,45 @@ namespace University_Internship_Management_System.Services.FinalEvaluation
         private sealed class Binding { internal string Key; internal JObject Raw; internal CompletionPlacement Placement; }
         private sealed class HourEvidence { internal TrainingHourEntry[] Entries; internal decimal Required, Pending; }
         internal LiveEvaluationSources(string uid, string role, JObject profile, IApplicationDatabase database, IFinalEvaluationRepository repository, HttpContext context)
-        { UserId = uid; this.role = role; this.profile = profile; this.database = database; Repository = repository; this.context = context; }
+        {
+            UserId = uid; this.role = role; this.profile = profile; this.database = database; Repository = repository; this.context = context;
+            resolvedCompanyId = Text(profile, "companyId");
+            resolvedSupervisorId = Text(profile, "companySupervisorId");
+        }
         private static string Text(JToken value, string key) { return value?[key]?.Type == JTokenType.String ? (string)value[key] : ""; }
         private string StudentId { get { return Text(profile, "studentId"); } }
-        private string CompanyId { get { return Text(profile, "companyId"); } }
-        private string SupervisorId { get { return Text(profile, "companySupervisorId") != "" ? Text(profile, "companySupervisorId") : Text(profile, "supervisorId") != "" ? Text(profile, "supervisorId") : Text(profile, "id"); } }
+        private string CompanyId { get { return resolvedCompanyId ?? ""; } }
+        private string SupervisorId { get { return resolvedSupervisorId ?? ""; } }
         private bool Active(JObject row) { var status = Text(row, "status"); return status.Equals("confirmed", StringComparison.OrdinalIgnoreCase) || status.Equals("active", StringComparison.OrdinalIgnoreCase); }
         private async Task MergeAsync(Dictionary<string, JObject> rows, string collection, string field, string value)
         {
             if (string.IsNullOrWhiteSpace(value)) return;
-            var data = await database.ReadEqualAsync(collection, field, value).ConfigureAwait(false) as JObject;
+            var data = await ReadEqualOrIndexedCollectionAsync(collection, field, value).ConfigureAwait(false);
             if (data == null) return;
             foreach (var item in data.Properties()) if (item.Value is JObject && Text(item.Value, field) == value) rows[item.Name] = (JObject)item.Value;
+        }
+        private async Task<JObject> ReadEqualOrIndexedCollectionAsync(string collection, string field, string value)
+        {
+            try { return await database.ReadEqualAsync(collection, field, value).ConfigureAwait(false) as JObject; }
+            catch (FirebaseQueryIndexException)
+            {
+                // The privileged server read stays inside this adapter; filter every row by the
+                // exact same field/value before returning anything to the role-scoped workflow.
+                var all = await database.ReadAsync(collection).ConfigureAwait(false) as JObject;
+                if (all == null) return new JObject();
+                var matching = new JObject();
+                foreach (var item in all.Properties())
+                    if (item.Value is JObject && string.Equals(Text(item.Value, field), value, StringComparison.Ordinal))
+                        matching[item.Name] = item.Value.DeepClone();
+                return matching;
+            }
         }
         internal async Task InitializeAsync()
         {
             var candidates = new Dictionary<string, JObject>(StringComparer.Ordinal);
             if (role == "companySupervisor")
             {
+                await ResolveCompanySupervisorMappingAsync().ConfigureAwait(false);
                 if (CompanyId == "" || SupervisorId == "") throw new EvaluationIntegrationUnavailableException("The verified Company profile needs its existing companyId and supervisor ID mapping.");
                 await MergeAsync(candidates, "placements", "companySupervisorId", SupervisorId).ConfigureAwait(false);
                 if (SupervisorId != UserId) await MergeAsync(candidates, "placements", "companySupervisorId", UserId).ConfigureAwait(false);
@@ -141,7 +199,7 @@ namespace University_Internship_Management_System.Services.FinalEvaluation
             else if (role == "academicSupervisor")
             {
                 await MergeAsync(candidates, "placements", "academicSupervisorId", UserId).ConfigureAwait(false);
-                var assigned = await database.ReadEqualAsync("supervisorAssignments", "academicSupervisorId", UserId).ConfigureAwait(false) as JObject;
+                var assigned = await ReadEqualOrIndexedCollectionAsync("supervisorAssignments", "academicSupervisorId", UserId).ConfigureAwait(false);
                 if (assigned != null) foreach (var item in assigned.Properties())
                     if (item.Value is JObject && item.Value.Value<bool?>("active") == true && Text(item.Value, "academicSupervisorId") == UserId)
                         await MergeAsync(candidates, "placements", "studentId", Text(item.Value, "studentId")).ConfigureAwait(false);
@@ -155,9 +213,16 @@ namespace University_Internship_Management_System.Services.FinalEvaluation
             }
             else if (role == "coordinator")
             {
-                coordinatorScope = FinalEvaluationFirebaseIntegration.CoordinatorScopeFactory?.Invoke(context);
+                coordinatorScope = FinalEvaluationFirebaseIntegration.CoordinatorScopeFactory?.Invoke(context, database);
                 if (coordinatorScope == null || !await coordinatorScope.IsCoordinatorAsync(UserId).ConfigureAwait(false))
-                    throw new EvaluationIntegrationUnavailableException("Verified Coordinator login is available, but authorized internship scope is not connected. Coordinator role alone does not grant access to all placements.");
+                {
+                    bool scopeEnabled = string.Equals(System.Configuration.ConfigurationManager.AppSettings["CoordinatorAssignmentScopeEnabled"], "true", StringComparison.OrdinalIgnoreCase);
+                    string category = scopeEnabled ? "factory_or_profile_unavailable" : "feature_flag_disabled";
+                    System.Diagnostics.Trace.TraceWarning("UIMS Coordinator scope resolution stopped. category={0}", category);
+                    throw new EvaluationIntegrationUnavailableException(scopeEnabled
+                        ? "Coordinator scope could not be verified. Confirm the active Coordinator profile and explicit assignment source. No placements were loaded."
+                        : "Coordinator assignment scope is disabled. After the account and approved explicit assignments are verified, enable CoordinatorAssignmentScopeEnabled. No placements were loaded.");
+                }
                 // The trusted scope integration must enumerate its placement IDs; no broad root read.
                 var scope = coordinatorScope as ICoordinatorPlacementScope;
                 if (scope == null) throw new EvaluationIntegrationUnavailableException("The Coordinator scope adapter must provide authorized placement IDs.");
@@ -187,9 +252,45 @@ namespace University_Internship_Management_System.Services.FinalEvaluation
                 }
                 if (bindings.ContainsKey(id)) throw new EvaluationIntegrationUnavailableException("Multiple placements map to the same internship ID. Review is blocked until the mapping is resolved.");
                 var placement = new CompletionPlacement { InternshipId = id, StudentId = student, PolicyId = policyId, PolicyVersion = policyVersion,
-                    DisplayName = await NameAsync(item.Value, student).ConfigureAwait(false) };
+                    DisplayName = await NameAsync(item.Value, student).ConfigureAwait(false),
+                    CompanyName = await CompanyNameAsync(item.Value).ConfigureAwait(false), PlacementId = item.Key,
+                    StartDate = Text(item.Value, "startDate") == "" ? Text(item.Value, "start") : Text(item.Value, "startDate"),
+                    EndDate = Text(item.Value, "endDate") == "" ? Text(item.Value, "end") : Text(item.Value, "endDate") };
                 bindings.Add(id, new Binding { Key = item.Key, Raw = item.Value, Placement = placement });
             }
+        }
+        private async Task ResolveCompanySupervisorMappingAsync()
+        {
+            // Some existing UIMS modules map an authenticated Company UID through
+            // /companySupervisors/{id}.firebaseUid when users/{uid} has no explicit
+            // companySupervisorId. Accept only one active, exact UID match and keep
+            // the profile's companyId authoritative when it is already present.
+            if (CompanyId != "" && SupervisorId != "") return;
+
+            if (SupervisorId != "")
+            {
+                var supervisor = await database.ReadAsync("companySupervisors/" + FirebaseKey.Require(SupervisorId)).ConfigureAwait(false) as JObject;
+                if (supervisor == null || !string.Equals(Text(supervisor, "status"), "active", StringComparison.OrdinalIgnoreCase) ||
+                    !string.Equals(Text(supervisor, "firebaseUid"), UserId, StringComparison.Ordinal))
+                    throw new UnauthorizedAccessException();
+                string mappedCompany = Text(supervisor, "companyId");
+                if (CompanyId != "" && mappedCompany != "" && !string.Equals(CompanyId, mappedCompany, StringComparison.Ordinal))
+                    throw new UnauthorizedAccessException();
+                if (CompanyId == "") resolvedCompanyId = mappedCompany;
+                return;
+            }
+
+            var supervisors = await database.ReadAsync("companySupervisors").ConfigureAwait(false) as JObject;
+            var matches = supervisors == null ? new List<JProperty>() : supervisors.Properties().Where(item =>
+                item.Value is JObject && string.Equals(Text(item.Value, "firebaseUid"), UserId, StringComparison.Ordinal) &&
+                string.Equals(Text(item.Value, "status"), "active", StringComparison.OrdinalIgnoreCase)).ToList();
+            if (matches.Count != 1) throw new UnauthorizedAccessException();
+            string mappedSupervisorId = FirebaseKey.Require(matches[0].Name);
+            string companyId = Text(matches[0].Value, "companyId");
+            if (companyId == "") throw new EvaluationIntegrationUnavailableException("The verified Company Supervisor record is missing its companyId mapping.");
+            resolvedSupervisorId = mappedSupervisorId;
+            if (CompanyId == "") resolvedCompanyId = companyId;
+            else if (!string.Equals(CompanyId, companyId, StringComparison.Ordinal)) throw new UnauthorizedAccessException();
         }
         private async Task<string> NameAsync(JObject placement, string student)
         {
@@ -201,9 +302,20 @@ namespace University_Internship_Management_System.Services.FinalEvaluation
                 if (row != null && FirebaseSignInService.CanonicalRole(Text(row, "role")) == "student" && Text(row, "studentId") == student)
                     return Text(row, "fullName") == "" ? student : Text(row, "fullName");
             }
-            var rows = await database.ReadEqualAsync("users", "studentId", student).ConfigureAwait(false) as JObject;
+            var rows = await ReadEqualOrIndexedCollectionAsync("users", "studentId", student).ConfigureAwait(false);
             var matches = rows?.Properties().Where(x => x.Value is JObject && Text(x.Value, "studentId") == student && FirebaseSignInService.CanonicalRole(Text(x.Value, "role")) == "student").ToArray();
-            return matches?.Length == 1 && Text(matches[0].Value, "fullName") != "" ? Text(matches[0].Value, "fullName") : student;
+            return matches?.Length == 1 && Text(matches[0].Value, "fullName") != "" ? Text(matches[0].Value, "fullName") : "Name unavailable";
+        }
+        private async Task<string> CompanyNameAsync(JObject placement)
+        {
+            string companyId = Text(placement, "companyId");
+            string placementName = Text(placement, "companyName");
+            if (companyId == "") return placementName == "" ? "Unavailable" : placementName;
+            var company = await database.ReadAsync("companies/" + FirebaseKey.Require(companyId)).ConfigureAwait(false) as JObject;
+            string name = Text(company, "name");
+            if (name == "") name = Text(company, "companyName");
+            if (name == "") name = Text(company, "organizationName");
+            return name == "" ? (placementName == "" ? "Unavailable" : placementName) : name;
         }
         private async Task<bool> OwnsAsync(JObject row)
         {
@@ -244,13 +356,13 @@ namespace University_Internship_Management_System.Services.FinalEvaluation
         {
             var b = await RequireAsync(id).ConfigureAwait(false);
             return "Student: " + b.Placement.DisplayName + " | Student ID: " + b.Placement.StudentId + " | Placement: " + b.Key + " | Internship: " + id +
-                " | Company: " + Text(b.Raw, "companyId") + " | Company Supervisor: " + Text(b.Raw, "companySupervisorId") + " | Academic Supervisor: " + Text(b.Raw, "academicSupervisorId") +
+                " | Company: " + b.Placement.CompanyName + " | Company Supervisor: " + Text(b.Raw, "companySupervisorId") + " | Academic Supervisor: " + Text(b.Raw, "academicSupervisorId") +
                 " | Start: " + (Text(b.Raw, "startDate") == "" ? "Unavailable" : Text(b.Raw, "startDate")) + " | Policy: " + (b.Placement.PolicyId == "" ? "Not linked" : b.Placement.PolicyId + "/" + b.Placement.PolicyVersion);
         }
         public async Task<string> ReportsAsync(string id)
         {
             var b = await RequireAsync(id).ConfigureAwait(false);
-            var rows = await database.ReadEqualAsync("weeklyReports", "placementId", b.Key).ConfigureAwait(false) as JObject;
+            var rows = await ReadEqualOrIndexedCollectionAsync("weeklyReports", "placementId", b.Key).ConfigureAwait(false);
             var result = new List<string>();
             if (rows != null) foreach (var item in rows.Properties())
             {
@@ -295,7 +407,25 @@ namespace University_Internship_Management_System.Services.FinalEvaluation
         public async Task<TrustedCompletionData<decimal?>> GetPendingHoursAsync(string id) { var b = await RequireAsync(id).ConfigureAwait(false); return Data<decimal?>(b, (await HoursAsync(id).ConfigureAwait(false)).Pending); }
         async Task<TrustedCompletionData<CompletionChecklist>> IRequiredTasksReader.GetAsync(string id) { await RequireAsync(id).ConfigureAwait(false); var source = FinalEvaluationFirebaseIntegration.RequiredTasksFactory?.Invoke(context); return source == null ? null : await source.GetAsync(id).ConfigureAwait(false); }
         async Task<TrustedCompletionData<CompletionChecklist>> IRequiredReportsReader.GetAsync(string id) { await RequireAsync(id).ConfigureAwait(false); var source = FinalEvaluationFirebaseIntegration.RequiredReportsFactory?.Invoke(context); return source == null ? null : await source.GetAsync(id).ConfigureAwait(false); }
-        async Task<TrustedCompletionData<StudentTaskRecord[]>> IStudentVisibleTaskReader.GetAsync(string id) { await RequireAsync(id).ConfigureAwait(false); var source = FinalEvaluationFirebaseIntegration.PublishedTasksFactory?.Invoke(context); return source == null ? null : await source.GetAsync(id).ConfigureAwait(false); }
+        async Task<TrustedCompletionData<StudentTaskRecord[]>> IStudentVisibleTaskReader.GetAsync(string id)
+        {
+            var binding = await RequireAsync(id).ConfigureAwait(false);
+            var configured = FinalEvaluationFirebaseIntegration.PublishedTasksFactory?.Invoke(context);
+            if (configured != null) return await configured.GetAsync(id).ConfigureAwait(false);
+            if (role != "student") return null;
+
+            // Keep the Tasks module opt-in: its read contract must be explicitly enabled and
+            // schema-validated before this page asks TaskService to contact Firebase.
+            var settings = System.Web.Configuration.WebConfigurationManager.AppSettings;
+            if (!string.Equals(settings["TasksEnabled"], "true", StringComparison.OrdinalIgnoreCase) ||
+                !string.Equals(settings["FirebaseTaskSchemaValidated"], "true", StringComparison.OrdinalIgnoreCase) ||
+                !string.Equals((settings["FirebaseTaskRootPath"] ?? "tasks").Trim('/'), "tasks", StringComparison.Ordinal)) return null;
+
+            var actor = UIMS.Tasks.TaskActor.FromVerifiedProfile(UserId, role, profile);
+            var taskService = new UIMS.Tasks.TaskService(actor);
+            var payload = await taskService.LoadAsync("student", FinalEvaluationFirebaseIntegration.RequestBudget(context)).ConfigureAwait(false);
+            return Data(binding, StudentTaskServiceProjection.Map(payload, binding.Placement, binding.Key));
+        }
         Task<TrustedCompletionData<decimal?>> IStudentOverallProgressReader.GetAsync(string id) { return Task.FromResult<TrustedCompletionData<decimal?>>(null); }
         public async Task<string> GetIssuedDocumentIdAsync(string id, string student)
         {
@@ -306,6 +436,181 @@ namespace University_Internship_Management_System.Services.FinalEvaluation
             return latest?.Name;
         }
     }
+    // The task module is authoritative for student scope and status transitions. This
+    // allowlist deliberately omits submissions, attachments, and unpublished result data.
+    public static class StudentTaskServiceProjection
+    {
+        public static StudentTaskRecord[] Map(JObject payload, CompletionPlacement placement, string placementKey)
+        {
+            if (payload == null || placement == null || string.IsNullOrWhiteSpace(placement.StudentId) || string.IsNullOrWhiteSpace(placementKey) ||
+                !string.Equals((string)payload["role"], "student", StringComparison.Ordinal) ||
+                !string.Equals((string)payload["identity"], placement.StudentId, StringComparison.Ordinal))
+                throw new UnauthorizedAccessException("The task service identity does not match the authorized placement.");
+            var rows = payload["tasks"] as JArray;
+            if (rows == null) throw new InvalidOperationException("The trusted Tasks service returned an invalid task list.");
+            var result = new List<StudentTaskRecord>();
+            foreach (var token in rows)
+            {
+                var row = token as JObject;
+                if (row == null) throw new InvalidOperationException("The trusted Tasks service returned an invalid task record.");
+                string studentId = (string)row["studentId"] ?? "";
+                if (!string.Equals(studentId, placement.StudentId, StringComparison.Ordinal))
+                    throw new UnauthorizedAccessException("A task record is not linked to the authorized Student.");
+                string linkedPlacement = (string)row["placementId"] ?? "";
+                if (!string.IsNullOrWhiteSpace(linkedPlacement) && !string.Equals(linkedPlacement, placementKey, StringComparison.Ordinal)) continue;
+                string status = ((string)row["status"] ?? "").ToLowerInvariant();
+                StudentTaskStatus mapped;
+                switch (status)
+                {
+                    case "assigned": mapped = StudentTaskStatus.Assigned; break;
+                    case "inprogress": mapped = StudentTaskStatus.InProgress; break;
+                    case "submitted": mapped = StudentTaskStatus.Submitted; break;
+                    case "revision": mapped = StudentTaskStatus.Revision; break;
+                    case "completed": mapped = StudentTaskStatus.Evaluated; break;
+                    default: throw new InvalidOperationException("The trusted Tasks service returned an unsupported task status.");
+                }
+                bool published = mapped == StudentTaskStatus.Evaluated || mapped == StudentTaskStatus.Revision;
+                result.Add(new StudentTaskRecord
+                {
+                    Id = (string)row["id"], Title = (string)row["title"], Status = mapped,
+                    IsVisibleToStudent = true, IsResultPublished = published,
+                    Grade = mapped == StudentTaskStatus.Evaluated ? row.Value<decimal?>("score") : null,
+                    // TaskService's DTO has a fallback maximum when the source omits it; don't
+                    // present that fallback as authoritative per-task grade data.
+                    MaximumGrade = null,
+                    StudentVisibleFeedback = published ? (string)row["feedback"] : null
+                });
+            }
+            return result.ToArray();
+        }
+    }
+
     public interface ICoordinatorPlacementScope : ICoordinatorEvaluationAccess
     { Task<string[]> GetPlacementIdsAsync(string coordinatorUid); }
+
+    /// <summary>
+    /// Read-only adapter for the proposed, explicit coordinatorAssignments/{uid}/{placementId}
+    /// contract. It is only registered behind CoordinatorAssignmentScopeEnabled and never
+    /// derives scope from university/college fields or coordinator role alone.
+    /// </summary>
+    public sealed class FirebaseCoordinatorPlacementScope : ICoordinatorPlacementScope
+    {
+        private readonly string trustedUid;
+        private readonly IApplicationDatabase database;
+        private readonly Dictionary<string, string> placementByAuthorizedId = new Dictionary<string, string>(StringComparer.Ordinal);
+        private bool loaded;
+
+        public FirebaseCoordinatorPlacementScope(HttpContext context, IApplicationDatabase database)
+        {
+            var identity = context?.User?.Identity as FormsIdentity;
+            if (identity == null || !identity.IsAuthenticated || identity.Ticket.Expired ||
+                FirebaseSignInService.CanonicalRole(identity.Ticket.UserData) != "coordinator")
+                throw new EvaluationAuthorizationFailureException("signed_identity_or_role");
+            trustedUid = FirebaseKey.Require(identity.Name);
+            this.database = database ?? throw new ArgumentNullException(nameof(database));
+        }
+
+        public async Task<bool> IsCoordinatorAsync(string coordinatorUid)
+        {
+            if (!string.Equals(trustedUid, coordinatorUid, StringComparison.Ordinal)) return false;
+            if (!await database.IsActiveAuthenticationUidAsync(trustedUid).ConfigureAwait(false)) return false;
+            var profile = await database.ReadAsync("users/" + FirebaseKey.Require(trustedUid)).ConfigureAwait(false) as JObject;
+            if (profile == null || profile.Value<bool?>("isActive") != true || profile.Value<bool?>("mustChangePassword") == true) return false;
+            string setup = String(profile, "accountSetupStatus");
+            if (setup != "" && setup != "complete") return false;
+            if (String(profile, "deletionStatus") == "pending") return false;
+            return FirebaseSignInService.CanonicalRole(String(profile, "role")) == "coordinator";
+        }
+
+        public async Task<string[]> GetPlacementIdsAsync(string coordinatorUid)
+        {
+            if (!await IsCoordinatorAsync(coordinatorUid).ConfigureAwait(false)) throw new EvaluationAuthorizationFailureException("coordinator_profile_invalid");
+            if (!string.Equals(trustedUid, coordinatorUid, StringComparison.Ordinal)) throw new EvaluationAuthorizationFailureException("coordinator_scope_uid_mismatch");
+            var assignments = await database.ReadAsync("coordinatorAssignments/" + FirebaseKey.Require(trustedUid)).ConfigureAwait(false) as JObject;
+            placementByAuthorizedId.Clear();
+            if (assignments == null || !assignments.HasValues) { loaded = true; return new string[0]; }
+
+            var seenKeys = new HashSet<string>(StringComparer.Ordinal);
+            foreach (var property in assignments.Properties())
+            {
+                string placementKey;
+                try { placementKey = FirebaseKey.Require(property.Name); }
+                catch (Exception) { throw new EvaluationIntegrationUnavailableException("A Coordinator assignment contains an invalid placement reference."); }
+                if (!seenKeys.Add(placementKey)) throw new EvaluationIntegrationUnavailableException("Duplicate Coordinator placement assignments were found.");
+                var assignment = property.Value as JObject;
+                if (assignment == null || assignment.Value<bool?>("isActive") != true)
+                    throw new EvaluationIntegrationUnavailableException("A Coordinator assignment is missing or inactive; scope resolution was stopped.");
+                string assignedBy = String(assignment, "assignedBy");
+                if (!ValidAssignedBy(assignedBy) || !ValidAssignedAt(assignment["assignedAt"]))
+                    throw new EvaluationIntegrationUnavailableException("A Coordinator assignment is missing valid audit fields.");
+                string declaredUid = String(assignment, "coordinatorUid");
+                if (declaredUid != "" && !string.Equals(declaredUid, trustedUid, StringComparison.Ordinal))
+                    throw new EvaluationIntegrationUnavailableException("A Coordinator assignment conflicts with its parent account.");
+
+                var placement = await database.ReadAsync("placements/" + placementKey).ConfigureAwait(false) as JObject;
+                if (placement == null) throw new EvaluationIntegrationUnavailableException("A Coordinator assignment references a missing placement.");
+                string status = String(placement, "status");
+                if (!status.Equals("active", StringComparison.OrdinalIgnoreCase) && !status.Equals("confirmed", StringComparison.OrdinalIgnoreCase))
+                    throw new EvaluationIntegrationUnavailableException("A Coordinator assignment references an inactive or ineligible placement.");
+                string declaredPlacementCoordinator = String(placement, "coordinatorUid");
+                if (declaredPlacementCoordinator != "" && !string.Equals(declaredPlacementCoordinator, trustedUid, StringComparison.Ordinal))
+                    throw new EvaluationIntegrationUnavailableException("The placement contains a conflicting Coordinator assignment.");
+                string internshipId = String(placement, "internshipId");
+                if (internshipId == "") internshipId = placementKey;
+                try { FirebaseKey.Require(internshipId); }
+                catch (Exception) { throw new EvaluationIntegrationUnavailableException("A Coordinator placement has an invalid internship reference."); }
+                if (placementByAuthorizedId.ContainsKey(placementKey) || placementByAuthorizedId.ContainsKey(internshipId))
+                    throw new EvaluationIntegrationUnavailableException("Conflicting Coordinator assignments resolve to the same internship.");
+                placementByAuthorizedId.Add(placementKey, placementKey);
+                if (internshipId != placementKey) placementByAuthorizedId.Add(internshipId, placementKey);
+            }
+            loaded = true;
+            return seenKeys.ToArray();
+        }
+
+        public async Task<bool> CanReviewInternshipAsync(string coordinatorUid, string internshipId)
+        {
+            if (!loaded || !string.Equals(trustedUid, coordinatorUid, StringComparison.Ordinal) || string.IsNullOrWhiteSpace(internshipId)) return false;
+            if (!await IsCoordinatorAsync(coordinatorUid).ConfigureAwait(false)) return false;
+            string placementKey;
+            if (!placementByAuthorizedId.TryGetValue(internshipId, out placementKey)) return false;
+            var assignment = await database.ReadAsync("coordinatorAssignments/" + FirebaseKey.Require(trustedUid) + "/" + FirebaseKey.Require(placementKey)).ConfigureAwait(false) as JObject;
+            if (assignment == null || assignment.Value<bool?>("isActive") != true || !ValidAssignedBy(String(assignment, "assignedBy")) || !ValidAssignedAt(assignment["assignedAt"])) return false;
+            string declaredUid = String(assignment, "coordinatorUid");
+            if (declaredUid != "" && !string.Equals(declaredUid, trustedUid, StringComparison.Ordinal)) return false;
+            var placement = await database.ReadAsync("placements/" + FirebaseKey.Require(placementKey)).ConfigureAwait(false) as JObject;
+            if (placement == null) return false;
+            string status = String(placement, "status");
+            string declaredCoordinator = String(placement, "coordinatorUid");
+            string currentInternshipId = String(placement, "internshipId");
+            if (currentInternshipId == "") currentInternshipId = placementKey;
+            return (status.Equals("active", StringComparison.OrdinalIgnoreCase) || status.Equals("confirmed", StringComparison.OrdinalIgnoreCase)) &&
+                (declaredCoordinator == "" || string.Equals(declaredCoordinator, trustedUid, StringComparison.Ordinal)) &&
+                (string.Equals(internshipId, placementKey, StringComparison.Ordinal) || string.Equals(internshipId, currentInternshipId, StringComparison.Ordinal));
+        }
+
+        private static string String(JObject value, string key)
+        { return value?[key]?.Type == JTokenType.String ? (string)value[key] : ""; }
+
+        private static bool ValidAssignedBy(string value)
+        {
+            if (string.IsNullOrWhiteSpace(value)) return false;
+            try { FirebaseKey.Require(value); return true; } catch (Exception) { return false; }
+        }
+
+        private static bool ValidAssignedAt(JToken value)
+        {
+            if (value == null) return false;
+            if (value.Type == JTokenType.Date) return true;
+            if (value.Type == JTokenType.Integer)
+            {
+                long millis;
+                if (!long.TryParse(value.ToString(), NumberStyles.Integer, CultureInfo.InvariantCulture, out millis)) return false;
+                try { DateTimeOffset.FromUnixTimeMilliseconds(millis); return true; } catch (ArgumentOutOfRangeException) { return false; }
+            }
+            DateTimeOffset parsed;
+            return value.Type == JTokenType.String && DateTimeOffset.TryParse(value.ToString(), CultureInfo.InvariantCulture,
+                DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal, out parsed);
+        }
+    }
 }

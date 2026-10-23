@@ -54,6 +54,11 @@ namespace University_Internship_Management_System.Models.FinalEvaluation
         public CompletionDecisionPolicy CompletionDecisions { get; set; }
         // Missing approval or an unspecified final-comment rule fails closed for submission.
         public bool IsApproved { get; set; }
+        // Development/test policies can be marked approved for isolated workflow testing,
+        // but must never authorize official evaluation, completion, or disclosure decisions.
+        public bool IsTestPolicy { get; set; }
+        [JsonIgnore]
+        public bool IsProductionApproved { get { return IsApproved && !IsTestPolicy; } }
         public bool? CompanyCommentsRequired { get; set; }
         public bool? AcademicCommentsRequired { get; set; }
         [JsonProperty(Required = Newtonsoft.Json.Required.Always)]

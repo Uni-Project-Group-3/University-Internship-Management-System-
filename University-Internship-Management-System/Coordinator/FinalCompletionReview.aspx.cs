@@ -60,24 +60,38 @@ namespace University_Internship_Management_System.Coordinator
             completionRows.Text = "<tr><td colspan=6 class=completion-empty>Access denied. No confidential records are displayed.</td></tr>";
             readyCount.Text = inReviewCount.Text = completedCount.Text = returnedCount.Text = "—";
             detailsVisible.Value = "";
-            foreach (var field in new[] { studentName, studentNumber, studentMajor, companyName, internshipTitle, companySupervisor, academicSupervisor,
+            foreach (var field in new[] { studentName, studentNumber, studentMajor, studentUniversityCollege, placementNumber, placementPeriod, companyName, internshipTitle, companySupervisor, academicSupervisor,
                 companyStatus, companyDate, companyRecommendation, companyFeedback, companyScores, academicStatus, academicDate, academicRecommendation, academicFeedback, academicScores, hoursText }) field.InnerText = "Not available";
             requirementsList.Controls.Clear(); decisionHistory.Controls.Clear(); savedDecision.InnerText = "";
             decisionTicket.Value = ""; reviewNotes.Text = decisionReason.Text = "";
             approveButton.Disabled = true; confirmApproval.Enabled = generateCompletionReport.Enabled = false;
             requestCompletionChanges.Visible = rejectCompletion.Visible = openCompletionChanges.Visible = openCompletionReject.Visible = false;
+            reviewErrorMessage.Text = "Access denied. Your Coordinator account has not been verified for an authorized internship scope. No student or evaluation records are displayed.";
+            reviewErrorPanel.Visible = true;
         }
         private async Task LoadReviewAsync()
         {
+            reviewErrorPanel.Visible = false;
+            reviewErrorMessage.Text = "";
             try { reviewContext = await CoordinatorReviewPageIntegration.ResolveAsync(Context); }
-            catch (UnauthorizedAccessException) { Deny(); }
+            catch (EvaluationAuthorizationFailureException error)
+            {
+                // ReasonCode is a fixed internal category; never log the ticket, UID, or profile.
+                System.Diagnostics.Trace.TraceWarning("UIMS Coordinator review denied at identity/profile validation. category={0}", error.ReasonCode);
+                Deny();
+            }
+            catch (UnauthorizedAccessException)
+            {
+                System.Diagnostics.Trace.TraceWarning("UIMS Coordinator review denied. category=authorization_failed");
+                Deny();
+            }
             catch (EvaluationIntegrationUnavailableException error) { initializationError = error.Message; reviewContext = null; }
             catch (Exception) { initializationError = "Authorized Firebase review could not be loaded. Check server credentials and permissions."; reviewContext = null; }
-            integrationNotice.Text = reviewContext == null
-                ? initializationError ?? "Authorized Firebase review integrations are unavailable."
-                : reviewContext.DevelopmentDatasetPath != null ? "LOCAL-ONLY Firebase DEMO: " + reviewContext.DevelopmentDatasetPath + ". Fictional data only; official paths are inaccessible."
-                : reviewContext.IsDevelopment ? "Isolated in-memory development review. Fictional data and requirements only. No Firebase operations. " + (reviewContext.Decisions == null ? "Completion decisions are disabled." : "Isolated decisions enabled; generated PDFs remain private test objects.")
-                : "Authorized review. Decisions require configured trusted integrations; document actions remain unavailable.";
+            if (reviewContext == null && !reviewErrorPanel.Visible)
+            {
+                reviewErrorMessage.Text = initializationError ?? "Trusted Coordinator authorization and review integrations are unavailable. No student records are displayed.";
+                reviewErrorPanel.Visible = true;
+            }
             approveButton.Disabled = true; confirmApproval.Enabled = false; reviewNotes.Enabled = false; decisionReason.Enabled = false; reviewAcknowledgment.Enabled = false;
             if (reviewContext == null || reviewContext.Decisions == null)
             { reviewNotes.Text = ""; decisionReason.Text = ""; reviewAcknowledgment.Checked = false; decisionTicket.Value = ""; }
@@ -88,7 +102,7 @@ namespace University_Internship_Management_System.Coordinator
             generateCompletionReport.Enabled = false;
             eligibilityMessage.InnerText = initializationError ?? "Trusted review integrations are not connected.";
             studentSelect.Enabled = reviewContext != null; refreshReview.Enabled = reviewContext != null;
-            foreach (var control in new[] { studentName, studentNumber, studentMajor, companyName, internshipTitle, companySupervisor, academicSupervisor,
+            foreach (var control in new[] { studentName, studentNumber, studentMajor, studentUniversityCollege, placementNumber, placementPeriod, companyName, internshipTitle, companySupervisor, academicSupervisor,
                 companyStatus, companyDate, companyRecommendation, companyFeedback, companyScores, academicStatus, academicDate, academicRecommendation, academicFeedback, academicScores, hoursText }) control.InnerText = "Not available";
             if (reviewContext == null) return;
             try
@@ -96,6 +110,7 @@ namespace University_Internship_Management_System.Coordinator
                 // Async services run without blocking the ASP.NET synchronization context.
                 // Posted selection is validated explicitly below after rebuilding authorized options.
                 var placements = await reviewContext.GetAuthorizedPlacementsAsync();
+                reviewErrorPanel.Visible = false;
                 studentSelect.Items.Clear();
                 if (placements.Length == 0)
                 {
@@ -147,6 +162,9 @@ namespace University_Internship_Management_System.Coordinator
                 {
                     studentName.InnerText = result.Placement.DisplayName ?? result.Placement.StudentId;
                     studentNumber.InnerText = result.Placement.StudentId; internshipTitle.InnerText = result.Placement.InternshipId;
+                    companyName.InnerText = string.IsNullOrWhiteSpace(result.Placement.CompanyName) || result.Placement.CompanyName == "Unavailable" ? "Name unavailable" : result.Placement.CompanyName;
+                    placementNumber.InnerText = string.IsNullOrWhiteSpace(result.Placement.PlacementId) ? "Not available" : result.Placement.PlacementId;
+                    placementPeriod.InnerText = FormatPlacementPeriod(result.Placement.StartDate, result.Placement.EndDate);
                 }
                 var evaluation = result.Evaluations?.PercentageEvaluation;
                 var current = evaluation?.Current?.SubmittedAtUtc.HasValue == true ? evaluation.Current : null; var academicReview = PercentageEvaluationWorkflow.CurrentReview(evaluation);
@@ -155,13 +173,13 @@ namespace University_Internship_Management_System.Coordinator
                 companyRecommendation.InnerText = "Company version: " + (current?.VersionId ?? "Unavailable");
                 companyFeedback.InnerText = current?.Comments ?? "Unavailable";
                 companyScores.InnerText = "Final Evaluation Percentage: " + (current?.Percentage?.ToString(CultureInfo.InvariantCulture) ?? "Unavailable") + "; policy passing threshold: " + (result.ApplicablePolicy?.PassingThreshold?.ToString(CultureInfo.InvariantCulture) ?? "Unavailable; result cannot yet be determined");
-                companySupervisor.InnerText = current?.CompanySupervisorId ?? "Unavailable";
+                companySupervisor.InnerText = "Name unavailable";
                 academicStatus.InnerText = academicReview == null ? "Academic Review pending" : academicReview.Kind.ToString();
                 academicDate.InnerText = academicReview?.DecidedAtUtc.ToString("u") ?? "Not reviewed";
                 academicRecommendation.InnerText = "Review of exact company version: " + (academicReview?.CompanyVersionId ?? "Unavailable");
                 academicFeedback.InnerText = academicReview?.Reason ?? "No review decision recorded";
                 academicScores.InnerText = "Academic review only; no independent academic percentage.";
-                academicSupervisor.InnerText = academicReview?.AcademicSupervisorId ?? "Unavailable";
+                academicSupervisor.InnerText = "Name unavailable";
                 hoursText.InnerText = (result.ApprovedHours.HasValue ? result.ApprovedHours.Value.ToString(CultureInfo.InvariantCulture) : "Unknown") + " approved / " +
                     (result.RequiredHours.HasValue ? result.RequiredHours.Value.ToString(CultureInfo.InvariantCulture) : "Unknown") + " required";
                 if (result.ApprovedHours.HasValue && result.RequiredHours > 0)
@@ -178,7 +196,7 @@ namespace University_Internship_Management_System.Coordinator
                 await LoadDashboardAsync(placements, id);
             }
             catch (UnauthorizedAccessException) { Deny(); eligibilityMessage.InnerText = initializationError; }
-            catch (Exception) { eligibilityMessage.InnerText = "Readiness could not be verified. Refresh when trusted services are available. No completion decision was made."; }
+            catch (Exception) { eligibilityMessage.InnerText = "Readiness could not be verified. Refresh when trusted services are available. No completion decision was made."; reviewErrorMessage.Text = eligibilityMessage.InnerText; reviewErrorPanel.Visible = true; }
         }
         private bool WritesEnabled()
         {
@@ -188,11 +206,27 @@ namespace University_Internship_Management_System.Coordinator
             catch (UIMS.Services.FirebaseException) { return false; }
         }
         private static string Encode(string value) { return HttpUtility.HtmlEncode(value ?? "Unavailable"); }
+        private static string FormatPlacementPeriod(string start, string end)
+        {
+            DateTime from, to;
+            if (!DateTime.TryParse(start, CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal, out from) ||
+                !DateTime.TryParse(end, CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal, out to) || from.Date > to.Date)
+                return "Unavailable";
+            return from.ToString("MMM yyyy", CultureInfo.InvariantCulture) + " – " + to.ToString("MMM yyyy", CultureInfo.InvariantCulture);
+        }
         private async Task LoadDashboardAsync(CompletionPlacement[] placements, string selected)
         {
             int ready = 0, reviewing = 0, completed = 0, returned = 0;
             bool incomplete = false;
             var html = new StringBuilder();
+            var periods = placements.Select(p => new { Placement = p, Label = FormatPlacementPeriod(p.StartDate, p.EndDate) })
+                .Where(x => x.Label != "Unavailable")
+                .GroupBy(x => x.Placement.StartDate.Trim() + "|" + x.Placement.EndDate.Trim(), StringComparer.Ordinal)
+                .Select(g => new { Value = g.Key, Label = g.First().Label }).OrderBy(x => x.Label, StringComparer.Ordinal).ToArray();
+            periodFilter.Items.Clear();
+            periodFilter.Items.Add(new ListItem(periods.Length == 0 ? "Unavailable" : "All periods", ""));
+            foreach (var period in periods) periodFilter.Items.Add(new ListItem(period.Label, period.Value));
+            periodFilter.Enabled = periods.Length > 0;
             foreach (var placement in placements)
             {
                 try
@@ -208,7 +242,10 @@ namespace University_Internship_Management_System.Coordinator
                     if (status == CompletionStatus.UnderReview) reviewing++;
                     if (status == CompletionStatus.Approved) completed++;
                     if (status == CompletionStatus.ChangesRequested) returned++;
-                    html.Append("<tr data-completion-row data-academic=\"").Append(Encode(approval)).Append("\" data-completion=\"").Append(Encode(state)).Append("\" aria-selected=\"").Append(placement.InternshipId == selected ? "true" : "false").Append("\"><td><strong>").Append(Encode(placement.DisplayName ?? placement.StudentId)).Append("</strong><small>").Append(Encode(placement.StudentId)).Append("</small></td><td>Unavailable</td><td><span class=\"status-badge ").Append(approval == "Approved" ? "status-success" : "status-pending").Append("\">").Append(Encode(approval)).Append("</span></td><td><span class=\"status-badge ").Append(status == CompletionStatus.Approved ? "status-success" : "status-pending").Append("\">").Append(Encode(state)).Append("</span></td><td>Unavailable</td><td><button type=\"submit\" class=\"review-row-button\" name=\"openPlacement\" value=\"").Append(Encode(placement.InternshipId)).Append("\">").Append(status == CompletionStatus.Approved || status == CompletionStatus.Rejected ? "View" : "Review").Append("</button></td></tr>");
+                    string periodValue = FormatPlacementPeriod(placement.StartDate, placement.EndDate) == "Unavailable" ? "" : placement.StartDate.Trim() + "|" + placement.EndDate.Trim();
+                    string company = string.IsNullOrWhiteSpace(placement.CompanyName) || placement.CompanyName == "Unavailable" ? "Name unavailable" : placement.CompanyName;
+                    string periodLabel = FormatPlacementPeriod(placement.StartDate, placement.EndDate);
+                    html.Append("<tr data-completion-row data-academic=\"").Append(Encode(approval)).Append("\" data-completion=\"").Append(Encode(state)).Append("\" data-period=\"").Append(Encode(periodValue)).Append("\" aria-selected=\"").Append(placement.InternshipId == selected ? "true" : "false").Append("\"><td><strong>").Append(Encode(placement.DisplayName ?? placement.StudentId)).Append("</strong><small>").Append(Encode(placement.StudentId)).Append("</small></td><td>").Append(Encode(company)).Append("</td><td><span class=\"status-badge ").Append(approval == "Approved" ? "status-success" : "status-pending").Append("\">").Append(Encode(approval)).Append("</span></td><td><span class=\"status-badge ").Append(status == CompletionStatus.Approved ? "status-success" : "status-pending").Append("\">").Append(Encode(state)).Append("</span></td><td>").Append(Encode(periodLabel)).Append("</td><td><button type=\"submit\" class=\"review-row-button\" name=\"openPlacement\" value=\"").Append(Encode(placement.InternshipId)).Append("\">").Append(status == CompletionStatus.Approved || status == CompletionStatus.Rejected ? "View Details" : "Review").Append("</button></td></tr>");
                 }
                 catch (UnauthorizedAccessException) { throw; }
                 catch (Exception)

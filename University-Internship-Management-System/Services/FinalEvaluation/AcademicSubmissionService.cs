@@ -23,7 +23,7 @@ namespace University_Internship_Management_System.Services.FinalEvaluation
     {
         public static void Validate(AcademicFinalEvaluation candidate, EvaluationPolicy policy)
         {
-            if (policy == null || !policy.IsApproved || !policy.AcademicCommentsRequired.HasValue)
+            if (policy == null || !policy.IsProductionApproved || !policy.AcademicCommentsRequired.HasValue)
                 throw new ArgumentException("An approved policy with an explicit academic comment requirement is required.");
             FinalEvaluationValidation.Evaluation(candidate, policy, false, true);
             if (policy.AcademicCommentsRequired.Value && string.IsNullOrWhiteSpace(candidate.Feedback))

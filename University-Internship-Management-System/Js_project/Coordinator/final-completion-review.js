@@ -8,10 +8,6 @@
         opener?.addEventListener('click', () => { sidebar?.classList.add('is-open'); document.body.classList.add('sidebar-open'); opener.setAttribute('aria-expanded', 'true'); backdrop?.setAttribute('aria-hidden', 'false'); });
         by('closeSidebar')?.addEventListener('click', close); backdrop?.addEventListener('click', close);
         document.addEventListener('keydown', event => { if (event.key === 'Escape') close(); });
-        by('navbarSearch')?.addEventListener('input', event => {
-            const query = event.target.value.trim().toLowerCase();
-            document.querySelectorAll('#studentSelect option').forEach(option => { option.hidden = !option.textContent.toLowerCase().includes(query); });
-        });
         const dashboard = document.querySelector('.completion-dashboard');
         const panel = by('studentDetailsPanel');
         const setDetails = visible => {
@@ -19,30 +15,34 @@
             dashboard?.classList.toggle('details-closed', !visible);
         };
         // Selection visibility is UI state only; it never grants access to a record.
-        setDetails(true);
+        const selectedRow = document.querySelector('[data-completion-row][aria-selected="true"]');
+        setDetails(!!selectedRow);
+        if (by('showStudentDetails')) by('showStudentDetails').disabled = !selectedRow;
         by('showStudentDetails')?.addEventListener('click', () => { setDetails(true); panel?.focus(); });
-        if (by('detailsVisible')?.value === 'true') panel?.focus({ preventScroll: true });
+        if (by('detailsVisible')?.value === 'true' && selectedRow) panel?.focus({ preventScroll: true });
         by('closeStudentDetails')?.addEventListener('click', () => {
             setDetails(false);
             by('completionSearch')?.focus();
         });
-        const search = by('completionSearch'), academic = by('academicFilter'), completion = by('completionFilter');
+        const search = by('completionSearch'), navbarSearch = by('navbarSearch'), academic = by('academicFilter'), completion = by('completionFilter'), period = by('periodFilter');
         const filter = () => {
             const rows = [...document.querySelectorAll('[data-completion-row]')];
             let count = 0;
             rows.forEach(row => {
                 const visible = row.textContent.toLowerCase().includes((search?.value || '').trim().toLowerCase()) &&
                     (!academic?.value || row.dataset.academic === academic.value) &&
-                    (!completion?.value || row.dataset.completion === completion.value);
+                    (!completion?.value || row.dataset.completion === completion.value) &&
+                    (!period?.value || row.dataset.period === period.value);
                 row.hidden = !visible;
                 if (visible) count++;
             });
             if (by('completionResultCount')) by('completionResultCount').textContent = rows.length ? count + ' of ' + rows.length : '';
             if (by('noCompletionMatches')) by('noCompletionMatches').hidden = !rows.length || count > 0;
         };
-        [search, academic, completion].forEach(control => control?.addEventListener(control === search ? 'input' : 'change', filter));
+        [search, academic, completion, period].forEach(control => control?.addEventListener(control === search ? 'input' : 'change', filter));
+        navbarSearch?.addEventListener('input', () => { if (search) search.value = navbarSearch.value; filter(); });
         by('clearCompletionFilters')?.addEventListener('click', () => {
-            [search, academic, completion].forEach(control => { if (control) control.value = ''; });
+            [search, navbarSearch, academic, completion, period].forEach(control => { if (control) control.value = ''; });
             filter(); search?.focus();
         });
         filter();
