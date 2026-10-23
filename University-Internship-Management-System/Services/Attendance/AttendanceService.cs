@@ -121,11 +121,26 @@ namespace UIMS.Attendance
             throw new UIMS.Services.FirebaseException(501, "New sample identities are disabled. Use the existing attendance records in Firebase.");
         }
 
-        public async Task<JObject> Identity(string role, string id, string verifiedUid, bool localDemo)
+        public Task<JObject> Identity(string role, string id, string verifiedUid, bool localDemo)
+        {
+            return Identity(role, id, verifiedUid, localDemo, null);
+        }
+
+        public async Task<JObject> Identity(string role, string id, string verifiedUid, bool localDemo, JObject verifiedProfile)
         {
             if (role != "student" && role != "company") throw new InvalidOperationException("Invalid attendance role.");
             AttendanceFirebase.CheckKey(id);
             var actor = await Get((role == "student" ? "students/" : "companySupervisors/") + id);
+            if (!actor.HasValues && role == "student" && !localDemo && !string.IsNullOrWhiteSpace(verifiedUid) &&
+                verifiedProfile != null && Text(verifiedProfile, "studentId") == id &&
+                University_Internship_Management_System.Shared.FirebaseSignInService.CanonicalRole(Text(verifiedProfile, "role")) == "student" &&
+                Flag(verifiedProfile, "isActive") && !Flag(verifiedProfile, "mustChangePassword") &&
+                (Text(verifiedProfile, "accountSetupStatus") == "" || Text(verifiedProfile, "accountSetupStatus") == "complete"))
+            {
+                // عرض حساب الطالب الموثق فقط؛ لا ننشئ تكليفًا أو سجل حضور أو نعطي صلاحية مسح.
+                return new JObject { ["name"] = Text(verifiedProfile, "fullName"), ["studentNumber"] = id,
+                    ["firebaseUid"] = verifiedUid, ["status"] = "active", ["attendanceSetupRequired"] = true };
+            }
             if (!actor.HasValues || Text(actor, "status") != "active")
                 throw new InvalidOperationException("This attendance identity is missing or inactive.");
             if (localDemo && !Flag(actor, "isTestData"))
@@ -277,23 +292,14 @@ namespace UIMS.Attendance
             {
                 if (Number(c.Record, "checkInAt") > 0 || Number(c.Record, "checkOutAt") > 0)
                     throw new InvalidOperationException("Attendance is already recorded or requires review.");
-                if (now < Number(c.Schedule, "scheduledStartAt") - 5 * 60000)
-                    throw new InvalidOperationException("Check-in opens five minutes before your scheduled start.");
-                if (now >= Number(c.Schedule, "scheduledEndAt"))
-                    throw new InvalidOperationException("Check-in is closed because today's training shift has ended.");
+                // المشرف يحدد وقت الحضور الفعلي؛ يوم التدريب والتكليف ما زالا مطلوبين.
                 return;
             }
             if (action != "checkOut") throw new InvalidOperationException("Invalid attendance action.");
             if (Number(c.Record, "checkInAt") <= 0 || Number(c.Record, "checkOutAt") > 0)
                 throw new InvalidOperationException("Check-out requires an existing check-in and cannot be repeated.");
             if (now <= Number(c.Record, "checkInAt")) throw new InvalidOperationException("Check-out must be after check-in.");
-            if (now < Number(c.Schedule, "scheduledEndAt") &&
-                (Text(c.Request, "status") != "approved" || Text(c.Request, "studentId") != Text(c.Assignment, "studentId") ||
-                 Text(c.Request, "assignmentId") != c.AssignmentId || Text(c.Request, "attendanceDate") != c.Date ||
-                 Text(c.Request, "companySupervisorId") != Text(c.Assignment, "companySupervisorId") ||
-                 Text(c.Request, "companyId") != Text(c.Assignment, "companyId") ||
-                 Text(c.Request, "reviewedById") != Text(c.Assignment, "companySupervisorId")))
-                throw new InvalidOperationException("Early check-out requires approval from the assigned supervisor.");
+            // إصدار رمز الخروج ومسحه من المشرف يغنيان عن طلب مغادرة مبكرة منفصل.
         }
 
         private async Task CheckEnabled()
@@ -379,19 +385,11 @@ namespace UIMS.Attendance
             try { CheckAction(c, "checkIn", Now()); checkIn = true; } catch (InvalidOperationException) { }
             try { CheckAction(c, "checkOut", Now()); checkOut = true; } catch (InvalidOperationException) { }
             bool enabled = Flag(c.Settings, "enabled");
-            bool requestEarly = false;
-            try
-            {
-                CheckSchedule(c); CheckRecord(c);
-                requestEarly = Number(c.Record, "checkInAt") > 0 && Number(c.Record, "checkInAt") <= Now() &&
-                    Number(c.Record, "checkOutAt") == 0 && Now() < Number(c.Schedule, "scheduledEndAt") && !c.Request.HasValues;
-            }
-            catch (InvalidOperationException) { }
             c.AttendanceHistory = history;
             c.ApprovedMinutes = approvedMinutes;
             c.CanCheckIn = enabled && checkIn;
             c.CanCheckOut = enabled && checkOut;
-            c.CanRequestEarly = enabled && requestEarly;
+            c.CanRequestEarly = false; // الخروج المرن يتم برمز يصدره المشرف مباشرة.
             return c;
         }
 
@@ -631,23 +629,22 @@ namespace UIMS.Attendance
                 row["scheduledStartAt"] = Number(c.Schedule, "scheduledStartAt");
                 row["scheduledEndAt"] = Number(c.Schedule, "scheduledEndAt");
                 row["hoursApprovalStatus"] = "pending";
+                row["attendanceMode"] = "flexible";
                 row["isTestData"] = Flag(c.Student, "isTestData");
                 row["updatedAt"] = now;
                 if (row["createdAt"] == null) row["createdAt"] = now;
                 if (action == "checkIn")
                 {
                     row["checkInAt"] = now; row["checkInVerifiedById"] = supervisorId;
-                    row["lateMinutes"] = Math.Max(0, (now - Number(c.Schedule, "scheduledStartAt")) / 60000);
-                    row["isLate"] = now > Number(c.Schedule, "scheduledStartAt");
+                    row["lateMinutes"] = 0;
+                    row["isLate"] = false;
                     row["status"] = "checkedIn"; row["workedMinutes"] = 0;
                 }
                 else
                 {
                     row["checkOutAt"] = now; row["checkOutVerifiedById"] = supervisorId;
                     row["workedMinutes"] = (now - Number(row, "checkInAt")) / 60000;
-                    bool early = now < Number(c.Schedule, "scheduledEndAt");
-                    row["isEarlyDeparture"] = early; row["status"] = early ? "earlyDeparture" : "completed";
-                    if (early) row["earlyCheckoutRequestId"] = Text(c.Request, "requestId");
+                    row["isEarlyDeparture"] = false; row["status"] = "completed";
                 }
                 // استهلاك الرمز والحضور في نفس السجل ونفس الكتابة المشروطة؛ لا توجد كتابة ثانية قد تفشل جزئيًا.
                 var consumed = (JObject)row["qrState"][action];

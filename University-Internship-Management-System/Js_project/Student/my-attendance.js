@@ -246,14 +246,13 @@ function renderStudent(data) {
     document.getElementById("checkOutButton").disabled = saving || !data.canCheckOut;
     document.getElementById("earlyButton").disabled = saving || !data.canRequestEarly;
     document.getElementById("earlyStatus").textContent = request.status ? "Early departure: " + label(request.status) + "." : "";
-    const start = schedule.scheduledStartAt ? time(Number(schedule.scheduledStartAt) - 300000) : "—";
-    document.getElementById("scheduleHelp").textContent = !assigned ? "No active assignment. Attendance actions are unavailable."
+    document.getElementById("scheduleHelp").textContent = !assigned ? "Your account is verified. No approved training assignment is linked yet. Attendance actions are unavailable."
         : !data.actionsEnabled ? "Attendance actions are disabled in Firebase settings. Reading history remains available."
         : !schedule.assignmentId ? "No schedule exists for today. Ask your supervisor to configure it."
         : !schedule.isTrainingDay ? "Scheduled day off. No absence is counted."
         : record.checkOutAt ? "Attendance complete."
-        : record.checkInAt ? "Normal check-out from " + time(schedule.scheduledEndAt) + "."
-        : "Check-in from " + start + ".";
+        : record.checkInAt ? "Your supervisor can issue your check-out QR now. Actual worked time counts after hours approval."
+        : "Flexible attendance today. Ask your supervisor to issue your check-in QR, then refresh attendance.";
     if (document.getElementById("qrDialog").open && ((qrAction === "checkIn" && record.checkInAt) || (qrAction === "checkOut" && record.checkOutAt))) {
         document.getElementById("qrDialog").close();
         showNotice("Attendance updated.");
