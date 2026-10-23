@@ -184,8 +184,6 @@
         let extensionButton = by('requestTaskExtension');
         if (!extensionButton) { extensionButton = document.createElement('button'); extensionButton.id = 'requestTaskExtension'; extensionButton.type = 'button'; extensionButton.className = 'btn btn-light'; by('submitModal').querySelector('.modal-footer').prepend(extensionButton); }
         const overdue = now() >= new Date(task.deadline.length === 10 ? task.deadline + 'T23:59:59Z' : task.deadline).getTime();
-        if (overdue) action.hidden = true;
-        if (overdue) editing = false;
         extensionButton.hidden = task.archived || !overdue || task.score != null || task.status === 'submitted' || task.status === 'completed';
         extensionButton.disabled = task.extension?.status === 'pending' || task.extension?.status === 'rejected';
         extensionButton.textContent = task.extension?.status === 'pending' ? 'Extension pending' : task.extension?.status === 'rejected' ? 'Extension rejected · final' : 'Request extension';

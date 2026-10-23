@@ -105,6 +105,8 @@ internal static partial class Program
                 {
                     var timer = System.Diagnostics.Stopwatch.StartNew(); var tasksService = new UIMS.Tasks.TaskService(readSettings, client, actor);
                     var data = await tasksService.LoadAsync("companySupervisor", System.Threading.CancellationToken.None);
+                    var firstPlacement = data["students"].FirstOrDefault();
+                    if (firstPlacement != null) { var board = await tasksService.LoadBoardAsync((string)firstPlacement["placementId"], System.Threading.CancellationToken.None); Console.WriteLine("PASS actual authorized task board read: columns=" + board["columns"].Count() + "; cards=" + board["tasks"].Count() + ". No card moved."); }
                     var trainees = await tasksService.LoadTraineesAsync(System.Threading.CancellationToken.None);
                     var reports = await new UIMS.Tasks.WeeklyReportService(readSettings, client, actor).ListCompanyReportsAsync(System.Threading.CancellationToken.None);
                     Console.WriteLine("Verified existing company read: authorized tasks=" + data["tasks"].Count() + "; eligible task placements=" + data["students"].Count() + "; trainee rows=" + trainees["trainees"].Count() + "; weekly report rows=" + reports["reports"].Count() + "; combined elapsedMs=" + timer.ElapsedMilliseconds + ". GET-only transport enforced."); verifiedCompanies++;

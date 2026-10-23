@@ -34,7 +34,7 @@ const server = http.createServer((req, res) => {
                 else if (action === 'bulkCreate') { const input = req.postDataJSON(); assert.strictEqual(input.description, 'UI test requirements'); assert.strictEqual(input.criteria, 'UI test instructions'); assert.strictEqual(input.maximum, 10); creates++; body = { success: true, results: input.placementIds.map((id, i) => ({ success: true, id: 'UI-CREATED-' + i, placementId: id })) }; }
                 else if (action === 'attachments') body = { files: [] };
                 else if (action === 'start') { tasks.find(t => t.id === req.postDataJSON().assignmentId).status = 'inprogress'; changeVersion++; body = { success: true }; }
-                else if (action === 'submit') { const input = req.postDataJSON(); assert.strictEqual(input.description, 'Completed student work'); assert.strictEqual(input.link, ''); tasks.find(t => t.id === input.assignmentId).status = 'submitted'; submissions.push({ taskId: input.assignmentId, revision: 1, description: input.description, createdAt: new Date().toISOString() }); changeVersion++; body = { success: true }; }
+                else if (action === 'submit') { const input = req.postDataJSON(); assert.strictEqual(input.description, 'Completed student work'); assert.strictEqual(input.link, 'https://example.test/submitted-work'); tasks.find(t => t.id === input.assignmentId).status = 'submitted'; submissions.push({ taskId: input.assignmentId, revision: 1, description: input.description, createdAt: new Date().toISOString() }); changeVersion++; body = { success: true }; }
                 else if (action === 'attach') { resourceUploads++; body = { id: 'UI-RESOURCE-' + resourceUploads }; }
                 else if (action === 'storageAvailability') return route.fulfill({ status: failStorage ? 404 : 200, json: failStorage ? { message: 'Configured Storage bucket is unavailable.' } : { available: true } });
                 return route.fulfill({ json: body });
@@ -202,12 +202,12 @@ const server = http.createServer((req, res) => {
         await page.locator('#workDesc').fill('Unsent work'); await page.locator('#submitModal .btn-close').click();
         await page.locator('dialog[open]').waitFor(); await page.locator('dialog[open] button').first().click();
         assert.strictEqual(await page.locator('#workDesc').inputValue(), 'Unsent work');
-        await page.locator('#workDesc').fill('Completed student work'); await page.locator('#confirmSubmitBtn').click();
+        await page.locator('#workDesc').fill('Completed student work'); await page.locator('#workLink').fill('https://example.test/submitted-work'); await page.locator('#confirmSubmitBtn').click();
         await page.locator('dialog[open] button').last().click(); await page.locator('#submitModal').waitFor({ state: 'hidden' });
         assert.strictEqual(tasks[0].status, 'submitted'); assert.strictEqual(tasks[1].status, 'assigned');
         await companyMonitor.locator('[data-board-task-id="TEST-T-0"] .status-badge').filter({ hasText: 'Awaiting review' }).waitFor(); await companyMonitor.close();
         console.log('PASS student submission updates the open company board automatically without manual refresh');
-        console.log('PASS student board starts task, displays instructions, retains unsent work and confirms description-only submission independently');
+        console.log('PASS student board starts task, displays instructions, retains unsent work and confirms required description/link submission independently');
         await page.goto(base + '/Company/ManageTasks.aspx'); await page.locator('[data-board-task-id="TEST-T-0"] [data-task-action="review"]').click(); await page.locator('[data-company-tab="grading"]').click(); await page.locator('#approveTaskBtn').click(); assert.strictEqual(await page.locator('#gradeInput').getAttribute('aria-invalid'), 'true'); assert(await page.locator('#gradeInput + .field-error').isVisible());
         console.log('PASS missing task grade stays in the popup with a red field and inline validation');
         failTasks = true; await page.setViewportSize({ width: 1600, height: 1000 });
