@@ -30,7 +30,12 @@ namespace University_Internship_Management_System.Coordinator
             {
                 if (service == null)
                 {
-                    var gateway = new StudentFirebaseGateway();
+                    var gateway = new StudentFirebaseGateway(new UIMS.Services.FirebaseConfiguration("true",
+                    new UIMS.Services.FirebaseConfiguration().ProjectId,
+                    new UIMS.Services.FirebaseConfiguration().DatabaseUrl,
+                    new UIMS.Services.FirebaseConfiguration().ApiKey,
+                    writes: "true", schemaValidated: "true", authenticationEnabled:
+                    new UIMS.Services.FirebaseConfiguration().AuthenticationEnabled ? "true" : "false"));
                     service = new StudentManagementService(gateway, gateway, new StudentCredentialMailer());
                 }
                 return service;
@@ -95,7 +100,7 @@ namespace University_Internship_Management_System.Coordinator
             {
                 authorized = false;
                 Session.Remove(CandidateKey);
-                studentListMessage.Text = "Student account changes require an active coordinator account and trusted Firebase Admin credentials. No student data was changed.";
+                studentListMessage.Text = "Sign in with an active coordinator account to manage students.";
                 studentLookupMessage.Text = studentListMessage.Text;
             }
             catch (Exception error)
@@ -285,8 +290,7 @@ namespace University_Internship_Management_System.Coordinator
                 }
             }
             findStudentButton.Enabled = authorized;
-            // In no-auth preview mode this only generates a client-side password preview; it cannot create an account.
-            generateStudentPassword.Enabled = !authorized || (candidate != null && !candidate.Created);
+            generateStudentPassword.Enabled = authorized && candidate != null && !candidate.Created;
             saveStudentButton.Enabled = authorized && candidate != null && !candidate.Created && !string.IsNullOrEmpty(candidate.Password);
             emailDeliveryNotice.Visible = authorized && !emailConfigured;
             if (!authorized)

@@ -1,6 +1,5 @@
 <%@ Page Language="C#" AutoEventWireup="true" async="true" CodeBehind="ManageStudents.aspx.cs" Inherits="University_Internship_Management_System.Coordinator.ManageStudents" %>
-<!DOCTYPE html>
-<html lang="en"><head runat="server"><meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" /><title>Manage Students | UIMS</title><link runat="server" href="~/Assets/shared/colors.css" rel="stylesheet" />    <link runat="server" href="~/Assets/coordinator/manage-students.css?v=20261022-complete" rel="stylesheet" />
+<!DOCTYPE html><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head runat="server"><meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" /><title>Manage Students | UIMS</title><link runat="server" href="~/Assets/shared/colors.css" rel="stylesheet" />    <link runat="server" href="~/Assets/coordinator/manage-students.css?v=20261022-complete" rel="stylesheet" />
 </head>
 <body class="dashboard-direct app-page completion-page" data-page="manage-students"><form id="form1" runat="server"><div class="app-layout">            <aside class="dash-sidebar" id="dashboardSidebar" aria-label="Coordinator navigation">
                 <a href="<%= ResolveUrl("~/Coordinator/CoordinatorDashboard.aspx") %>" class="dash-brand">

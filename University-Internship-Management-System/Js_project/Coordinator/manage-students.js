@@ -33,8 +33,8 @@
         deletion?.addEventListener('close', () => { by('studentDeleteUid').value = ''; });
         const add = by('addStudentButton');
         if (add) {
+            add.disabled = !state.canManage;
             add.addEventListener('click', () => open(editor));
-            if (!state.canManage) add.title = 'The form can be opened, but saving a student requires an authorized coordinator and trusted Firebase Admin credentials.';
         }
         if (state.openEditor && state.canManage) open(editor);
         if (state.openDetails && state.canManage) open(details);
@@ -79,39 +79,9 @@
         by('studentUniversityId')?.addEventListener('keydown', event => {
             if (event.key === 'Enter') { event.preventDefault(); by('findStudentButton')?.click(); }
         });
-        by('generateStudentPassword')?.addEventListener('click', event => {
-            if (state.canManage) return; // Authenticated coordinator continues through the server-side account flow.
-            event.preventDefault();
-            event.stopPropagation();
-            const field = by('studentTemporaryPassword');
-            const status = by('studentPasswordStatus');
-            if (!field || !window.crypto?.getRandomValues) {
-                if (status) status.textContent = 'Secure password generation is unavailable in this browser.';
-                return;
-            }
-            const groups = ['ABCDEFGHJKLMNPQRSTUVWXYZ', 'abcdefghijkmnpqrstuvwxyz', '23456789'];
-            const alphabet = groups.join('');
-            const randomIndex = max => {
-                const limit = 256 - (256 % max);
-                const byte = new Uint8Array(1);
-                do { window.crypto.getRandomValues(byte); } while (byte[0] >= limit);
-                return byte[0] % max;
-            };
-            const chars = groups.map(group => group[randomIndex(group.length)]);
-            while (chars.length < 12) chars.push(alphabet[randomIndex(alphabet.length)]);
-            for (let i = chars.length - 1; i > 0; i--) {
-                const j = randomIndex(i + 1);
-                [chars[i], chars[j]] = [chars[j], chars[i]];
-            }
-            field.value = chars.join('');
-            if (status) status.textContent = 'Preview only. No student account or Firebase record was created.';
-        });
         by('copyStudentPassword')?.addEventListener('click', async () => {
             const field = by('studentTemporaryPassword');
-            if (!field?.value) {
-                if (by('studentPasswordStatus')) by('studentPasswordStatus').textContent = 'Generate a password first.';
-                return;
-            }
+            if (!field?.value) return;
             try {
                 if (!navigator.clipboard?.writeText) throw new Error();
                 await navigator.clipboard.writeText(field.value);
