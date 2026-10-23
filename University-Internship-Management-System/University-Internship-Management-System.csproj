@@ -393,6 +393,10 @@
       <DependentUpon>test.aspx</DependentUpon>
     </Compile>
     <Compile Include="Services\OpportunityService.cs" />
+    <Compile Include="Shared\FirebaseDb.cs" />
+    <Compile Include="Shared\InternshipPage.cs">
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
     <Compile Include="Site.Master.cs">
       <DependentUpon>Site.Master</DependentUpon>
       <SubType>ASPXCodeBehind</SubType>

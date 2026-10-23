@@ -1,46 +1,141 @@
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Web.UI;
+using University_Internship_Management_System.Shared;
 
 namespace University_Internship_Management_System.Coordinator
 {
-    // Coordinator: read the Contact Us messages, mark them as read and reply (Firebase: /messages)
+    // Coordinator: reads the Contact Us messages from Firebase (/messages) and marks them as read.
     public partial class ContactMessages : Page
     {
-        private string DatabaseUrl { get { var firebase = new UIMS.Services.FirebaseConfiguration(); firebase.EnsureEnabled(); return firebase.DatabaseUrl; } }
+        static readonly HttpClient client = new HttpClient();
 
-        HttpClient client = new HttpClient();
-        JObject db;       // the whole database
-        JObject user;     // the signed-in coordinator
-        string userId;
+        string userId;   // Firebase key of the signed-in coordinator
+        JObject user;    // the coordinator record from /users (null = not allowed)
+
+        // Read straight from Web.config, so the global FirebaseEnabled /
+        // FirebaseLiveWritesEnabled switches (used by other features) do not block this page
+        static string DatabaseUrl
+        {
+            get
+            {
+                string url = System.Configuration.ConfigurationManager.AppSettings["FirebaseDatabaseUrl"]
+                          ?? System.Configuration.ConfigurationManager.AppSettings["FirebaseUrl"];
+                if (string.IsNullOrEmpty(url)) throw new InvalidOperationException("FirebaseDatabaseUrl is missing in Web.config.");
+                return url.TrimEnd('/');
+            }
+        }
 
         protected void Page_Load(object sender, EventArgs e)
         {
             Response.Cache.SetNoStore();
+            FindCoordinator();
 
-            db = Get("");
-            userId = Session["UserId"] as string ?? "coord-1";   // sample account until Login sets Session["UserId"]
-            user = db["users"]?[userId] as JObject;
-            if (user == null || University_Internship_Management_System.Shared.FirebaseSignInService.CanonicalRole((string)user["role"]) != "coordinator") user = null;
-
-            // An action sent by the page JavaScript
+            // contact-messages.js sends a POST with the header X-Action
             string action = Request.Headers["X-Action"];
-            if (action == null) return;
-            if (user == null) Reply(new { error = "Please sign in again." });
+            if (Request.HttpMethod != "POST" || action == null) return;
+
+            object result;
+            try
+            {
+                result = RunAction(action);
+            }
+            catch (Exception)
+            {
+                result = new { error = "Could not update the message. Please try again." };
+            }
+
+            Reply(result);
+        }
+
+        // ================= Signed-in coordinator =================
+        void FindCoordinator()
+        {
+            JObject users = Get("users");
+            userId = Session["UserId"] as string;
+
+            // Until Login sets Session["UserId"], use the first coordinator account (demo only)
+            if (string.IsNullOrEmpty(userId))
+            {
+                userId = users.Properties()
+                    .Where(p => IsCoordinator(p.Value as JObject))
+                    .Select(p => p.Name)
+                    .FirstOrDefault();
+            }
+
+            JObject found = userId != null ? users[userId] as JObject : null;
+            user = IsCoordinator(found) ? found : null;
+        }
+
+        static bool IsCoordinator(JObject account)
+        {
+            return account != null
+                && FirebaseSignInService.CanonicalRole((string)account["role"]) == "coordinator"
+                && (bool?)account["isActive"] != false;
+        }
+
+        // ================= Actions from the page =================
+        object RunAction(string action)
+        {
+            if (user == null) return new { error = "Please sign in again." };
 
             JObject data = JObject.Parse(new StreamReader(Request.InputStream).ReadToEnd());
-            if (action == "readMessage") MarkAsRead((string)data["id"]);
-            if (action == "replyMessage") SendReply((string)data["id"], (string)data["reply"]);
+            string id = (string)data["id"];
 
-            db = Get("");          // read again so the page gets the new data
-            Reply(LoadData());
+            string error;
+            if (action == "readMessage") error = MarkAsRead(id);
+            else if (action == "replyMessage") error = SendReply(id, (string)data["reply"]);
+            else error = "Unknown action.";
+
+            // On success the page gets the fresh data and redraws the table
+            return error != null ? (object)new { error } : LoadData();
+        }
+
+        string MarkAsRead(string id)
+        {
+            JObject message = FindMessage(id);
+            if (message == null) return "Message not found.";
+
+            // A replied message keeps its "replied" status
+            if ((string)message["status"] == "unread")
+                Write("PUT", "messages/" + id + "/status", "read");
+
+            return null;
+        }
+
+        // Ready on the server; the current page has no reply box yet
+        string SendReply(string id, string reply)
+        {
+            JObject message = FindMessage(id);
+            if (message == null) return "Message not found.";
+
+            reply = (reply ?? "").Trim();
+            if (reply == "") return "Write a reply first.";
+            if (reply.Length > 2000) return "The reply must be 2,000 characters or fewer.";
+
+            Write("PATCH", "messages/" + id, new JObject
+            {
+                ["reply"] = reply,
+                ["status"] = "replied",
+                ["repliedAt"] = DateTime.UtcNow.ToString("o"),
+                ["repliedBy"] = userId
+            });
+            return null;
+        }
+
+        JObject FindMessage(string id)
+        {
+            // Only accept ids made by Contact.aspx (stops paths like "../users")
+            if (string.IsNullOrEmpty(id) || !Regex.IsMatch(id, @"^msg-[A-Za-z0-9]+$")) return null;
+
+            JObject message = Get("messages/" + id);
+            return message.HasValues ? message : null;
         }
 
         // ================= Data for the page =================
@@ -48,87 +143,63 @@ namespace University_Internship_Management_System.Coordinator
         {
             if (user == null) return null;
 
-            user["mustChangePassword"] = false;
+            var messages = Get("messages").Properties()
+                .Where(p => p.Value is JObject)
+                .Select(p => Normalize(p.Name, (JObject)p.Value))
+                .OrderByDescending(m => (string)m["createdAt"]);
+
             return new JObject
             {
-                ["user"] = user,
-                ["messages"] = new JArray(List("messages").OrderByDescending(m => (string)m["createdAt"])),
-                ["users"] = new JArray(),
-                ["companies"] = new JArray(),
-                ["opportunities"] = new JArray(),
+                ["user"] = new JObject
+                {
+                    ["id"] = userId,
+                    ["name"] = (string)user["fullName"] ?? "Coordinator",
+                    ["email"] = (string)user["email"] ?? "",
+                    ["role"] = "admin",              // the page expects data-demo-role="admin"
+                    ["mustChangePassword"] = false
+                },
+                ["messages"] = new JArray(messages),
+                // Empty lists the shared page script reads
+                ["progress"] = new JArray(),
                 ["applications"] = new JArray(),
                 ["placements"] = new JArray(),
                 ["tasks"] = new JArray(),
-                ["submissions"] = new JArray(),
-                ["progress"] = new JArray(),
-                ["students"] = new JArray(),
-                ["groups"] = new JArray(),
-                ["evaluations"] = new JArray()
+                ["submissions"] = new JArray()
             };
         }
 
-        // ================= Mark as read =================
-        void MarkAsRead(string id)
+        // Makes sure every message has the fields the page uses
+        static JObject Normalize(string key, JObject message)
         {
-            JObject message = db["messages"]?[id] as JObject;
-            if (message == null)
-            {
-                Reply(new { error = "Message not found." });
-            }
-
-            // A replied message keeps its "replied" status
-            if ((string)message["status"] == "unread")
-            {
-                Put("messages/" + id + "/status", "read");
-            }
-        }
-
-        // ================= Reply =================
-        void SendReply(string id, string reply)
-        {
-            JObject message = db["messages"]?[id] as JObject;
-            if (message == null)
-            {
-                Reply(new { error = "Message not found." });
-            }
-
-            reply = (reply ?? "").Trim();
-            if (reply == "")
-            {
-                Reply(new { error = "Write a reply first." });
-            }
-
-            if (reply.Length > 2000)
-            {
-                Reply(new { error = "The reply must be 2,000 characters or fewer." });
-            }
-
-            Put("messages/" + id + "/reply", reply);
-            Put("messages/" + id + "/status", "replied");
-            Put("messages/" + id + "/repliedAt", DateTime.UtcNow.ToString("o"));
-            Put("messages/" + id + "/repliedBy", userId);
+            message["id"] = key;
+            if (message["status"] == null) message["status"] = "unread";
+            if (message["createdAt"] == null) message["createdAt"] = "";
+            return message;
         }
 
         // ================= Firebase =================
         JObject Get(string path)
         {
-            string json = client.GetStringAsync(DatabaseUrl + "/" + path + ".json").Result;
+            string json = client.GetStringAsync(Url(path)).Result;
             return json == "null" ? new JObject() : JObject.Parse(json);
         }
 
-        void Put(string path, object data)
+        // The server signs every request with the database secret (Web.config: FirebaseSecret)
+        string Url(string path)
         {
-            new UIMS.Services.FirebaseConfiguration().EnsureWritesAllowed();
-            string body = JsonConvert.SerializeObject(data);
-            client.PutAsync(DatabaseUrl + "/" + path + ".json", new StringContent(body, Encoding.UTF8, "application/json")).Wait();
+            string url = DatabaseUrl + "/" + path + ".json";
+            string secret = System.Configuration.ConfigurationManager.AppSettings["FirebaseSecret"];
+            return string.IsNullOrEmpty(secret) ? url : url + "?auth=" + Uri.EscapeDataString(secret);
         }
 
-        // All records under a node, for example List("opportunities")
-        IEnumerable<JObject> List(string node)
+        // PUT replaces a value, PATCH updates only the given fields
+        void Write(string method, string path, object value)
         {
-            JObject records = db[node] as JObject;
-            if (records == null) return new List<JObject>();
-            return records.Properties().Select(p => (JObject)p.Value);
+            var request = new HttpRequestMessage(new HttpMethod(method), Url(path))
+            {
+                Content = new StringContent(JsonConvert.SerializeObject(value), Encoding.UTF8, "application/json")
+            };
+            client.SendAsync(request).Result.EnsureSuccessStatusCode();
         }
 
         // Sends JSON back to the page JavaScript and stops the page here
@@ -141,9 +212,8 @@ namespace University_Internship_Management_System.Coordinator
         }
 
         // ================= Connect the page JavaScript =================
-        // The page JavaScript reads its data from window.UimsDemo (it was demo-store.js).
-        // Here we put a small script in its place that gives the data from Firebase
-        // and sends every save back to this page.
+        // Replaces demo-store.js with a small window.UimsDemo that holds the Firebase data
+        // and sends every action back to this page.
         protected override void Render(HtmlTextWriter writer)
         {
             StringWriter html = new StringWriter();
@@ -158,7 +228,6 @@ namespace University_Internship_Management_System.Coordinator
         const string PageScript = @"
 var data = DATA;
 window.UimsDemo = {
-    departments: ['Computer Science', 'Computer Engineering', 'Software Engineering', 'Computer Information Systems', 'Cybersecurity', 'Data Science & AI', 'Network Engineering & Security'],
     enabled: function () { return true; },
     view: function () { return data; },
     current: function () { return data && data.user; },

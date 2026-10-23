@@ -1,4 +1,3 @@
-
 /* Original-page demo bindings. Layout and server controls remain in the ASPX. */
 (function () {
     'use strict';
@@ -9,14 +8,14 @@
         binding?.abort();
         binding = new AbortController();
         const signal = binding.signal, demo = window.UimsDemo;
-        let view = demo.view(), selected = null, render = () => {};
+        let view = demo.view(), selected = null, render = () => { };
         if (!view || view.user.mustChangePassword || view.user.role !== document.body.dataset.demoRole) {
             location.href = '../Auth/Login.aspx?demo=1';
             return;
         }
         const by = id => document.getElementById(id) || document.querySelector('[id$="_' + id + '"]');
         const all = selector => [...document.querySelectorAll(selector)];
-        const escape = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+        const escape = value => String(value ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
         const text = (id, value) => { const element = by(id); if (element) element.textContent = value ?? '—'; };
         const value = id => by(id)?.value?.trim() || '';
         const set = (id, value) => { if (by(id)) by(id).value = value ?? ''; };
@@ -26,40 +25,40 @@
             element.innerHTML = '<option value="">' + escape(placeholder) + '</option>' + records.map(record => '<option value="' + escape(record.id) + '">' + escape(record.name) + '</option>').join('');
             if (records.some(record => record.id === previous)) element.value = previous;
         };
-        const on = (id, type, handler) => by(id)?.addEventListener(type, handler, {signal});
-        const click = (id, handler) => on(id, 'click', event => { event.preventDefault(); try { handler(event); } catch(exception) { error(exception,event.currentTarget.closest('dialog,.modal,.offcanvas')); } });
+        const on = (id, type, handler) => by(id)?.addEventListener(type, handler, { signal });
+        const click = (id, handler) => on(id, 'click', event => { event.preventDefault(); try { handler(event); } catch (exception) { error(exception, event.currentTarget.closest('dialog,.modal,.offcanvas')); } });
         const button = (label, action, id, className = 'row-action') => {
-            const paths={edit:'M4 16v4h4L20 8l-4-4L4 16Z',delete:'M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13',reset:'M13 7a5 5 0 1 0 0 10 5 5 0 0 0 0-10ZM8 12H2m2 0v4',status:'M12 2v10M6 5a9 9 0 1 0 12 0',assign:'M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 3a4 4 0 1 0 0 8 4 4 0 0 0 0-8M20 8v6m-3-3h6'};
-            const icon=className.includes('action-btn')&&paths[action];
-            const content=icon?'<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="'+paths[action]+'"/></svg>':escape(label);
-            return '<button type="button" title="'+escape(label)+'" aria-label="'+escape(label)+'" class="' + className + '" data-uims="' + action + '" data-record="' + escape(id) + '">' + content + '</button>';
+            const paths = { edit: 'M4 16v4h4L20 8l-4-4L4 16Z', delete: 'M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13', reset: 'M13 7a5 5 0 1 0 0 10 5 5 0 0 0 0-10ZM8 12H2m2 0v4', status: 'M12 2v10M6 5a9 9 0 1 0 12 0', assign: 'M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 3a4 4 0 1 0 0 8 4 4 0 0 0 0-8M20 8v6m-3-3h6' };
+            const icon = className.includes('action-btn') && paths[action];
+            const content = icon ? '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="' + paths[action] + '"/></svg>' : escape(label);
+            return '<button type="button" title="' + escape(label) + '" aria-label="' + escape(label) + '" class="' + className + '" data-uims="' + action + '" data-record="' + escape(id) + '">' + content + '</button>';
         };
         const cells = values => '<tr>' + values.map(cell => '<td>' + cell + '</td>').join('') + '</tr>';
         const fill = (selector, records, row) => {
             const element = document.querySelector(selector);
-            if(!element)return;
-            const emptyState=element.id==='taskList'?element.querySelector('#noTasksMsg'):null;
-            element.innerHTML=records.map(row).join('');
-            if(emptyState)element.append(emptyState);
+            if (!element) return;
+            const emptyState = element.id === 'taskList' ? element.querySelector('#noTasksMsg') : null;
+            element.innerHTML = records.map(row).join('');
+            if (emptyState) element.append(emptyState);
         };
         const messageElement = () => by('uimsPageNotice') || document.querySelector('main .preview-note,main .completion-notice,main .companies-notice,main .evaluation-notice,main .monitor-notice,main .workspace-note,#messagesAvailability,#traineesAvailability,#accountAvailability') || by('pageNotice') || by('profileMessage') || by('pnlMessage');
         function notice(message) {
             let element = messageElement();
-            if (!element) { element = document.createElement('p'); element.id='uimsPageNotice'; element.className = 'uims-feedback'; element.setAttribute('role','status'); (document.querySelector('main') || document.querySelector('.content')).prepend(element); }
+            if (!element) { element = document.createElement('p'); element.id = 'uimsPageNotice'; element.className = 'uims-feedback'; element.setAttribute('role', 'status'); (document.querySelector('main') || document.querySelector('.content')).prepend(element); }
             element.hidden = false; element.textContent = message;
         }
         if (view.connectionError) notice(view.connectionError);
         function error(error, scope) {
             let element = scope?.querySelector('[data-uims-error]');
-            if (scope && !element) { element = document.createElement('p'); element.dataset.uimsError = ''; element.className = 'uims-error'; element.setAttribute('role','alert'); (scope.querySelector('.modal-body') || scope).append(element); }
+            if (scope && !element) { element = document.createElement('p'); element.dataset.uimsError = ''; element.className = 'uims-error'; element.setAttribute('role', 'alert'); (scope.querySelector('.modal-body') || scope).append(element); }
             if (element) element.textContent = error.message; else notice(error.message);
         }
         const dirty = new WeakSet(), openers = new WeakMap();
-        let beforeClose=null;
+        let beforeClose = null;
         function open(id) {
             const dialog = by(id); if (!dialog) throw Error('Missing original popup: ' + id);
-            const alreadyOpen=dialog.tagName==='DIALOG'?dialog.open:dialog.classList.contains('show');
-            if(!alreadyOpen){openers.set(dialog, document.activeElement);dirty.delete(dialog);}
+            const alreadyOpen = dialog.tagName === 'DIALOG' ? dialog.open : dialog.classList.contains('show');
+            if (!alreadyOpen) { openers.set(dialog, document.activeElement); dirty.delete(dialog); }
             dialog.querySelectorAll('[data-uims-error],.uims-discard').forEach(el => el.remove());
             if (dialog.tagName === 'DIALOG') { if (!dialog.open) dialog.showModal(); }
             else if (dialog.classList.contains('offcanvas')) bootstrap.Offcanvas.getOrCreateInstance(dialog).show();
@@ -68,10 +67,10 @@
         }
         function close(id, force = false) {
             const dialog = by(id); if (!dialog) return;
-            if(!force&&beforeClose?.(id)===false)return;
+            if (!force && beforeClose?.(id) === false) return;
             if (dirty.has(dialog) && !force) {
                 if (dialog.querySelector('.uims-discard')) return;
-                const prompt = document.createElement('div'); prompt.className = 'uims-discard'; prompt.setAttribute('role','alert');
+                const prompt = document.createElement('div'); prompt.className = 'uims-discard'; prompt.setAttribute('role', 'alert');
                 prompt.innerHTML = '<p>Discard unsaved changes?</p><button type="button" data-keep>Keep editing</button><button type="button" data-discard>Discard changes</button>';
                 (dialog.querySelector('.modal-footer') || dialog).append(prompt);
                 prompt.querySelector('[data-keep]').onclick = () => prompt.remove();
@@ -89,8 +88,8 @@
                 const result = demo.transaction(action, payload); view = demo.view();
                 if (popup) close(popup, true);
                 render(); notice('Saved to Firebase.');
-                return {ok:true, result};
-            } catch (exception) { error(exception, popup ? by(popup) : null); return {ok:false}; }
+                return { ok: true, result };
+            } catch (exception) { error(exception, popup ? by(popup) : null); return { ok: false }; }
         }
         function valid(ids, popup) {
             const invalid = ids.map(by).find(field => field && (!field.checkValidity() || field.required && !field.value.trim()));
@@ -102,27 +101,27 @@
             const control = event.target.closest('[data-uims]'); if (!control) return;
             event.preventDefault();
             try { actions[control.dataset.uims]?.(control.dataset.record, control); } catch (exception) { error(exception); }
-        }, {signal});
+        }, { signal });
         all('dialog,.modal,.offcanvas').forEach(dialog => {
             const changed = () => dirty.add(dialog);
-            dialog.addEventListener('input', changed, {signal}); dialog.addEventListener('change', changed, {signal});
-            dialog.addEventListener('cancel', event => { event.preventDefault(); close(dialog.id); }, {signal});
-            dialog.addEventListener('hide.bs.modal', event => { if (dirty.has(dialog)) { event.preventDefault(); close(dialog.id); } }, {signal});
-            dialog.addEventListener('hidden.bs.modal', () => openers.get(dialog)?.focus(), {signal});
+            dialog.addEventListener('input', changed, { signal }); dialog.addEventListener('change', changed, { signal });
+            dialog.addEventListener('cancel', event => { event.preventDefault(); close(dialog.id); }, { signal });
+            dialog.addEventListener('hide.bs.modal', event => { if (dirty.has(dialog)) { event.preventDefault(); close(dialog.id); } }, { signal });
+            dialog.addEventListener('hidden.bs.modal', () => openers.get(dialog)?.focus(), { signal });
             dialog.addEventListener('click', event => {
-                if(event.defaultPrevented)return;
+                if (event.defaultPrevented) return;
                 if (event.target.closest('[data-bs-dismiss], [data-close], [data-completion-close], [data-profile-cancel], .popup-close, .monitor-close, .evaluation-close, .companies-close, .placements-close, [data-close-exam]')) {
                     event.preventDefault(); event.stopPropagation(); close(dialog.id);
                 } else if (event.target === dialog && dialog.tagName === 'DIALOG') {
                     const rect = dialog.getBoundingClientRect();
                     if (event.clientX < rect.left || event.clientX > rect.right || event.clientY < rect.top || event.clientY > rect.bottom) close(dialog.id);
                 }
-            }, {signal});
+            }, { signal });
         });
         function detail(student, id, selector) {
             const progress = view.progress.find(item => item.id === student); if (!progress) throw Error('This student is not available to this demo identity.');
             const target = document.querySelector(selector);
-            if (target) target.innerHTML = '<h3>' + escape(progress.name) + '</h3><dl>' + [['University ID',progress.universityId],['Department',progress.department],['Company',progress.company?.name],['Company Supervisor',progress.companySupervisor?.name],['Academic Supervisor',progress.supervisor?.name],['Training status',progress.placement?.completionStatus || 'Not placed'],['Approved / Required hours',progress.approvedHours + ' / ' + progress.requiredHours],['Tasks completed',progress.completedTasks + ' / ' + progress.tasks.length],['Risk indicators',progress.risks.join(', ') || 'None'],['Confirmed at UTC',progress.placement?.studentConfirmedAt],['Disable deadline UTC',progress.placement?.accountDisableAt],['Certificate',progress.placement?.certificateId]].map(([label,content]) => '<dt>' + escape(label) + '</dt><dd>' + escape(content || '—') + '</dd>').join('') + '</dl>' + progress.tasks.map(task => '<article><h4>' + escape(task.title) + '</h4><p>' + escape(task.description) + '</p><p>' + escape(task.deadline) + ' · ' + escape(task.status) + '</p><p>' + escape(task.feedback) + '</p>' + view.submissions.filter(sub => sub.taskId === task.id).map(sub => '<p>Submitted ' + escape(sub.createdAt) + ': ' + escape(sub.description) + ' · ' + escape(sub.fileName) + '</p>').join('') + '</article>').join('') + progress.evaluations.map(evaluation => '<article><h4>' + escape(evaluation.kind) + ' evaluation · ' + escape(evaluation.status) + '</h4><p>' + escape(evaluation.comments) + '</p></article>').join('');
+            if (target) target.innerHTML = '<h3>' + escape(progress.name) + '</h3><dl>' + [['University ID', progress.universityId], ['Department', progress.department], ['Company', progress.company?.name], ['Company Supervisor', progress.companySupervisor?.name], ['Academic Supervisor', progress.supervisor?.name], ['Training status', progress.placement?.completionStatus || 'Not placed'], ['Approved / Required hours', progress.approvedHours + ' / ' + progress.requiredHours], ['Tasks completed', progress.completedTasks + ' / ' + progress.tasks.length], ['Risk indicators', progress.risks.join(', ') || 'None'], ['Confirmed at UTC', progress.placement?.studentConfirmedAt], ['Disable deadline UTC', progress.placement?.accountDisableAt], ['Certificate', progress.placement?.certificateId]].map(([label, content]) => '<dt>' + escape(label) + '</dt><dd>' + escape(content || '—') + '</dd>').join('') + '</dl>' + progress.tasks.map(task => '<article><h4>' + escape(task.title) + '</h4><p>' + escape(task.description) + '</p><p>' + escape(task.deadline) + ' · ' + escape(task.status) + '</p><p>' + escape(task.feedback) + '</p>' + view.submissions.filter(sub => sub.taskId === task.id).map(sub => '<p>Submitted ' + escape(sub.createdAt) + ': ' + escape(sub.description) + ' · ' + escape(sub.fileName) + '</p>').join('') + '</article>').join('') + progress.evaluations.map(evaluation => '<article><h4>' + escape(evaluation.kind) + ' evaluation · ' + escape(evaluation.status) + '</h4><p>' + escape(evaluation.comments) + '</p></article>').join('');
             selected = student; open(id);
         }
         function shell() {
@@ -132,7 +131,7 @@
                 if (element && (/log\s*out/i.test(element.textContent) || /logout/i.test(element.id))) {
                     event.preventDefault(); event.stopImmediatePropagation(); demo.logout(); location.href = '../Auth/Login.aspx?demo=1';
                 }
-            }, {signal,capture:true});
+            }, { signal, capture: true });
             all('[id*=Logout],[id*=logout]').forEach(el => el.disabled = false);
             if (!document.querySelector('script[src*="dashboard-navigation.js"]')) {
                 const sidebar = document.querySelector('aside.sidebar,aside.dash-sidebar,aside[id$="Sidebar"]');
@@ -141,55 +140,193 @@
                 const media = matchMedia('(max-width:991.98px)');
                 const setOpen = show => {
                     const active = media.matches && show;
-                    document.body.classList.toggle('sidebar-open',active); toggle?.setAttribute('aria-expanded',String(active));
+                    document.body.classList.toggle('sidebar-open', active); toggle?.setAttribute('aria-expanded', String(active));
                     if (sidebar) sidebar.inert = media.matches && !active;
                     if (main) main.inert = active;
-                    document.querySelector('.sidebar-backdrop,.dash-sidebar-backdrop')?.toggleAttribute('hidden',!active);
+                    document.querySelector('.sidebar-backdrop,.dash-sidebar-backdrop')?.toggleAttribute('hidden', !active);
                     if (active) sidebar?.querySelector('button,a[href]')?.focus();
                 };
                 window.toggleSidebar = () => setOpen(!document.body.classList.contains('sidebar-open'));
-                if (toggle) { toggle.onclick = null; toggle.addEventListener('click',window.toggleSidebar,{signal}); }
-                all('.sidebar-close,.dash-sidebar-close,.legacy-sidebar-close,.sidebar-backdrop,.dash-sidebar-backdrop').forEach(el => el.addEventListener('click',()=>{setOpen(false);toggle?.focus();},{signal}));
-                document.addEventListener('keydown',event=>{if(event.key==='Escape'&&document.body.classList.contains('sidebar-open')){setOpen(false);toggle?.focus();}},{signal});
-                media.addEventListener('change',()=>setOpen(false),{signal}); setOpen(false);
+                if (toggle) { toggle.onclick = null; toggle.addEventListener('click', window.toggleSidebar, { signal }); }
+                all('.sidebar-close,.dash-sidebar-close,.legacy-sidebar-close,.sidebar-backdrop,.dash-sidebar-backdrop').forEach(el => el.addEventListener('click', () => { setOpen(false); toggle?.focus(); }, { signal }));
+                document.addEventListener('keydown', event => { if (event.key === 'Escape' && document.body.classList.contains('sidebar-open')) { setOpen(false); toggle?.focus(); } }, { signal });
+                media.addEventListener('change', () => setOpen(false), { signal }); setOpen(false);
             }
             const topSearch = document.querySelector('.topbar input,.dash-topbar input');
             const search = document.querySelector('main input[type="search"],.content input[type="search"],#taskSearch,#searchInput');
-            if(topSearch&&!search){topSearch.disabled=false;topSearch.addEventListener('keydown',event=>{if(event.key!=='Enter')return;event.preventDefault();const route={admin:'MonitorPlacementsProgress.aspx',student:'ExploreOpportunities.aspx',company:'MyTrainees.aspx',academic:'StudentProgressMonitor.aspx'}[view.user.role];location.href=route+'?search='+encodeURIComponent(topSearch.value.trim());},{signal});}
-            if (topSearch && search && topSearch !== search) { topSearch.disabled=false;topSearch.addEventListener('input',()=>{search.value=topSearch.value;search.dispatchEvent(new Event('input'));},{signal}); }
+            if (topSearch && !search) { topSearch.disabled = false; topSearch.addEventListener('keydown', event => { if (event.key !== 'Enter') return; event.preventDefault(); const route = { admin: 'MonitorPlacementsProgress.aspx', student: 'ExploreOpportunities.aspx', company: 'MyTrainees.aspx', academic: 'StudentProgressMonitor.aspx' }[view.user.role]; location.href = route + '?search=' + encodeURIComponent(topSearch.value.trim()); }, { signal }); }
+            if (topSearch && search && topSearch !== search) { topSearch.disabled = false; topSearch.addEventListener('input', () => { search.value = topSearch.value; search.dispatchEvent(new Event('input')); }, { signal }); }
         }
 
         function notifications() {
-            const items=[];
-            if(view.user.role==='student'){view.applications.forEach(a=>items.push('Application: '+a.status));view.placements.filter(p=>p.completionStatus==='PendingStudentConfirmation').forEach(()=>items.push('Coordinator approval received. Confirm completion in the Student Dashboard.'));}
-            if(view.user.role==='company')items.push(view.applications.filter(a=>a.status==='pending').length+' pending applications',view.tasks.filter(t=>t.status==='submitted').length+' task submissions awaiting review');
-            if(view.user.role==='academic')items.push(view.progress.filter(s=>s.evaluations.some(e=>e.kind==='company'&&e.status==='submitted')&&!s.evaluations.some(e=>e.kind==='academic'&&e.status==='submitted')).length+' assigned students awaiting academic evaluation');
-            if(view.user.role==='admin')items.push(view.messages.filter(m=>m.status==='unread').length+' unread contact messages',view.progress.filter(s=>s.placement?.completionStatus==='PendingStudentConfirmation').length+' pending student confirmations');
-            let dialog=by('originalNotifications');
-            if(!dialog){dialog=document.createElement('dialog');dialog.id='originalNotifications';dialog.className='uims-notifications';dialog.setAttribute('aria-label','Demo notifications');document.forms[0].append(dialog);}
-            dialog.innerHTML='<h2>Notifications · local demo</h2>'+items.map(item=>'<p>'+escape(item)+'</p>').join('')+(items.length?'':'<p>No notifications.</p>')+'<button type="button" data-notification-close>Close</button>';
-            dialog.querySelector('button').onclick=()=>dialog.close();dialog.showModal();
+            const items = [];
+            if (view.user.role === 'student') { view.applications.forEach(a => items.push('Application: ' + a.status)); view.placements.filter(p => p.completionStatus === 'PendingStudentConfirmation').forEach(() => items.push('Coordinator approval received. Confirm completion in the Student Dashboard.')); }
+            if (view.user.role === 'company') items.push(view.applications.filter(a => a.status === 'pending').length + ' pending applications', view.tasks.filter(t => t.status === 'submitted').length + ' task submissions awaiting review');
+            if (view.user.role === 'academic') items.push(view.progress.filter(s => s.evaluations.some(e => e.kind === 'company' && e.status === 'submitted') && !s.evaluations.some(e => e.kind === 'academic' && e.status === 'submitted')).length + ' assigned students awaiting academic evaluation');
+            if (view.user.role === 'admin') items.push(view.messages.filter(m => m.status === 'unread').length + ' unread contact messages', view.progress.filter(s => s.placement?.completionStatus === 'PendingStudentConfirmation').length + ' pending student confirmations');
+            let dialog = by('originalNotifications');
+            if (!dialog) { dialog = document.createElement('dialog'); dialog.id = 'originalNotifications'; dialog.className = 'uims-notifications'; dialog.setAttribute('aria-label', 'Demo notifications'); document.forms[0].append(dialog); }
+            dialog.innerHTML = '<h2>Notifications · local demo</h2>' + items.map(item => '<p>' + escape(item) + '</p>').join('') + (items.length ? '' : '<p>No notifications.</p>') + '<button type="button" data-notification-close>Close</button>';
+            dialog.querySelector('button').onclick = () => dialog.close(); dialog.showModal();
         }
-        all('.topbar button,.dash-topbar button').forEach(el=>{if(!/notification/i.test(el.getAttribute('aria-label')||'')&&!el.querySelector('.bi-bell'))return;el.disabled=false;el.title='Local demo notifications';el.addEventListener('click',event=>{event.preventDefault();event.stopImmediatePropagation();view=demo.view();if(view)notifications();},{signal,capture:true});});
+        all('.topbar button,.dash-topbar button').forEach(el => { if (!/notification/i.test(el.getAttribute('aria-label') || '') && !el.querySelector('.bi-bell')) return; el.disabled = false; el.title = 'Local demo notifications'; el.addEventListener('click', event => { event.preventDefault(); event.stopImmediatePropagation(); view = demo.view(); if (view) notifications(); }, { signal, capture: true }); });
         shell();
-        
-        options('statusFilter',['pending','accepted','rejected','confirmed'].map(id=>({id,name:id[0].toUpperCase()+id.slice(1)})));
-        render=()=>{
-            const records=view.applications.filter(application=>!value('statusFilter')||application.status===value('statusFilter'));
-            fill('.application-list',records,application=>{const opportunity=view.opportunities.find(o=>o.id===application.opportunityId);return '<article class="application-card" data-id="'+escape(application.id)+'"><div class="application-top"><div><h3>'+escape(opportunity?.title||'Internship')+'</h3><p class="company-name">'+escape(view.companies.find(c=>c.id===application.companyId)?.name)+'</p></div><span class="status-badge">'+escape(application.status)+'</span></div><div class="application-meta">Applied '+escape(application.createdAt)+'</div><p class="decision-note">'+escape(application.reason||'Awaiting company review')+'</p><div class="application-actions">'+button('View details','details',application.id,'details-button')+(application.status==='accepted'&&!view.placements.length?button('Confirm offer','confirm',application.id,'confirm-button'):'')+'</div></article>';});
-            text('resultCount','('+records.length+')');by('emptyState').hidden=records.length>0;
-            all('.summary-card strong,.summary-card .summary-value').forEach((el,index)=>el.textContent=[view.applications.length,view.applications.filter(a=>a.status==='pending').length,view.applications.filter(a=>['accepted','confirmed'].includes(a.status)).length,view.applications.filter(a=>a.status==='rejected').length][index]??0);
+
+
+        // ================= My Applications page =================
+        const opportunityOf = a => view.opportunities.find(o => o.id === a?.opportunityId);
+        const companyOf = a => view.companies.find(c => c.id === (a?.companyId || opportunityOf(a)?.companyId));
+        const companyName = a => companyOf(a)?.name || a?.companyName || 'Company';
+        const initials = name => String(name || '').split(/\s+/).filter(Boolean).slice(0, 2).map(word => word[0].toUpperCase()).join('') || 'CO';
+        const tone = key => { let hash = 0; for (const c of String(key || '')) hash = (hash * 31 + c.charCodeAt(0)) | 0; return 'tone-' + Math.abs(hash) % 4; };
+        const plural = (n, word) => n + ' ' + word + (n === 1 ? '' : 's');
+        const formatDate = s => { if (!s) return '—'; const d = new Date(String(s).length <= 10 ? s + 'T00:00:00' : s); return isNaN(d) ? String(s) : d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }); };
+        const safeUrl = url => /^https?:\/\//i.test(String(url || '')) ? String(url) : '';
+        const statusInfo = {
+            pending: { label: 'Pending', icon: 'bi-hourglass-split', note: 'note-warning', noteIcon: 'bi-clock-history', text: 'Your application is waiting for the company supervisor’s review.' },
+            accepted: { label: 'Accepted', icon: 'bi-patch-check', note: 'note-success', noteIcon: 'bi-info-circle', text: 'Your application has been accepted. Review the offer before confirming.' },
+            confirmed: { label: 'Confirmed', icon: 'bi-check2-circle', note: 'note-primary', noteIcon: 'bi-briefcase', text: 'You confirmed this offer. This is your internship placement.' },
+            rejected: { label: 'Rejected', icon: 'bi-x-circle', note: 'note-danger', noteIcon: 'bi-chat-left-text', text: 'The company did not accept this application.' },
+            withdrawn: { label: 'Withdrawn', icon: 'bi-arrow-counterclockwise', note: '', noteIcon: 'bi-info-circle', text: 'This offer was released because you confirmed another internship.' }
         };
-        actions.details=id=>{selected=id;const application=view.applications.find(a=>a.id===id);text('detailsTitle',view.opportunities.find(o=>o.id===application.opportunityId)?.title||'Internship');text('detailsCompany',view.companies.find(c=>c.id===application.companyId)?.name);text('detailsStatus',application.status);text('detailsDecision',application.reason||'Awaiting review');text('detailsMeta','Submitted '+application.createdAt+' · '+application.motivation);open('applicationModal');};
-        actions.confirm=id=>{selected=id;const application=view.applications.find(a=>a.id===id);text('selectedOffer',view.opportunities.find(o=>o.id===application.opportunityId)?.title+' at '+view.companies.find(c=>c.id===application.companyId)?.name);open('confirmModal');};
-        click('confirmOffer',()=>transact('confirmOffer',{id:selected},'confirmModal'));on('statusFilter','change',render);
+        const infoOf = status => statusInfo[String(status || '').toLowerCase()] || { label: status || 'Unknown', icon: 'bi-question-circle', note: '', noteIcon: 'bi-info-circle', text: '' };
+        const badge = status => { const s = String(status || '').toLowerCase(), info = infoOf(s); return '<span class="status-badge status-' + escape(s) + '"><i class="bi ' + info.icon + '"></i> ' + escape(info.label) + '</span>'; };
+        const tracker = status => {
+            const s = String(status || '').toLowerCase();
+            const steps = { pending: [['Applied', 'done'], ['Under review', 'current'], ['Decision', ''], ['Confirm', '']], accepted: [['Applied', 'done'], ['Reviewed', 'done'], ['Accepted', 'done'], ['Confirm', 'current']], confirmed: [['Applied', 'done'], ['Reviewed', 'done'], ['Accepted', 'done'], ['Confirmed', 'done']], rejected: [['Applied', 'done'], ['Reviewed', 'done'], ['Rejected', 'danger']], withdrawn: [['Applied', 'done'], ['Accepted', 'done'], ['Withdrawn', 'muted']] }[s] || [['Applied', 'done']];
+            return '<ol class="tracker" aria-label="Application progress">' + steps.map(([label, cls]) => '<li class="' + cls + '"><span class="dot"></span><span class="label">' + escape(label) + '</span></li>').join('') + '</ol>';
+        };
+        const hasConfirmed = () => view.applications.some(a => a.status === 'confirmed') || (view.placements || []).length > 0;
+        const meta = a => { const o = opportunityOf(a) || {}, weeks = o.duration || o.durationWeeks; return [['bi-geo-alt', [o.location, o.workMode].filter(Boolean).join(' · ')], ['bi-mortarboard', o.department], ['bi-hourglass-split', weeks ? weeks + ' weeks' : ''], ['bi-calendar3', a.createdAt ? 'Applied ' + formatDate(a.createdAt) : '']].filter(item => item[1]).map(([icon, label]) => '<span><i class="bi ' + icon + '"></i> ' + escape(label) + '</span>').join(''); };
+
+        function card(a) {
+            const s = String(a.status || '').toLowerCase(), info = infoOf(s), o = opportunityOf(a), name = companyName(a);
+            const note = s === 'rejected' && a.reason ? 'Reason: ' + a.reason : (s === 'withdrawn' && a.reason ? a.reason : info.text);
+            const canConfirm = s === 'accepted' && !hasConfirmed();
+            return '<article class="application-card status-' + escape(s) + '-card' + (s === 'confirmed' ? ' is-confirmed' : '') + '" data-id="' + escape(a.id) + '">'
+                + '<div class="application-top"><div class="company-heading"><span class="company-mark ' + tone(o?.companyId || name) + '" aria-hidden="true">' + escape(initials(name)) + '</span><div class="min-w-0"><h3>' + escape(o?.title || 'Internship') + '</h3><p class="company-name">' + escape(name) + '</p></div></div>' + badge(s) + '</div>'
+                + '<div class="application-meta">' + meta(a) + '</div>'
+                + tracker(s)
+                + (note ? '<p class="decision-note ' + info.note + '"><i class="bi ' + info.noteIcon + '"></i> ' + escape(note) + '</p>' : '')
+                + '<div class="application-actions"><button type="button" class="details-button" data-uims="details" data-record="' + escape(a.id) + '"><i class="bi bi-eye"></i> View details</button>'
+                + (canConfirm ? '<button type="button" class="confirm-button" data-uims="confirm" data-record="' + escape(a.id) + '"><i class="bi bi-check2-circle"></i> Confirm offer</button>' : '') + '</div>'
+                + '</article>';
+        }
+
+        function guidance() {
+            const box = by('guidance'); if (!box) return;
+            const confirmed = view.applications.find(a => a.status === 'confirmed'), accepted = view.applications.filter(a => a.status === 'accepted').length, pending = view.applications.filter(a => a.status === 'pending').length;
+            let cls = '', icon = 'bi-signpost-2', title, body;
+            if (confirmed) { cls = 'is-success'; icon = 'bi-patch-check'; title = 'Offer confirmed'; body = 'You confirmed ' + (opportunityOf(confirmed)?.title || 'your internship') + ' at ' + companyName(confirmed) + '. Check your Dashboard for the next steps.'; }
+            else if (accepted) { title = 'You have ' + plural(accepted, 'accepted offer'); body = 'Confirm the one you want to join. You can confirm only one internship offer.'; }
+            else if (pending) { cls = 'is-calm'; icon = 'bi-hourglass-split'; title = 'Waiting for decisions'; body = plural(pending, 'application') + (pending === 1 ? ' is' : ' are') + ' being reviewed by company supervisors.'; }
+            else if (!view.applications.length) { cls = 'is-calm'; icon = 'bi-compass'; title = 'No applications yet'; body = 'Explore opportunities that match your specialization and apply to get started.'; }
+            else { cls = 'is-calm'; icon = 'bi-compass'; title = 'Keep exploring'; body = 'New opportunities are added regularly. Apply to the ones that interest you.'; }
+            box.className = 'guidance ' + cls;
+            const i = by('guidanceIcon'); if (i) i.className = 'bi ' + icon;
+            text('guidanceTitle', title); text('guidanceText', body);
+        }
+
+        options('statusFilter', ['pending', 'accepted', 'confirmed', 'rejected', 'withdrawn'].map(id => ({ id, name: id[0].toUpperCase() + id.slice(1) })), 'All statuses');
+        if (by('detailsNote')) by('detailsNote').hidden = true;
+        if (by('confirmNote')) by('confirmNote').hidden = true;
+        render = () => {
+            const records = view.applications.filter(application => !value('statusFilter') || application.status === value('statusFilter'));
+            records.sort((a, b) => String(b.createdAt || '').localeCompare(String(a.createdAt || '')));
+            fill('.application-list', records, card);
+            text('resultCount', records.length); by('emptyState').hidden = records.length > 0;
+            if (!records.length) {
+                if (!view.applications.length) { text('emptyTitle', 'No applications yet'); text('emptyText', 'Explore opportunities and apply to see them here.'); }
+                else { text('emptyTitle', 'No applications with this status'); text('emptyText', 'Choose another status to see your applications.'); }
+            }
+            all('.summary-card strong,.summary-card .summary-value').forEach((el, index) => el.textContent = [view.applications.length, view.applications.filter(a => a.status === 'pending').length, view.applications.filter(a => ['accepted', 'confirmed'].includes(a.status)).length, view.applications.filter(a => a.status === 'rejected').length][index] ?? 0);
+            guidance();
+        };
+        actions.details = id => {
+            selected = id; const a = view.applications.find(item => item.id === id); if (!a) throw Error('Application not found.');
+            const s = String(a.status || '').toLowerCase(), o = opportunityOf(a) || {}, name = companyName(a), weeks = o.duration || o.durationWeeks;
+            text('detailsTitle', o.title || 'Internship'); text('detailsCompany', name);
+            const mark = by('detailsMark'); if (mark) { mark.textContent = initials(name); mark.className = 'company-mark lg ' + tone(o.companyId || name); }
+            by('detailsStatus').innerHTML = badge(s);
+            by('detailsTrack').innerHTML = tracker(s);
+            by('detailsMeta').innerHTML = '<dl class="details-grid">' + [['bi-geo-alt', 'Location', [o.location, o.workMode].filter(Boolean).join(' · ')], ['bi-mortarboard', 'Specialization', o.department], ['bi-hourglass-split', 'Duration', [weeks ? weeks + ' weeks' : '', o.requiredHours ? o.requiredHours + ' hours' : ''].filter(Boolean).join(' · ')], ['bi-calendar3', 'Applied', formatDate(a.createdAt)]].map(([icon, label, content]) => '<div><dt><i class="bi ' + icon + '"></i> ' + label + '</dt><dd>' + escape(content || '—') + '</dd></div>').join('') + '</dl>';
+            const info = infoOf(s), decision = s === 'rejected' ? (a.reason ? 'Reason: ' + a.reason : info.text) : (s === 'withdrawn' && a.reason ? a.reason : info.text);
+            by('detailsDecision').innerHTML = decision ? '<p class="decision-note ' + info.note + '"><i class="bi ' + info.noteIcon + '"></i> ' + escape(decision) + '</p>' : '';
+            const links = [['bi-file-earmark-person', 'CV', a.cvLink], ['bi-github', 'Portfolio', a.portfolioLink]].filter(item => safeUrl(item[2])).map(([icon, label, url]) => '<a href="' + escape(safeUrl(url)) + '" target="_blank" rel="noopener noreferrer"><i class="bi ' + icon + '"></i><span><strong>' + label + '</strong> · ' + escape(url) + '</span></a>').join('');
+            by('detailsExtra').innerHTML = (a.motivation ? '<div class="details-section"><h4>Your motivation</h4><p>' + escape(a.motivation) + '</p></div>' : '') + (links ? '<div class="details-section"><h4>Documents</h4><div class="link-list">' + links + '</div></div>' : '');
+            open('applicationModal');
+        };
+        actions.confirm = id => {
+            selected = id; const a = view.applications.find(item => item.id === id), o = opportunityOf(a), name = companyName(a);
+            by('selectedOffer').innerHTML = '<span class="company-mark ' + tone(o?.companyId || name) + '" aria-hidden="true">' + escape(initials(name)) + '</span><span>' + escape(o?.title || 'Internship') + '<small>' + escape(name) + '</small></span>';
+            open('confirmModal');
+        };
+        click('confirmOffer', () => {
+            const a = view.applications.find(item => item.id === selected), title = opportunityOf(a)?.title || 'the internship', name = companyName(a);
+            if (transact('confirmOffer', { id: selected }, 'confirmModal').ok) { const box = by('confirmationNotice'); if (box) { box.textContent = 'You confirmed ' + title + ' at ' + name + '. Your other accepted offers were released.'; box.hidden = false; box.focus(); } }
+        });
+        on('statusFilter', 'change', render);
 
         render();
         notice('DEMO — original interface connected to local browser storage. No Firebase or real authentication.');
-        window.addEventListener('storage', event => { if (event.key === 'uims.demo.v1') { view=demo.view(); if(view&&!view.user.mustChangePassword&&view.user.role===document.body.dataset.demoRole)render();else location.href='../Auth/Login.aspx?demo=1'; } }, {signal});
-        window.addEventListener('focus',()=>{const current=demo.current();if(!current||current.mustChangePassword)location.href='../Auth/Login.aspx?demo=1';},{signal});
-        window.addEventListener('pageshow',()=>{const current=demo.current();if(!current||current.mustChangePassword)location.href='../Auth/Login.aspx?demo=1';},{signal});
+        window.addEventListener('storage', event => { if (event.key === 'uims.demo.v1') { view = demo.view(); if (view && !view.user.mustChangePassword && view.user.role === document.body.dataset.demoRole) render(); else location.href = '../Auth/Login.aspx?demo=1'; } }, { signal });
+        window.addEventListener('focus', () => { const current = demo.current(); if (!current || current.mustChangePassword) location.href = '../Auth/Login.aspx?demo=1'; }, { signal });
+        window.addEventListener('pageshow', () => { const current = demo.current(); if (!current || current.mustChangePassword) location.href = '../Auth/Login.aspx?demo=1'; }, { signal });
     }
-    if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',initialize,{once:true});else initialize();
-    if(window.Sys?.WebForms?.PageRequestManager)Sys.WebForms.PageRequestManager.getInstance().add_endRequest(initialize);
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initialize, { once: true }); else initialize();
+    if (window.Sys?.WebForms?.PageRequestManager) Sys.WebForms.PageRequestManager.getInstance().add_endRequest(initialize);
+})();
+
+/* Sample-card behaviour when the demo store is not active: the status filter, the details popup and
+   a confirmation preview work on the cards already in the page. Nothing is saved or sent; a refresh resets it. */
+(function () {
+    'use strict';
+    if (window.UimsDemo?.enabled()) return;
+    function start() {
+        const $ = id => document.getElementById(id);
+        const cards = [...document.querySelectorAll('.application-list .application-card')];
+        if (!cards.length) return;
+        const read = (el, selector) => el.querySelector(selector)?.textContent.trim() || '';
+        let current = null;
+        function filter() {
+            const status = ($('statusFilter')?.value || '').toLowerCase();
+            let shown = 0;
+            cards.forEach(card => { const ok = !status || (card.dataset.status || '').toLowerCase() === status; card.hidden = !ok; if (ok) shown++; });
+            if ($('resultCount')) $('resultCount').textContent = shown;
+            if ($('emptyState')) $('emptyState').hidden = shown > 0;
+        }
+        $('statusFilter')?.addEventListener('change', filter);
+        $('applicationModal')?.addEventListener('show.bs.modal', event => {
+            const card = event.relatedTarget?.closest('.application-card'); if (!card) return;
+            const mark = card.querySelector('.company-mark');
+            if ($('detailsMark') && mark) { $('detailsMark').textContent = mark.textContent; $('detailsMark').className = 'company-mark lg ' + ([...mark.classList].find(c => c.startsWith('tone-')) || 'tone-0'); }
+            if ($('detailsTitle')) $('detailsTitle').textContent = read(card, 'h3');
+            if ($('detailsCompany')) $('detailsCompany').textContent = read(card, '.company-name');
+            if ($('detailsStatus')) $('detailsStatus').innerHTML = card.querySelector('.status-badge')?.outerHTML || '';
+            if ($('detailsTrack')) $('detailsTrack').innerHTML = card.querySelector('.tracker')?.outerHTML || '';
+            if ($('detailsMeta')) $('detailsMeta').innerHTML = card.querySelector('.application-meta')?.outerHTML || '';
+            if ($('detailsDecision')) $('detailsDecision').innerHTML = card.querySelector('.decision-note')?.outerHTML || '';
+            if ($('detailsExtra')) $('detailsExtra').innerHTML = '';
+        });
+        $('confirmModal')?.addEventListener('show.bs.modal', event => {
+            current = event.relatedTarget?.closest('.application-card') || null; if (!current) return;
+            const mark = current.querySelector('.company-mark');
+            if ($('selectedOffer')) $('selectedOffer').innerHTML = (mark ? mark.outerHTML : '') + '<span>' + read(current, 'h3').replace(/[&<>"']/g, '') + '<small>' + read(current, '.company-name').replace(/[&<>"']/g, '') + '</small></span>';
+        });
+        $('confirmOffer')?.addEventListener('click', () => {
+            if (!current) return;
+            const title = read(current, 'h3'), company = read(current, '.company-name');
+            current.classList.add('is-confirmed', 'status-confirmed-card');
+            const badge = current.querySelector('.status-badge'); if (badge) { badge.className = 'status-badge status-confirmed'; badge.innerHTML = '<i class="bi bi-check2-circle"></i> Confirmed'; }
+            const last = current.querySelector('.tracker li:last-child'); if (last) { last.className = 'done'; last.querySelector('.label').textContent = 'Confirmed'; }
+            const note = current.querySelector('.decision-note'); if (note) { note.className = 'decision-note note-primary'; note.innerHTML = '<i class="bi bi-briefcase"></i> You confirmed this offer. This is your internship placement.'; }
+            document.querySelectorAll('.application-card .confirm-button').forEach(button => button.remove());
+            const box = $('confirmationNotice'); if (box) { box.textContent = 'Preview: you confirmed ' + title + ' at ' + company + '. This resets when you refresh.'; box.hidden = false; }
+            const guide = $('guidance'); if (guide) { guide.className = 'guidance is-success'; if ($('guidanceIcon')) $('guidanceIcon').className = 'bi bi-patch-check'; if ($('guidanceTitle')) $('guidanceTitle').textContent = 'Offer confirmed'; if ($('guidanceText')) $('guidanceText').textContent = 'You confirmed ' + title + ' at ' + company + '.'; }
+            window.bootstrap?.Modal.getInstance($('confirmModal'))?.hide();
+            box?.focus();
+        });
+        filter();
+    }
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start, { once: true }); else start();
 })();

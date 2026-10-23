@@ -10,7 +10,7 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet" />
     <link runat="server" href="~/Assets/shared/colors.css" rel="stylesheet" />
     
-    <link runat="server" href="~/Assets/company/manage-opportunities.css?v=20261021-original-ui" rel="stylesheet" />
+    <link runat="server" href="~/Assets/company/manage-opportunities.css?v=20261023-modern" rel="stylesheet" />
 </head>
 <body data-demo-role="company">
     <form id="form1" runat="server">
@@ -72,77 +72,90 @@
                 <main class="content">
 
                     <!-- Page header -->
-                    <div class="page-head">
-                        <div>
-                            <div class="date-line">Company Supervisor · Orange Jordan</div>
+                    <section class="page-hero">
+                        <div class="page-hero-text">
+                            <div class="hero-eyebrow"><i class="bi bi-building"></i> Company Supervisor · Orange Jordan</div>
                             <h1 class="page-title">Manage Opportunities</h1>
-                            <p class="subtitle mb-0">Post internships for JUST students, choose who can apply, and close them when seats are filled.</p>
+                            <p class="page-subtitle">Post internships for JUST students, choose who can apply, and close them when seats are filled.</p>
                         </div>
-                        <button type="button" class="btn-primary-pill" data-action="new">
-                            <i class="bi bi-plus-lg"></i> New opportunity
-                        </button>
-                    </div>
+                        <div class="page-hero-actions">
+                            <button type="button" class="btn-hero-pill" data-action="new">
+                                <i class="bi bi-plus-lg"></i> New opportunity
+                            </button>
+                        </div>
+                    </section>
 
                     <!-- Stats -->
                     <div class="row g-3 mb-4">
                         <div class="col-6 col-xl-3">
-                            <div class="stat-card blue">
-                                <div class="stat-icon"><i class="bi bi-briefcase"></i></div>
-                                <div class="stat-label">Total</div>
-                                <div class="stat-value" id="statTotal">00</div>
-                                <div class="stat-note">Opportunities posted</div>
+                            <div class="kpi">
+                                <div class="kpi-icon primary"><i class="bi bi-briefcase"></i></div>
+                                <div class="kpi-body">
+                                    <div class="kpi-label">Total</div>
+                                    <div class="kpi-value" id="statTotal">0</div>
+                                    <div class="kpi-note">Opportunities posted</div>
+                                </div>
                             </div>
                         </div>
                         <div class="col-6 col-xl-3">
-                            <div class="stat-card ice">
-                                <div class="stat-icon success"><i class="bi bi-unlock"></i></div>
-                                <div class="stat-label">Open</div>
-                                <div class="stat-value" id="statOpen">00</div>
-                                <div class="stat-note">Accepting applications</div>
+                            <div class="kpi">
+                                <div class="kpi-icon success"><i class="bi bi-unlock"></i></div>
+                                <div class="kpi-body">
+                                    <div class="kpi-label">Open</div>
+                                    <div class="kpi-value" id="statOpen">0</div>
+                                    <div class="kpi-note">Accepting applications</div>
+                                </div>
                             </div>
                         </div>
                         <div class="col-6 col-xl-3">
-                            <div class="stat-card">
-                                <div class="stat-icon"><i class="bi bi-person-check"></i></div>
-                                <div class="stat-label">Seats left</div>
-                                <div class="stat-value" id="statSeats">00</div>
-                                <div class="stat-note">Across open opportunities</div>
+                            <div class="kpi">
+                                <div class="kpi-icon info"><i class="bi bi-person-check"></i></div>
+                                <div class="kpi-body">
+                                    <div class="kpi-label">Seats left</div>
+                                    <div class="kpi-value" id="statSeats">0</div>
+                                    <div class="kpi-note">Across open opportunities</div>
+                                </div>
                             </div>
                         </div>
                         <div class="col-6 col-xl-3">
-                            <div class="stat-card">
-                                <div class="stat-icon warning"><i class="bi bi-inbox"></i></div>
-                                <div class="stat-label">Applicants</div>
-                                <div class="stat-value" id="statApplicants">00</div>
-                                <div class="stat-note">On open opportunities</div>
+                            <div class="kpi">
+                                <div class="kpi-icon warning"><i class="bi bi-inbox"></i></div>
+                                <div class="kpi-body">
+                                    <div class="kpi-label">Applicants</div>
+                                    <div class="kpi-value" id="statApplicants">0</div>
+                                    <div class="kpi-note">On open opportunities</div>
+                                </div>
                             </div>
                         </div>
                     </div>
 
                     <!-- Toolbar -->
-                    <div class="filter-bar">
-                        <div class="filter-tabs" id="statusTabs" role="tablist">
+                    <div class="toolbar">
+                        <div class="filter-tabs" id="statusTabs" role="tablist" aria-label="Filter by status">
                             <button type="button" class="active" data-status="all">All <span data-count="all">0</span></button>
                             <button type="button" data-status="Open">Open <span data-count="Open">0</span></button>
                             <button type="button" data-status="Closed">Closed <span data-count="Closed">0</span></button>
                         </div>
-                        <div class="toolbar-select">
-                            <i class="bi bi-sort-down"></i>
-                            <select id="sortBy" aria-label="Sort opportunities">
-                                <option value="newest">Newest first</option>
-                                <option value="deadline">Deadline soonest</option>
-                                <option value="applicants">Most applicants</option>
-                                <option value="title">Title A–Z</option>
-                            </select>
+                        <div class="toolbar-end">
+                            <span class="result-count" id="resultCount" aria-live="polite"></span>
+                            <div class="toolbar-select">
+                                <i class="bi bi-sort-down"></i>
+                                <select id="sortBy" aria-label="Sort opportunities">
+                                    <option value="newest">Newest first</option>
+                                    <option value="deadline">Deadline soonest</option>
+                                    <option value="applicants">Most applicants</option>
+                                    <option value="title">Title A–Z</option>
+                                </select>
+                            </div>
                         </div>
                     </div>
 
                     <!-- Opportunity cards (filled by manage-opportunities.js) -->
-                    <div class="row g-3" id="oppGrid"></div>
+                    <div class="row g-3 opp-grid" id="oppGrid"></div>
 
                     <!-- Empty state -->
                     <div class="empty-state" id="emptyState" hidden>
-                        <i class="bi bi-briefcase"></i>
+                        <div class="empty-art"><i class="bi bi-briefcase"></i></div>
                         <h3 id="emptyTitle">No opportunities here yet</h3>
                         <p id="emptyText">Post your first internship so JUST students can start applying.</p>
                         <button type="button" class="btn-primary-pill mt-3" data-action="new"><i class="bi bi-plus-lg"></i> New opportunity</button>
@@ -161,7 +174,7 @@
                         <div class="modal-icon"><i class="bi bi-briefcase" id="oppModalIcon"></i></div>
                         <div class="modal-heading">
                             <h2 class="modal-title" id="oppModalTitle">New opportunity</h2>
-                            <p class="modal-sub" id="oppModalSub">Fill in the details below. Students in the selected majors will see it right away.</p>
+                            <p class="modal-sub" id="oppModalSub">Fill in the details below. Students in the selected specialization will see it right away.</p>
                         </div>
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
@@ -201,7 +214,7 @@
 
                                     <div class="field mb-0">
                                         <div class="field-top">
-                                            <label for="oppRequirements">Requirements</label>
+                                            <label for="oppRequirements">Requirements <span class="optional">Optional</span></label>
                                             <span class="char-count" data-for="oppRequirements"></span>
                                         </div>
                                         <textarea id="oppRequirements" class="form-control" rows="2" maxlength="600" placeholder="Skills, tools, or courses the student should have"></textarea>
@@ -215,35 +228,46 @@
                                         <span class="block-num">2</span>
                                         <div>
                                             <h3>Who can apply</h3>
-                                            <p>Only students in the selected majors will see this opportunity.</p>
+                                            <p>Only students in the selected specialization will see this opportunity.</p>
                                         </div>
                                     </div>
 
                                     <div class="field">
-                                        <label>Specializations</label>
+                                        <label>Specialization</label>
                                         <ul class="major-picker" id="majorPicker"></ul>
                                         <div class="field-error" data-error-for="majorPicker" hidden></div>
                                     </div>
 
                                     <div class="row g-3">
-                                        <div class="col-sm-5">
+                                        <div class="col-sm-6">
                                             <div class="field mb-0">
                                                 <label for="oppSeats">Available seats</label>
                                                 <div class="stepper">
                                                     <button type="button" class="step-btn" data-step="-1" data-target="oppSeats" aria-label="Fewer seats"><i class="bi bi-dash-lg"></i></button>
-                                                    <label for="oppRequiredHours">Required approved training hours</label><input type="number" id="oppRequiredHours" class="form-control" min="1" value="160" required /><input type="number" id="oppSeats" class="form-control" min="1" max="50" />
+                                                    <input type="number" id="oppSeats" class="form-control" min="1" max="50" />
                                                     <button type="button" class="step-btn" data-step="1" data-target="oppSeats" aria-label="More seats"><i class="bi bi-plus-lg"></i></button>
                                                 </div>
                                                 <div class="field-error" data-error-for="oppSeats" hidden></div>
                                             </div>
                                         </div>
-                                        <div class="col-sm-7">
+                                        <div class="col-sm-6">
+                                            <div class="field mb-0">
+                                                <label for="oppRequiredHours">Required training hours</label>
+                                                <div class="stepper">
+                                                    <button type="button" class="step-btn" data-step="-10" data-target="oppRequiredHours" aria-label="Fewer hours"><i class="bi bi-dash-lg"></i></button>
+                                                    <input type="number" id="oppRequiredHours" class="form-control" min="1" max="2000" value="160" required />
+                                                    <button type="button" class="step-btn" data-step="10" data-target="oppRequiredHours" aria-label="More hours"><i class="bi bi-plus-lg"></i></button>
+                                                </div>
+                                                <div class="field-error" data-error-for="oppRequiredHours" hidden></div>
+                                            </div>
+                                        </div>
+                                        <div class="col-12">
                                             <div class="field mb-0">
                                                 <label>Work mode</label>
                                                 <ul class="segmented" id="workMode">
-                                                    <li><input type="radio" name="workMode" id="wmOnsite" value="On-site" checked="checked" /><label for="wmOnsite">On-site</label></li>
-                                                    <li><input type="radio" name="workMode" id="wmHybrid" value="Hybrid" /><label for="wmHybrid">Hybrid</label></li>
-                                                    <li><input type="radio" name="workMode" id="wmRemote" value="Remote" /><label for="wmRemote">Remote</label></li>
+                                                    <li><input type="radio" name="workMode" id="wmOnsite" value="On-site" checked="checked" /><label for="wmOnsite"><i class="bi bi-building"></i> On-site</label></li>
+                                                    <li><input type="radio" name="workMode" id="wmHybrid" value="Hybrid" /><label for="wmHybrid"><i class="bi bi-arrow-left-right"></i> Hybrid</label></li>
+                                                    <li><input type="radio" name="workMode" id="wmRemote" value="Remote" /><label for="wmRemote"><i class="bi bi-house"></i> Remote</label></li>
                                                 </ul>
                                             </div>
                                         </div>
@@ -308,22 +332,29 @@
                             <!-- ======== Live preview ======== -->
                             <aside class="opp-preview">
                                 <div class="preview-sticky">
-                                    <div class="preview-label"><i class="bi bi-eye"></i> Live preview</div>
+                                    <div class="preview-label"><span class="live-dot"></span> Live preview</div>
                                     <div class="opp-card preview-card">
                                         <div class="opp-top">
                                             <span class="status success" id="pvStatus">Open</span>
                                             <span class="opp-deadline"><i class="bi bi-calendar-event"></i> Apply by <span id="pvDeadline">—</span></span>
                                         </div>
-                                        <h3 class="opp-title" id="pvTitle">Opportunity title</h3>
+                                        <div class="opp-head">
+                                            <div class="opp-logo" id="pvLogo">OJ</div>
+                                            <div class="opp-head-text">
+                                                <h3 class="opp-title is-placeholder" id="pvTitle">Opportunity title</h3>
+                                                <div class="opp-company" id="pvCompany">Orange Jordan</div>
+                                            </div>
+                                        </div>
                                         <div class="opp-meta">
                                             <span><i class="bi bi-geo-alt"></i><span id="pvLocation">Location</span></span>
                                             <span><i class="bi bi-laptop"></i><span id="pvMode">On-site</span></span>
-                                            <span><i class="bi bi-hourglass-split"></i><span id="pvDuration">8</span> weeks</span>
+                                            <span><i class="bi bi-hourglass-split"></i><span id="pvDuration">8</span>wks</span>
+                                            <span><i class="bi bi-clock-history"></i><span id="pvHours">160</span>h</span>
                                         </div>
-                                        <p class="opp-desc" id="pvDesc">A short description of the internship appears here.</p>
-                                        <div class="opp-majors" id="pvMajors"><span class="tag tag-empty">No majors selected</span></div>
+                                        <p class="opp-desc is-placeholder" id="pvDesc">A short description of the internship appears here.</p>
+                                        <div class="opp-majors" id="pvMajors"><span class="tag tag-empty">No specialization selected</span></div>
                                         <div class="opp-seats">
-                                            <div class="d-flex justify-content-between">
+                                            <div class="seats-row">
                                                 <span><strong id="pvAccepted">0</strong> of <span id="pvSeats">1</span> seats filled</span>
                                                 <span class="text-secondary"><span id="pvApplicants">0</span> applicants</span>
                                             </div>
@@ -338,7 +369,7 @@
 
                     <!-- Footer -->
                     <div class="modal-footer">
-                        <span class="footer-hint"><i class="bi bi-shield-check"></i> All fields are required</span>
+                        <span class="footer-hint"><i class="bi bi-shield-check"></i> All fields except requirements are required</span>
                         <button type="button" class="btn-ghost lg" data-bs-dismiss="modal">Cancel</button>
                         <button type="button" class="btn-primary-pill" id="saveOpp"><i class="bi bi-check-lg"></i> <span id="saveOppText">Publish opportunity</span></button>
                     </div>
@@ -360,10 +391,9 @@
                     </div>
                     <div class="modal-body">
                         <ul class="consequence-list">
-                            <li><i class="bi bi-x-circle"></i> Students can no longer see it or apply.</li>
-                            <li><i class="bi bi-people"></i> Accepted students keep their seats.</li>
-                            <li id="closePendingLine"><i class="bi bi-hourglass-split"></i> <span></span></li>
-                            <li><i class="bi bi-arrow-counterclockwise"></i> You can reopen it anytime.</li>
+                            <li><span class="cl-icon danger"><i class="bi bi-x-circle"></i></span> Students can no longer see it or apply.</li>
+                            <li><span class="cl-icon success"><i class="bi bi-people"></i></span> Accepted students keep their seats.</li>
+                            <li id="closePendingLine" hidden><span class="cl-icon warning"><i class="bi bi-hourglass-split"></i></span> <span></span></li>
                         </ul>
                     </div>
                     <div class="modal-footer">
@@ -385,6 +415,6 @@
 
     <script src="../Js_project/Demo/demo-store.js?v=20261021-original-ui"></script>
 <script src="<%= ResolveUrl("~/Scripts/bootstrap.bundle.min.js") %>"></script>
-    <script src="../Js_project/Company/manage-opportunities.js?v=20261021-original-ui"></script>
+    <script src="../Js_project/Company/manage-opportunities.js?v=20261023-modern"></script>
 </body>
 </html>

@@ -10,7 +10,7 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet" />
     <link runat="server" href="~/Assets/shared/colors.css" rel="stylesheet" />
     
-    <link runat="server" href="~/Assets/company/applications-review.css?v=20261021-original-ui" rel="stylesheet" />
+    <link runat="server" href="~/Assets/company/applications-review.css?v=20261023-modern" rel="stylesheet" />
 </head>
 <body data-demo-role="company">
     <form id="form1" runat="server">
@@ -72,73 +72,86 @@
                 <main class="content">
 
                     <!-- Page header -->
-                    <div class="page-head">
-                        <div>
-                            <div class="date-line">Company Supervisor · Orange Jordan</div>
+                    <section class="page-hero">
+                        <div class="page-hero-text">
+                            <div class="hero-eyebrow"><i class="bi bi-building"></i> Company Supervisor · Orange Jordan</div>
                             <h1 class="page-title">Applications Review</h1>
-                            <p class="subtitle mb-0">Review JUST students who applied to your opportunities. Accept them, or reject with a reason they can read.</p>
+                            <p class="page-subtitle">Review JUST students who applied to your opportunities. Accept them, or reject with a reason they can read.</p>
                         </div>
-                    </div>
+                        <div class="hero-pending" aria-live="polite">
+                            <span class="hero-pending-value" id="heroPending">0</span>
+                            <span class="hero-pending-label">waiting for<br />your decision</span>
+                        </div>
+                    </section>
 
                     <!-- Stats -->
                     <div class="row g-3 mb-4">
                         <div class="col-6 col-xl-3">
-                            <div class="stat-card blue">
-                                <div class="stat-icon warning"><i class="bi bi-hourglass-split"></i></div>
-                                <div class="stat-label">Pending</div>
-                                <div class="stat-value" id="statPending">00</div>
-                                <div class="stat-note">Waiting for your decision</div>
+                            <div class="kpi">
+                                <div class="kpi-icon warning"><i class="bi bi-hourglass-split"></i></div>
+                                <div class="kpi-body">
+                                    <div class="kpi-label">Pending</div>
+                                    <div class="kpi-value" id="statPending">0</div>
+                                    <div class="kpi-note">Waiting for your decision</div>
+                                </div>
                             </div>
                         </div>
                         <div class="col-6 col-xl-3">
-                            <div class="stat-card ice">
-                                <div class="stat-icon success"><i class="bi bi-check2-circle"></i></div>
-                                <div class="stat-label">Accepted</div>
-                                <div class="stat-value" id="statAccepted">00</div>
-                                <div class="stat-note" id="statAcceptedNote">—</div>
+                            <div class="kpi">
+                                <div class="kpi-icon success"><i class="bi bi-check2-circle"></i></div>
+                                <div class="kpi-body">
+                                    <div class="kpi-label">Accepted</div>
+                                    <div class="kpi-value" id="statAccepted">0</div>
+                                    <div class="kpi-note" id="statAcceptedNote">—</div>
+                                </div>
                             </div>
                         </div>
                         <div class="col-6 col-xl-3">
-                            <div class="stat-card">
-                                <div class="stat-icon danger"><i class="bi bi-x-circle"></i></div>
-                                <div class="stat-label">Rejected</div>
-                                <div class="stat-value" id="statRejected">00</div>
-                                <div class="stat-note">With a reason sent</div>
+                            <div class="kpi">
+                                <div class="kpi-icon danger"><i class="bi bi-x-circle"></i></div>
+                                <div class="kpi-body">
+                                    <div class="kpi-label">Rejected</div>
+                                    <div class="kpi-value" id="statRejected">0</div>
+                                    <div class="kpi-note">With a reason sent</div>
+                                </div>
                             </div>
                         </div>
                         <div class="col-6 col-xl-3">
-                            <div class="stat-card">
-                                <div class="stat-icon"><i class="bi bi-person-check"></i></div>
-                                <div class="stat-label">Seats left</div>
-                                <div class="stat-value" id="statSeats">00</div>
-                                <div class="stat-note">Across open opportunities</div>
+                            <div class="kpi">
+                                <div class="kpi-icon primary"><i class="bi bi-person-check"></i></div>
+                                <div class="kpi-body">
+                                    <div class="kpi-label">Seats left</div>
+                                    <div class="kpi-value" id="statSeats">0</div>
+                                    <div class="kpi-note">Across open opportunities</div>
+                                </div>
                             </div>
                         </div>
                     </div>
 
                     <!-- Toolbar -->
                     <div class="review-toolbar">
-                        <div class="toolbar-select">
-                            <i class="bi bi-briefcase"></i>
-                            <select id="oppFilter" aria-label="Filter by opportunity">
-                                <option value="all">All opportunities</option>
-                            </select>
-                        </div>
-
-                        <div class="filter-tabs" id="statusTabs" role="tablist">
+                        <div class="filter-tabs" id="statusTabs" role="tablist" aria-label="Filter by status">
                             <button type="button" class="active" data-status="all">All <span data-count="all">0</span></button>
                             <button type="button" data-status="Pending">Pending <span data-count="Pending">0</span></button>
                             <button type="button" data-status="Accepted">Accepted <span data-count="Accepted">0</span></button>
                             <button type="button" data-status="Rejected">Rejected <span data-count="Rejected">0</span></button>
                         </div>
 
-                        <div class="toolbar-select sort">
-                            <i class="bi bi-sort-down"></i>
-                            <select id="sortBy" aria-label="Sort applications">
-                                <option value="newest">Newest first</option>
-                                <option value="oldest">Oldest first</option>
-                                <option value="name">Name A–Z</option>
-                            </select>
+                        <div class="toolbar-end">
+                            <div class="toolbar-select">
+                                <i class="bi bi-briefcase"></i>
+                                <select id="oppFilter" aria-label="Filter by opportunity">
+                                    <option value="all">All opportunities</option>
+                                </select>
+                            </div>
+                            <div class="toolbar-select sort">
+                                <i class="bi bi-sort-down"></i>
+                                <select id="sortBy" aria-label="Sort applications">
+                                    <option value="newest">Newest first</option>
+                                    <option value="oldest">Oldest first</option>
+                                    <option value="name">Name A–Z</option>
+                                </select>
+                            </div>
                         </div>
                     </div>
 
@@ -147,6 +160,10 @@
 
                     <!-- Applications list -->
                     <div class="app-panel">
+                        <div class="panel-bar">
+                            <h2 class="panel-bar-title"><i class="bi bi-people"></i> Applicants</h2>
+                            <span class="result-count" id="resultCount" aria-live="polite"></span>
+                        </div>
                         <table class="app-table">
                             <thead>
                                 <tr>
@@ -161,9 +178,9 @@
                         </table>
 
                         <div class="empty-state" id="emptyState" hidden>
-                            <i class="bi bi-inbox"></i>
-                            <h3>No applications match</h3>
-                            <p>Try another opportunity, status, or search word.</p>
+                            <div class="empty-art"><i class="bi bi-inbox"></i></div>
+                            <h3 id="emptyTitle">No applications match</h3>
+                            <p id="emptyText">Try another opportunity, status, or search word.</p>
                         </div>
                     </div>
                 </main>
@@ -175,9 +192,10 @@
             <div class="offcanvas-header">
                 <div class="drawer-person">
                     <span class="avatar lg" id="drawerAvatar">--</span>
-                    <div>
+                    <div class="min-w-0">
                         <h2 class="offcanvas-title" id="drawerName">Student</h2>
                         <div class="drawer-sub" id="drawerSub"></div>
+                        <div class="drawer-status" id="drawerStatus"></div>
                     </div>
                 </div>
                 <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
@@ -241,7 +259,7 @@
                             <span class="char-count" id="rejectCount">0 / 400</span>
                         </div>
                         <textarea id="rejectMessage" class="form-control" rows="4" maxlength="400" placeholder="Explain the decision kindly — the student will see this message."></textarea>
-                        <div class="field-error" id="messageError" hidden>Write at least 15 characters.</div>
+                        <div class="field-error" id="messageError" hidden>Write a message for the student.</div>
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn-ghost lg" data-bs-dismiss="modal">Cancel</button>
@@ -262,6 +280,6 @@
 
     <script src="../Js_project/Demo/demo-store.js?v=20261021-original-ui"></script>
 <script src="<%= ResolveUrl("~/Scripts/bootstrap.bundle.min.js") %>"></script>
-    <script src="../Js_project/Company/applications-review.js?v=20261021-original-ui"></script>
+    <script src="../Js_project/Company/applications-review.js?v=20261023-modern"></script>
 </body>
 </html>
