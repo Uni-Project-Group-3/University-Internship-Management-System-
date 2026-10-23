@@ -183,3 +183,135 @@ body:has(.companies-modal[open]) { overflow: hidden; }
 .uims-notifications,.uims-completion-dialog{width:min(560px,calc(100% - 24px));max-height:88dvh;overflow:auto;padding:22px;border:1px solid var(--border);border-radius:14px;background:var(--surface);color:var(--text)}.uims-notifications::backdrop,.uims-completion-dialog::backdrop{background:color-mix(in srgb,var(--text) 45%,transparent)}.uims-notifications h2,.uims-completion-dialog h2{font-size:1.2rem}.uims-notifications button,.uims-completion-dialog button{padding:9px 14px;margin:5px;border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--primary)}.uims-completion-dialog header{display:flex;justify-content:space-between;align-items:center}.uims-notifications input{padding:8px;border:1px solid var(--border);border-radius:6px;max-width:100%}#companyTraineeDialog{width:min(780px,calc(100% - 24px));max-height:88dvh;overflow:auto;border:1px solid var(--border);border-radius:14px;background:var(--surface);color:var(--text);padding:20px}#companyTraineeDialog::backdrop{background:color-mix(in srgb,var(--text) 45%,transparent)}#companyTraineeDialog input{padding:8px;border:1px solid var(--border);border-radius:6px;max-width:100%}
 
 #confirmationDescription {white-space:pre-line} #companyCredentials label {display:block;margin:12px 0} #companyCredentials input {display:block;width:100%;box-sizing:border-box;padding:12px;border:1px solid #ccd4e4;border-radius:8px} .companies-table-wrap td {vertical-align:top} .companies-table-wrap td .companies-text-button {display:block;margin:4px 0} [hidden] {display:none !important}
+
+/* Management pages only. Uses the application's existing colour and font tokens. */
+.management-page { margin: 0; background: var(--background); color: var(--text); font-family: var(--font-body); font-size: 14px; -webkit-font-smoothing: antialiased; }
+.management-page *, .management-page *::before, .management-page *::after { box-sizing: border-box; }
+.management-page :is(button, input, select, textarea) { font: inherit; }
+.management-page :is(h1, h2, h3) { font-family: var(--font-heading); }
+.management-page :is(.dash-main > .app-content, .main > .content) { width: 100%; max-width: 1380px; margin-inline: auto; padding: 20px 32px 48px; }
+.management-page .management-hero { position: relative; isolation: isolate; overflow: hidden; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 24px; min-height: 200px; padding: 32px 36px; margin: 0 0 24px; border: 0; border-radius: 26px; background: linear-gradient(115deg, var(--hero-gradient-start) 0%, var(--hero-gradient-mid) 58%, var(--hero-gradient-end) 100%); color: var(--text-inverse); box-shadow: 0 14px 32px color-mix(in srgb, var(--dark) 13%, transparent); }
+.management-page .management-hero::before { content: ""; position: absolute; z-index: -1; width: 340px; height: 340px; right: -80px; top: -170px; border: 1px solid #ffffff29; border-radius: 50%; box-shadow: 0 0 0 54px #ffffff0a, 0 0 0 110px #ffffff06; pointer-events: none; }
+.management-page .management-hero > div { min-width: 0; flex: 1 1 360px; }
+.management-page .management-hero :is(.completion-eyebrow, .companies-eyebrow, .management-eyebrow) { display: inline-flex; width: fit-content; margin: 0 0 14px; padding: 5px 12px; border: 1px solid #ffffff29; border-radius: 999px; background: #ffffff1f; color: var(--text-inverse); font-size: 11px; font-weight: 700; letter-spacing: 1.4px; line-height: 1.5; }
+.management-page .management-hero h1 { max-width: 760px; margin: 0 0 10px; color: var(--text-inverse); font-size: clamp(28px, 3vw, 38px); font-weight: 800; line-height: 1.18; letter-spacing: -1.1px; }
+.management-page .management-hero :is(.completion-subtitle, .subtitle), .management-page .management-hero > div > p:last-child { max-width: 640px; margin: 0; color: #ffffffd6; font-size: 14px; line-height: 1.8; }
+.management-page .management-hero > :is(.management-hero-action, .companies-button, .custom-btn-primary) { display: inline-flex; align-items: center; justify-content: center; gap: 10px; flex: 0 0 auto; min-height: 46px; padding: 12px 20px; border: 1px solid #ffffff66; border-radius: 999px; background: var(--surface); color: var(--primary); text-decoration: none; font-size: 13px; font-weight: 700; line-height: 1.5; box-shadow: 0 5px 16px #15223e14; }
+.management-page .management-hero > :is(.management-hero-action, .companies-button, .custom-btn-primary):hover { transform: translateY(-1px); background: var(--card-ice); color: var(--primary); }
+.management-page :is(.completion-panel, .companies-panel, .panel) { overflow: hidden; margin-top: 24px; padding: 0; border: 1px solid var(--border); border-radius: 22px; background: var(--surface); box-shadow: 0 5px 20px color-mix(in srgb, var(--dark) 3%, transparent); }
+.management-page :is(.completion-panel > header, .companies-panel-heading, .panel > .d-flex) { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px; margin: 0 !important; padding: 24px 26px; border-bottom: 1px solid var(--border-light); }
+.management-page :is(.completion-panel h2, .companies-panel h2, .panel-title) { margin: 0 0 5px; color: var(--text); font-size: 20px; font-weight: 800; letter-spacing: -.5px; line-height: 1.4; }
+.management-page :is(.completion-panel header p, .companies-panel-heading p) { margin: 0; color: var(--text-secondary); font-size: 12px; line-height: 1.7; }
+.management-page :is(.completion-button, .companies-button, .btn) { display: inline-flex; align-items: center; justify-content: center; gap: 7px; min-height: 42px; padding: 10px 16px; border: 1px solid var(--primary); border-radius: 10px; background: var(--primary); color: var(--text-inverse); font-size: 12px; font-weight: 600; line-height: 1.5; cursor: pointer; text-decoration: none; transition: background .16s, border-color .16s, box-shadow .16s; }
+.management-page :is(.completion-button, .companies-button, .custom-btn-primary):hover { background: var(--primary-hover); color: var(--text-inverse); }
+.management-page :is(.completion-button--secondary, .companies-button--secondary, .custom-btn-light) { border-color: var(--border); background: var(--surface); color: var(--primary); box-shadow: none; }
+.management-page :is(.completion-button--secondary, .companies-button--secondary, .custom-btn-light):hover { border-color: var(--primary-light); background: var(--primary-soft); color: var(--primary); }
+.management-page :is(button, input, select, textarea, a):focus-visible { outline: 3px solid color-mix(in srgb, var(--primary) 32%, transparent); outline-offset: 3px; }
+.management-page :is(button, input, select):disabled { opacity: .55; cursor: not-allowed; }
+.management-page :is(.completion-filters, .companies-toolbar) { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)) auto; align-items: end; gap: 14px; margin: 0; padding: 20px 26px; background: var(--surface); border-bottom: 1px solid var(--border-light); }
+.management-page :is(.completion-filters, .companies-toolbar) label { display: block; min-width: 0; margin: 0; color: var(--text-secondary); font-size: 11px; font-weight: 600; line-height: 1.6; }
+.management-page :is(.completion-filters, .companies-toolbar) label > span { display: block; }
+.management-page :is(.completion-filters, .companies-toolbar) :is(input, select) { display: block; width: 100%; min-width: 0; height: 44px; margin-top: 7px; padding: 10px 12px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface-alt); color: var(--text); font-size: 12px; line-height: 1.5; }
+.management-page :is(.completion-filters, .companies-toolbar) :is(input, select):focus { background: var(--surface); border-color: var(--primary); }
+.management-page .companies-toolbar { grid-template-columns: minmax(180px, 1.4fr) repeat(3, minmax(110px, 1fr)) auto; }
+.management-page :is(.companies-text-button, .student-delete-action) { font: 600 12px var(--font-body); }
+.management-page :is(.completion-table-wrap, .companies-table-wrap, .table-responsive) { width: 100%; overflow-x: auto; overscroll-behavior-inline: contain; }
+.management-page :is(.completion-table-wrap, .companies-table-wrap, .table-responsive) table { width: 100%; margin: 0; border-collapse: collapse; text-align: left; color: var(--text); font-size: 12px; }
+.management-page :is(.completion-table-wrap, .companies-table-wrap, .table-responsive) th { padding: 14px 18px; border-block: 1px solid var(--border-light); background: var(--surface-alt); color: var(--text-secondary); font-size: 10px; font-weight: 700; letter-spacing: .65px; text-transform: uppercase; white-space: nowrap; line-height: 1.6; }
+.management-page :is(.completion-table-wrap, .companies-table-wrap, .table-responsive) td { padding: 18px; border-bottom: 1px solid var(--border-light); vertical-align: middle; font-size: 12px; line-height: 1.65; }
+.management-page :is(.completion-table-wrap, .companies-table-wrap, .table-responsive) tbody tr:last-child td { border-bottom: 0; }
+.management-page :is(.completion-table-wrap, .companies-table-wrap, .table-responsive) tbody tr:hover { background: color-mix(in srgb, var(--primary-soft) 45%, var(--surface)); }
+.management-page :is(.completion-table-wrap, .companies-table-wrap, .table-responsive) td small { display: inline-block; color: var(--text-secondary); font-size: 11px; line-height: 1.6; }
+.management-page #studentsGrid { min-width: 1120px; }
+.management-page #studentsGrid th:first-child, .management-page #studentsGrid td:first-child { min-width: 180px; padding-left: 26px; font-weight: 600; }
+.management-page #studentsGrid td:nth-child(3) { overflow-wrap: anywhere; min-width: 180px; }
+.management-page #studentsGrid td:nth-child(5) { min-width: 150px; }
+.management-page #studentsGrid td:nth-child(6) { min-width: 130px; }
+.management-page #studentsGrid a { margin: 0; padding: 7px 10px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--primary); font-size: 11px; font-weight: 600; line-height: 1.5; text-decoration: none; white-space: nowrap; }
+.management-page #studentsGrid .student-delete-action { padding: 7px 10px; border: 1px solid color-mix(in srgb, var(--danger) 18%, var(--surface)); border-radius: 8px; background: color-mix(in srgb, var(--danger-light) 45%, var(--surface)); color: var(--danger); text-decoration: none; font-size: 11px; }
+.management-page :is(.student-filter-summary, .companies-pagination) { margin: 0; padding: 15px 26px; color: var(--text-secondary); font-size: 11px; line-height: 1.6; }
+.management-page :is(.stats-grid, .companies-stats) { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; margin: 0 0 24px; }
+.management-page .companies-stats { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.management-page :is(.stat-card, .companies-stats article) { padding: 22px 24px; border: 1px solid var(--border); border-radius: 18px; background: var(--surface); box-shadow: 0 4px 15px color-mix(in srgb, var(--dark) 2%, transparent); transform: none; }
+.management-page :is(.stat-card, .companies-stats article):hover { transform: none; box-shadow: 0 5px 20px color-mix(in srgb, var(--dark) 5%, transparent); }
+.management-page :is(.stat-icon, .companies-stats article > span) { width: 46px; height: 46px; border-radius: 13px; background: var(--primary-soft); color: var(--primary); }
+.management-page :is(.stat-details h3, .companies-stats article > strong) { margin: 0 0 5px; color: var(--text); font: 800 28px/1.2 var(--font-heading); letter-spacing: -.8px; }
+.management-page .stat-details span { color: var(--text-secondary); font-size: 10px; letter-spacing: .8px; font-weight: 600; }
+.management-page :is(.companies-badge, .status-badge, .dept-badge) { padding: 5px 9px; border-radius: 8px; font-size: 10px; font-weight: 600; letter-spacing: 0; text-transform: none; line-height: 1.5; }
+.management-page .table-avatar { width: 38px; height: 38px; border-radius: 11px; background: var(--primary-soft); color: var(--primary); font-size: 12px; }
+.management-page :is(.completion-notice, .page-notice, .companies-notice, .preview-note) { margin: 0 0 20px; padding: 13px 17px; border: 1px solid var(--primary-light); border-radius: 12px; background: var(--primary-soft); color: var(--primary); font-size: 12px; line-height: 1.75; }
+.management-page :is(.page-notice.alert-danger, .student-page-message.student-page-message--error) { border-color: var(--danger-light); background: var(--danger-light); color: var(--danger); }
+.management-page :is(.completion-dialog, .companies-modal, .custom-modal) { border: 1px solid var(--border); border-radius: 24px; background: var(--surface); color: var(--text); box-shadow: 0 24px 80px #16244229; }
+.management-page :is(.completion-dialog, .companies-modal)::backdrop { background: #17243e70; backdrop-filter: blur(4px); }
+.management-page :is(.completion-dialog-header, .companies-modal-header, .custom-modal .modal-header) { padding: 26px 28px; border-bottom: 1px solid var(--border); background: var(--primary-soft); }
+.management-page :is(.completion-dialog-header, .companies-modal-header, .custom-modal .modal-header) :is(h2, h3) { display: block; margin: 0; color: var(--primary); font-size: 23px; font-weight: 800; letter-spacing: -.6px; line-height: 1.35; }
+.management-page :is(.completion-dialog-body, .companies-modal-body, .custom-modal .modal-body) { padding: 24px 28px; }
+.management-page :is(.companies-modal, .completion-dialog, .custom-modal) :is(input:not([type=checkbox]):not([type=hidden]):not([type=submit]), select, textarea) { width: 100%; min-height: 44px; padding: 11px 13px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface-alt); color: var(--text); font: 13px/1.6 var(--font-body); box-shadow: none; }
+.management-page :is(.companies-modal, .completion-dialog, .custom-modal) :is(input, select, textarea):focus { outline: 0; border-color: var(--primary); box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 10%, transparent); background: var(--surface); }
+.management-page :is(.companies-modal, .completion-dialog, .custom-modal) :is(label, .custom-label) { color: var(--text-secondary); font-size: 11px; font-weight: 600; letter-spacing: 0; text-transform: none; }
+.management-page :is(.companies-close, .completion-close) { display: grid; place-items: center; width: 34px; height: 34px; border: 1px solid var(--border); border-radius: 50%; background: var(--surface); color: var(--primary); font-size: 22px; }
+.management-page .custom-modal .modal-footer { padding: 18px 28px; border-top: 1px solid var(--border); }
+.management-page :is(.dash-topbar, .topbar) { min-height: 78px; padding: 16px 32px; background: var(--background); border-bottom: 0; }
+.management-page :is(.dash-search input, .topbar .search input) { min-height: 44px; border: 1px solid var(--border); border-radius: 12px; background: var(--surface); color: var(--text); font-size: 12px; }
+.management-page :is(.dash-sidebar, .sidebar) { width: 252px; flex-basis: 252px; background: var(--sidebar-bg); border-right: 1px solid var(--border); }
+.management-page :is(.dash-brand-logo, .brand-logo) { width: 48px; height: 48px; border: 0; border-radius: 0; object-fit: contain; }
+.management-page :is(.dash-side-nav a, .side-nav a) { padding: 11px 13px; border-radius: 12px; font-size: 12px; line-height: 1.6; }
+.management-page :is(.dash-side-nav a.active, .side-nav a.active) { color: var(--primary); background: var(--surface); box-shadow: 0 3px 12px #1f3d7808; }
+.management-page [hidden] { display: none !important; }
+@media (max-width: 1199px) {
+    .management-page :is(.completion-filters, .companies-toolbar) { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .management-page :is(.completion-filters, .companies-toolbar) > button { justify-self: start; }
+    .management-page .management-hero { padding: 28px; }
+    .management-page .companies-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 767px) {
+    .management-page :is(.dash-main > .app-content, .main > .content) { padding: 12px 18px 32px; }
+    .management-page :is(.dash-topbar, .topbar) { padding: 14px 18px; min-height: 70px; }
+    .management-page .management-hero { min-height: 0; padding: 26px 24px; gap: 20px; border-radius: 20px; }
+    .management-page .management-hero > div { flex-basis: 100%; }
+    .management-page .management-hero h1 { font-size: 29px; }
+    .management-page :is(.completion-panel > header, .companies-panel-heading, .panel > .d-flex) { padding: 20px; align-items: flex-start; }
+    .management-page :is(.completion-filters, .companies-toolbar) { padding: 18px 20px; gap: 12px; }
+    .management-page .stats-grid { grid-template-columns: 1fr; gap: 12px; }
+    .management-page :is(.stat-card, .companies-stats article) { padding: 18px 20px; }
+    .management-page .companies-context { grid-template-columns: 1fr; gap: 16px; }
+    .management-page :is(.completion-dialog-header, .companies-modal-header, .custom-modal .modal-header, .completion-dialog-body, .companies-modal-body, .custom-modal .modal-body) { padding: 22px; }
+}
+@media (max-width: 480px) {
+    .management-page :is(.completion-filters, .companies-toolbar) { grid-template-columns: 1fr; }
+    .management-page .companies-pagination { flex-wrap: wrap; padding: 16px 20px; }
+    .management-page .companies-pagination > div { flex-wrap: wrap; gap: 8px; }
+    .management-page :is(.management-hero-action, .management-hero > .companies-button, .management-hero > .custom-btn-primary) { width: 100%; }
+    .management-page .companies-stats { gap: 10px; }
+}
+@media (prefers-reduced-motion: reduce) { .management-page *, .management-page *::before, .management-page *::after { transition: none !important; animation: none !important; } }
+
+.management-page .btn-danger { background:var(--danger); border-color:var(--danger); color:var(--text-inverse); }
+
+/* Keep the existing ASP.NET dialog controls sized as buttons, including postback inputs. */
+.management-page #studentEditor { width:min(640px,calc(100% - 32px)); border-radius:24px; }
+.management-page #studentEditor .completion-dialog-header { padding:24px 28px; border-bottom:1px solid var(--border); }
+.management-page #studentEditor .completion-dialog-header h2 { font:800 23px/1.35 var(--font-heading); letter-spacing:-.6px; color:var(--primary); }
+.management-page #studentEditor .completion-dialog-body { padding:24px 28px; }
+.management-page #studentEditor input:is([type=submit],[type=button]) { flex:0 0 auto; width:auto; min-width:0; height:44px; margin:0; padding:10px 16px; border:1px solid var(--primary); border-radius:10px; background:var(--primary); color:var(--text-inverse); font:600 12px/1.5 var(--font-body); }
+.management-page #studentEditor input.completion-button--secondary { background:var(--surface); color:var(--primary); border-color:var(--border); }
+.management-page #studentEditor .student-label { color:var(--text-secondary); font-size:11px; font-weight:600; }
+.management-page #studentEditor #studentTemporaryPassword { font-family:Consolas,monospace; }
+.management-page .completion-dialog .student-input-action { flex-wrap:wrap; }
+.management-page .completion-dialog .student-input-action > input:not([type=submit]):not([type=button]) { flex:1 1 180px; }
+.management-page #studentsGrid td:nth-child(3) { white-space:nowrap; }
+.management-page .companies-table-wrap table { min-width:1180px; }
+.management-page .companies-table-wrap td:first-child { min-width:165px; }
+.management-page .companies-table-wrap td:nth-child(2), .management-page .companies-table-wrap td:nth-child(5) { white-space:nowrap; }
+.management-page .companies-table-wrap td:last-child { min-width:220px; }
+.management-page .companies-table-wrap td .companies-text-button { display:inline-flex; width:auto; margin:3px 5px 3px 0; padding:6px 9px; border:1px solid var(--border); border-radius:8px; background:var(--surface); color:var(--primary); font-size:11px; white-space:nowrap; }
+.management-page #refreshCompanies { width:auto; min-height:34px; padding:7px 12px; }
+.management-page :is(.dash-side-promo,.side-promo) { margin-top:auto; padding:18px 16px; border-radius:18px; background:var(--primary-light); color:var(--primary); }
+.management-page :is(.dash-side-promo,.side-promo) p { margin:12px 0 14px; color:var(--text); font-size:12px; font-weight:600; line-height:1.6; }
+.management-page :is(.dash-side-promo,.side-promo) a { display:inline-block; padding:7px 13px; border-radius:999px; background:var(--surface); color:var(--primary); font-size:11px; font-weight:600; text-decoration:none; }
+.management-page #supervisorsTable { min-width:900px; }
+@media(max-width:575px) {
+    .management-page .topbar { flex-wrap:nowrap; gap:10px; }
+    .management-page .topbar .search { order:0; flex:1 1 auto; min-width:0; max-width:none; width:auto; }
+    .management-page .topbar .user-chip .name { display:none; }
+}
