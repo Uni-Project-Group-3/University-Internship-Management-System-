@@ -9,11 +9,13 @@ namespace University_Internship_Management_System.Coordinator
 {
     public partial class MonitorPlacementsProgress : Page
     {
-        private const string FirebaseUrl = "https://just-project-4af15-default-rtdb.firebaseio.com/";
+        private readonly University_Internship_Management_System.Shared.StudentFirebaseGateway gateway = new University_Internship_Management_System.Shared.StudentFirebaseGateway();
 
         protected void Page_Load(object sender, EventArgs e)
         {
-            // تم إيقاف فحص الـ Session مؤقتاً لضمان عمل الصفحة وجلب البيانات مباشرة دون أي أخطاء
+            if (!Request.IsAuthenticated) { Response.Redirect("~/Auth/Login.aspx", false); Context.ApplicationInstance.CompleteRequest(); return; }
+            try { System.Threading.Tasks.Task.Run(() => new University_Internship_Management_System.Shared.StudentManagementService(gateway, gateway, new University_Internship_Management_System.Shared.StudentCredentialMailer()).RequireCoordinatorAsync(User.Identity.Name)).GetAwaiter().GetResult(); }
+            catch (UnauthorizedAccessException) { Response.StatusCode = 403; Response.TrySkipIisCustomErrors = true; lblMessage.Text = "An active coordinator account is required."; return; }
             if (!IsPostBack)
             {
                 LoadDashboardData();
@@ -166,8 +168,7 @@ namespace University_Internship_Management_System.Coordinator
 
         private string DownloadSafe(WebClient client, string path)
         {
-            try { return client.DownloadString(FirebaseUrl + path); }
-            catch { return ""; }
+            return System.Threading.Tasks.Task.Run(() => gateway.ReadAsync(path.EndsWith(".json", StringComparison.Ordinal) ? path.Substring(0, path.Length - 5) : path)).GetAwaiter().GetResult().ToString(Newtonsoft.Json.Formatting.None);
         }
 
         private T ParseJson<T>(JavaScriptSerializer serializer, string json)

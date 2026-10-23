@@ -1,4 +1,4 @@
-<%@ Page Language="C#" AutoEventWireup="true" CodeBehind="CoordinatorDashboard.aspx.cs" Inherits="UIMS.Coordinator.CoordinatorDashboard" %>
+<%@ Page Language="C#" AutoEventWireup="true" Async="true" CodeBehind="CoordinatorDashboard.aspx.cs" Inherits="UIMS.Coordinator.CoordinatorDashboard" %>
 
 <!DOCTYPE html>
 <html lang="en">
@@ -89,7 +89,7 @@
                                 <div class="stat-icon"><i class="bi bi-mortarboard"></i></div>
                                 <div class="stat-label">Students</div>
                                 <div class="stat-value"><asp:Label ID="lblStudents" runat="server" /></div>
-                                <div class="stat-note">96 currently placed</div>
+                                <div class="stat-note">Live Firebase records</div>
                             </div>
                         </div>
                         <div class="col-6 col-xl-3">
@@ -97,7 +97,7 @@
                                 <div class="stat-icon"><i class="bi bi-building"></i></div>
                                 <div class="stat-label">Companies</div>
                                 <div class="stat-value"><asp:Label ID="lblCompanies" runat="server" /></div>
-                                <div class="stat-note">3 inactive</div>
+                                <div class="stat-note">Live Firebase records</div>
                             </div>
                         </div>
                         <div class="col-6 col-xl-3">
@@ -105,7 +105,7 @@
                                 <div class="stat-icon"><i class="bi bi-briefcase"></i></div>
                                 <div class="stat-label">Opportunities</div>
                                 <div class="stat-value"><asp:Label ID="lblOpportunities" runat="server" /></div>
-                                <div class="stat-note">Open this semester</div>
+                                <div class="stat-note">Live Firebase records</div>
                             </div>
                         </div>
                         <div class="col-6 col-xl-3">
@@ -113,7 +113,7 @@
                                 <div class="stat-icon success"><i class="bi bi-patch-check"></i></div>
                                 <div class="stat-label">Awaiting Approval</div>
                                 <div class="stat-value"><asp:Label ID="lblAwaiting" runat="server" /></div>
-                                <div class="stat-note">Both evaluations in</div>
+                                <div class="stat-note">Live Firebase records</div>
                             </div>
                         </div>
                     </div>
@@ -125,91 +125,15 @@
                         <p>Review company and academic evaluations, verify requirements, and issue completion reports.</p>
                         <a href="FinalCompletionReview.aspx" class="btn-hero">Review completions <i class="bi bi-arrow-right"></i></a>
                     </section>
-
-                    <div class="row g-3">
-                        <!-- Pending completion -->
-                        <div class="col-lg-7">
-                            <div class="panel">
-                                <div class="panel-head">
-                                    <h3>Pending Completion Approval</h3>
-                                    <a href="FinalCompletionReview.aspx">View all</a>
-                                </div>
-                                <div class="list-row">
-                                    <div class="avatar">RS</div>
-                                    <div class="row-body">
-                                        <div class="row-title">Rana Saleh</div>
-                                        <div class="row-sub">Orange Jordan · Dr. Khaled Omari</div>
-                                    </div>
-                                    <div class="row-meta"><span class="status success">Ready</span><div class="when">Final: 88.5</div></div>
-                                </div>
-                                <div class="list-row">
-                                    <div class="avatar">SO</div>
-                                    <div class="row-body">
-                                        <div class="row-title">Sami Odeh</div>
-                                        <div class="row-sub">Zain Jordan · Dr. Lina Haddad</div>
-                                    </div>
-                                    <div class="row-meta"><span class="status success">Ready</span><div class="when">Final: 91.0</div></div>
-                                </div>
-                                <div class="list-row">
-                                    <div class="avatar">HM</div>
-                                    <div class="row-body">
-                                        <div class="row-title">Hala Mahmoud</div>
-                                        <div class="row-sub">Aramex · Dr. Khaled Omari</div>
-                                    </div>
-                                    <div class="row-meta"><span class="status warning">Academic eval pending</span><div class="when">Company: received</div></div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Right column -->
-                        <div class="col-lg-5 d-flex flex-column gap-3">
-                            <div class="panel">
-                                <div class="panel-head">
-                                    <h3>Contact Messages</h3>
-                                    <a href="ContactMessages.aspx">View all</a>
-                                </div>
-                                <div class="list-row">
-                                    <div class="row-icon soft"><i class="bi bi-envelope"></i></div>
-                                    <div class="row-body">
-                                        <div class="row-title">Partnership request</div>
-                                        <div class="row-sub">hr@techjo.com</div>
-                                    </div>
-                                    <span class="status info">New</span>
-                                </div>
-                                <div class="list-row">
-                                    <div class="row-icon soft"><i class="bi bi-envelope-open"></i></div>
-                                    <div class="row-body">
-                                        <div class="row-title">Login issue</div>
-                                        <div class="row-sub">student@just.edu.jo</div>
-                                    </div>
-                                    <span class="status neutral">Read</span>
-                                </div>
-                            </div>
-
-                            <div class="panel">
-                                <div class="panel-head">
-                                    <h3>Placement Overview</h3>
-                                    <a href="MonitorPlacementsProgress.aspx">Details</a>
-                                </div>
-                                <div class="d-flex justify-content-between small mt-2">
-                                    <span class="fw-semibold">Students placed</span><span class="text-secondary">96 / 128</span>
-                                </div>
-                                <div class="progress-slim"><span style="width: 75%"></span></div>
-                                <div class="d-flex justify-content-between small mt-3">
-                                    <span class="fw-semibold">Completed internships</span><span class="text-secondary">21 / 96</span>
-                                </div>
-                                <div class="progress-slim"><span class="success" style="width: 22%"></span></div>
-                            </div>
-                        </div>
-                    </div>
-                </main>
+<div class="mt-4"><%= DashboardContent %></div>
+</main>
             </div>
         </div>
     <dialog id="demoCycleDialog" class="uims-notifications" aria-labelledby="demoCycleTitle"><h2 id="demoCycleTitle">Local demo cycle controls</h2><p>Advance the persisted test clock to check the 60-minute grace period. This does not schedule a real background worker.</p><label>Minutes to advance<input id="demoClockMinutes" type="number" value="61" min="1" max="525600" required /></label><button type="button" id="advanceDemoClock">Advance test clock</button><button type="button" id="exportDemoState">Export local demo records</button><button type="button" data-close>Close</button></dialog></form>
 
-    <script src="../Js_project/Demo/demo-store.js?v=20261021-original-ui"></script>
+
 <script src="<%= ResolveUrl("~/Scripts/bootstrap.bundle.min.js") %>"></script>
     <script src="<%= ResolveUrl("~/Js_project/Public/dashboard-navigation.js?v=20261021-original-ui") %>"></script>
-<script src="../Js_project/Coordinator/coordinator-dashboard.js?v=20261021-original-ui"></script>
+
 </body>
 </html>

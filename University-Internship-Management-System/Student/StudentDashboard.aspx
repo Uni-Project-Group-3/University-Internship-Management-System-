@@ -1,4 +1,4 @@
-﻿<%@ Page Language="C#" AutoEventWireup="true" CodeBehind="StudentDashboard.aspx.cs" Inherits="UIMS.Student.StudentDashboard" %>
+<%@ Page Language="C#" AutoEventWireup="true" Async="true" CodeBehind="StudentDashboard.aspx.cs" Inherits="UIMS.Student.StudentDashboard" %>
 
 <!DOCTYPE html>
 <html lang="en">
@@ -87,7 +87,7 @@
                                 <div class="stat-icon"><i class="bi bi-file-earmark-text"></i></div>
                                 <div class="stat-label">Applied</div>
                                 <div class="stat-value"><asp:Label ID="lblApplied" runat="server" /></div>
-                                <div class="stat-note">2 this month</div>
+                                <div class="stat-note">Live Firebase records</div>
                             </div>
                         </div>
                         <div class="col-6 col-xl-3">
@@ -95,7 +95,7 @@
                                 <div class="stat-icon"><i class="bi bi-clock"></i></div>
                                 <div class="stat-label">In Review</div>
                                 <div class="stat-value"><asp:Label ID="lblInReview" runat="server" /></div>
-                                <div class="stat-note">1 new update</div>
+                                <div class="stat-note">Live Firebase records</div>
                             </div>
                         </div>
                         <div class="col-6 col-xl-3">
@@ -103,7 +103,7 @@
                                 <div class="stat-icon success"><i class="bi bi-check-lg"></i></div>
                                 <div class="stat-label">Pending Tasks</div>
                                 <div class="stat-value"><asp:Label ID="lblTasks" runat="server" /></div>
-                                <div class="stat-note">Next due Oct 23</div>
+                                <div class="stat-note">Live Firebase records</div>
                             </div>
                         </div>
                         <div class="col-6 col-xl-3">
@@ -111,7 +111,7 @@
                                 <div class="stat-icon"><i class="bi bi-hourglass-split"></i></div>
                                 <div class="stat-label">Approved Hours</div>
                                 <div class="stat-value"><asp:Label ID="lblHours" runat="server" /></div>
-                                <div class="stat-note">of 280 required</div>
+                                <div class="stat-note">Live Firebase records</div>
                             </div>
                         </div>
                     </div>
@@ -123,91 +123,15 @@
                         <p>Discover internships that match your college and major.</p>
                         <a href="ExploreOpportunities.aspx" class="btn-hero">Explore opportunities <i class="bi bi-arrow-right"></i></a>
                     </section>
-
-                    <div class="row g-3">
-                        <!-- Recent applications -->
-                        <div class="col-lg-7">
-                            <div class="panel">
-                                <div class="panel-head">
-                                    <h3>Recent Applications</h3>
-                                    <a href="MyApplications.aspx">View all</a>
-                                </div>
-                                <div class="list-row">
-                                    <div class="row-icon">O</div>
-                                    <div class="row-body">
-                                        <div class="row-title">Frontend Developer Intern</div>
-                                        <div class="row-sub">Orange Jordan</div>
-                                    </div>
-                                    <div class="row-meta"><span class="status info">In Review</span><div class="when">Oct 12, 2026</div></div>
-                                </div>
-                                <div class="list-row">
-                                    <div class="row-icon">Z</div>
-                                    <div class="row-body">
-                                        <div class="row-title">Software Engineering Intern</div>
-                                        <div class="row-sub">Zain Jordan</div>
-                                    </div>
-                                    <div class="row-meta"><span class="status success">Accepted</span><div class="when">Oct 8, 2026</div></div>
-                                </div>
-                                <div class="list-row">
-                                    <div class="row-icon">A</div>
-                                    <div class="row-body">
-                                        <div class="row-title">IT Support Intern</div>
-                                        <div class="row-sub">Aramex</div>
-                                    </div>
-                                    <div class="row-meta"><span class="status danger">Rejected</span><div class="when">Oct 5, 2026</div></div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Right column -->
-                        <div class="col-lg-5 d-flex flex-column gap-3">
-                            <div class="panel">
-                                <div class="panel-head">
-                                    <h3>Upcoming Deadlines</h3>
-                                    <a href="MyTasks.aspx">View all</a>
-                                </div>
-                                <div class="list-row">
-                                    <div class="row-icon soft"><i class="bi bi-calendar-event"></i></div>
-                                    <div class="row-body">
-                                        <div class="row-title">Weekly Report #3</div>
-                                        <div class="row-sub">Zain Jordan</div>
-                                    </div>
-                                    <div class="row-meta"><div class="when-strong">Thu, Oct 23</div><div class="when"><i class="bi bi-clock"></i> 11:59 PM</div></div>
-                                </div>
-                                <div class="list-row">
-                                    <div class="row-icon soft"><i class="bi bi-arrow-repeat"></i></div>
-                                    <div class="row-body">
-                                        <div class="row-title">Login Page UI</div>
-                                        <div class="row-sub"><span class="status warning">Revision requested</span></div>
-                                    </div>
-                                    <div class="row-meta"><div class="when-strong">Mon, Oct 27</div><div class="when"><i class="bi bi-clock"></i> 02:30 PM</div></div>
-                                </div>
-                            </div>
-
-                            <div class="panel">
-                                <div class="panel-head">
-                                    <h3>Internship Progress</h3>
-                                    <a href="MyProgressEvaluation.aspx">Details</a>
-                                </div>
-                                <div class="d-flex justify-content-between small mt-2">
-                                    <span class="fw-semibold">Training hours</span><span class="text-secondary">96 / 280 h</span>
-                                </div>
-                                <div class="progress-slim"><span style="width: 34%"></span></div>
-                                <div class="d-flex justify-content-between small mt-3">
-                                    <span class="fw-semibold">Tasks completed</span><span class="text-secondary">5 / 8</span>
-                                </div>
-                                <div class="progress-slim"><span class="success" style="width: 62%"></span></div>
-                            </div>
-                        </div>
-                    </div>
-                </main>
+<div class="mt-4"><%= DashboardContent %></div>
+</main>
             </div>
         </div>
     <dialog id="studentCompletionDialog" class="uims-completion-dialog" aria-labelledby="studentCompletionTitle"><header><h2 id="studentCompletionTitle">Your internship completion</h2><button type="button" data-close aria-label="Close completion notice">&times;</button></header><div><p id="studentCompletionInfo"></p><p id="studentCompletionWarning">Confirming makes a demonstration certificate available and starts a persisted 60-minute grace period. This simulation checks expiry on access; it is not a real background scheduler.</p><button type="button" id="confirmStudentCompletion">Confirm Completion</button><button type="button" id="reviewCompletionLater" data-close>Review Later</button><button type="button" id="downloadStudentCertificate">Download demo certificate</button><button type="button" id="printStudentCertificate">Print demo certificate</button></div></dialog></form>
 
-    <script src="../Js_project/Demo/demo-store.js?v=20261021-original-ui"></script>
+
 <script src="<%= ResolveUrl("~/Scripts/bootstrap.bundle.min.js") %>"></script>
     <script src="<%= ResolveUrl("~/Js_project/Public/dashboard-navigation.js?v=20261021-original-ui") %>"></script>
-<script src="../Js_project/Student/student-dashboard.js?v=20261021-original-ui"></script>
+
 </body>
 </html>

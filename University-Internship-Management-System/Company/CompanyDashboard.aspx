@@ -1,4 +1,4 @@
-﻿<%@ Page Language="C#" AutoEventWireup="true" CodeBehind="CompanyDashboard.aspx.cs" Inherits="UIMS.Company.CompanyDashboard" %>
+<%@ Page Language="C#" AutoEventWireup="true" Async="true" CodeBehind="CompanyDashboard.aspx.cs" Inherits="UIMS.Company.CompanyDashboard" %>
 
 <!DOCTYPE html>
 <html lang="en">
@@ -87,7 +87,7 @@
                                 <div class="stat-icon"><i class="bi bi-briefcase"></i></div>
                                 <div class="stat-label">Open Opportunities</div>
                                 <div class="stat-value"><asp:Label ID="lblOpportunities" runat="server" /></div>
-                                <div class="stat-note">12 seats available</div>
+                                <div class="stat-note">Live Firebase records</div>
                             </div>
                         </div>
                         <div class="col-6 col-xl-3">
@@ -95,7 +95,7 @@
                                 <div class="stat-icon"><i class="bi bi-inbox"></i></div>
                                 <div class="stat-label">New Applications</div>
                                 <div class="stat-value"><asp:Label ID="lblApplications" runat="server" /></div>
-                                <div class="stat-note">Awaiting your decision</div>
+                                <div class="stat-note">Live Firebase records</div>
                             </div>
                         </div>
                         <div class="col-6 col-xl-3">
@@ -103,7 +103,7 @@
                                 <div class="stat-icon success"><i class="bi bi-people"></i></div>
                                 <div class="stat-label">Active Trainees</div>
                                 <div class="stat-value"><asp:Label ID="lblTrainees" runat="server" /></div>
-                                <div class="stat-note">Across 3 opportunities</div>
+                                <div class="stat-note">Live Firebase records</div>
                             </div>
                         </div>
                         <div class="col-6 col-xl-3">
@@ -111,7 +111,7 @@
                                 <div class="stat-icon warning"><i class="bi bi-hourglass-split"></i></div>
                                 <div class="stat-label">To Review</div>
                                 <div class="stat-value"><asp:Label ID="lblToReview" runat="server" /></div>
-                                <div class="stat-note">Submissions pending</div>
+                                <div class="stat-note">Live Firebase records</div>
                             </div>
                         </div>
                     </div>
@@ -123,84 +123,15 @@
                         <p>Create a task for your trainees with clear deadlines and evaluation criteria.</p>
                         <a href="ManageTasks.aspx" class="btn-hero">Create a task <i class="bi bi-arrow-right"></i></a>
                     </section>
-
-                    <div class="row g-3">
-                        <!-- Latest applications -->
-                        <div class="col-lg-7">
-                            <div class="panel">
-                                <div class="panel-head">
-                                    <h3>Latest Applications</h3>
-                                    <a href="ApplicationsReview.aspx">View all</a>
-                                </div>
-                                <div class="list-row">
-                                    <div class="avatar">LH</div>
-                                    <div class="row-body">
-                                        <div class="row-title">Layla Haddad</div>
-                                        <div class="row-sub">Frontend Developer Intern · Computer Science</div>
-                                    </div>
-                                    <div class="row-meta"><span class="status warning">Pending</span><div class="when">Oct 19, 2026</div></div>
-                                </div>
-                                <div class="list-row">
-                                    <div class="avatar">OK</div>
-                                    <div class="row-body">
-                                        <div class="row-title">Omar Khalil</div>
-                                        <div class="row-sub">Data Analyst Intern · Software Engineering</div>
-                                    </div>
-                                    <div class="row-meta"><span class="status warning">Pending</span><div class="when">Oct 18, 2026</div></div>
-                                </div>
-                                <div class="list-row">
-                                    <div class="avatar">RS</div>
-                                    <div class="row-body">
-                                        <div class="row-title">Rana Saleh</div>
-                                        <div class="row-sub">Frontend Developer Intern · Computer Engineering</div>
-                                    </div>
-                                    <div class="row-meta"><span class="status success">Accepted</span><div class="when">Oct 15, 2026</div></div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Submissions to review -->
-                        <div class="col-lg-5">
-                            <div class="panel">
-                                <div class="panel-head">
-                                    <h3>Submissions to Review</h3>
-                                    <a href="ManageTasks.aspx">View all</a>
-                                </div>
-                                <div class="list-row">
-                                    <div class="row-icon soft"><i class="bi bi-file-earmark-code"></i></div>
-                                    <div class="row-body">
-                                        <div class="row-title">Login Page UI</div>
-                                        <div class="row-sub">Ahmad Saleem · resubmitted</div>
-                                    </div>
-                                    <a href="ManageTasks.aspx" class="btn btn-soft">Review</a>
-                                </div>
-                                <div class="list-row">
-                                    <div class="row-icon soft"><i class="bi bi-journal-text"></i></div>
-                                    <div class="row-body">
-                                        <div class="row-title">Weekly Report #2</div>
-                                        <div class="row-sub">Rana Saleh · Oct 18</div>
-                                    </div>
-                                    <a href="ManageTasks.aspx" class="btn btn-soft">Review</a>
-                                </div>
-                                <div class="list-row">
-                                    <div class="row-icon soft"><i class="bi bi-clock-history"></i></div>
-                                    <div class="row-body">
-                                        <div class="row-title">Hours log · 16 h</div>
-                                        <div class="row-sub">Ahmad Saleem · week 3</div>
-                                    </div>
-                                    <a href="MyTrainees.aspx" class="btn btn-soft">Approve</a>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </main>
+<div class="mt-4"><%= DashboardContent %></div>
+</main>
             </div>
         </div>
     </form>
 
-    <script src="../Js_project/Demo/demo-store.js?v=20261021-original-ui"></script>
+
 <script src="<%= ResolveUrl("~/Scripts/bootstrap.bundle.min.js") %>"></script>
     <script src="<%= ResolveUrl("~/Js_project/Public/dashboard-navigation.js?v=20261021-original-ui") %>"></script>
-<script src="../Js_project/Company/company-dashboard.js?v=20261021-original-ui"></script>
+
 </body>
 </html>

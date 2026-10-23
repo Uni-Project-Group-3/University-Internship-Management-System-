@@ -99,7 +99,7 @@
         Email delivery is unavailable. Students can still be saved; no welcome email will be sent.
     </asp:Panel>
     <section class="completion-panel" aria-labelledby="studentListTitle">
-        <header><div><h2 id="studentListTitle">Student accounts</h2><p>Account actions preserve university records and academic history.</p></div>
+        <header><div><h2 id="studentListTitle">Student accounts</h2><p>Deleting an account clears its linked history. Official university records are retained.</p></div>
             <div class="student-list-actions">
                 <asp:Button ID="refreshStudentsButton" runat="server" Text="Refresh" CausesValidation="false"
                     CssClass="completion-button completion-button--secondary" OnClick="RefreshStudents_Click" />
@@ -143,7 +143,7 @@
     <header class="completion-dialog-header"><h2 id="studentDeleteTitle">Delete student?</h2><button type="button" class="completion-close" data-close="" aria-label="Cancel deletion">&times;</button></header>
     <div class="completion-dialog-body">
         <p>Delete the login and account profile for <strong id="studentDeleteName"></strong>?</p>
-        <p>This permanently removes their Firebase login and users profile. University records and academic history will be retained.</p>
+        <p>This permanently removes their login, profile, applications, placements, tasks, evaluations and attendance history. Official university records remain so a recreated account starts fresh.</p>
         <asp:HiddenField ID="studentDeleteUid" runat="server" ClientIDMode="Static" />
         <div class="student-form-actions">
             <button type="button" class="completion-button completion-button--secondary" data-close="">Cancel</button>

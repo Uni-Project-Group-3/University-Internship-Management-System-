@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
@@ -209,6 +209,11 @@ namespace University_Internship_Management_System.Services.FinalEvaluation
                 Field<Button>("ConfirmSubmission").Enabled = !Academic && current != null && !current.SubmittedAtUtc.HasValue;
                 Field<Panel>("AcademicReviewPanel").Visible = Academic && review == null;
                 Field<Button>("ApproveReview").Enabled = Field<Button>("RequestRevision").Enabled = Academic && current?.SubmittedAtUtc != null && review == null;
+                if (!context.IsDevelopment)
+                {
+                    try { new FirebaseFinalEvaluationConfiguration().EnsureWritesAllowed(); }
+                    catch (UIMS.Services.FirebaseException) { DisableActions(); availability.Text += " Firebase records are connected. Evaluation writes are disabled in configuration."; }
+                }
                 if (!failed) { Field<TextBox>("FinalPercentage").Text = current?.Percentage?.ToString(CultureInfo.InvariantCulture) ?? ""; Field<TextBox>("FinalComments").Text = current?.Comments ?? ""; Field<HiddenField>("evaluationTicket").Value = Protect(new Ticket { InternshipId = selection, Version = state.Version, CompanyVersion = current?.VersionId, Revision = revision, DecisionId = Guid.NewGuid().ToString("N") }); }
             }
             catch (UnauthorizedAccessException)
