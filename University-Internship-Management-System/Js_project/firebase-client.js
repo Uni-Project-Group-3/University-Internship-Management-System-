@@ -124,7 +124,7 @@
     if (!form && /Dashboard(?:\.aspx)?$/i.test(location.pathname)) {
         document.querySelectorAll('main tbody').forEach(body => { body.replaceChildren(); const row = body.insertRow(); const cell = row.insertCell(); cell.colSpan = 20; cell.textContent = 'Live dashboard records are pending verified schema mapping.'; });
         document.querySelectorAll('main .list-row').forEach(row => row.remove());
-        const notice = document.createElement('p'); notice.className = 'alert alert-info'; notice.setAttribute('role', 'status'); notice.textContent = 'Your Firebase identity is verified. Dashboard business data is not yet mapped; live writes remain disabled.';
+        const notice = document.createElement('p'); notice.className = 'alert alert-info'; notice.setAttribute('role', 'status'); notice.textContent = 'Your Firebase identity is verified. Dashboard business data is not yet mapped. Authentication and account-profile API access remain enabled.';
         document.querySelector('main')?.prepend(notice);
         request('identity').then(data => { if (data.role === 'admin') schemaTools(); }).catch(error => status(error.message));
     }

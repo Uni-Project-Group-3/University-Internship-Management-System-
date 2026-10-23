@@ -1,4 +1,4 @@
-<%@ Page Language="C#" AutoEventWireup="true" ViewStateEncryptionMode="Always" CodeBehind="CoordinatorAccountProfile.aspx.cs" Inherits="University_Internship_Management_System.Coordinator.CoordinatorAccountProfile" %>
+<%@ Page Language="C#" Async="true" AutoEventWireup="true" ViewStateEncryptionMode="Always" CodeBehind="CoordinatorAccountProfile.aspx.cs" Inherits="University_Internship_Management_System.Coordinator.CoordinatorAccountProfile" %>
 <!DOCTYPE html>
 <html lang="en">
 <head runat="server">
@@ -27,14 +27,14 @@
 <li><a href="CoordinatorAccountProfile.aspx" class="active" aria-current="page"><i class="bi bi-person-circle" aria-hidden="true"></i><span>Coordinator Account</span></a></li></ul>
     <div class="side-divider"></div><ul class="side-nav"><li><a href="../Contact.aspx"><i class="bi bi-question-circle" aria-hidden="true"></i><span>Help &amp; contact</span></a></li><li><asp:LinkButton ID="btnLogout" runat="server" OnClick="btnLogout_Click" CausesValidation="false"><i class="bi bi-box-arrow-right" aria-hidden="true"></i><span>Logout</span></asp:LinkButton></li></ul>
 </aside><div class="sidebar-backdrop" aria-hidden="true"></div>
-            <div class="main"><header class="topbar"><button type="button" class="menu-btn d-lg-none" aria-label="Open navigation" aria-controls="sidebar" aria-expanded="false"><i class="bi bi-list" aria-hidden="true"></i></button><span class="topbar-label">University Internship Management System</span><div class="topbar-actions ms-auto"><span class="avatar" aria-hidden="true">U</span><span class="user-chip"><span class="name"><asp:Literal ID="NavName" runat="server" Mode="Encode"/><span class="role">UIMS workspace · frontend preview</span></span></span></div></header>
+            <div class="main"><header class="topbar"><button type="button" class="menu-btn d-lg-none" aria-label="Open navigation" aria-controls="sidebar" aria-expanded="false"><i class="bi bi-list" aria-hidden="true"></i></button><span class="topbar-label">University Internship Management System</span><div class="topbar-actions ms-auto"><span class="avatar" aria-hidden="true">U</span><span class="user-chip"><span class="name"><asp:Literal ID="NavName" runat="server" Mode="Encode"/><span class="role">University Internship Coordinator</span></span></span></div></header>
             <main class="app-content">
                 <header class="workspace-header">
                     <span class="workspace-eyebrow">University internship coordinator / Account</span>
                     <h1>Coordinator Account Profile</h1>
                     <p class="workspace-muted">View and manage your account information.</p>
                 </header>
-                <p class="profile-demo-note"><strong>Demo profile.</strong> This is fictional account information. Changes update this page's preview only; nothing is saved to Firebase.</p>
+                <p class="profile-demo-note"><strong>Live profile.</strong> <asp:Literal ID="AccountConnection" runat="server" Mode="Encode" /></p>
                 <section class="workspace-card profile-overview" aria-labelledby="profileOverviewTitle">
                     <div class="profile-heading">
                         <span class="profile-avatar" aria-hidden="true"><span data-uims-profile="initials"><asp:Literal ID="ProfileInitials" runat="server" Mode="Encode" EnableViewState="false" /></span></span>
@@ -42,11 +42,11 @@
                             <h2 id="profileOverviewTitle"><span data-uims-profile="name"><asp:Literal ID="ProfileName" runat="server" Mode="Encode" EnableViewState="false" /></span></h2>
                             <p>University Internship Coordinator</p>
                             <span class="profile-email"><span data-uims-profile="email"><asp:Literal ID="OverviewEmail" runat="server" Mode="Encode" EnableViewState="false" /></span></span>
-                            <span class="profile-university">University not linked · demonstration account</span>
+                            <span class="profile-university"><asp:Literal ID="UniversitySummary" runat="server" Mode="Encode" /></span>
                         </div>
                     </div>
                     <div class="profile-overview-actions">
-                        <span class="workspace-badge">Demo account</span>
+                        <span class="workspace-badge">Firebase account</span>
                         <asp:Button ID="EditProfile" runat="server" ClientIDMode="Static" Text="Edit Profile" CssClass="workspace-button" OnClick="EditProfile_Click" CausesValidation="false" />
                     </div>
                 </section>
@@ -82,7 +82,7 @@
                                 <span id="officeHint" class="workspace-hint">Up to 100 characters.</span>
                             </div>
                             <div class="profile-protected-email"><span class="workspace-label">Account email · read-only</span><span><span data-uims-profile="email"><asp:Literal ID="EditEmail" runat="server" Mode="Encode" EnableViewState="false" /></span></span></div>
-                            <p class="workspace-hint">Save Changes updates this demonstration preview only. Your role, email, university and identity cannot be edited here.</p>
+                            <p class="workspace-hint">Your name, phone and office location are saved to your Firebase profile. Your role, email, university and coordinator ID are protected.</p>
                             <div class="workspace-actions profile-edit-actions">
                                 <asp:Button ID="SaveProfile" runat="server" ClientIDMode="Static" Text="Save Changes" CssClass="workspace-button" OnClick="SaveProfile_Click" Visible="false" />
                                 <asp:Button ID="CancelEdit" runat="server" ClientIDMode="Static" Text="Cancel" CssClass="workspace-button secondary" OnClick="CancelEdit_Click" CausesValidation="false" Visible="false" formnovalidate="formnovalidate" />
@@ -94,17 +94,17 @@
                             <h2 id="accountTitle">University &amp; role</h2>
                             <p class="workspace-hint">Protected account information</p>
                             <dl class="account-details">
-                                <div><dt>University</dt><dd>Not linked</dd></div>
-                                <div><dt>College / department</dt><dd>Not provided</dd></div>
+                                <div><dt>University</dt><dd><asp:Literal ID="UniversityName" runat="server" Mode="Encode" EnableViewState="false" /></dd></div>
+                                <div><dt>College / department</dt><dd><asp:Literal ID="CollegeDepartment" runat="server" Mode="Encode" EnableViewState="false" /></dd></div>
                                 <div><dt>Role</dt><dd>University Internship Coordinator</dd></div>
-                                <div><dt>Coordinator ID</dt><dd>Not connected</dd></div>
+                                <div><dt>Coordinator ID</dt><dd><asp:Literal ID="CoordinatorId" runat="server" Mode="Encode" EnableViewState="false" /></dd></div>
                             </dl>
-                            <p class="workspace-hint profile-reference">Demo profile reference: DEMO-COORDINATOR-01</p>
+                            <p class="workspace-hint profile-reference">University and coordinator details come from your account record.</p>
                         </section>
                         <section class="profile-security" aria-labelledby="securityTitle">
                             <h2 id="securityTitle">Account security</h2>
-                            <span class="workspace-badge warning">Authentication not connected</span>
-                            <p class="workspace-hint">Email and password changes require the verified account security workflow. Password management is unavailable in this prototype.</p>
+                            <span class="workspace-badge">Firebase Authentication verified</span>
+                            <p class="workspace-hint">Email and password changes require the verified account security workflow. Contact your administrator if your sign-in details need updating.</p>
                         </section>
                     </aside>
                 </div>
