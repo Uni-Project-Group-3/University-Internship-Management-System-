@@ -1,205 +1,103 @@
-﻿using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
+﻿using Newtonsoft.Json.Linq;
 using System;
-using System.Collections.Generic;
 using System.Globalization;
-using System.IO;
-using System.Linq;
-using System.Net.Http;
-using System.Text;
-using System.Text.RegularExpressions;
-using System.Web.UI;
+using University_Internship_Management_System.Shared;
 
 namespace UIMS.Company
 {
-    // Company: add, edit and close internship opportunities (Firebase: /opportunities)
-    public partial class ManageOpportunities : System.Web.UI.Page
+    // Company: add, edit and close opportunities (Firebase: /opportunities)
+    public partial class ManageOpportunities : InternshipPage
     {
-        private readonly University_Internship_Management_System.Shared.StudentFirebaseGateway firebase = new University_Internship_Management_System.Shared.StudentFirebaseGateway();
-        JObject db;       // the whole database
-        JObject user;     // the signed-in user
-        string userId;
+        protected override string Role { get { return "companySupervisor"; } }
+        string CompanyId { get { return S(Profile["companyId"]); } }
 
-        protected void Page_Load(object sender, EventArgs e)
+        protected override JObject BuildView()
         {
-            userId = Context.User?.Identity?.IsAuthenticated == true ? Context.User.Identity.Name : null;
-            db = LoadCompanySnapshot(userId);
-            user = db["users"]?[userId] as JObject;
-            if (user == null) return;
-
-            // A save sent by the page JavaScript
-            string action = Request.Headers["X-Action"];
-            if (action == null) return;
-            if (user == null) Reply(new { error = "Please sign in again." });
-
-            JObject data = JObject.Parse(new StreamReader(Request.InputStream).ReadToEnd());
-            if (action == "opportunity") SaveOpportunity(data);
-            if (action == "closeOpportunity") CloseOpportunity((string)data["id"]);
-
-            db = LoadCompanySnapshot(userId); // read current Firebase records after the confirmed write
-            Reply(LoadData());
+            return UimsData.CompanyView(Db, Uid, Profile);
         }
 
-        // ================= Data for the page =================
-        // This company's opportunities and the applications sent to them
-        JObject LoadData()
+        protected override void Handle(string action, JObject data)
         {
-            if (user == null) return null;
-
-            string companyId = (string)user["companyId"];
-            var applications = List("applications").Where(a => (string)a["companyId"] == companyId).ToList();
-            var students = List("users").Where(u => applications.Any(a => (string)a["studentId"] == (string)u["id"]));
-
-            user["mustChangePassword"] = false;
-            return new JObject
-            {
-                ["user"] = user,
-                ["users"] = new JArray(students),
-                ["companies"] = new JArray(List("companies")),
-                ["opportunities"] = new JArray(List("opportunities").Where(o => (string)o["companyId"] == companyId)),
-                ["applications"] = new JArray(applications),
-                ["placements"] = new JArray(),
-                ["tasks"] = new JArray(),
-                ["submissions"] = new JArray(),
-                ["progress"] = new JArray(),
-                ["messages"] = new JArray()
-            };
-        }
-
-        JObject LoadCompanySnapshot(string uid)
-        {
-            if (string.IsNullOrWhiteSpace(uid) || !firebase.IsActiveAuthenticationUidAsync(uid).GetAwaiter().GetResult())
-                return new JObject();
-            string key = University_Internship_Management_System.Shared.StudentManagementService.Key(uid);
-            var profile = firebase.ReadAsync("users/" + key).GetAwaiter().GetResult() as JObject;
-            var identity = University_Internship_Management_System.Shared.FirebaseSignInService.ProfileResult(uid, profile);
-            if (identity.Role != "companySupervisor") return new JObject();
-            string companyId = (string)profile["companyId"];
-            if (string.IsNullOrWhiteSpace(companyId)) return new JObject();
-
-            var snapshot = new JObject
-            {
-                ["users"] = new JObject { [uid] = profile },
-                ["companies"] = new JObject(),
-                ["applications"] = firebase.ReadEqualAsync("applications", "companyId", companyId).GetAwaiter().GetResult() as JObject ?? new JObject(),
-                ["opportunities"] = firebase.ReadEqualAsync("opportunities", "companyId", companyId).GetAwaiter().GetResult() as JObject ?? new JObject(),
-                ["placements"] = firebase.ReadEqualAsync("placements", "companyId", companyId).GetAwaiter().GetResult() as JObject ?? new JObject(),
-                ["tasks"] = new JObject()
-            };
-            var company = firebase.ReadAsync("companies/" + University_Internship_Management_System.Shared.StudentManagementService.Key(companyId)).GetAwaiter().GetResult();
-            if (company != null && company.Type == JTokenType.Object) snapshot["companies"][companyId] = company.DeepClone();
-            foreach (var app in (snapshot["applications"] as JObject ?? new JObject()).Properties())
-            {
-                string studentId = (string)app.Value["studentId"];
-                if (string.IsNullOrWhiteSpace(studentId)) continue;
-                var student = firebase.ReadEqualAsync("users", "studentId", studentId).GetAwaiter().GetResult() as JObject;
-                if (student != null) foreach (var item in student.Properties()) snapshot["users"][item.Name] = item.Value.DeepClone();
-            }
-            foreach (var placement in (snapshot["placements"] as JObject ?? new JObject()).Properties())
-            {
-                var tasks = firebase.ReadEqualAsync("tasks", "placementId", placement.Name).GetAwaiter().GetResult() as JObject;
-                if (tasks != null) foreach (var item in tasks.Properties()) snapshot["tasks"][item.Name] = item.Value.DeepClone();
-            }
-            return snapshot;
-        }
-
-        // Accepted + confirmed students on an opportunity
-        int AcceptedCount(string opportunityId)
-        {
-            return List("applications").Count(a => (string)a["opportunityId"] == opportunityId &&
-                ((string)a["status"] == "accepted" || (string)a["status"] == "confirmed"));
+            if (action == "opportunity") Save(data);
+            else if (action == "closeOpportunity") Close(S(data["id"]));
+            else base.Handle(action, data);
         }
 
         // ================= Add / Edit =================
-        void SaveOpportunity(JObject data)
+        void Save(JObject d)
         {
-            string id = (string)data["id"];
-            int seats = 0, duration = 0, hours = 0;
-            DateTime start = DateTime.MinValue, deadline = DateTime.MinValue;
-            if (!int.TryParse((string)data["seats"], out seats) ||
-                !int.TryParse((string)data["duration"], out duration) ||
-                !int.TryParse((string)data["requiredHours"], out hours) ||
-                !DateTime.TryParseExact((string)data["start"], "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out start) ||
-                !DateTime.TryParseExact((string)data["deadline"], "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out deadline))
-                Reply(new { error = "Enter valid dates, seats, duration and required training hours." });
+            string title = S(d["title"]).Trim();
+            string description = S(d["description"]).Trim();
+            string location = S(d["location"]).Trim();
+            string department = S(d["department"]).Trim();
+            if (title == "" || description == "" || location == "" || department == "")
+                throw new AppError("Title, description, specialization and location are required.");
 
-            string major = ((string)data["department"] ?? "").Trim();
-            var opportunity = new UIMS.Models.Opportunity
+            int seats, duration, hours;
+            DateTime start, deadline;
+            if (!int.TryParse(S(d["seats"]), out seats) || seats < 1 || seats > 50 ||
+                !int.TryParse(S(d["duration"]), out duration) || duration < 1 || duration > 52 ||
+                !int.TryParse(S(d["requiredHours"]), out hours) || hours < 1 ||
+                !DateTime.TryParseExact(S(d["start"]), "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out start) ||
+                !DateTime.TryParseExact(S(d["deadline"]), "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out deadline))
+                throw new AppError("Enter valid dates, seats, duration and required training hours.");
+            if (deadline > start)
+                throw new AppError("The application deadline must be on or before the start date.");
+
+            var fields = new JObject
             {
-                Id = id,
-                Title = (string)data["title"],
-                Description = (string)data["description"],
-                Requirements = (string)data["requirements"],
-                Majors = string.IsNullOrWhiteSpace(major) ? new List<string>() : new List<string> { major },
-                Location = (string)data["location"],
-                WorkMode = (string)data["workMode"],
-                Seats = seats,
-                DurationWeeks = duration,
-                RequiredHours = hours,
-                StartDate = start,
-                Deadline = deadline
+                ["title"] = title,
+                ["description"] = description,
+                ["requirements"] = S(d["requirements"]).Trim(),
+                ["majors"] = new JArray(department),
+                ["location"] = location,
+                ["workMode"] = S(d["workMode"]) == "" ? "On-site" : S(d["workMode"]),
+                ["seats"] = seats,
+                ["durationWeeks"] = duration,
+                ["requiredHours"] = hours,
+                ["startDate"] = S(d["start"]),
+                ["deadline"] = S(d["deadline"]),
+                ["updatedAt"] = FirebaseDb.Now
             };
-            var service = new UIMS.Services.OpportunityService();
-            if (string.IsNullOrWhiteSpace(id)) service.CreateAsync(userId, opportunity).GetAwaiter().GetResult();
-            else service.UpdateAsync(userId, opportunity).GetAwaiter().GetResult();
+
+            string id = S(d["id"]);
+            if (id == "")
+            {
+                if (string.CompareOrdinal(S(d["deadline"]), UimsData.Today) < 0)
+                    throw new AppError("The application deadline cannot be in the past.");
+                id = FirebaseDb.NewId("OP");
+                fields["id"] = id;
+                fields["companyId"] = CompanyId;
+                fields["companyName"] = S(Profile["companyName"]);
+                fields["createdAt"] = FirebaseDb.Now;
+                fields["status"] = "published";
+                fields["acceptedCount"] = 0;
+                fields["applicantsCount"] = 0;
+                Db.Set("opportunities/" + id, fields);
+            }
+            else
+            {
+                var current = Own(id);
+                if (seats < Int(current["acceptedCount"]))
+                    throw new AppError("Seats cannot be fewer than the students already accepted.");
+                Db.Update("opportunities/" + id, fields);
+            }
         }
 
         // ================= Close =================
-        void CloseOpportunity(string id)
+        void Close(string id)
         {
-            new UIMS.Services.OpportunityService().CloseAsync(userId, id).GetAwaiter().GetResult();
+            Own(id);
+            Db.Update("opportunities/" + id, new JObject { ["status"] = "closed", ["closedAt"] = FirebaseDb.Now });
         }
 
-        // ================= Firebase =================
-        // All records under a node, for example List("opportunities")
-        IEnumerable<JObject> List(string node)
+        // The opportunity must belong to this company
+        JObject Own(string id)
         {
-            JObject records = db[node] as JObject;
-            if (records == null) return new List<JObject>();
-            return records.Properties().Select(p => (JObject)p.Value);
+            var opportunity = Db.GetObject("opportunities/" + FirebaseDb.Key(id));
+            if (opportunity == null || S(opportunity["companyId"]) != CompanyId)
+                throw new AppError("Opportunity not found.");
+            return opportunity;
         }
-
-        // Sends JSON back to the page JavaScript and stops the page here
-        void Reply(object data)
-        {
-            Response.Clear();
-            Response.ContentType = "application/json";
-            Response.Write(JsonConvert.SerializeObject(data));
-            Response.End();
-        }
-
-        // ================= Connect the page JavaScript =================
-        // The page JavaScript reads its data from window.UimsDemo (it was demo-store.js).
-        // Here we put a small script in its place that gives the data from Firebase
-        // and sends every save back to this page.
-        protected override void Render(HtmlTextWriter writer)
-        {
-            StringWriter html = new StringWriter();
-            base.Render(new HtmlTextWriter(html));
-
-            string data = JsonConvert.SerializeObject(LoadData()).Replace("</", "<\\/");
-            string script = "<script>" + PageScript.Replace("DATA", data) + "</script>";
-
-            writer.Write(Regex.Replace(html.ToString(), @"<script[^>]*demo-store\.js[^>]*></script>", m => script));
-        }
-
-        const string PageScript = @"
-var data = DATA;
-window.UimsDemo = {
-    departments: ['Computer Science', 'Computer Engineering', 'Software Engineering', 'Computer Information Systems', 'Cybersecurity', 'Data Science & AI', 'Network Engineering & Security'],
-    enabled: function () { return true; },
-    view: function () { return data; },
-    current: function () { return data && data.user; },
-    logout: function () { data = null; },
-    transaction: function (action, payload) {
-        var request = new XMLHttpRequest();
-        request.open('POST', location.href, false);
-        request.setRequestHeader('X-Action', action);
-        request.send(JSON.stringify(payload));
-        var reply = JSON.parse(request.responseText);
-        if (reply.error) throw new Error(reply.error);
-        data = reply;
-    }
-};";
     }
 }
