@@ -889,6 +889,7 @@
     <Compile Include="Services\FinalEvaluation\CompanyDraftWorkflow.cs" />
     <Compile Include="Services\FinalEvaluation\CompanyDraftPageIntegration.cs" />
     <Compile Include="Services\FinalEvaluation\PercentagePageIntegration.cs" />
+    <Compile Include="Services\FinalEvaluation\FinalEvaluationFirebaseIntegration.cs" />
     <Compile Include="Services\FinalEvaluation\PercentageEvaluationPage.cs">
       <SubType>ASPXCodeBehind</SubType>
     </Compile>

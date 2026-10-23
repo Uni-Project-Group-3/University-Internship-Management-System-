@@ -88,6 +88,7 @@ namespace University_Internship_Management_System.Services.FinalEvaluation
                     ClearEditor(); availability.Text = "Authorized placement information is unavailable. No empty-data conclusion can be made.";
                     rows.Text = "<tr><td colspan=3>Placement records could not be verified.</td></tr>"; return;
                 }
+                if (!string.IsNullOrWhiteSpace(context.WriteBlocker)) availability.Text += " " + context.WriteBlocker;
                 var html = new StringBuilder();
                 bool incomplete = false;
                 var states = new Dictionary<string, RecordSnapshot<PercentageEvaluation>>();
@@ -146,6 +147,7 @@ namespace University_Internship_Management_System.Services.FinalEvaluation
                 {
                     try
                     {
+                        if (!string.IsNullOrWhiteSpace(context.WriteBlocker)) throw new ArgumentException(context.WriteBlocker);
                         var ticket = ReadTicket(selection);
                         if (operation == "save")
                         {
@@ -202,13 +204,15 @@ namespace University_Internship_Management_System.Services.FinalEvaluation
                 Field<Literal>("FinalOutcome").Text = await context.Workflow.OutcomeAsync(selection, Academic);
                 bool revision = panel == "openRevision" || (IsPostBack && !string.IsNullOrWhiteSpace(Field<HiddenField>("evaluationTicket").Value) && SafeRevision(selection));
                 revision = revision && current?.SubmittedAtUtc != null;
-                bool editable = !Academic && (current?.SubmittedAtUtc == null || (revision && review?.Kind == AcademicReviewKind.RequestRevision));
+                bool writesAvailable = string.IsNullOrWhiteSpace(context.WriteBlocker);
+                bool editable = writesAvailable && !Academic && (current?.SubmittedAtUtc == null || (revision && review?.Kind == AcademicReviewKind.RequestRevision));
                 Field<TextBox>("FinalPercentage").ReadOnly = Field<TextBox>("FinalComments").ReadOnly = !editable;
-                if (!Academic) Field<CheckBox>("ConfirmAction").Enabled = current != null && !current.SubmittedAtUtc.HasValue;
+                if (!Academic) Field<CheckBox>("ConfirmAction").Enabled = writesAvailable && current != null && !current.SubmittedAtUtc.HasValue;
                 Field<Button>("SaveDraft").Enabled = editable;
-                Field<Button>("ConfirmSubmission").Enabled = !Academic && current != null && !current.SubmittedAtUtc.HasValue;
-                Field<Panel>("AcademicReviewPanel").Visible = Academic && review == null;
-                Field<Button>("ApproveReview").Enabled = Field<Button>("RequestRevision").Enabled = Academic && current?.SubmittedAtUtc != null && review == null;
+                Field<Button>("ConfirmSubmission").Enabled = writesAvailable && !Academic && current != null && !current.SubmittedAtUtc.HasValue;
+                Field<Panel>("AcademicReviewPanel").Visible = writesAvailable && Academic && review == null;
+                Field<Button>("ApproveReview").Enabled = Field<Button>("RequestRevision").Enabled = writesAvailable && Academic && current?.SubmittedAtUtc != null && review == null;
+                if (Academic && !writesAvailable) Field<CheckBox>("ConfirmAction").Enabled = false;
                 if (!failed) { Field<TextBox>("FinalPercentage").Text = current?.Percentage?.ToString(CultureInfo.InvariantCulture) ?? ""; Field<TextBox>("FinalComments").Text = current?.Comments ?? ""; Field<HiddenField>("evaluationTicket").Value = Protect(new Ticket { InternshipId = selection, Version = state.Version, CompanyVersion = current?.VersionId, Revision = revision, DecisionId = Guid.NewGuid().ToString("N") }); }
             }
             catch (UnauthorizedAccessException)
@@ -217,6 +221,11 @@ namespace University_Internship_Management_System.Services.FinalEvaluation
                 rows.Text = "<tr><td colspan=3>Access denied. No confidential records are displayed.</td></tr>";
                 Response.StatusCode = 403; Response.TrySkipIisCustomErrors = true;
                 availability.Text = "Access denied. A verified assigned supervisor is required.";
+            }
+            catch (EvaluationIntegrationUnavailableException error)
+            {
+                ClearEditor(); BindStatistics(null, null, null, null); availability.Text = error.Message;
+                rows.Text = "<tr><td colspan=3>Authorized Firebase access is blocked. See the integration message above.</td></tr>";
             }
             catch (Exception)
             {

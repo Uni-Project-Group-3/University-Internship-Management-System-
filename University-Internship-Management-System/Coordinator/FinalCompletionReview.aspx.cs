@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Globalization;
 using System.Collections.Generic;
 using System.Web;
@@ -29,13 +29,7 @@ namespace University_Internship_Management_System.Coordinator
             ViewStateUserKey = Session.SessionID;
             reviewAcknowledgment.InputAttributes["class"] = "form-check-input";
             Response.Cache.SetNoStore(); Response.Cache.SetCacheability(System.Web.HttpCacheability.NoCache);
-            try
-            {
-                reviewContext = CoordinatorReviewPageIntegration.Resolve(Context);
-                if (reviewContext == null) return;
-            }
-            catch (UnauthorizedAccessException) { Deny(); }
-            catch (Exception) { initializationError = "Trusted review integrations are unavailable. No completion decision was made."; reviewContext = null; studentSelect.Items.Clear(); }
+            // Resolve asynchronously inside LoadReviewAsync; never block Page_Init on Firebase.
         }
         protected void Page_Load(object sender, EventArgs e)
         { RegisterAsyncTask(new PageAsyncTask(LoadReviewAsync)); }
@@ -75,8 +69,12 @@ namespace University_Internship_Management_System.Coordinator
         }
         private async Task LoadReviewAsync()
         {
+            try { reviewContext = await CoordinatorReviewPageIntegration.ResolveAsync(Context); }
+            catch (UnauthorizedAccessException) { Deny(); }
+            catch (EvaluationIntegrationUnavailableException error) { initializationError = error.Message; reviewContext = null; }
+            catch (Exception) { initializationError = "Authorized Firebase review could not be loaded. Check server credentials and permissions."; reviewContext = null; }
             integrationNotice.Text = reviewContext == null
-                ? "Official Firebase review is disabled until trusted authentication, scope, placement, policy, hours, tasks and reports are connected."
+                ? initializationError ?? "Authorized Firebase review integrations are unavailable."
                 : reviewContext.DevelopmentDatasetPath != null ? "LOCAL-ONLY Firebase DEMO: " + reviewContext.DevelopmentDatasetPath + ". Fictional data only; official paths are inaccessible."
                 : reviewContext.IsDevelopment ? "Isolated in-memory development review. Fictional data and requirements only. No Firebase operations. " + (reviewContext.Decisions == null ? "Completion decisions are disabled." : "Isolated decisions enabled; generated PDFs remain private test objects.")
                 : "Authorized review. Decisions require configured trusted integrations; document actions remain unavailable.";
@@ -122,7 +120,7 @@ namespace University_Internship_Management_System.Coordinator
                     catch (Exception) { reportGenerationMessage.Text = "The report could not be authorized or confirmed. Completion approval is unchanged; private storage may be unavailable."; }
                     decisionView = reviewContext.Decisions == null ? null : await reviewContext.Decisions.LoadAsync(id);
                 }
-                CompletionReview acknowledged = null;
+                CompletionReview acknowledged = reviewContext.ReadCompletionAsync == null ? null : await reviewContext.ReadCompletionAsync(id);
                 bool saveConfirmed = false;
                 if (decisionPostback)
                 {
@@ -201,9 +199,9 @@ namespace University_Internship_Management_System.Coordinator
                 {
                     var view = reviewContext.Decisions == null ? null : await reviewContext.Decisions.LoadAsync(placement.InternshipId);
                     var readiness = view == null ? await reviewContext.Workflow.ReviewAsync(placement.InternshipId) : view.Readiness;
-                    var record = view == null ? null : view.Record.Value;
+                    var record = view == null ? (reviewContext.ReadCompletionAsync == null ? null : await reviewContext.ReadCompletionAsync(placement.InternshipId)) : view.Record.Value;
                     CompletionStatus? status = record == null ? (CompletionStatus?)null : record.Status;
-                    var state = CoordinatorDashboardPresentation.CompletionLabel(status, readiness.IsReady, view != null);
+                    var state = CoordinatorDashboardPresentation.CompletionLabel(status, readiness.IsReady, view != null || reviewContext.ReadCompletionAsync != null);
                     var academic = PercentageEvaluationWorkflow.CurrentReview(readiness.Evaluations?.PercentageEvaluation);
                     string approval = academic == null ? "Pending Review" : academic.Kind == AcademicReviewKind.Approve ? "Approved" : "Revision Requested";
                     if (state == "Ready for Final Review") ready++;
@@ -220,10 +218,10 @@ namespace University_Internship_Management_System.Coordinator
                 }
             }
             completionRows.Text = html.ToString();
-            readyCount.Text = incomplete || reviewContext.Decisions == null ? "—" : ready.ToString(CultureInfo.InvariantCulture);
-            inReviewCount.Text = incomplete || reviewContext.Decisions == null ? "—" : reviewing.ToString(CultureInfo.InvariantCulture);
-            completedCount.Text = incomplete || reviewContext.Decisions == null ? "—" : completed.ToString(CultureInfo.InvariantCulture);
-            returnedCount.Text = incomplete || reviewContext.Decisions == null ? "—" : returned.ToString(CultureInfo.InvariantCulture);
+            readyCount.Text = incomplete || (reviewContext.Decisions == null && reviewContext.ReadCompletionAsync == null) ? "—" : ready.ToString(CultureInfo.InvariantCulture);
+            inReviewCount.Text = incomplete || (reviewContext.Decisions == null && reviewContext.ReadCompletionAsync == null) ? "—" : reviewing.ToString(CultureInfo.InvariantCulture);
+            completedCount.Text = incomplete || (reviewContext.Decisions == null && reviewContext.ReadCompletionAsync == null) ? "—" : completed.ToString(CultureInfo.InvariantCulture);
+            returnedCount.Text = incomplete || (reviewContext.Decisions == null && reviewContext.ReadCompletionAsync == null) ? "—" : returned.ToString(CultureInfo.InvariantCulture);
         }
         private sealed class DecisionTicket
         {

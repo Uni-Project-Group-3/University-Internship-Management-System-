@@ -32,7 +32,7 @@
     <Reference Include="Google.Apis.Core, Version=1.77.0.0, Culture=neutral, PublicKeyToken=4b01fa6e34db77ab"><HintPath>..\..\packages\Google.Apis.Core.1.77.0\lib\net462\Google.Apis.Core.dll</HintPath><SpecificVersion>True</SpecificVersion><Private>True</Private></Reference><Reference Include="System.Core" /><Reference Include="System.Net.Http" />
     <Reference Include="Newtonsoft.Json"><HintPath>..\..\packages\Newtonsoft.Json.13.0.4\lib\net45\Newtonsoft.Json.dll</HintPath></Reference>
     <ProjectReference Include="..\..\University-Internship-Management-System\University-Internship-Management-System.csproj"><Project>{267BD94B-0DF8-4B5C-A2A1-7D11DF7FA241}</Project><Name>UIMS</Name></ProjectReference>
-    <Compile Include="Program.cs" /><Compile Include="FirebaseDemoRepositoryTests.cs" /><Compile Include="PercentageRequirementsTests.cs" /><Compile Include="PercentageSecurityTests.cs" /><Compile Include="DevelopmentIntegrationTests.cs" /><Compile Include="TaskExamTests.cs" /><Compile Include="WeeklyReportTests.cs" />
+    <Compile Include="Program.cs" /><Compile Include="LiveIntegrationTests.cs" /><Compile Include="FirebaseDemoRepositoryTests.cs" /><Compile Include="PercentageRequirementsTests.cs" /><Compile Include="PercentageSecurityTests.cs" /><Compile Include="DevelopmentIntegrationTests.cs" /><Compile Include="TaskExamTests.cs" /><Compile Include="WeeklyReportTests.cs" />
     <Compile Include="CompanyDraftWorkflowTests.cs" />
     <Compile Include="CompanySubmissionTests.cs" />
     <Compile Include="AcademicDraftTests.cs" />

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Globalization;
 using System.Linq;
 using System.Threading.Tasks;
@@ -107,6 +107,7 @@ namespace University_Internship_Management_System.Student
                 ReportAvailabilityText.Text = view.ReportMessage + " Final evaluation outcome: " + view.FinalOutcome + "."; DownloadCompletionReport.Visible = view.ReportAvailable;
             }
             catch (UnauthorizedAccessException) { Empty(); StudentAccessMessage.Text = "Access denied. A verified student and ownership of this internship are required."; if (downloadRequested) SendError(403, "Access denied."); else { Response.StatusCode = 403; Response.TrySkipIisCustomErrors = true; } }
+            catch (EvaluationIntegrationUnavailableException error) { Empty(); StudentAccessMessage.Text = error.Message; if (downloadRequested) SendError(503, error.Message); }
             catch (StudentReportUnavailableException error) { SendError(error.HttpStatus, error.Message); }
             catch (ArgumentException) { if (downloadRequested) SendError(400, "Invalid report request."); else { Response.StatusCode = 400; Response.TrySkipIisCustomErrors = true; StudentAccessMessage.Text = "Invalid completion request."; } }
             catch (Exception) { if (downloadRequested) SendError(503, "Report access is temporarily unavailable."); else { Response.StatusCode = 503; Response.TrySkipIisCustomErrors = true; StudentAccessMessage.Text = "Completion information could not be verified. Please try again later."; } }

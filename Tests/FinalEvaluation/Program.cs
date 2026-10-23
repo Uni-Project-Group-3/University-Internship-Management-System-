@@ -315,6 +315,7 @@ internal static partial class Program
     }
     private static async Task Run()
     {
+        await RunLiveIntegrationTests();
         await Test("existing Firebase role aliases normalize without schema changes", () => {
             Func<string, string> normalize = University_Internship_Management_System.Shared.FirebaseSignInService.CanonicalRole;
             Assert(normalize("Student") == "student");

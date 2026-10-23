@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Linq;
 using System.Collections.Generic;
 using System.Threading;
@@ -17,6 +17,7 @@ namespace University_Internship_Management_System.Services.FinalEvaluation
         public string UserId { get; set; }
         public bool IsDevelopment { get; set; }
         public string DatasetPath { get; set; }
+        public string WriteBlocker { get; set; }
         // Only trusted server adapters may provide report/detail text. No HTML is accepted.
         public Func<string, Task<string>> ReadReportsAsync { get; set; }
         public Func<string, Task<string>> ReadDetailsAsync { get; set; }
@@ -26,8 +27,7 @@ namespace University_Internship_Management_System.Services.FinalEvaluation
         public static Func<HttpContext, bool, Task<PercentagePageContext>> Factory { get; set; }
         public static Task<PercentagePageContext> Resolve(HttpContext context, bool academic)
         {
-            // No page-level fixture or in-memory repository is selected at runtime.
-            // Register a trusted Firebase-backed factory before enabling this workflow.
+            // Application_Start registers the verified Firebase composition. Tests may inject a trusted factory.
             return Factory == null ? Task.FromResult<PercentagePageContext>(null) : Factory(context, academic);
         }
     }

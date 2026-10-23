@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Linq;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
@@ -103,6 +103,7 @@ namespace University_Internship_Management_System.Services.FinalEvaluation
         }
         private async Task<EvaluationPolicy> Policy(CompletionPlacement p)
         {
+            if (string.IsNullOrWhiteSpace(p.PolicyId) || string.IsNullOrWhiteSpace(p.PolicyVersion)) throw new ArgumentException("An explicit placement/evaluation policy reference is required. No default university policy is selected.");
             var policy = await repository.GetPolicyAsync(p.PolicyId);
             if (policy == null || !policy.IsApproved || policy.PolicyId != p.PolicyId || policy.Version != p.PolicyVersion) throw new ArgumentException("An applicable approved university policy is required.");
             if (policy.PassingThreshold.HasValue && (policy.PassingThreshold < 0 || policy.PassingThreshold > 100)) throw new ArgumentException("Policy passing percentage is invalid.");
@@ -111,6 +112,7 @@ namespace University_Internship_Management_System.Services.FinalEvaluation
         public async Task<string> OutcomeAsync(string id, bool academic = false)
         {
             var p = await Authorize(id, academic); var snapshot = await LoadAsync(id, academic);
+            if (string.IsNullOrWhiteSpace(p.PolicyId) || string.IsNullOrWhiteSpace(p.PolicyVersion)) return "Cannot yet be determined: an explicit applicable policy reference is required.";
             var policy = await repository.GetPolicyAsync(p.PolicyId);
             if (policy == null || !policy.IsApproved || policy.PolicyId != p.PolicyId || policy.Version != p.PolicyVersion || !policy.PassingThreshold.HasValue || policy.PassingThreshold < 0 || policy.PassingThreshold > 100 || snapshot.Value?.Current.SubmittedAtUtc == null)
                 return "Cannot yet be determined: submitted result and approved passing threshold are required.";
