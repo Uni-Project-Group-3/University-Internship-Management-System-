@@ -7,15 +7,15 @@
     <title>Manage Companies | JUST UIMS</title>
     <link runat="server" href="~/Assets/shared/colors.css" rel="stylesheet" />
 
-    <link runat="server" href="~/Assets/coordinator/manage-companies.css?v=20261022-firebase" rel="stylesheet" />
+    <link runat="server" href="~/Assets/coordinator/manage-companies.css?v=20261023-unified" rel="stylesheet" />
     
 </head>
-<body class="dashboard-direct app-page companies-page" data-page="manage-companies">
+<body class="dashboard-direct app-page companies-page management-page" data-page="manage-companies">
     <form id="form1" runat="server" novalidate="novalidate"><asp:HiddenField ID="companyCsrf" runat="server" ClientIDMode="Static" />
         <div class="app-layout">
                         <aside class="dash-sidebar" id="dashboardSidebar" aria-label="Coordinator navigation">
                 <a href="<%= ResolveUrl("~/Coordinator/CoordinatorDashboard.aspx") %>" class="dash-brand">
-                    <span class="dash-brand-logo">J</span>
+                    <img class="dash-brand-logo" src="../Assets/shared/images/JUST-Logo-01.png" alt="JUST logo" width="48" height="48" />
                     <span class="dash-brand-text">
                         <strong>JUST</strong>
                         <span>Internships</span>
@@ -103,7 +103,7 @@
                     </header>
             <main class="app-content companies-main">
 
-                <section class="companies-heading" aria-labelledby="pageTitle"><div><p class="companies-eyebrow">PARTNERS &amp; PEOPLE</p><h1 id="pageTitle">Manage Companies</h1><p>Manage partner companies and supervisor accounts.</p></div><button type="button" class="companies-button" data-open="addCompany"><span aria-hidden="true">+</span> Add Company</button></section>
+                <section class="companies-heading management-hero" aria-labelledby="pageTitle"><div><p class="companies-eyebrow">PARTNERS &amp; PEOPLE</p><h1 id="pageTitle">Manage Companies</h1><p>Manage partner companies and supervisor accounts.</p></div><button type="button" class="companies-button" data-open="addCompany"><span aria-hidden="true">+</span> Add Company</button></section>
                 <div class="companies-notice" role="status"><span aria-hidden="true">&#9432;</span><div><strong>Company management</strong><span id="companyPageNotice">Loading your company directory...</span></div></div>
                 <section class="companies-stats" aria-label="Company summary">
                     <article><div class="companies-stat-top"><span>Total Companies</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 21V4h11v17M15 9h5v12M1 21h22M8 8h3m-3 4h3m-3 4h3"/></svg></div><strong>&mdash;</strong><small>All university partners</small></article>

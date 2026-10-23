@@ -19,8 +19,10 @@
             method, cache: 'no-store', credentials: 'same-origin', headers: method === 'POST' ? { 'Content-Type': 'application/json' } : {},
             body: method === 'POST' ? JSON.stringify(data || {}) : undefined
         });
+        if (response.status === 401 || (response.redirected && /\/Auth\/Login(?:\.aspx)?(?:[/?]|$)/i.test(new URL(response.url).pathname)))
+            throw new Error('Your sign-in expired. Sign in again to load your tasks.');
         let result;
-        try { result = await response.json(); } catch (_) { throw new Error('Firebase returned an unreadable response.'); }
+        try { result = await response.json(); } catch (_) { throw new Error('The task service returned an unexpected response (HTTP ' + response.status + '). Refresh or sign in again.'); }
         if (!response.ok) throw new Error(result.message || ('Firebase request failed (' + response.status + ').'));
         return result;
     }
@@ -81,7 +83,7 @@
         const host = by('taskBoard'); if (!host) return;
         if (viewMode !== 'board') { host.hidden = true; return; }
         host.hidden = false;
-        if (!boardState) { host.innerHTML = '<div class="task-board-empty">Your placement task board will appear here when linked tasks are available.</div>'; return; }
+        if (!boardState) { host.innerHTML = state.tasks.length ? '<div class="task-board-empty">Your placement task board will appear here when linked tasks are available.</div>' : '<div class="task-board-empty"><strong>No tasks assigned yet</strong><p>Tasks will appear here once your supervisor assigns them.</p></div>'; return; }
         const query = (by('taskSearch')?.value || '').trim().toLowerCase(), filter = by('taskFilter')?.value || '';
         const tasks = boardState.tasks.filter(task => (!query || (task.title + ' ' + task.description).toLowerCase().includes(query)) && (!filter || filter === 'all' || task.status === filter || filter === 'assigned' && task.status === 'inprogress'));
         host.innerHTML = '<div class="task-board-columns">' + boardState.columns.map(column => {
@@ -125,10 +127,20 @@
         loadAttachments(task.id);
     }
     async function refresh() {
-        try { state = await request(''); render(); connection('Connected to Firebase /tasks using your verified account.'); await refreshBoard(); return true; }
+        try {
+            const result = await request('');
+            if (!Array.isArray(result.tasks) || !Array.isArray(result.submissions)) throw new Error('The task service returned an invalid task list. Refresh and try again.');
+            state = result; boardState = null; render();
+            if (by('pageNotice')) by('pageNotice').hidden = true;
+            connection('Connected to Firebase /tasks using your verified account.'); await refreshBoard(); return true;
+        }
         catch (error) {
+            state = { tasks: [], submissions: [] }; boardState = null;
+            document.querySelectorAll('.stat-details h3').forEach(el => { el.textContent = '—'; });
+            const select = by('boardPlacementSelect'); if (select) select.innerHTML = '';
+            const board = by('taskBoard'); if (board) { board.hidden = true; board.innerHTML = ''; }
             message(error.message, true); connection('Could not load task records from Firebase.');
-            const list = by('taskList'); list.querySelectorAll('.task-card').forEach(card => card.remove());
+            const list = by('taskList'); list.hidden = false; list.querySelectorAll('.task-card').forEach(card => card.remove());
             const empty = by('noTasksMsg'); if (empty) { empty.style.display = 'block'; empty.querySelector('h4').textContent = 'Tasks unavailable'; empty.querySelector('p').textContent = 'Check the Firebase connection and Rules, then retry.'; }
             return false;
         }

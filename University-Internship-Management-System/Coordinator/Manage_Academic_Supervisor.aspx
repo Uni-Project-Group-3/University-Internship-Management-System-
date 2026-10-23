@@ -10,9 +10,9 @@
         <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet" />
 
         <link href="../Assets/shared/colors.css" rel="stylesheet" />
-        <link href="../Assets/coordinator/Manage_Academic_Supervisor.css?v=20261022-firebase-2" rel="stylesheet" />
+        <link href="../Assets/coordinator/Manage_Academic_Supervisor.css?v=20261023-unified" rel="stylesheet" />
     </head>
-    <body data-page="manage-academic-supervisors">
+    <body class="management-page" data-page="manage-academic-supervisors">
         <form id="form1" runat="server" novalidate="novalidate"><asp:HiddenField ID="academicCsrf" runat="server" ClientIDMode="Static" />
             <div class="app">
 
@@ -144,12 +144,9 @@
 
                     <!-- ============ CONTENT ============ -->
                     <div class="content">
-                        <p class="preview-note">Look up an official staff ID before creating an account. No email is sent.</p>
-                        <div id="pageNotice" class="page-notice" role="status" aria-live="polite" hidden>
-                        </div>
-                        <div class="page-header d-flex justify-content-between align-items-center animate-fade-up template-style-1">
+                        <div class="page-header management-hero d-flex justify-content-between align-items-center animate-fade-up template-style-1">
                             <div>
-                                <h1 class="greeting">Academic Supervisors</h1>
+                                <p class="management-eyebrow">ACADEMIC TEAM</p><h1 class="greeting">Manage Academic Supervisors</h1>
                                 <p class="subtitle mb-0">Create and manage academic supervisor accounts and departments.</p>
                             </div>
                             <button type="button" class="btn custom-btn-primary" id="addAcademicButton">
@@ -158,6 +155,10 @@
                             </button>
                         </div>
 
+
+                        <p class="preview-note">Look up an official staff ID before creating an account. No email is sent.</p>
+                        <div id="pageNotice" class="page-notice" role="status" aria-live="polite" hidden>
+                        </div>
                         <!-- STATS GRID -->
                         <div class="stats-grid">
                             <div class="stat-card animate-fade-up template-style-2">
