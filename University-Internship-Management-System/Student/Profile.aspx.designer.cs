@@ -22,5 +22,24 @@ namespace University_Internship_Management_System.Student
         /// To modify move field declaration from designer file to code-behind file.
         /// </remarks>
         protected global::System.Web.UI.HtmlControls.HtmlForm form1;
+        protected global::System.Web.UI.HtmlControls.HtmlGenericControl lblInitials;
+        protected global::System.Web.UI.HtmlControls.HtmlGenericControl lblUserName;
+        protected global::System.Web.UI.HtmlControls.HtmlGenericControl pnlMessage;
+        protected global::System.Web.UI.WebControls.Literal litSummaryInitials;
+        protected global::System.Web.UI.WebControls.Literal litSummaryName;
+        protected global::System.Web.UI.WebControls.Literal litSummaryDetails;
+        protected global::System.Web.UI.WebControls.Literal litFullName;
+        protected global::System.Web.UI.WebControls.Literal litStudentId;
+        protected global::System.Web.UI.WebControls.Literal litMajor;
+        protected global::System.Web.UI.WebControls.Literal litRequiredHours;
+        protected global::System.Web.UI.WebControls.Literal litUniversityEmail;
+        protected global::System.Web.UI.WebControls.TextBox txtPhone;
+        protected global::System.Web.UI.WebControls.TextBox txtCity;
+        protected global::System.Web.UI.WebControls.TextBox txtPortfolioUrl;
+        protected global::System.Web.UI.WebControls.FileUpload cvUpload;
+        protected global::System.Web.UI.WebControls.Literal litCvStatus;
+        protected global::System.Web.UI.WebControls.Button btnUploadCv;
+        protected global::System.Web.UI.WebControls.Literal litProfileMessage;
+        protected global::System.Web.UI.WebControls.Button btnSave;
     }
 }

@@ -224,7 +224,14 @@ namespace University_Internship_Management_System.Shared
             config.EnsureAuthenticationEnabled();
             if (string.IsNullOrWhiteSpace(idToken) || idToken.Length > 8192)
                 throw new FirebaseLoginException("A valid Firebase sign-in is required to read database data.", 401);
-            string path = string.IsNullOrWhiteSpace(collection) ? "" : "/" + Uri.EscapeDataString(collection.Trim());
+            string path = "";
+            if (!string.IsNullOrWhiteSpace(collection))
+            {
+                string[] segments = collection.Trim().Split('/');
+                if (Array.Exists(segments, segment => string.IsNullOrWhiteSpace(segment) || segment == "." || segment == ".."))
+                    throw new ArgumentException("A valid Firebase database path is required.", nameof(collection));
+                path = "/" + string.Join("/", Array.ConvertAll(segments, Uri.EscapeDataString));
+            }
             string query = string.IsNullOrEmpty(path) ? "?shallow=true&auth=" : "?auth=";
             string url = config.DatabaseUrl.TrimEnd('/') + path + ".json" + query + Uri.EscapeDataString(idToken);
             using (var response = await SharedClient.GetAsync(url).ConfigureAwait(false))
@@ -236,6 +243,31 @@ namespace University_Internship_Management_System.Shared
                 string json = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
                 try { return string.IsNullOrWhiteSpace(json) ? JValue.CreateNull() : JToken.Parse(json); }
                 catch (JsonException) { throw new FirebaseLoginException("Firebase returned invalid JSON for this database path.", 503); }
+            }
+        }
+
+        public static async Task PatchDatabasePathAsync(string path, object value, string idToken)
+        {
+            var config = new UIMS.Services.FirebaseConfiguration();
+            config.EnsureWritesAllowed();
+            if (string.IsNullOrWhiteSpace(idToken) || idToken.Length > 8192)
+                throw new FirebaseLoginException("A valid Firebase sign-in is required to save database data.", 401);
+            string[] segments = (path ?? "").Split('/');
+            if (string.IsNullOrWhiteSpace(path) ||
+                Array.Exists(segments, segment => string.IsNullOrWhiteSpace(segment) || segment == "." || segment == ".."))
+                throw new ArgumentException("A valid Firebase database path is required.", nameof(path));
+            string escapedPath = string.Join("/", Array.ConvertAll(segments, Uri.EscapeDataString));
+            string url = config.DatabaseUrl.TrimEnd('/') + "/" + escapedPath + ".json?auth=" + Uri.EscapeDataString(idToken);
+            using (var request = new HttpRequestMessage(new HttpMethod("PATCH"), url))
+            {
+                request.Content = new StringContent(JsonConvert.SerializeObject(value), Encoding.UTF8, "application/json");
+                using (var response = await SharedClient.SendAsync(request).ConfigureAwait(false))
+                {
+                if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized || response.StatusCode == System.Net.HttpStatusCode.Forbidden)
+                    throw new FirebaseLoginException("Firebase Rules denied the database update. Check the authenticated write rules.", 403);
+                if (!response.IsSuccessStatusCode)
+                    throw new FirebaseLoginException("The Firebase database could not save the profile update.", 503);
+                }
             }
         }
 

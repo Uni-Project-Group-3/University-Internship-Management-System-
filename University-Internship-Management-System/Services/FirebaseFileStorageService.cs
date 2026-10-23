@@ -146,6 +146,7 @@ namespace UIMS.Services
             switch (ext)
             {
                 case ".pdf": expected = "application/pdf"; break;
+                case ".doc": expected = "application/msword"; break;
                 case ".docx": expected = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"; break;
                 case ".xlsx": expected = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"; break;
                 case ".pptx": expected = "application/vnd.openxmlformats-officedocument.presentationml.presentation"; break;
@@ -156,7 +157,7 @@ namespace UIMS.Services
             }
             if (!string.Equals((contentType ?? "").Split(';')[0].Trim(), expected, StringComparison.OrdinalIgnoreCase))
                 throw new FirebaseException(415, "The file content type does not match its extension.");
-            bool signature = ext == ".pdf" ? Starts(bytes, "%PDF-") : ext == ".png" ? Starts(bytes, new byte[] { 137, 80, 78, 71, 13, 10, 26, 10 }) :
+            bool signature = ext == ".pdf" ? Starts(bytes, "%PDF-") : ext == ".doc" ? Starts(bytes, new byte[] { 0xd0, 0xcf, 0x11, 0xe0, 0xa1, 0xb1, 0x1a, 0xe1 }) : ext == ".png" ? Starts(bytes, new byte[] { 137, 80, 78, 71, 13, 10, 26, 10 }) :
                 ext == ".jpg" || ext == ".jpeg" ? bytes.Length >= 3 && bytes[0] == 0xff && bytes[1] == 0xd8 && bytes[2] == 0xff :
                 ext == ".txt" ? IsUtf8Text(bytes) : IsOfficePackage(bytes, ext);
             if (!signature) throw new FirebaseException(415, "The file signature does not match the allowed file type.");
@@ -184,7 +185,7 @@ namespace UIMS.Services
             string token;
             try { token = await tokenProvider(cancellation).ConfigureAwait(false); }
             catch (Exception error) when (!(error is FirebaseException) && !(error is OperationCanceledException))
-            { throw new FirebaseException(503, "Trusted server credentials for Firebase Storage are unavailable."); }
+            { throw new FirebaseException(503, "Firebase Storage is not connected to trusted Google credentials on this server. For local development, run 'gcloud auth application-default login' using an account with Storage Object Admin access to the configured bucket, or set GOOGLE_APPLICATION_CREDENTIALS to a service-account JSON file stored outside the project, then restart IIS Express."); }
             if (string.IsNullOrWhiteSpace(token)) throw new FirebaseException(503, "Trusted server credentials did not provide a Storage access token.");
             var request = new HttpRequestMessage(method, uri);
             request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
