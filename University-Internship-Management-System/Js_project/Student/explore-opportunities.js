@@ -215,7 +215,7 @@
                 + '<div class="card-tags">' + (o.department ? '<span class="specialization"><i class="bi bi-mortarboard"></i> ' + escape(o.department) + '</span>' : '') + '<span class="mode-tag"><i class="bi ' + modeIcon(o.workMode) + '"></i> ' + escape(o.workMode || 'On-site') + '</span></div>'
                 + '<p class="opportunity-description">' + escape(o.description || 'View internship details and apply.') + '</p>'
                 + facts(o)
-                + '<button type="button" class="details-button" data-uims="details" data-record="' + escape(o.id) + '">View details <i class="bi bi-arrow-right"></i></button>'
+                + '<button type="button" class="details-button opportunity-view-button" data-uims="details" data-record="' + escape(o.id) + '">View</button>'
                 + '</article></div>';
         }
 

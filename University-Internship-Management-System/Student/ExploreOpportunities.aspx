@@ -20,7 +20,7 @@
     <link href="../Content/bootstrap.min.css" rel="stylesheet" />
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet" />
     <link href="../Assets/shared/colors.css" rel="stylesheet" />
-    <link href="../Assets/student/explore-opportunities.css?v=20261023-modern" rel="stylesheet" />
+    <link href="../Assets/student/explore-opportunities.css?v=20261024-view" rel="stylesheet" />
 <link href="../Assets/shared/workspace-identity.css?v=20261024-refine" rel="stylesheet" />
 <script src="../Js_project/workspace-navigation-unified.js?v=20261024-refine" defer></script>
 </head>
@@ -209,6 +209,6 @@
         </div>
     </form>
     <script src="../Scripts/bootstrap.bundle.min.js"></script>
-    <script src="../Js_project/Student/explore-opportunities.js?v=20261023-modern"></script>
+    <script src="../Js_project/Student/explore-opportunities.js?v=20261024-view"></script>
 </body>
 </html>

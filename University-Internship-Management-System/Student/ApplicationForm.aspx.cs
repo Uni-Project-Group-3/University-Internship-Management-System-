@@ -32,7 +32,7 @@ namespace University_Internship_Management_System.Student
             if (opportunity == null || !UimsData.IsOpenFor(opportunity, major))
                 throw new AppError("This opportunity is not open for your specialization.");
 
-            var mine = Db.List("applications").Where(a => S(a["studentId"]) == studentId).ToList();
+            var mine = Db.List("applications").Where(a => UimsData.OwnsStudentRecord(a, Uid, studentId)).ToList();
             if (mine.Any(a => S(a["opportunityId"]) == opportunityId))
                 throw new AppError("You already applied to this opportunity.");
             if (mine.Any(a => S(a["status"]) == "confirmed"))

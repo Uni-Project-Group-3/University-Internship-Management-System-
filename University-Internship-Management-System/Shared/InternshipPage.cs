@@ -111,7 +111,7 @@ window.UimsDemo = {
         var reply;
         try { reply = JSON.parse(request.responseText); }
         catch (e) { reply = { error: 'Server error (' + request.status + '). Check the Visual Studio Output window.' }; }
-        if (reply.error) { alert(reply.error); throw new Error(reply.error); }
+        if (reply.error) { throw new Error(reply.error); }
         data = reply;
     }
 };";
@@ -132,6 +132,14 @@ window.UimsDemo = {
         }
 
         static string Or(string a, string b) { return string.IsNullOrWhiteSpace(a) ? b : a; }
+
+        // An explicit Authentication identity takes precedence over a reused student number.
+        public static bool OwnsStudentRecord(JObject record, string uid, string studentId)
+        {
+            string owner = S(record["studentUid"]);
+            if (!string.IsNullOrWhiteSpace(owner)) return string.Equals(owner, uid, StringComparison.Ordinal);
+            return !string.IsNullOrWhiteSpace(studentId) && string.Equals(S(record["studentId"]), studentId, StringComparison.Ordinal);
+        }
 
         // Jordan time (UTC+3) as yyyy-MM-dd
         public static string Today
@@ -274,7 +282,7 @@ window.UimsDemo = {
             string studentId = S(profile["studentId"]);
             string major = Or(S(profile["department"]), S(profile["majorId"]));
 
-            var applications = db.List("applications").Where(a => S(a["studentId"]) == studentId).ToList();
+            var applications = db.List("applications").Where(a => OwnsStudentRecord(a, uid, studentId)).ToList();
             var applied = new HashSet<string>(applications.Select(a => S(a["opportunityId"])));
             var allOpportunities = db.List("opportunities");
 
@@ -298,7 +306,7 @@ window.UimsDemo = {
                     companies[cid] = new JObject { ["id"] = cid, ["name"] = S(o["companyName"]) };
             }
 
-            var placements = db.List("placements").Where(p => S(p["studentId"]) == studentId);
+            var placements = db.List("placements").Where(p => OwnsStudentRecord(p, uid, studentId));
 
             return View(User(uid, profile), new JObject[0], companies.Values, opportunities,
                 applications.Select(Application), placements);

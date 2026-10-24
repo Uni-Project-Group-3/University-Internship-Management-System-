@@ -27,12 +27,16 @@ namespace University_Internship_Management_System.Student
             string studentId = FirebaseDb.Key(S(Profile["studentId"]));
 
             var application = Db.GetObject("applications/" + id);
-            if (application == null || S(application["studentId"]) != studentId)
+            if (application == null || !UimsData.OwnsStudentRecord(application, Uid, studentId))
                 throw new AppError("Application not found.");
             if (S(application["status"]) != "accepted")
                 throw new AppError("Only an accepted offer can be confirmed.");
-            if (Db.Get("placementClaims/" + studentId) != null)
-                throw new AppError("You already confirmed an internship offer.");
+            // A leftover claim alone is not a training placement. Check the actual
+            // owned placements, including legacy records, before blocking confirmation.
+            var existingPlacements = Db.List("placements").Where(p => UimsData.OwnsStudentRecord(p, Uid, studentId));
+            if (existingPlacements.Any(p => !new[] { "cancelled", "canceled", "withdrawn", "rejected", "deleted" }
+                .Contains(S(p["status"]).ToLowerInvariant())))
+                throw new AppError("You already have a training placement. Open your training details or contact the coordinator if it is no longer active.");
 
             string opportunityId = FirebaseDb.Key(S(application["opportunityId"]));
             var opportunity = Db.GetObject("opportunities/" + opportunityId) ?? new JObject();
@@ -65,6 +69,7 @@ namespace University_Internship_Management_System.Student
                     ["applicationId"] = id,
                     ["placementId"] = placementId,
                     ["studentId"] = studentId,
+                    ["studentUid"] = Uid,
                     ["claimedAt"] = now
                 },
                 ["applications/" + id + "/status"] = "confirmed",
@@ -73,7 +78,7 @@ namespace University_Internship_Management_System.Student
             };
 
             // The student's other accepted offers: release their seats for the other companies
-            var others = Db.List("applications").Where(a => S(a["studentId"]) == studentId
+            var others = Db.List("applications").Where(a => UimsData.OwnsStudentRecord(a, Uid, studentId)
                 && S(a["id"]) != id && S(a["status"]) == "accepted");
             foreach (var other in others)
             {

@@ -1,4 +1,10 @@
 /* تنسيق المحتوى الرئيسي فقط، باستخدام الألوان المشتركة */
+.application-error-popup { width:min(460px,calc(100vw - 32px)); padding:30px; border:1px solid #DFE3EB; border-radius:22px; background:#fff; color:#242844; box-shadow:0 28px 90px #14234155; }
+.application-error-popup::backdrop { background:#18213888; backdrop-filter:blur(4px); }
+.application-error-popup h2 { font-family:var(--font-heading,sans-serif); font-size:22px; margin:0 0 16px; }
+.application-error-popup p { font-family:var(--font-body,sans-serif); line-height:1.7; color:#66718A; overflow-wrap:anywhere; margin-bottom:24px; }
+.application-error-popup button { width:100%; padding:13px 18px; border:0; border-radius:12px; background:#1F3D78; color:#fff; font-weight:700; cursor:pointer; }
+.application-error-popup button:hover { background:#294D91; }
 body {
     margin: 0;
     background: var(--background);
