@@ -11,7 +11,6 @@
     <title>Final Academic Evaluation | JUST UIMS</title>
     <link runat="server" href="~/Content/bootstrap.min.css" rel="stylesheet" /><link runat="server" href="~/Assets/shared/evaluation-colors.css?v=20261024-fast-paint" rel="stylesheet" />
 
-    <link runat="server" href="~/Assets/academic/final-academic-evaluation.css?v=20261024-academic-footer" rel="stylesheet" />
     <link runat="server" href="~/Assets/shared/evaluation-workspace.css?v=20261023" rel="stylesheet" />
     
     <link href="../Assets/shared/workflow-ui.css?v=20261023" rel="stylesheet" />
@@ -23,10 +22,11 @@
         });
     </script>
 <link href="../Assets/shared/workspace-identity.css?v=20261024-refine" rel="stylesheet" />
+<link runat="server" href="~/Assets/academic/final-academic-evaluation.css?v=20261024-academic-hero-card-3" rel="stylesheet" />
 <script src="../Js_project/workspace-navigation-unified.js?v=20261024-refine" defer></script>
 
 </head>
-<body class="dashboard-direct app-page evaluation-page" data-demo-role="academic">
+<body class="dashboard-direct app-page evaluation-page academic-final-evaluation" data-demo-role="academic">
     <form id="form1" runat="server" novalidate="novalidate">
                                 <div class="app-layout">
                         <uims:AcademicSidebar ID="academicSidebar" runat="server" SidebarId="dashboardSidebar" />
@@ -79,7 +79,8 @@
 <main class="app-content workspace-content evaluation-main" id="companyWorkspace">
 <section class="uims-page-hero" aria-labelledby="academicEvaluationTitle">
 <div class="uims-hero-copy"><p class="uims-hero-eyebrow">JUST / ACADEMIC SUPERVISOR WORKSPACE</p><h1 id="academicEvaluationTitle">Final Academic Evaluation</h1><p>Review submitted Company Final Evaluations and record the academic decision for assigned students.</p></div>
-<section class="academic-review-stats uims-hero-stats" aria-label="Authorized evaluation statistics"><article class="uims-hero-stat"><h2>Assigned Students</h2><strong data-stat="AssignedStudentCount"><asp:Literal ID="AssignedStudentCount" runat="server" Mode="Encode" Text="—" /></strong></article><article class="uims-hero-stat"><h2>Company Drafts</h2><strong data-stat="CompanyDraftCount"><asp:Literal ID="CompanyDraftCount" runat="server" Mode="Encode" Text="—" /></strong></article><article class="uims-hero-stat"><h2>Awaiting Academic Review</h2><strong data-stat="AwaitingReviewCount"><asp:Literal ID="AwaitingReviewCount" runat="server" Mode="Encode" Text="—" /></strong></article><article class="uims-hero-stat"><h2>Academic Approvals</h2><strong data-stat="AcademicApprovalCount"><asp:Literal ID="AcademicApprovalCount" runat="server" Mode="Encode" Text="—" /></strong></article></section></section>
+</section>
+<section class="academic-review-stats academic-review-stat-cards" aria-label="Authorized evaluation statistics"><article class="uims-hero-stat"><h2>Assigned Students</h2><strong data-stat="AssignedStudentCount"><asp:Literal ID="AssignedStudentCount" runat="server" Mode="Encode" Text="—" /></strong></article><article class="uims-hero-stat"><h2>Company Drafts</h2><strong data-stat="CompanyDraftCount"><asp:Literal ID="CompanyDraftCount" runat="server" Mode="Encode" Text="—" /></strong></article><article class="uims-hero-stat"><h2>Awaiting Academic Review</h2><strong data-stat="AwaitingReviewCount"><asp:Literal ID="AwaitingReviewCount" runat="server" Mode="Encode" Text="—" /></strong></article><article class="uims-hero-stat"><h2>Academic Approvals</h2><strong data-stat="AcademicApprovalCount"><asp:Literal ID="AcademicApprovalCount" runat="server" Mode="Encode" Text="—" /></strong></article></section>
 <asp:Literal ID="DraftAvailability" runat="server" Mode="Encode" Visible="false" />
 <asp:HiddenField ID="selectedInternship" runat="server" /><asp:HiddenField ID="evaluationTicket" runat="server" EnableViewState="false" /><asp:HiddenField ID="activePanel" runat="server" ClientIDMode="Static" />
 
@@ -200,6 +201,6 @@
     });
 </script>
     <script src="<%= ResolveUrl("~/Js_project/Public/dashboard-navigation.js?v=20261021-original-ui") %>"></script>
-<script src="../Scripts/bootstrap.bundle.min.js"></script><script src="../Js_project/final-report-summary.js?v=20261023"></script>
+<script src="../Scripts/bootstrap.bundle.min.js"></script><script src="../Js_project/final-report-summary.js?v=20261024-academic-no-summary-card-2" data-display-card="false"></script>
 </body>
 </html>

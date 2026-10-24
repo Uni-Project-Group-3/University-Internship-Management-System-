@@ -300,3 +300,202 @@ body:has(.evaluation-dialog[open]) { overflow: hidden; }
     .academic-trainees-table { min-width: 620px; }
 }
 @media (prefers-reduced-motion: reduce) { .evaluation-main *, .academic-trainees-card * { scroll-behavior: auto !important; transition-duration: .01ms !important; } }
+
+/* Academic Final Evaluation shell: align this page with the approved Company and Coordinator workspaces. */
+body.academic-final-evaluation .uims-fixed-sidebar {
+    background: linear-gradient(165deg, #202849, #293554) !important;
+    border-color: #364361 !important;
+    color: #cbd3e3 !important;
+    box-shadow: 0 7px 25px #20284918;
+}
+body.academic-final-evaluation .uims-fixed-sidebar .brand-text strong,
+body.academic-final-evaluation .uims-fixed-sidebar .brand-text small,
+body.academic-final-evaluation .uims-fixed-sidebar .workspace-nav-role { color: #cbd3e3 !important; }
+body.academic-final-evaluation .uims-fixed-sidebar .workspace-nav-role { color: #aebbd1 !important; }
+body.academic-final-evaluation .uims-fixed-sidebar .workspace-nav-link {
+    border: 1px solid transparent;
+    border-radius: 11px;
+    color: #d2d9e7 !important;
+}
+body.academic-final-evaluation .uims-fixed-sidebar .workspace-nav-link:hover,
+body.academic-final-evaluation .uims-fixed-sidebar .workspace-nav-link.active {
+    border-color: #aebdd33b;
+    background: #ffffff10 !important;
+    color: #fff !important;
+}
+body.academic-final-evaluation .uims-fixed-sidebar .workspace-nav-link.active {
+    box-shadow: inset 2px 0 #a5bde0;
+    font-weight: 700;
+}
+body.academic-final-evaluation .dash-topbar {
+    min-height: 68px;
+    background: var(--surface) !important;
+    border-bottom: 1px solid var(--border);
+    box-shadow: 0 4px 14px #24284408;
+}
+body.academic-final-evaluation .evaluation-main {
+    width: 100%;
+    max-width: 1600px;
+    padding: 12px clamp(18px, 2.2vw, 34px) 36px;
+}
+body.academic-final-evaluation .academic-review-stat-cards {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 16px;
+    margin: 0 0 24px;
+}
+body.academic-final-evaluation .academic-review-stat-cards > article {
+    min-width: 0;
+    min-height: 112px;
+    padding: 22px 24px;
+    border: 1px solid var(--border);
+    border-radius: 18px;
+    background: var(--surface);
+    box-shadow: 0 8px 24px #2428440a;
+}
+body.academic-final-evaluation .academic-review-stat-cards > article h2 {
+    margin: 0;
+    color: var(--text-secondary);
+    font: 600 12px/1.5 var(--font-body);
+}
+body.academic-final-evaluation .academic-review-stat-cards > article strong {
+    display: block;
+    margin-top: 12px;
+    color: var(--primary);
+    font: 800 28px/1.1 var(--font-heading);
+    font-variant-numeric: tabular-nums;
+}
+body.academic-final-evaluation .academic-trainees-card { box-shadow: 0 8px 24px #2428440a; }
+body.academic-final-evaluation main.evaluation-main > .uims-page-hero {
+    min-height: 248px !important;
+    margin: 4px 0 24px !important;
+    padding: 38px 42px !important;
+    border: 1px solid #ffffff1f !important;
+    border-radius: 28px !important;
+    background: linear-gradient(105deg, #1E284C 0%, #1F294D 58%, #6689BB 100%) !important;
+    box-shadow: 0 18px 42px #1e284c24 !important;
+    color: #fff !important;
+}
+body.academic-final-evaluation main.evaluation-main > .uims-page-hero::before,
+body.academic-final-evaluation main.evaluation-main > .uims-page-hero::after {
+    content: "" !important;
+    position: absolute;
+    z-index: -1;
+    border: 1px solid #ffffff20 !important;
+    border-radius: 50% !important;
+    background: none !important;
+    box-shadow: none !important;
+    filter: none !important;
+    pointer-events: none;
+}
+body.academic-final-evaluation main.evaluation-main > .uims-page-hero::before { width: 390px; height: 390px; top: -245px; right: 7%; }
+body.academic-final-evaluation main.evaluation-main > .uims-page-hero::after { width: 560px; height: 560px; top: -365px; right: -12%; }
+body.academic-final-evaluation main.evaluation-main > .uims-page-hero .uims-hero-eyebrow {
+    min-height: 31px;
+    margin: 0 0 18px !important;
+    padding: 6px 14px !important;
+    border: 1px solid #ffffff47 !important;
+    border-radius: 999px !important;
+    background: #ffffff17 !important;
+    color: #fff !important;
+    font-size: 11px !important;
+    letter-spacing: .055em !important;
+}
+body.academic-final-evaluation main.evaluation-main > .uims-page-hero .uims-hero-copy h1 {
+    max-width: none !important;
+    margin: 0 0 8px !important;
+    color: #fff !important;
+    font: 800 clamp(28px, 3vw, 42px)/1.12 var(--font-heading) !important;
+    letter-spacing: -.035em !important;
+}
+body.academic-final-evaluation main.evaluation-main > .uims-page-hero .uims-hero-copy > p:last-child {
+    max-width: 760px;
+    margin: 0;
+    color: #ffffffdc !important;
+    font: 400 clamp(13px, 1.2vw, 16px)/1.65 var(--font-body) !important;
+}
+@media (max-width: 1100px) {
+    body.academic-final-evaluation .academic-review-stat-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 991.98px) {
+    body.academic-final-evaluation main.evaluation-main > .uims-page-hero { min-height: 0 !important; padding: 30px 28px !important; }
+}
+@media (max-width: 575.98px) {
+    body.academic-final-evaluation .evaluation-main { padding: 8px 14px 24px; }
+    body.academic-final-evaluation main.evaluation-main > .uims-page-hero { margin: 2px 0 18px !important; padding: 24px 20px !important; border-radius: 20px !important; }
+    body.academic-final-evaluation .academic-review-stat-cards { gap: 10px; margin-bottom: 16px; }
+    body.academic-final-evaluation .academic-review-stat-cards > article { min-height: 96px; padding: 16px; border-radius: 14px; }
+    body.academic-final-evaluation .academic-review-stat-cards > article h2 { font-size: 10px; }
+    body.academic-final-evaluation .academic-review-stat-cards > article strong { margin-top: 8px; font-size: 24px; }
+}
+
+/* The global workspace identity sheet uses an ID-weighted !important reset for heroes.
+   This page-scoped override deliberately outranks that reset without touching other pages. */
+body:not(#coordinator-style-scope).academic-final-evaluation .dash-topbar {
+    background: #fff !important;
+    border-bottom: 1px solid var(--border) !important;
+}
+body:not(#coordinator-style-scope).academic-final-evaluation main.evaluation-main > .uims-page-hero {
+    position: relative !important;
+    display: flex !important;
+    align-items: center !important;
+    min-height: 248px !important;
+    margin: 4px 0 24px !important;
+    padding: 38px 42px !important;
+    overflow: hidden !important;
+    border: 1px solid #ffffff1f !important;
+    border-radius: 28px !important;
+    background: linear-gradient(105deg, #1e284c 0%, #1f294d 58%, #6689bb 100%) !important;
+    box-shadow: 0 18px 42px #1e284c24 !important;
+    color: #fff !important;
+}
+body:not(#coordinator-style-scope).academic-final-evaluation main.evaluation-main > .uims-page-hero::before,
+body:not(#coordinator-style-scope).academic-final-evaluation main.evaluation-main > .uims-page-hero::after {
+    content: "" !important;
+    position: absolute !important;
+    z-index: -1 !important;
+    border: 1px solid #ffffff20 !important;
+    border-radius: 50% !important;
+    background: none !important;
+    box-shadow: none !important;
+    filter: none !important;
+    pointer-events: none !important;
+}
+body:not(#coordinator-style-scope).academic-final-evaluation main.evaluation-main > .uims-page-hero::before { width: 390px; height: 390px; top: -245px; right: 7%; }
+body:not(#coordinator-style-scope).academic-final-evaluation main.evaluation-main > .uims-page-hero::after { width: 560px; height: 560px; top: -365px; right: -12%; }
+body:not(#coordinator-style-scope).academic-final-evaluation main.evaluation-main > .uims-page-hero .uims-hero-eyebrow {
+    min-height: 31px !important;
+    margin: 0 0 18px !important;
+    padding: 6px 14px !important;
+    border: 1px solid #ffffff47 !important;
+    border-radius: 999px !important;
+    background: #ffffff17 !important;
+    color: #fff !important;
+    font-size: 11px !important;
+    letter-spacing: .055em !important;
+}
+body:not(#coordinator-style-scope).academic-final-evaluation main.evaluation-main > .uims-page-hero .uims-hero-copy h1 {
+    max-width: none !important;
+    margin: 0 0 8px !important;
+    color: #fff !important;
+    font: 800 clamp(28px, 3vw, 42px)/1.12 var(--font-heading) !important;
+    letter-spacing: -.035em !important;
+}
+body:not(#coordinator-style-scope).academic-final-evaluation main.evaluation-main > .uims-page-hero .uims-hero-copy > p:last-child {
+    max-width: 760px !important;
+    margin: 0 !important;
+    color: #ffffffdc !important;
+    font: 400 clamp(13px, 1.2vw, 16px)/1.65 var(--font-body) !important;
+}
+body:not(#coordinator-style-scope).academic-final-evaluation .academic-review-stat-cards > article {
+    background: #fff !important;
+    border-color: var(--border) !important;
+    border-radius: 18px !important;
+    box-shadow: 0 8px 24px #2428440a !important;
+}
+@media (max-width: 991.98px) {
+    body:not(#coordinator-style-scope).academic-final-evaluation main.evaluation-main > .uims-page-hero { min-height: 0 !important; padding: 30px 28px !important; }
+}
+@media (max-width: 575.98px) {
+    body:not(#coordinator-style-scope).academic-final-evaluation main.evaluation-main > .uims-page-hero { margin: 2px 0 18px !important; padding: 24px 20px !important; border-radius: 20px !important; }
+}
