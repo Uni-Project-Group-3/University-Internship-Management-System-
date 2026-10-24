@@ -1,0 +1,18 @@
+/* Weekly review only; shared navigation is unchanged. */
+.wr-review-dialog{width:min(1000px,calc(100vw - 32px))!important;max-height:90dvh!important;border:1px solid #DFE3EB!important;border-radius:20px!important;padding:0!important;background:#F6F7FA!important;box-shadow:0 28px 100px #14234155!important;overflow:auto!important;color:#242844;}
+.wr-review-dialog::backdrop{background:#18213888;backdrop-filter:blur(4px)}
+.wr-review-dialog #reportDetail{border:0;margin:0;padding:24px!important;background:transparent}
+.wr-review-dialog #reportDetail>h2{font-size:22px;margin:0 48px 20px 0}.wr-review-dialog #reportDetail>p{display:none}
+.wr-review-dialog .exam-close{position:sticky!important;float:right;top:16px!important;right:16px!important;margin:16px 16px -50px 0;z-index:2;width:36px;height:36px;border:1px solid #DFE3EB;border-radius:10px;background:#fff;color:#242844;cursor:pointer}
+.wr-review-dialog #academicDetail{display:flex;flex-direction:column;gap:16px;clear:both}
+.wr-review-dialog h3{font-size:17px!important;line-height:1.4;margin:0 0 12px}.wr-review-dialog .wr-detail-block,.wr-review-dialog .wr-revision-box,.wr-review-dialog .wr-history-item{background:#fff;border:1px solid #DFE3EB;border-radius:14px;padding:20px;margin:0;box-shadow:none}
+.wr-review-dialog p{font-size:14px;line-height:1.7;margin:8px 0;overflow-wrap:anywhere;white-space:pre-wrap}.wr-review-dialog .wr-small{font-size:12px;color:#66718A;line-height:1.6}
+.wr-review-dialog input,.wr-review-dialog select,.wr-review-dialog textarea,.wr-conversation select,.wr-conversation textarea{width:100%;min-height:44px;padding:11px 13px;border:1px solid #DFE3EB;border-radius:10px;background:#fff;color:#242844;font:14px var(--font-body,Inter,sans-serif);box-sizing:border-box;margin:6px 0 12px}
+.wr-review-dialog textarea,.wr-conversation textarea{min-height:100px;resize:vertical}.wr-review-dialog .wr-inline-actions{display:flex;justify-content:flex-end;gap:12px;margin-top:18px;flex-wrap:wrap}
+.wr-review-dialog button:not(.exam-close),.wr-review-dialog a.wr-secondary,.wr-conversation button{padding:11px 18px;border-radius:10px;min-height:42px;font-size:13px;font-weight:600;text-decoration:none;cursor:pointer}
+.wr-review-dialog .wr-primary,.wr-conversation .wr-primary{background:#1F3D78;color:#fff;border:1px solid #1F3D78}.wr-review-dialog .wr-danger{background:#fff;color:#B4232B;border:1px solid #B4232B}.wr-review-dialog button:disabled,.wr-conversation button:disabled{opacity:.55;cursor:wait}
+.wr-review-dialog .wr-review-form{border-top:3px solid #1F3D78}.wr-review-dialog .wr-field{display:block;font-size:13px;font-weight:600;margin:10px 0}.wr-review-dialog .is-invalid{border-color:#B4232B;background:#fff8f8}
+.wr-review-dialog .wr-progress-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.wr-message{padding:16px;border-radius:12px;border:1px solid #DFE3EB;max-width:94%;margin:12px 0;background:#fff}.wr-message.from-company{background:#EAF2FA;border-left:3px solid #1F3D78}.wr-message.from-academic{margin-left:auto;background:#F6F7FA;border-left:3px solid #28734D}.wr-message strong,.wr-message small{display:block}.wr-message p{white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.7;margin:10px 0 0;font-size:14px}
+.wr-returned-notice{padding:16px;border:1px solid #efdaa9;border-radius:12px;background:#FFF1D8;color:#895A18;font-size:14px;line-height:1.7}
+@media(max-width:600px){.wr-review-dialog #reportDetail{padding:16px!important}.wr-review-dialog .wr-detail-block,.wr-review-dialog .wr-revision-box,.wr-review-dialog .wr-history-item{padding:16px}.wr-review-dialog .wr-progress-grid{grid-template-columns:1fr}.wr-message{max-width:100%}}
