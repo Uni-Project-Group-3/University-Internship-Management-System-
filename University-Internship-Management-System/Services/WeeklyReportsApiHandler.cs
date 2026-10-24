@@ -65,17 +65,20 @@ namespace UIMS.Tasks
                         if (context.Request.ContentLength < 0 || context.Request.ContentLength > UIMS.Services.FirebaseFileStorageService.MaximumFileBytes + 128 * 1024)
                             throw new UIMS.Services.FirebaseException(413, "Weekly Word uploads are limited to 10 MiB plus form overhead.");
                         var file = context.Request.Files["file"];
-                        if (file == null || file.ContentLength <= 0) throw new UIMS.Services.FirebaseException(400, "Choose a Word .docx report.");
-                        if (file.ContentLength > UIMS.Services.FirebaseFileStorageService.MaximumFileBytes) throw new UIMS.Services.FirebaseException(413, "Weekly reports are limited to 10 MiB.");
-                        byte[] bytes = await ReadUploadAsync(file, cancellation).ConfigureAwait(false);
+                        bool generate = context.Request.Form["generate"] == "true";
+                        if (!generate && (file == null || file.ContentLength <= 0)) throw new UIMS.Services.FirebaseException(400, "Choose a Word .docx report or request automatic generation.");
+                        if (file != null && file.ContentLength > UIMS.Services.FirebaseFileStorageService.MaximumFileBytes) throw new UIMS.Services.FirebaseException(413, "Weekly reports are limited to 10 MiB.");
+                        byte[] bytes = generate ? null : await ReadUploadAsync(file, cancellation).ConfigureAwait(false);
+                        string fileName = generate ? "weekly-report.docx" : file.FileName;
+                        string fileMime = generate ? "application/vnd.openxmlformats-officedocument.wordprocessingml.document" : file.ContentType;
                         JObject result;
                         if (action == "submit")
                         {
                             int week; if (!int.TryParse(context.Request.Form["weekNumber"], NumberStyles.None, CultureInfo.InvariantCulture, out week)) throw new UIMS.Services.FirebaseException(400, "Choose a training week number.");
                             result = await service.SubmitAsync(context.Request.Form["placementId"], week, context.Request.Form["weekStart"], context.Request.Form["weekEnd"],
-                                file.FileName, file.ContentType, bytes, context.Request.Form["companyComments"], cancellation, ParseTaskSelection(context)).ConfigureAwait(false);
+                                fileName, fileMime, bytes, context.Request.Form["companyComments"], cancellation, ParseTaskSelection(context)).ConfigureAwait(false);
                         }
-                        else if (action == "resubmit") result = await service.ResubmitAsync(context.Request.Form["reportId"], file.FileName, file.ContentType, bytes, context.Request.Form["companyComments"], cancellation, ParseTaskSelection(context)).ConfigureAwait(false);
+                        else if (action == "resubmit") result = await service.ResubmitAsync(context.Request.Form["reportId"], fileName, fileMime, bytes, context.Request.Form["companyComments"], cancellation, ParseTaskSelection(context)).ConfigureAwait(false);
                         else throw new UIMS.Services.FirebaseException(400, "Unknown weekly report upload action.");
                         await WriteJsonAsync(context, result).ConfigureAwait(false); return;
                     }

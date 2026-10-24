@@ -29,7 +29,7 @@ namespace University_Internship_Management_System.Services.FinalEvaluation
         IStudentCompletionReportLocator, ICompletionReportAccess, ICompletionReportDataReader,
         ICompletionDocumentMetadataRepository
     {
-        private static readonly HttpClient Client = new HttpClient { Timeout = TimeSpan.FromSeconds(45) };
+        private static readonly HttpClient Client = new HttpClient(new HttpClientHandler { AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate }) { Timeout = TimeSpan.FromSeconds(45) };
         private static readonly GoogleAdcAccessTokenProvider Tokens = new GoogleAdcAccessTokenProvider();
         private static readonly JsonSerializerSettings Json = new JsonSerializerSettings {
             ContractResolver = new Newtonsoft.Json.Serialization.CamelCasePropertyNamesContractResolver(),
@@ -57,10 +57,14 @@ namespace University_Internship_Management_System.Services.FinalEvaluation
             if (context?.User?.Identity?.IsAuthenticated != true) throw new UnauthorizedAccessException();
             var gateway = new StudentFirebaseGateway();
             string identity = context.User.Identity.Name;
-            var account = identity.Contains("@") ? await gateway.FindByEmailAsync(identity).ConfigureAwait(false) : await gateway.FindAsync(identity).ConfigureAwait(false);
+            // Independent request-owned reads run together. Neither snapshot nor authorization is cached across users/requests.
+            var accountRead = identity.Contains("@") ? gateway.FindByEmailAsync(identity) : gateway.FindAsync(identity);
+            var data = new LiveFirebaseData();
+            var snapshotRead = data.RefreshAsync();
+            await Task.WhenAll(accountRead, snapshotRead).ConfigureAwait(false);
+            var account = await accountRead.ConfigureAwait(false);
             if (account == null || account.Disabled) throw new UnauthorizedAccessException();
-            var data = new LiveFirebaseData { UserId = account.Uid };
-            await data.RefreshAsync().ConfigureAwait(false);
+            data.UserId = account.Uid;
             data.RequireProfile(); return data;
         }
         private void RequireProfile()
@@ -265,13 +269,15 @@ namespace University_Internship_Management_System.Services.FinalEvaluation
             var p = data.Placements().FirstOrDefault();
             return new StudentCompletionPageContext(new StudentCompletionWorkflow(data, data, data, data, data, data, data, data, data, Reports(data)), p?.InternshipId, LiveFirebaseData.Text(data.Profile, "fullName"));
         }
-        private sealed class PrivateStorage : IPrivateCompletionReportStorage
+        private sealed class PrivateStorage : IProviderCompletionReportStorage
         {
-            // Completion-report records predate provider metadata; preserve their Firebase transport.
-            private readonly UIMS.Services.FirebaseFileStorageService storage = new UIMS.Services.FirebaseFileStorageService(k => k == "FileStorageProvider" ? "firebase" : ConfigurationManager.AppSettings[k]);
+            // Missing provider metadata denotes historical Firebase objects; new objects use the configured provider.
+            private readonly UIMS.Services.FirebaseFileStorageService storage = new UIMS.Services.FirebaseFileStorageService(k => ConfigurationManager.AppSettings[k]);
             public async Task PutNewAsync(string key, byte[] bytes) { await storage.UploadAsync(key, "completion-report.pdf", "application/pdf", bytes, CancellationToken.None).ConfigureAwait(false); }
-            public Task<byte[]> ReadAsync(string key) { return storage.DownloadAsync(key, CancellationToken.None); }
-            public async Task DeleteIfHashMatchesAsync(string key, string hash) { var bytes = await ReadAsync(key).ConfigureAwait(false); if (CompletionReportValidation.Hash(bytes) == hash) await storage.DeleteObjectAsync(key, CancellationToken.None).ConfigureAwait(false); }
+            public string UploadProvider { get { return storage.UploadProvider; } }
+            public Task<byte[]> ReadAsync(string key, string provider) { return storage.DownloadAsync(key, provider, CancellationToken.None); }
+            public Task<byte[]> ReadAsync(string key) { return ReadAsync(key, UploadProvider); }
+            public async Task DeleteIfHashMatchesAsync(string key, string hash) { var bytes = await ReadAsync(key).ConfigureAwait(false); if (CompletionReportValidation.Hash(bytes) == hash) await storage.DeleteObjectAsync(key, UploadProvider, CancellationToken.None).ConfigureAwait(false); }
         }
     }
 }

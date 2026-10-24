@@ -78,8 +78,19 @@ namespace UIMS.Tasks
             if (requiredRole != null && !string.Equals(actor.Role, requiredRole, StringComparison.Ordinal)) throw new UIMS.Services.FirebaseException(403, "This weekly report operation is not allowed for the signed-in role.");
             bool reviewOnly = write && requiredRole == "academicSupervisor" && actor.Role == "academicSupervisor";
             bool reviewAllowed = reviewOnly && IsTrue(setting("FirebaseLiveWritesEnabled")) && IsTrue(setting("WeeklyReportReviewsEnabled"));
-            if (write && !writesEnabled && !reviewAllowed) throw new UIMS.Services.FirebaseException(503, "Weekly report uploads are deferred until Storage is available. No data was changed.");
-            if (write && !reviewOnly && (!IsTrue(setting("FirebaseStorageEnabled")) || !IsTrue(setting("FirebaseStorageLiveWritesEnabled")))) throw new UIMS.Services.FirebaseException(503, "Private Firebase Storage writes are disabled. No file was uploaded.");
+            if (write && !writesEnabled && !reviewAllowed) throw new UIMS.Services.FirebaseException(503, "Weekly report writes are disabled by FirebaseLiveWritesEnabled or WeeklyReportsLiveWritesEnabled. This does not indicate a Storage outage. No data was changed.");
+            if (write && !reviewOnly)
+            {
+                string provider = storage.UploadProvider;
+                if (provider == "supabase")
+                {
+                    if (!IsTrue(Environment.GetEnvironmentVariable("UIMS_SupabaseStorageLiveWritesEnabled") ?? setting("SupabaseStorageLiveWritesEnabled")))
+                        throw new UIMS.Services.FirebaseException(503, "Supabase Storage writes are disabled. No file was uploaded.");
+                }
+                else if (provider != "firebase") throw new UIMS.Services.FirebaseException(503, "The weekly report Storage provider is unsupported.");
+                else if (!IsTrue(setting("FirebaseStorageEnabled")) || !IsTrue(setting("FirebaseStorageLiveWritesEnabled")))
+                    throw new UIMS.Services.FirebaseException(503, "Private Firebase Storage writes are disabled. No file was uploaded.");
+            }
         }
 
         private string Url(string path)
@@ -262,10 +273,30 @@ namespace UIMS.Tasks
                 var profiles = new Dictionary<string, JObject>(StringComparer.Ordinal);
                 AddRecords(profiles, await ReadEqualAsync("users", "studentId", studentId, cancellation).ConfigureAwait(false));
                 var profile = profiles.Values.FirstOrDefault(p => Text(p, "role").Equals("student", StringComparison.OrdinalIgnoreCase));
+                // A missing/conflicting academic assignment must not hide the entire company roster.
+                // Submission still revalidates the assignment before uploading or writing anything.
+                string academicId = "", submissionBlocker = "";
+                try { academicId = await ResolveAcademicSupervisorAsync(studentId, cancellation).ConfigureAwait(false); }
+                catch (UIMS.Services.FirebaseException error) when (error.StatusCode == 409) { submissionBlocker = error.Message; }
+                string academicName = "";
+                if (academicId.Length > 0)
+                {
+                    var academicNode = await ReadAsync("users/" + academicId, cancellation).ConfigureAwait(false);
+                    var academicProfile = academicNode.Value as JObject;
+                    if (academicProfile != null && new[] { "academicsupervisor", "academic" }.Contains(Text(academicProfile, "role").ToLowerInvariant()))
+                        academicName = Text(academicProfile, "fullName", "displayName", "name");
+                    if (academicName.Length == 0)
+                    {
+                        var academicProfiles = new Dictionary<string, JObject>(StringComparer.Ordinal);
+                        AddRecords(academicProfiles, await ReadEqualAsync("users", "academicSupervisorId", academicId, cancellation).ConfigureAwait(false));
+                        var candidates = academicProfiles.Values.Where(p => new[] { "academicsupervisor", "academic" }.Contains(Text(p, "role").ToLowerInvariant())).ToList();
+                        if (candidates.Count == 1) academicName = Text(candidates[0], "fullName", "displayName", "name");
+                    }
+                }
                 result.Add(new JObject { ["placementId"] = pair.Key, ["studentId"] = studentId,
                     ["studentName"] = profile == null ? studentId : Text(profile, "fullName", "displayName", "name"),
                     ["companyId"] = Text(placement, "companyId"), ["status"] = Text(placement, "status", "placementStatus"),
-                    ["academicSupervisorId"] = await ResolveAcademicSupervisorAsync(studentId, cancellation).ConfigureAwait(false) });
+                    ["academicSupervisorId"] = academicId, ["academicSupervisorName"] = academicName, ["canSubmit"] = submissionBlocker.Length == 0, ["submissionBlocker"] = submissionBlocker });
             }
             return new JObject { ["placements"] = result };
         }
@@ -282,7 +313,7 @@ namespace UIMS.Tasks
                 string reportCompany = Text(pair.Value, "companyId");
                 if (Text(pair.Value, "companySupervisorId") != actor.CompanySupervisorId && (actor.CompanyId.Length == 0 || reportCompany != actor.CompanyId)) continue;
                 try { await EnsureCompanyStudentPlacementAsync(Text(pair.Value, "placementId"), Text(pair.Value, "studentId"), cancellation).ConfigureAwait(false); }
-                catch (UIMS.Services.FirebaseException) { continue; }
+                catch (UIMS.Services.FirebaseException error) when (error.StatusCode == 403 || error.StatusCode == 404) { continue; }
                 result[pair.Key] = PublicReport(pair.Value);
             }
             return new JObject { ["reports"] = result };
@@ -334,7 +365,7 @@ namespace UIMS.Tasks
             foreach (var pair in records)
             {
                 try { await EnsureCurrentAssignmentAsync(Text(pair.Value, "studentId"), actor.AcademicSupervisorId, cancellation).ConfigureAwait(false); }
-                catch (UIMS.Services.FirebaseException) { continue; }
+                catch (UIMS.Services.FirebaseException error) when (error.StatusCode == 403 || error.StatusCode == 404) { continue; }
                 result[pair.Key] = PublicReport(pair.Value);
             }
             return new JObject { ["assignedStudents"] = assignedStudents, ["reports"] = result };
@@ -408,6 +439,143 @@ namespace UIMS.Tasks
             return selection == null ? new JArray(snapshot.Where(t => (bool?)t["suggested"] == true)) : snapshot;
         }
 
+        private async Task<JArray> BuildExamSnapshotAsync(string placementId, string studentId, CancellationToken cancellation)
+        {
+            var exams = new Dictionary<string, JObject>(StringComparer.Ordinal);
+            AddRecords(exams, await ReadEqualAsync("taskExams", "placementId", placementId, cancellation).ConfigureAwait(false));
+            var result = new JArray();
+            foreach (var exam in exams.OrderBy(p => p.Key, StringComparer.Ordinal))
+            {
+                if (Text(exam.Value, "placementId") != placementId) continue;
+                var node = await ReadAsync("taskExamAttempts/" + exam.Key + "/" + studentId, cancellation).ConfigureAwait(false);
+                foreach (var attempt in (node.Value as JObject ?? new JObject()).Properties())
+                {
+                    var row = attempt.Value as JObject;
+                    if (row == null || (Text(row, "status") != "submitted" && Text(row, "status") != "expired")) continue;
+                    var item = new JObject { ["examId"] = exam.Key, ["attemptId"] = attempt.Name, ["title"] = Text(exam.Value, "title", "name"),
+                        ["status"] = row["status"], ["submittedAt"] = row["submittedAt"], ["resultStatus"] = Text(row, "resultStatus"), ["capturedAt"] = UtcNow() };
+                    // Never copy answers, answer keys or unreleased grades into a downloadable report.
+                    if (Text(row, "resultStatus") == "released")
+                        foreach (string field in new[] { "score", "maximumScore", "feedback", "releasedAt" }) if (row[field] != null) item[field] = row[field].DeepClone();
+                    result.Add(item);
+                }
+            }
+            return result;
+        }
+        private static byte[] GeneratePdfReport(string studentId, string studentName, JObject placement, string placementId, int week, string start, string end, string comments, JArray tasks, JObject progress, JArray exams)
+        {
+            var document = new MigraDoc.DocumentObjectModel.Document();
+            document.Info.Title = "Internship Weekly Report";
+            document.Info.Author = "JUST Internship Management System";
+            var normal = document.Styles[MigraDoc.DocumentObjectModel.StyleNames.Normal];
+            normal.Font.Name = "Segoe UI"; normal.Font.Size = 10.5;
+            normal.Font.Color = MigraDoc.DocumentObjectModel.Color.Parse("#243451");
+            normal.ParagraphFormat.SpaceAfter = 5;
+            var section = document.AddSection();
+            section.PageSetup.PageFormat = MigraDoc.DocumentObjectModel.PageFormat.Letter;
+            section.PageSetup.LeftMargin = section.PageSetup.RightMargin = MigraDoc.DocumentObjectModel.Unit.FromCentimeter(2);
+            section.PageSetup.TopMargin = section.PageSetup.BottomMargin = MigraDoc.DocumentObjectModel.Unit.FromCentimeter(1.8);
+            string logoPath = System.Web.Hosting.HostingEnvironment.MapPath("~/Assets/shared/images/just-logo.png");
+            if (string.IsNullOrEmpty(logoPath)) logoPath = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Assets/shared/images/just-logo.png");
+            if (System.IO.File.Exists(logoPath)) { var logo = section.AddImage("base64:" + Convert.ToBase64String(System.IO.File.ReadAllBytes(logoPath))); logo.Width = MigraDoc.DocumentObjectModel.Unit.FromCentimeter(1.7); logo.LockAspectRatio = true; }
+            var university = section.AddParagraph("JORDAN UNIVERSITY OF SCIENCE AND TECHNOLOGY"); university.Format.Font.Size = 9; university.Format.Font.Color = MigraDoc.DocumentObjectModel.Color.Parse("#526781");
+            var title = section.AddParagraph("Internship Weekly Report"); title.Format.Font.Size = 24; title.Format.Font.Bold = true; title.Format.Font.Color = MigraDoc.DocumentObjectModel.Colors.Black;
+            section.AddParagraph("Week " + week + "  |  " + start + " to " + end);
+            var amman = TimeZoneInfo.ConvertTime(DateTimeOffset.UtcNow, TimeZoneInfo.FindSystemTimeZoneById("Jordan Standard Time"));
+            var timestamp = section.AddParagraph("Generated " + amman.ToString("yyyy-MM-dd HH:mm:ss zzz", CultureInfo.InvariantCulture) + "  Asia/Amman"); timestamp.Format.Font.Size = 9; timestamp.Format.SpaceAfter = 14;
+            void Heading(string text) { var p = section.AddParagraph(text); p.Format.Font.Size = 13; p.Format.Font.Bold = true; p.Format.Font.Color = MigraDoc.DocumentObjectModel.Color.Parse("#213F7F"); p.Format.SpaceBefore = 8; p.Format.KeepWithNext = true; }
+            void Table(string[] headers, double[] widths, IEnumerable<string[]> values)
+            {
+                var table = section.AddTable(); table.Borders.Width = 0;
+                table.TopPadding = table.BottomPadding = MigraDoc.DocumentObjectModel.Unit.FromPoint(4);
+                table.LeftPadding = table.RightPadding = MigraDoc.DocumentObjectModel.Unit.FromPoint(6);
+                foreach (double width in widths) table.AddColumn(MigraDoc.DocumentObjectModel.Unit.FromCentimeter(width));
+                var header = table.AddRow(); header.HeadingFormat = true; header.Shading.Color = MigraDoc.DocumentObjectModel.Color.Parse("#213F7F"); header.Format.Font.Color = MigraDoc.DocumentObjectModel.Colors.White; header.Format.Font.Bold = true;
+                for (int i = 0; i < headers.Length; i++) header.Cells[i].AddParagraph(headers[i]);
+                int number = 0;
+                foreach (var valuesRow in values)
+                {
+                    var row = table.AddRow(); row.Shading.Color = MigraDoc.DocumentObjectModel.Color.Parse(number++ % 2 == 0 ? "#F0F4FA" : "#FFFFFF");
+                    for (int i = 0; i < valuesRow.Length; i++)
+                    {
+                        string text = valuesRow[i] ?? "";
+                        if (text.Any(c => c >= '\u0590' && c <= '\u109f' || c >= '\ufb1d' && c <= '\ufeff'))
+                        {
+                            var image = row.Cells[i].AddImage("base64:" + Convert.ToBase64String(ShapeReportText(text, widths[i])));
+                            image.Width = MigraDoc.DocumentObjectModel.Unit.FromCentimeter(widths[i] - .45); image.LockAspectRatio = true;
+                        }
+                        else row.Cells[i].AddParagraph(text);
+                    }
+                }
+            }
+            Heading("Student and placement");
+            Table(new[] { "Field", "Record" }, new[] { 4.5, 13.0 }, new[] { new[] { "Student", string.IsNullOrWhiteSpace(studentName) ? studentId : studentName }, new[] { "Student ID", studentId }, new[] { "Company", Text(placement, "companyName", "companyId") }, new[] { "Placement", placementId }, new[] { "Approved hours to date", Text(progress, "approvedTrainingHours") } });
+            section.AddParagraph("Available records at submission time. A partial reporting period does not certify completion of a full week or approve additional hours.");
+            Heading("Task activity");
+            if (tasks.Count == 0) section.AddParagraph("No task activity was available for this report period.");
+            else Table(new[] { "Task", "Status", "Deadline" }, new[] { 8.0, 4.0, 5.5 }, tasks.Select(t => new[] { Text(t, "title", "taskId"), Text(t, "status"), Text(t, "dueDate") }));
+            Heading("Completed examinations");
+            if (exams.Count == 0) section.AddParagraph("No submitted examination attempts were available at generation time.");
+            else Table(new[] { "Examination", "Submitted", "Result" }, new[] { 7.0, 5.5, 5.0 }, exams.Select(e => new[] { Text(e, "title", "examId"), Text(e, "submittedAt"), Text(e, "resultStatus") == "released" ? Text(e, "score") + " / " + Text(e, "maximumScore") : "Awaiting result release" }));
+            section.AddParagraph("Only explicitly released grades appear. Answers and private grading keys are excluded.");
+            Heading("Company supervisor comments");
+            string note = string.IsNullOrWhiteSpace(comments) ? "No additional comments supplied." : comments;
+            if (note.Any(c => c >= '\u0590' && c <= '\u109f' || c >= '\ufb1d' && c <= '\ufeff')) { var image = section.AddImage("base64:" + Convert.ToBase64String(ShapeReportText(note, 17.5))); image.Width = MigraDoc.DocumentObjectModel.Unit.FromCentimeter(17); image.LockAspectRatio = true; }
+            else section.AddParagraph(note);
+            Heading("Review status"); section.AddParagraph("Submitted for review by the assigned academic supervisor. System generation does not constitute academic approval or a certified completion decision.");
+            var footer = section.Footers.Primary.AddParagraph("JUST Internship Management System  |  Week " + week + "  |  Page "); footer.AddPageField(); footer.Format.Font.Size = 9; footer.Format.Font.Color = MigraDoc.DocumentObjectModel.Color.Parse("#526781"); footer.Format.Alignment = MigraDoc.DocumentObjectModel.ParagraphAlignment.Center;
+            var renderer = new MigraDoc.Rendering.PdfDocumentRenderer { Document = document }; renderer.RenderDocument();
+            using (var output = new System.IO.MemoryStream()) { renderer.PdfDocument.Save(output, false); var bytes = output.ToArray(); UIMS.Services.FirebaseFileStorageService.ValidateFile("weekly-report.pdf", "application/pdf", bytes); return bytes; }
+        }
+        private static byte[] ShapeReportText(string text, double centimeters)
+        {
+            const float dpi = 200; int width = Math.Max(180, (int)((centimeters - .45) / 2.54 * dpi));
+            using (var font = new System.Drawing.Font("Segoe UI", 10.5f, System.Drawing.GraphicsUnit.Point))
+            using (var format = new System.Drawing.StringFormat { FormatFlags = System.Drawing.StringFormatFlags.DirectionRightToLeft })
+            using (var measure = new System.Drawing.Bitmap(1, 1))
+            {
+                measure.SetResolution(dpi, dpi); int height;
+                using (var graphics = System.Drawing.Graphics.FromImage(measure)) height = (int)Math.Ceiling(graphics.MeasureString(text, font, width - 8, format).Height) + 8;
+                using (var bitmap = new System.Drawing.Bitmap(width, height))
+                {
+                    bitmap.SetResolution(dpi, dpi);
+                    using (var graphics = System.Drawing.Graphics.FromImage(bitmap)) { graphics.Clear(System.Drawing.Color.White); graphics.TextRenderingHint = System.Drawing.Text.TextRenderingHint.AntiAliasGridFit; graphics.DrawString(text, font, System.Drawing.Brushes.Black, new System.Drawing.RectangleF(4, 4, width - 8, height - 8), format); }
+                    using (var output = new System.IO.MemoryStream()) { bitmap.Save(output, System.Drawing.Imaging.ImageFormat.Png); return output.ToArray(); }
+                }
+            }
+        }
+        private static byte[] AppendExamSummary(byte[] original, JArray exams)
+        {
+            if (exams.Count == 0) return original;
+            using (var output = new System.IO.MemoryStream())
+            {
+                output.Write(original, 0, original.Length);
+                using (var archive = new System.IO.Compression.ZipArchive(output, System.IO.Compression.ZipArchiveMode.Update, true))
+                {
+                    var entry = archive.GetEntry("word/document.xml");
+                    if (entry == null) throw new UIMS.Services.FirebaseException(415, "The Word report has no document body.");
+                    var xml = new System.Xml.XmlDocument { XmlResolver = null };
+                    using (var stream = entry.Open())
+                    using (var reader = System.Xml.XmlReader.Create(stream, new System.Xml.XmlReaderSettings { DtdProcessing = System.Xml.DtdProcessing.Prohibit, XmlResolver = null, MaxCharactersInDocument = 20 * 1024 * 1024 })) xml.Load(reader);
+                    const string ns = "http://schemas.openxmlformats.org/wordprocessingml/2006/main";
+                    var body = xml.GetElementsByTagName("body", ns).OfType<System.Xml.XmlElement>().FirstOrDefault();
+                    if (body == null) throw new UIMS.Services.FirebaseException(415, "The Word report has no document body.");
+                    var lines = new List<string> { "Completed examinations - verified snapshot at submission", "Only explicitly released results are included. Pending results remain private." };
+                    foreach (var exam in exams) lines.Add(Text(exam, "title", "examId") + " | " + Text(exam, "examId") + " | " + Text(exam, "submittedAt") + " | " +
+                        (Text(exam, "resultStatus") == "released" ? "Released result: " + Text(exam, "score") + " / " + Text(exam, "maximumScore") : "Result awaiting release"));
+                    foreach (string line in lines)
+                    {
+                        var paragraph = xml.CreateElement("w", "p", ns); var run = xml.CreateElement("w", "r", ns); var text = xml.CreateElement("w", "t", ns); text.InnerText = line;
+                        run.AppendChild(text); paragraph.AppendChild(run);
+                        var section = body.ChildNodes.OfType<System.Xml.XmlElement>().FirstOrDefault(e => e.LocalName == "sectPr" && e.NamespaceURI == ns);
+                        body.InsertBefore(paragraph, section);
+                    }
+                    entry.Delete(); using (var stream = archive.CreateEntry("word/document.xml").Open()) xml.Save(stream);
+                }
+                var bytes = output.ToArray(); UIMS.Services.FirebaseFileStorageService.ValidateFile("report.docx", DocxMime, bytes); return bytes;
+            }
+        }
+
         public async Task<JObject> SubmitAsync(string placementId, int weekValue, string weekStartValue, string weekEndValue, string fileName, string contentType, byte[] bytes, string companyComments, CancellationToken cancellation, JArray selectedTaskIds = null)
         {
             Ensure(true, "companySupervisor");
@@ -441,14 +609,26 @@ namespace UIMS.Tasks
             int week, string weekStart, string weekEnd, string fileName, string contentType, byte[] bytes, string companyComments, CancellationToken cancellation, JArray selectedTaskIds)
         {
             if (placement == null) throw new UIMS.Services.FirebaseException(404, "The report placement was not found.");
-            string normalized = UIMS.Services.FirebaseFileStorageService.ValidateFile(fileName, contentType, bytes);
+            bool generated = bytes == null;
+            string normalized = generated ? DocxMime : UIMS.Services.FirebaseFileStorageService.ValidateFile(fileName, contentType, bytes);
             if (!normalized.Equals(DocxMime, StringComparison.Ordinal)) throw new UIMS.Services.FirebaseException(415, "Weekly reports must be valid Microsoft Word .docx documents.");
             if (companyComments != null && companyComments.Length > 3000) throw new UIMS.Services.FirebaseException(400, "Company comments are limited to 3,000 characters.");
             var taskSnapshot = await BuildTaskSnapshotAsync(placementId, studentId, weekStart, weekEnd, selectedTaskIds, cancellation).ConfigureAwait(false);
+            var examSnapshot = await BuildExamSnapshotAsync(placementId, studentId, cancellation).ConfigureAwait(false);
+            if (generated)
+            {
+                var progress = await GetAcademicProgressAsync(new JObject { ["placementId"] = placementId, ["studentId"] = studentId }, cancellation).ConfigureAwait(false);
+                var profiles = new Dictionary<string, JObject>(StringComparer.Ordinal);
+                AddRecords(profiles, await ReadEqualAsync("users", "studentId", studentId, cancellation).ConfigureAwait(false));
+                var profile = profiles.Values.FirstOrDefault(p => Text(p, "role").Equals("student", StringComparison.OrdinalIgnoreCase));
+                bytes = GeneratePdfReport(studentId, Text(profile, "fullName", "displayName", "name"), placement, placementId, week, weekStart, weekEnd, companyComments, taskSnapshot, progress, examSnapshot);
+            }
+            if (!generated) bytes = AppendExamSummary(bytes, examSnapshot);
+            if (generated) { normalized = "application/pdf"; fileName = "weekly-report-" + studentId + "-week-" + week + ".pdf"; }
             string revisionId = "REV-" + Guid.NewGuid().ToString("N"); string fileId = UIMS.Services.FirebaseFileStorageService.CreateFileId();
-            string objectPath = "uims/weekly-reports/" + reportId + "/" + revisionId + "/" + fileId + ".docx";
+            string objectPath = "uims/weekly-reports/" + reportId + "/" + revisionId + "/" + fileId + (generated ? ".pdf" : ".docx");
             UIMS.Services.StoredFile stored = await upload(objectPath, fileName, normalized, bytes, cancellation).ConfigureAwait(false);
-            if (stored == null || stored.ObjectPath != objectPath || stored.ContentType != DocxMime || stored.SizeBytes != bytes.LongLength)
+            if (stored == null || stored.ObjectPath != objectPath || stored.ContentType != normalized || stored.SizeBytes != bytes.LongLength)
             {
                 try { await delete(objectPath, CancellationToken.None).ConfigureAwait(false); } catch { }
                 throw new UIMS.Services.FirebaseException(502, "File Storage did not confirm the exact weekly report upload.");
@@ -468,6 +648,9 @@ namespace UIMS.Tasks
                 {
                     var revision = Revision(revisionId, 1, stored, fileId, companyComments, now);
                     revision["taskSnapshot"] = taskSnapshot;
+                    revision["examSnapshot"] = examSnapshot;
+                    revision["dataCapturedAt"] = now;
+                    revision["generatedBySystem"] = generated;
                     updated = new JObject { ["reportId"] = reportId, ["placementId"] = placementId, ["studentId"] = studentId,
                         ["companyId"] = Text(placement, "companyId"), ["companySupervisorId"] = actor.CompanySupervisorId, ["academicSupervisorId"] = academicId,
                         ["weekNumber"] = week, ["weekStart"] = weekStart, ["weekEnd"] = weekEnd, ["status"] = "submitted",
@@ -487,6 +670,9 @@ namespace UIMS.Tasks
                     int next = ((int?)updated["revisionNumber"] ?? revisions.Properties().Count()) + 1;
                     revisions[revisionId] = Revision(revisionId, next, stored, fileId, companyComments, now);
                     revisions[revisionId]["taskSnapshot"] = taskSnapshot;
+                    revisions[revisionId]["examSnapshot"] = examSnapshot;
+                    revisions[revisionId]["dataCapturedAt"] = now;
+                    revisions[revisionId]["generatedBySystem"] = generated;
                     updated["revisions"] = revisions; updated["currentRevisionId"] = revisionId; updated["revisionNumber"] = next;
                     updated["academicSupervisorId"] = academicId; updated["uploadedByUid"] = actor.Uid; updated["companyComments"] = string.IsNullOrWhiteSpace(companyComments) ? null : companyComments.Trim();
                     updated["status"] = "resubmitted"; updated["submittedAt"] = now; updated["updatedAt"] = now;
@@ -648,13 +834,13 @@ namespace UIMS.Tasks
             else throw new UIMS.Services.FirebaseException(403, "Students cannot download or edit company weekly report files.");
             if (string.IsNullOrWhiteSpace(revisionId)) revisionId = Text(report, "currentRevisionId");
             var revision = report["revisions"]?[revisionId] as JObject; if (revision == null) throw new UIMS.Services.FirebaseException(404, "The report revision was not found.");
-            string path = Text(revision, "storagePath"); if (path.Length == 0 || Text(revision, "contentType") != DocxMime) throw new UIMS.Services.FirebaseException(404, "The private Word report is unavailable.");
+            string path = Text(revision, "storagePath"), mime = Text(revision, "contentType"); if (path.Length == 0 || (mime != DocxMime && mime != "application/pdf")) throw new UIMS.Services.FirebaseException(404, "The private report is unavailable.");
             byte[] contents = await (customDownload ? download(path, cancellation) : storage.DownloadAsync(path, Text(revision, "storageProvider"), cancellation)).ConfigureAwait(false);
-            UIMS.Services.FirebaseFileStorageService.ValidateFile(Text(revision, "fileName"), DocxMime, contents);
+            UIMS.Services.FirebaseFileStorageService.ValidateFile(Text(revision, "fileName"), mime, contents);
             string hash; using (var sha = SHA256.Create()) hash = BitConverter.ToString(sha.ComputeHash(contents)).Replace("-", "").ToLowerInvariant();
             if (contents.LongLength != (long?)revision["sizeBytes"] || !string.Equals(hash, Text(revision, "sha256"), StringComparison.OrdinalIgnoreCase))
                 throw new UIMS.Services.FirebaseException(502, "The private report file does not match its immutable Firebase metadata.");
-            return new UIMS.Tasks.TaskFileDownload { FileName = Text(revision, "fileName"), ContentType = DocxMime, Content = contents };
+            return new UIMS.Tasks.TaskFileDownload { FileName = Text(revision, "fileName"), ContentType = mime, Content = contents };
         }
 
         private async Task<JObject> GetAcademicProgressAsync(JObject report, CancellationToken cancellation)

@@ -147,6 +147,7 @@
     <Content Include="Js_project\Student\explore-opportunities.js" />
     <Content Include="Assets\shared\colors.css" />
     <Content Include="Assets\shared\evaluation-workspace.css" />
+    <Content Include="Assets\shared\evaluation-colors.css" />
     <Content Include="Shared\CompanySidebar.ascx" />
     <Content Include="Shared\AcademicSidebar.ascx" />
     <Content Include="Shared\CoordinatorSidebar.ascx" />
@@ -1014,9 +1015,16 @@
     <Content Include="Assets\tasks-premium.css" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="Firebase.Local.config" Condition="Exists('Firebase.Local.config')">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+<ItemGroup>
     <Content Include="Assets\shared\workspace-identity.css" />
   </ItemGroup>
 <ItemGroup><Content Include="Js_project\workspace-navigation-unified.js" /></ItemGroup>
 <ItemGroup><Content Include="Coordinator\UniversityRecords.aspx" /><Content Include="Js_project\Coordinator\university-records.js" /></ItemGroup>
 <ItemGroup><Content Include="Assets\public\public-campus.css" /></ItemGroup>
+
+
 </Project>

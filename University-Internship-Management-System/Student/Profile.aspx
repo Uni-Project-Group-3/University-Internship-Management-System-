@@ -180,7 +180,8 @@
                                             <label class="profile-save profile-file-picker" for="cvUpload">Choose File</label>
                                             <span id="cvSelectedName" class="profile-file-name" aria-live="polite"><asp:Literal ID="litCvFileName" runat="server" Mode="Encode" /></span>
                                         </div>
-                                        <span id="cvHelp" class="profile-help">PDF, DOC, or DOCX, up to 10 MiB. Uploads are stored privately in Firebase Storage.</span>
+                                        <a href="Profile.aspx?download=cv">Download saved CV</a>
+                                        <span id="cvHelp" class="profile-help">PDF, DOC, or DOCX, up to 10 MiB. Files are stored privately and downloaded through your authenticated account.</span>
                                     </div>
 
                                     <div class="profile-field profile-field-wide">
