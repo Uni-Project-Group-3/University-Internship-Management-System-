@@ -1,5 +1,6 @@
 using System;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using University_Internship_Management_System.Models.FinalEvaluation;
 
@@ -8,6 +9,10 @@ namespace University_Internship_Management_System.Services.FinalEvaluation
     public sealed class RepositoryException : Exception
     {
         public RepositoryException(string message, Exception inner = null) : base(message, inner) { }
+    }
+    public sealed class FirebaseQueryIndexException : Exception
+    {
+        public FirebaseQueryIndexException() : base("Firebase requires an index for this query.") { }
     }
     public sealed class ConflictException : Exception
     {
@@ -38,6 +43,10 @@ namespace University_Internship_Management_System.Services.FinalEvaluation
         Task<bool> CanAccessAsync(string userId, string internshipId, string studentId, string capability);
     }
     public interface IAccessTokenProvider { Task<string> GetAccessTokenAsync(); }
+    public interface ICancellableAccessTokenProvider : IAccessTokenProvider
+    {
+        Task<string> GetAccessTokenAsync(CancellationToken cancellationToken);
+    }
 
     public static class FirebaseKey
     {

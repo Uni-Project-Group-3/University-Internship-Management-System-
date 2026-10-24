@@ -144,7 +144,7 @@
                 </div>
                 <div class="auth-strength" id="strengthMeter" role="meter" aria-label="Password strength" aria-valuemin="0" aria-valuemax="4" aria-valuenow="0"><span></span><span></span><span></span><span></span></div>
                 <span id="strengthText" class="auth-hint" aria-live="polite">Password strength</span>
-                <ul id="passwordRules" class="auth-password-rules"><li data-rule="length">At least 12 characters</li><li data-rule="case">Uppercase and lowercase letters</li><li data-rule="number">At least one number</li><li data-rule="symbol">At least one symbol</li></ul>
+                <ul id="passwordRules" class="auth-password-rules"><li data-rule="length">At least 6 characters. Firebase applies the configured password policy.</li></ul>
             </div>
             <div class="auth-field">
                 <label for="ConfirmPassword">Confirm new password</label>
@@ -164,8 +164,8 @@
     </form>
     <footer class="auth-public-footer"><span>&copy; <%= DateTime.Now.Year %> Jordan University of Science and Technology.</span><span>University Internship Management System.</span></footer>
 
-<script src="../Js_project/Auth/login-card.js?v=20261024-card-login" defer="defer"></script>
-<script src="../Js_project/firebase-client.js?v=20261024-logout-session" defer="defer"></script>
-<script src="../Js_project/Auth/auth.js?v=20261024-card-login" defer="defer"></script>
+<script src="../Js_project/Auth/login-card.js?v=20261024-merged-link-flow" defer="defer"></script>
+<script src="../Js_project/firebase-client.js?v=20261024-merged-link-flow" defer="defer"></script>
+<script src="../Js_project/Auth/auth.js?v=20261024-merged-link-flow" defer="defer"></script>
 </body>
 </html>

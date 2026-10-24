@@ -10,7 +10,7 @@
         <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet" />
 
         <link href="../Assets/shared/colors.css" rel="stylesheet" />
-        <link href="../Assets/coordinator/Manage_Academic_Supervisor.css?v=20261023-unified" rel="stylesheet" />
+        <link href="../Assets/coordinator/Manage_Academic_Supervisor.css?v=20261024-link-cleanup" rel="stylesheet" />
     </head>
     <body class="management-page" data-page="manage-academic-supervisors">
         <form id="form1" runat="server" novalidate="novalidate"><asp:HiddenField ID="academicCsrf" runat="server" ClientIDMode="Static" />
@@ -196,7 +196,7 @@
                         <!-- SUPERVISORS TABLE -->
                         <div class="panel animate-fade-up template-style-8">
                             <div class="d-flex justify-content-between align-items-center mb-3">
-                                <h3 class="panel-title m-0">Supervisors Directory</h3><button type="button" id="refreshAcademic" class="btn custom-btn-light">Refresh</button>
+                                <h3 class="panel-title m-0">Supervisors Directory</h3>
                                 <select id="deptFilter" aria-label="Filter by department" class="form-select w-auto custom-input py-1 px-3"><option value="all">All Departments</option></select>
                             </div>
 
@@ -216,6 +216,7 @@
                                 <!-- Empty Search Message -->
                                 <div id="noResultsMsg" class="text-center py-4">No supervisors match your search.</div>
                             </div>
+                            <div class="management-pagination"><span id="academicPageSummary" role="status" aria-live="polite"></span><div><label for="academicPageSize">Rows per page</label><select id="academicPageSize"><option selected>15</option><option>25</option><option>50</option></select><button type="button" id="academicPrevious" aria-label="Previous page">&#8592;</button><nav id="academicPageNumbers" aria-label="Directory pages"></nav><button type="button" id="academicNext" aria-label="Next page">&#8594;</button></div></div>
                         </div>
                     </div>
                 </div>
@@ -247,10 +248,11 @@
                             </div>
 <div class="mb-3"><label for="supUniversity" class="form-label custom-label">University</label><input id="supUniversity" class="form-control custom-input" readonly /></div>
 <div class="mb-3"><label for="supCollege" class="form-label custom-label">College</label><input id="supCollege" class="form-control custom-input" readonly /></div>
-<div class="mb-3"><label for="academicPassword" class="form-label custom-label">Temporary password</label><input id="academicPassword" class="form-control custom-input" readonly autocomplete="off" /><div class="d-flex gap-2 mt-2"><button type="button" id="generateAcademicPassword" class="btn custom-btn-light" disabled>Generate password</button><button type="button" id="copyAcademicPassword" class="btn custom-btn-light">Copy password</button></div><span id="academicCopyStatus" role="status"></span></div>                        </div>
+                        </div>
                         <div class="modal-footer">
                             <button type="button" class="btn custom-btn-light" data-bs-dismiss="modal">Cancel</button>
-                            <button type="button" id="saveSupBtn" class="btn custom-btn-primary" disabled>Confirm</button>
+                            <p>Confirm &amp; Send emails a password setup link to the university email shown above. Use that same email to sign in after setting your password.</p>
+                            <button type="button" id="saveSupBtn" class="btn custom-btn-primary" disabled>Confirm &amp; Send</button>
                         </div>
                     </div>
                 </div>
@@ -279,7 +281,7 @@
         </form>
 <script src="../Scripts/bootstrap.bundle.min.js">
         </script>
-        <script src="../Js_project/Coordinator/Manage_Academic_Supervisor.js?v=20261022-auth-navigation-final">
+        <script src="../Js_project/Coordinator/Manage_Academic_Supervisor.js?v=20261024-link-cleanup">
         </script>
     </body>
 </html>

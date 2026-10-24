@@ -63,7 +63,36 @@ namespace University_Internship_Management_System.Coordinator
                 var service = new CompanyManagementService(gateway, gateway);
                 JObject result;
                 if (action == "list") result = await service.DirectoryAsync();
-                else if (action == "save") result = await service.SaveAsync(request["form"]?.ToObject<CompanyInput>(), actor);
+                else if (action == "save")
+                {
+                    result = await service.SaveAsync(request["form"]?.ToObject<CompanyInput>(), actor);
+                    if (result.Value<bool?>("requiresSetupEmail") == true)
+                    {
+                        try
+                        {
+                            await new FirebaseAuthService().SendAccountSetupEmailAsync((string)result["email"]);
+                            result["emailSent"] = true;
+                            result["message"] = "Company supervisor saved. Firebase accepted the password setup email for " + (string)result["email"] + ". Check inbox and spam, then sign in with that email.";
+                        }
+                        catch (Exception error)
+                        {
+                            result["emailSent"] = false;
+                            result["message"] = error is StudentManagementException ? error.Message : "The account is saved, but email delivery was not confirmed. Use Retry Send.";
+                        }
+                    }
+                }
+                else if (action == "sendSetup")
+                {
+                    string uid = (string)request["uid"], companyId = (string)request["companyId"];
+                    var profile = await gateway.ReadAsync("users/" + StudentManagementService.Key(uid)) as JObject;
+                    if (profile == null || (string)profile["role"] != "companySupervisor" || (string)profile["companyId"] != companyId)
+                        throw new StudentManagementException("Select a company supervisor from the directory.");
+                    var account = await gateway.FindAsync(uid);
+                    if (account == null || account.Disabled || profile.Value<bool?>("isActive") != true)
+                        throw new StudentManagementException("Activate the supervisor account before sending its password setup link.");
+                    await new FirebaseAuthService().SendAccountSetupEmailAsync(account.Email);
+                    result = new JObject { ["emailSent"] = true, ["message"] = "Firebase accepted the password setup email for " + account.Email + ". Check inbox and spam." };
+                }
                 else result = await service.ActAsync((string)request["companyId"], (string)request["uid"], action, actor);
                 Respond(200, result);
             }

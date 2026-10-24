@@ -25,6 +25,9 @@ namespace University_Internship_Management_System.Services.FinalEvaluation
         public static Func<HttpContext, Task<StudentCompletionPageContext>> Factory { get; set; }
         public static Task<StudentCompletionPageContext> ResolveAsync(HttpContext context)
         {
+            // Application_Start normally registers the Firebase composition; recover if this
+            // request arrives before the app-start hook in a recycled or test-hosted app-domain.
+            if (Factory == null) FinalEvaluationFirebaseIntegration.Register();
             // No runtime demo users or in-memory business records.
             return Factory == null ? Task.FromResult<StudentCompletionPageContext>(null) : Factory(context);
         }

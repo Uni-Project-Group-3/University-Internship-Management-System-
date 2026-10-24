@@ -85,7 +85,7 @@ namespace University_Internship_Management_System.Services.FinalEvaluation
                 throw new InvalidOperationException("An authoritative Approved completion decision with an approval date is required.");
             FinalEvaluationValidation.Completion(review);
             var policy = await repository.GetPolicyAsync(review.PolicyId).ConfigureAwait(false);
-            if (policy == null || !policy.IsApproved || policy.PolicyId != review.PolicyId || policy.Version != review.PolicyVersion || policy.CompletionReport == null || !policy.CompletionReport.Enabled)
+            if (policy == null || !policy.IsProductionApproved || policy.PolicyId != review.PolicyId || policy.Version != review.PolicyVersion || policy.CompletionReport == null || !policy.CompletionReport.Enabled)
                 throw new InvalidOperationException("An applicable approved policy explicitly enabling completion reports is required.");
             return review;
         }
@@ -175,7 +175,7 @@ namespace University_Internship_Management_System.Services.FinalEvaluation
         public static void Data(VerifiedCompletionReportData value, CompletionReview review, EvaluationPolicy policy)
         {
             if (value == null || !value.IsTrusted || value.InternshipId != review.InternshipId || value.StudentId != review.StudentId || value.PolicyId != review.PolicyId ||
-                value.PolicyVersion != review.PolicyVersion || value.ApprovedAtUtc != review.ReviewedAtUtc || policy == null || !policy.IsApproved || policy.PolicyId != review.PolicyId || policy.Version != review.PolicyVersion || policy.CompletionReport == null || !policy.CompletionReport.Enabled)
+                value.PolicyVersion != review.PolicyVersion || value.ApprovedAtUtc != review.ReviewedAtUtc || policy == null || !policy.IsProductionApproved || policy.PolicyId != review.PolicyId || policy.Version != review.PolicyVersion || policy.CompletionReport == null || !policy.CompletionReport.Enabled)
                 throw new ArgumentException("Verified report data for the exact approved internship and policy is required.");
             Text(value.StudentName, "Student name", true); Text(value.StudentNumber, "Student number", true); Text(value.OrganizationName, "Internship organization", true);
             Text(value.UniversityName, "University name", policy.CompletionReport.RequireUniversityName); Text(value.CollegeName, "College name", policy.CompletionReport.RequireCollegeName);

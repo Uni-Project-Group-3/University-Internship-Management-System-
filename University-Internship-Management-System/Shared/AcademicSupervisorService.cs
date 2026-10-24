@@ -115,7 +115,7 @@ namespace University_Internship_Management_System.Shared
                 }
                 if(account==null) await auth.CreateAsync(uid,record.Email,record.FullName,password);
                 else await auth.UpdateAsync(uid,true,password);
-                var profile=Profile(record);profile["isActive"]=false;profile["mustChangePassword"]=true;profile["accountSetupStatus"]="pending";
+                var profile=Profile(record);profile["isActive"]=false;profile["mustChangePassword"]=false;profile["accountSetupStatus"]="pending";
                 if(existing==null)
                 {
                     profile["createdBy"]=actor;profile["createdAtUtc"]=now().ToString("o");

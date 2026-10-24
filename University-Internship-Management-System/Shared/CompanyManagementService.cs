@@ -57,6 +57,14 @@ namespace University_Internship_Management_System.Shared
             catch { throw new StudentManagementException("Enter a valid " + label + "."); }
             return value;
         }
+        private static string Phone(string value, string label)
+        {
+            value = Limited(value, label, 40);
+            if (value.Any(c => c < '0' || c > '9'))
+                throw new StudentManagementException("Enter " + label + " using digits only (0-9).");
+            return value;
+        }
+
         public static void Validate(CompanyInput f)
         {
             if (f == null || !Regex.IsMatch(f.Id ?? "", "\\A[a-f0-9]{32}\\z") ||
@@ -65,7 +73,7 @@ namespace University_Internship_Management_System.Shared
             f.Name = Limited(f.Name, "company name", 160, true);
             f.Industry = Limited(f.Industry, "industry", 100);
             f.Email = Email(f.Email, "company email", false);
-            f.Phone = Limited(f.Phone, "company phone", 40);
+            f.Phone = Phone(f.Phone, "company phone");
             f.Website = Limited(f.Website, "company website", 300);
             if (f.Website != "")
             {
@@ -77,7 +85,7 @@ namespace University_Internship_Management_System.Shared
             f.Description = Limited(f.Description, "description", 1000);
             f.SupervisorName = Limited(f.SupervisorName, "supervisor name", 160, true);
             f.SupervisorEmail = Email(f.SupervisorEmail, "supervisor email", true);
-            f.SupervisorPhone = Limited(f.SupervisorPhone, "supervisor phone", 40);
+            f.SupervisorPhone = Phone(f.SupervisorPhone, "supervisor phone");
             if (!string.IsNullOrEmpty(f.SupervisorUid)) Key(f.SupervisorUid);
         }
         public async Task<JObject> DirectoryAsync()
@@ -148,7 +156,7 @@ namespace University_Internship_Management_System.Shared
             var previousOp = await db.ReadAsync("companyAccountOperations/" + Key(f.Id)) as JObject;
             bool retry = previousOp != null && T(previousOp, "requestId") == f.RequestId && T(previousOp, "kind") == "save";
             if (retry && T(previousOp, "state") == "complete")
-                return new JObject { ["message"] = "This request was already saved. The original temporary password cannot be retrieved. Review the existing supervisor account." };
+                return new JObject { ["message"] = "This request was already saved.", ["requiresSetupEmail"] = previousOp.Value<bool?>("setupEmailRequired") == true, ["email"] = previousOp["email"], ["uid"] = previousOp["uid"] };
             if (company != null && !retry && T(company, "revision") != (f.Version ?? ""))
                 throw new StudentManagementException("This company was changed elsewhere. Refresh before editing.");
             if (company?.Value<bool?>("isArchived") == true) throw new StudentManagementException("Restore this archived company before editing or adding supervisors.");
@@ -179,6 +187,7 @@ namespace University_Internship_Management_System.Shared
                 if (provision)
                 {
                     op["recoverable"] = true;
+                    op["setupEmailRequired"] = true;
                     op["form"] = JObject.FromObject(f);
                     await db.WriteAsync("companyAccountOperations/" + Key(f.Id), op);
                     if (freshCompany == null)
@@ -195,14 +204,15 @@ namespace University_Internship_Management_System.Shared
                     }
                     else await auth.UpdateAsync(uid, true, password);
                     var user = new JObject { ["fullName"] = f.SupervisorName, ["email"] = f.SupervisorEmail, ["phone"] = f.SupervisorPhone,
-                        ["role"] = "companySupervisor", ["companyId"] = f.Id, ["isActive"] = false, ["mustChangePassword"] = true,
+                        ["role"] = "companySupervisor", ["companyId"] = f.Id, ["isActive"] = false, ["mustChangePassword"] = false,
                         ["accountSetupStatus"] = "pending", ["setupRequestId"] = f.RequestId, ["createdBy"] = actor, ["createdAtUtc"] = now().ToString("o") };
                     if (existing == null)
                     { if (!await db.CompareWriteAsync("users/" + Key(uid), user, "null_etag")) throw new StudentManagementException("An account profile appeared during setup. Retry the same form."); }
                     else await db.PatchAsync("users/" + Key(uid), user);
                     await auth.UpdateProfileAsync(uid, f.SupervisorEmail, f.SupervisorName);
-                    await auth.UpdateAsync(uid, false);
-                    await db.PatchAsync("users/" + Key(uid), new { isActive = true, accountSetupStatus = "complete" });
+                    bool companyActive = freshCompany == null || T(freshCompany, "accountSetupStatus") == "pending" || freshCompany.Value<bool?>("isActive") == true;
+                    await auth.UpdateAsync(uid, !companyActive);
+                    await db.PatchAsync("users/" + Key(uid), new { isActive = companyActive, companyAccessSuspended = !companyActive, accountSetupStatus = "complete" });
                     values["accountSetupStatus"] = "complete";
                     values["isActive"] = freshCompany == null || T(freshCompany, "accountSetupStatus") == "pending" || freshCompany.Value<bool?>("isActive") == true;
                 }
@@ -214,11 +224,17 @@ namespace University_Internship_Management_System.Shared
                 }
                 await db.PatchAsync(path, values);
                 await CompleteAsync(f.Id, op);
-                return new JObject { ["message"] = provision ? "Company and supervisor saved. No email was sent. Copy these sign-in details; a password change is required on first login." : "Company and supervisor updated.",
-                    ["email"] = provision ? f.SupervisorEmail : null, ["temporaryPassword"] = password };
+                return new JObject { ["message"] = provision ? "Company and supervisor saved." : "Company and supervisor updated.",
+                    ["email"] = provision ? f.SupervisorEmail : null, ["uid"] = uid, ["requiresSetupEmail"] = provision };
             }
             finally { await ReleaseAsync(f.Id); }
         }
+        public static bool AllowsSignIn(JObject company)
+        {
+            return company != null && company.Value<bool?>("isActive") == true && company.Value<bool?>("isArchived") != true &&
+                T(company, "deletionStatus") != "pending" && (T(company, "accountSetupStatus") == "" || T(company, "accountSetupStatus") == "complete");
+        }
+
         public async Task<JObject> ActAsync(string id, string uid, string action, string actor)
         {
             var company = await CompanyAsync(id);
@@ -232,6 +248,7 @@ namespace University_Internship_Management_System.Shared
             var op = await AcquireAsync(id, action, actor, Guid.NewGuid().ToString("N"), uid ?? "");
             try
             {
+                company = await CompanyAsync(id);
                 string password = null, email = null;
                 if (action == "deleteCompany")
                 {
@@ -261,6 +278,33 @@ namespace University_Internship_Management_System.Shared
                 }
                 else if (action == "restoreCompany")
                     await db.PatchAsync("companies/" + Key(id), new { isArchived = false, isActive = false, revision = Guid.NewGuid().ToString("N") });
+                else if (action == "deactivateCompany")
+                {
+                    // Block company access before individual Auth updates; retries safely finish partial work.
+                    await db.PatchAsync("companies/" + Key(id), new { isActive = false, revision = Guid.NewGuid().ToString("N"), updatedBy = actor, updatedAtUtc = now().ToString("o") });
+                    var users = await db.ReadAsync("users") as JObject ?? new JObject();
+                    foreach (var user in users.Properties().Where(p => IsCompanyUser(p.Value as JObject) && T(p.Value, "companyId") == id))
+                    {
+                        var account = await auth.FindAsync(user.Name);
+                        bool suspended = user.Value.Value<bool?>("companyAccessSuspended") == true ||
+                            (user.Value.Value<bool?>("isActive") == true && account != null && !account.Disabled);
+                        await db.PatchAsync("users/" + Key(user.Name), new { isActive = false, companyAccessSuspended = suspended });
+                    }
+                    foreach (var user in users.Properties().Where(p => IsCompanyUser(p.Value as JObject) && T(p.Value, "companyId") == id))
+                        if (await auth.FindAsync(user.Name) != null) await auth.UpdateAsync(user.Name, true);
+                }
+                else if (action == "activateCompany")
+                {
+                    await db.PatchAsync("companies/" + Key(id), new { isActive = true, revision = Guid.NewGuid().ToString("N"), updatedBy = actor, updatedAtUtc = now().ToString("o") });
+                    var users = await db.ReadAsync("users") as JObject ?? new JObject();
+                    foreach (var user in users.Properties().Where(p => IsCompanyUser(p.Value as JObject) && T(p.Value, "companyId") == id && p.Value.Value<bool?>("companyAccessSuspended") == true))
+                    {
+                        if (T(user.Value, "deletionStatus") == "pending" || (T(user.Value, "accountSetupStatus") != "" && T(user.Value, "accountSetupStatus") != "complete")) continue;
+                        if (await auth.FindAsync(user.Name) == null) continue;
+                        await auth.UpdateAsync(user.Name, false);
+                        await db.PatchAsync("users/" + Key(user.Name), new { isActive = true, companyAccessSuspended = false });
+                    }
+                }
                 else if (companyAction)
                     await db.PatchAsync("companies/" + Key(id), new { isActive = action == "activateCompany", revision = Guid.NewGuid().ToString("N"), updatedBy = actor, updatedAtUtc = now().ToString("o") });
                 else
@@ -287,6 +331,7 @@ namespace University_Internship_Management_System.Shared
                         }
                         else
                         {
+                            if (company.Value<bool?>("isActive") != true || company.Value<bool?>("isArchived") == true) throw new StudentManagementException("Reactivate the company before enabling this supervisor.");
                             await auth.UpdateAsync(uid, false);
                             await db.PatchAsync("users/" + Key(uid), new { isActive = true });
                         }

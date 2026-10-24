@@ -296,3 +296,124 @@ a { text-decoration: none; color: inherit; }
     .management-page .topbar .search { order:0; flex:1 1 auto; min-width:0; max-width:none; width:auto; }
     .management-page .topbar .user-chip .name { display:none; }
 }
+
+/* BEGIN MANAGEMENT DESIGN REFRESH 20261023 */
+/* Friend's design system. Included only in the three management stylesheets. */
+.management-page {
+ --primary:#1F3D78; --primary-hover:#294D91; --primary-light:#DCE9F7; --primary-soft:#EAF2FA;
+ --background:#F4F3EF; --surface:#FFFFFF; --surface-alt:#F6F7FA; --sidebar-bg:#E8EDF2;
+ --dark:#242844; --text:#242844; --text-secondary:#66718A; --muted:#718096; --text-inverse:#FFFFFF;
+ --border:#DFE3EB; --border-light:#EBEDF2; --success:#28734D; --success-light:#E6F3EB;
+ --warning:#895A18; --warning-light:#FFF1D8; --danger:#B4232B; --danger-light:#F9E4EC;
+ --hero-gradient-start:#1E284C; --hero-gradient-mid:#1F294D; --hero-gradient-end:#6689BB;
+ --font-heading:'Manrope',sans-serif; --font-body:'Inter',sans-serif;
+ background:var(--background); color:var(--text); font-family:var(--font-body);
+}
+.management-page :is(.dash-main,.main) { min-width:0; background:var(--background); }
+.management-page :is(.dash-main>.app-content,.main>.content) { max-width:1440px; padding:20px 32px 32px; }
+.management-page :is(.management-hero,.hero-banner) {
+ min-height:0; gap:20px; padding:24px 32px; border-radius:22px;
+ background:linear-gradient(110deg,#1E284C 0%,#1F294D 50%,#6689BB 100%);
+ box-shadow:0 12px 30px rgba(30,40,76,.14);
+}
+.management-page .management-hero h1 { margin-bottom:8px; font-size:clamp(25px,2.4vw,32px); line-height:1.2; font-weight:800; }
+.management-page .management-hero :is(.completion-eyebrow,.companies-eyebrow,.management-eyebrow) { margin-bottom:10px; font-size:10px; letter-spacing:.1em; }
+.management-page .management-hero :is(.completion-subtitle,.subtitle),.management-page .management-hero>div>p:last-child { font-size:13px; line-height:1.65; }
+.management-page :is(.dash-sidebar,.sidebar) { background:var(--sidebar-bg); border-right:1px solid var(--border); }
+.management-page :is(.dash-brand-logo,.brand-logo) { width:46px; height:46px; padding:4px; object-fit:contain; border-radius:50%; background:linear-gradient(145deg,#fff,#DCE9F7); border:1px solid #fff; }
+.management-page :is(.dash-side-nav a,.side-nav a) { gap:14px; padding:12px 16px; border-radius:14px; color:var(--text-secondary); font-weight:600; }
+.management-page :is(.dash-side-nav a,.side-nav a):hover { background:rgba(255,255,255,.7); color:var(--primary); }
+.management-page :is(.dash-side-nav a.active,.side-nav a.active) { background:var(--surface); color:var(--primary); box-shadow:0 6px 16px rgba(31,61,120,.06); }
+.management-page :is(.dash-side-nav,.side-nav) svg { width:20px; height:20px; flex-shrink:0; stroke-width:1.75; }
+.management-page :is(.dash-topbar,.topbar) { padding:16px 32px; gap:16px; }
+.management-page :is(.dash-search,.topbar .search) { min-width:0; }
+.management-page :is(.dash-search input,.topbar .search input) { height:46px; min-height:46px; border-radius:14px; border:1px solid var(--border); background:var(--surface); font-size:13px; }
+.management-page :is(.dash-user,.user-chip) { border-radius:40px; }
+.management-page :is(.dash-user-avatar,.user-avatar,.avatar) { width:36px; height:36px; }
+.management-page :is(.completion-panel,.companies-panel,.panel) { border-radius:22px; box-shadow:0 6px 20px rgba(31,61,120,.035); }
+.management-page :is(.completion-panel h2,.companies-panel h2,.panel-title) { font-size:18px; font-weight:700; }
+.management-page :is(.stat-card,.companies-stats article) { border-radius:16px; box-shadow:0 4px 16px rgba(31,61,120,.025); }
+.management-page :is(.completion-table-wrap,.companies-table-wrap,.table-responsive) { padding:4px 14px 14px; max-width:100%; }
+.management-page :is(.completion-table-wrap,.companies-table-wrap,.table-responsive) table { width:100%; border-collapse:separate; border-spacing:0 4px; }
+.management-page :is(.completion-table-wrap,.companies-table-wrap,.table-responsive) th { background:transparent; border:0; padding:10px 12px; color:var(--muted); font-size:.68rem; font-weight:700; text-transform:uppercase; }
+.management-page :is(.completion-table-wrap,.companies-table-wrap,.table-responsive) td { padding:10px 12px; background:var(--surface); border-top:1px solid var(--border-light); border-bottom:1px solid var(--border-light); color:var(--text-secondary); font-weight:500; }
+.management-page :is(.completion-table-wrap,.companies-table-wrap,.table-responsive) tbody tr:last-child td { border-bottom:1px solid var(--border-light); }
+.management-page :is(.completion-table-wrap,.companies-table-wrap,.table-responsive) td:first-child { border-left:1px solid var(--border-light); border-radius:12px 0 0 12px; color:var(--text); }
+.management-page :is(.completion-table-wrap,.companies-table-wrap,.table-responsive) td:last-child { border-right:1px solid var(--border-light); border-radius:0 12px 12px 0; }
+.management-page :is(.completion-table-wrap,.companies-table-wrap,.table-responsive) tbody tr:hover td { background:var(--primary-soft); }
+.management-page :is(.status-badge,.companies-badge,.dept-badge) { font-size:.75rem; font-weight:700; border-radius:8px; }
+.management-page .status-badge.success { background:var(--success-light); color:var(--success); }
+.management-page .status-badge.danger { background:var(--danger-light); color:var(--danger); }
+.management-page :is(.completion-filters,.companies-toolbar,.companies-form-grid,.completion-form-grid) { min-width:0; }
+.management-page :is(input,select,textarea) { max-width:100%; }
+.management-page :is(.completion-filters,.companies-toolbar,.companies-form-grid,.completion-form-grid)>* { min-width:0; }
+.management-page :is(.completion-dialog,.companies-modal) { max-width:calc(100vw - 32px); max-height:calc(100dvh - 32px); overflow-y:auto; overflow-x:hidden; }
+.management-page .modal .modal-dialog { width:auto; max-width:min(760px,calc(100vw - 32px)); margin-inline:auto; }
+.management-page .modal .modal-content { max-width:100%; }
+.management-page :is(.completion-dialog-header,.companies-modal-header,.custom-modal .modal-header) { padding:20px 24px; }
+.management-page :is(.completion-dialog-header,.companies-modal-header,.custom-modal .modal-header) :is(h2,h3) { font-size:21px; }
+.management-page :is(input,select,textarea):focus { outline:0; border-color:var(--hero-gradient-end); box-shadow:0 0 0 4px var(--primary-light); }
+.management-page :is(a,button):focus-visible { outline:3px solid var(--primary); outline-offset:3px; }
+.management-page :is(.empty-state,.companies-empty) { text-align:center; color:var(--text-secondary); padding:32px 20px; }
+@media(min-width:768px) {
+ .management-page :is(.dash-sidebar,.sidebar) { position:sticky; top:0; width:270px; flex:0 0 270px; height:100dvh; max-width:none; transform:none; visibility:visible; box-shadow:none; }
+ .management-page :is(.dash-menu-btn,.menu-btn,.dash-sidebar-close,.sidebar-close,.dash-sidebar-backdrop,.sidebar-backdrop) { display:none!important; }
+ .management-page:is(.dash-sidebar-open,.sidebar-open) { overflow:auto; }
+}
+@media(min-width:768px) and (max-width:960px) {
+ .management-page :is(.dash-sidebar,.sidebar) { width:80px; flex-basis:80px; padding-inline:10px; }
+ .management-page :is(.dash-brand,.brand) { justify-content:center; padding-inline:0; }
+ .management-page :is(.dash-brand-text,.brand-text,.dash-side-promo,.dash-side-user,.sidebar-footer) { display:none; }
+ .management-page :is(.dash-side-nav a,.side-nav a) { position:relative; justify-content:center; gap:0; padding:13px; }
+ .management-page :is(.dash-side-nav a,.side-nav a)>span { position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip-path:inset(50%); white-space:nowrap; }
+ .management-page :is(.dash-main>.app-content,.main>.content) { padding-inline:22px; }
+}
+@media(max-width:1180px) {
+ .management-page :is(.management-hero,.hero-banner) { flex-direction:column; align-items:flex-start; }
+ .management-page .management-hero>div { flex:0 1 auto; }
+ .management-page :is(.companies-stats,.stats-grid) { grid-template-columns:repeat(2,minmax(0,1fr)); }
+}
+@media(max-width:767px) {
+ .management-page :is(.dash-main>.app-content,.main>.content) { padding:16px 16px 28px; }
+ .management-page :is(.dash-topbar,.topbar) { padding:12px 16px; gap:10px; }
+ .management-page :is(.management-hero,.hero-banner) { padding:22px; gap:16px; border-radius:18px; }
+ .management-page .management-hero h1 { font-size:26px; }
+ .management-page :is(.completion-filters,.companies-toolbar) { padding:18px; grid-template-columns:repeat(2,minmax(0,1fr)); }
+ .management-page :is(.completion-dialog-header,.companies-modal-header,.custom-modal .modal-header,.completion-dialog-body,.companies-modal-body,.custom-modal .modal-body) { padding:18px; }
+}
+@media(max-width:480px) {
+ .management-page :is(.completion-filters,.companies-toolbar,.companies-form-grid,.completion-form-grid,.companies-stats,.stats-grid) { grid-template-columns:minmax(0,1fr); }
+ .management-page :is(.companies-modal-footer,.completion-dialog-footer) { flex-wrap:wrap; gap:12px; }
+}
+@media(prefers-reduced-motion:reduce) { .management-page *, .management-page *::before,.management-page *::after { animation:none!important; transition:none!important; scroll-behavior:auto!important; } }
+
+
+/* MANAGEMENT CLEANUP 20261024: directory pagination and compact controls */
+.management-page .management-pagination { display:flex;align-items:center;justify-content:space-between;gap:16px;padding:18px 24px;border-top:1px solid var(--border-light);font-size:12px;color:var(--text-secondary); }
+.management-page :is(.management-pagination,.companies-pagination)>div { display:flex;align-items:center;gap:10px;flex-wrap:wrap; }
+.management-page :is(.management-pagination,.companies-pagination) nav { display:flex;gap:5px;flex-wrap:wrap; }
+.management-page :is(.management-pagination,.companies-pagination) :is(button,select) { min-width:36px;height:36px;padding:6px 10px;border:1px solid var(--border);border-radius:9px;background:var(--surface);color:var(--primary);font:600 12px var(--font-body); }
+.management-page :is(.management-pagination,.companies-pagination) button[aria-current=page] { color:white;background:var(--primary);border-color:var(--primary); }
+.management-page :is(.management-pagination,.companies-pagination) button:disabled { opacity:.4;cursor:default; }
+.management-page :is(.student-delete-action,.companies-text-button[data-company-action],.action-btn) { display:inline-flex;align-items:center;justify-content:center;width:38px;height:38px;padding:8px;border:1px solid var(--border);border-radius:10px;background:var(--surface);color:var(--primary);vertical-align:middle;margin:2px; }
+.management-page :is(.student-delete-action,.companies-text-button[data-company-action]) svg { width:20px;height:20px;stroke:currentColor;stroke-width:1.75;fill:none;stroke-linecap:round;stroke-linejoin:round; }
+.management-page .action-btn i { font-size:18px;line-height:1; }
+.management-page .action-buttons { justify-content:flex-start;align-items:center; }
+.management-page :is(.companies-table-wrap,.table-responsive) td:last-child { vertical-align:middle;white-space:nowrap; }
+.management-page .student-page-message:empty,.management-page #studentFilterSummary:empty { display:none; }
+.management-page .management-feedback { padding:10px 14px;margin:12px 0;color:var(--primary);background:var(--primary-soft);border-radius:10px; }
+.management-page .management-feedback[role=alert] { color:var(--danger);background:var(--danger-light); }
+.management-page .management-sr-only { position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%); }
+.management-page .companies-stats article { position:relative;padding:22px 20px 22px 88px;min-height:124px;display:flex;flex-direction:column;justify-content:center; }
+.management-page .companies-stats .companies-stat-top { display:block; }
+.management-page .companies-stats .companies-stat-top svg { position:absolute;left:22px;top:50%;transform:translateY(-50%);width:48px;height:48px;padding:12px;border-radius:14px;background:var(--primary-soft); }
+.management-page .companies-stats .companies-stat-top svg.companies-icon-success { background:var(--success-light); }
+.management-page .companies-stats .companies-stat-top svg.companies-icon-warning { background:var(--warning-light); }
+@media(max-width:600px) { .management-page .management-pagination { align-items:flex-start;flex-direction:column;padding:16px; } .management-page .companies-stats article { padding-left:82px; } }
+
+/* Unified management action icons */
+.management-page :is(.management-icon-button,.student-delete-action,.companies-text-button[data-company-action],.action-btn) { display:inline-flex;align-items:center;justify-content:center;flex:0 0 auto;width:38px;height:38px;min-width:38px;padding:8px;margin:2px;border:1px solid var(--border);border-radius:10px;background:var(--surface);color:var(--primary);vertical-align:middle;text-decoration:none; }
+.management-page :is(.management-icon-button,.student-delete-action,.companies-text-button[data-company-action],.action-btn) svg { display:block;width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round; }
+.management-page :is(.student-delete-action,[data-academic-action=delete]) { color:var(--danger); }
+.management-page :is(.management-icon-button,.student-delete-action,.companies-text-button[data-company-action],.action-btn):hover { background:var(--primary-soft);border-color:var(--primary-light); }
+.management-page #studentsGrid a.management-icon-button { width:38px;height:38px;padding:8px;margin:2px;font-size:12px; }

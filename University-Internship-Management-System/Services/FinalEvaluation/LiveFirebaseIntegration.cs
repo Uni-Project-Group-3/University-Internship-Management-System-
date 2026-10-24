@@ -67,6 +67,7 @@ namespace University_Internship_Management_System.Services.FinalEvaluation
         {
             if (Profile == null || Profile.Value<bool?>("isActive") != true || Role == null || Text(Profile, "deletionStatus") == "pending" ||
                 (Text(Profile, "accountSetupStatus") != "" && Text(Profile, "accountSetupStatus") != "complete")) throw new UnauthorizedAccessException();
+            if (Role == "companySupervisor" && !CompanyManagementService.AllowsSignIn(Node("companies/" + FirebaseKey.Require(Text(Profile, "companyId"))) as JObject)) throw new UnauthorizedAccessException();
         }
         private async Task<HttpRequestMessage> RequestAsync(HttpMethod method)
         {

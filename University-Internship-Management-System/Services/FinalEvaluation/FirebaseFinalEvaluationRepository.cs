@@ -4,6 +4,7 @@ using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
@@ -17,6 +18,9 @@ namespace University_Internship_Management_System.Services.FinalEvaluation
         private readonly IAccessTokenProvider tokens;
         private readonly Uri root;
         private readonly FirebaseFinalEvaluationConfiguration configuration;
+        private readonly TimeSpan tokenTimeout;
+        private readonly TimeSpan requestTimeout;
+        private readonly CancellationToken requestCancellation;
         internal static readonly JsonSerializerSettings Json = new JsonSerializerSettings
         {
             ContractResolver = new DefaultContractResolver { NamingStrategy = new CamelCaseNamingStrategy { ProcessDictionaryKeys = false } },
@@ -25,10 +29,20 @@ namespace University_Internship_Management_System.Services.FinalEvaluation
             Converters = { new Newtonsoft.Json.Converters.StringEnumConverter { AllowIntegerValues = false } }
         };
         public FirebaseFinalEvaluationRepository(HttpClient client, IAccessTokenProvider tokens, FirebaseFinalEvaluationConfiguration configuration)
+            : this(client, tokens, configuration, TimeSpan.FromSeconds(12), TimeSpan.FromSeconds(15)) { }
+        public FirebaseFinalEvaluationRepository(HttpClient client, IAccessTokenProvider tokens, FirebaseFinalEvaluationConfiguration configuration,
+            TimeSpan tokenTimeout, TimeSpan requestTimeout)
+            : this(client, tokens, configuration, tokenTimeout, requestTimeout, CancellationToken.None) { }
+        public FirebaseFinalEvaluationRepository(HttpClient client, IAccessTokenProvider tokens, FirebaseFinalEvaluationConfiguration configuration,
+            TimeSpan tokenTimeout, TimeSpan requestTimeout, CancellationToken requestCancellation)
         {
             this.client = client ?? throw new ArgumentNullException("client");
             this.tokens = tokens ?? throw new ArgumentNullException("tokens");
             this.configuration = configuration ?? throw new ArgumentNullException("configuration");
+            if (tokenTimeout <= TimeSpan.Zero || requestTimeout <= TimeSpan.Zero) throw new ArgumentOutOfRangeException();
+            this.tokenTimeout = tokenTimeout;
+            this.requestTimeout = requestTimeout;
+            this.requestCancellation = requestCancellation;
             root = this.configuration.DatabaseRoot;
         }
         private static string Key(string value) { return Uri.EscapeDataString(FirebaseKey.Require(value)); }
@@ -92,20 +106,48 @@ namespace University_Internship_Management_System.Services.FinalEvaluation
             {
                 configuration.EnsureEnabled();
                 if (request.Method != HttpMethod.Get) configuration.EnsureWritesAllowed();
-                string token = await tokens.GetAccessTokenAsync().ConfigureAwait(false);
+                var tokenTimer = FirebaseReadDiagnostics.Start();
+                string token;
+                try
+                {
+                    using (var tokenCancellation = CancellationTokenSource.CreateLinkedTokenSource(requestCancellation))
+                    {
+                        tokenCancellation.CancelAfter(tokenTimeout);
+                        var cancellable = tokens as ICancellableAccessTokenProvider;
+                        token = cancellable == null
+                            ? await tokens.GetAccessTokenAsync().ConfigureAwait(false)
+                            : await cancellable.GetAccessTokenAsync(tokenCancellation.Token).ConfigureAwait(false);
+                    }
+                    FirebaseReadDiagnostics.Finish("oauth.token", tokenTimer, "success");
+                }
+                catch (OperationCanceledException) { FirebaseReadDiagnostics.Finish("oauth.token", tokenTimer, "timeout_or_cancelled"); throw; }
+                catch (Exception) { FirebaseReadDiagnostics.Finish("oauth.token", tokenTimer, "failed"); throw; }
                 if (string.IsNullOrWhiteSpace(token)) throw new RepositoryException("An authenticated server token is required.");
                 request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
-                var response = await client.SendAsync(request).ConfigureAwait(false);
+                var requestTimer = FirebaseReadDiagnostics.Start();
+                HttpResponseMessage response;
+                try
+                {
+                    using (var requestTimeoutCancellation = CancellationTokenSource.CreateLinkedTokenSource(requestCancellation))
+                    {
+                        requestTimeoutCancellation.CancelAfter(requestTimeout);
+                        response = await client.SendAsync(request, requestTimeoutCancellation.Token).ConfigureAwait(false);
+                    }
+                }
+                catch (OperationCanceledException) { FirebaseReadDiagnostics.Finish("firebase.database.request", requestTimer, "timeout_or_cancelled"); throw; }
+                catch (HttpRequestException) { FirebaseReadDiagnostics.Finish("firebase.database.request", requestTimer, "network_error"); throw; }
+                FirebaseReadDiagnostics.Finish("firebase.database.request", requestTimer, "http_" + (int)response.StatusCode);
                 if (response.StatusCode == HttpStatusCode.PreconditionFailed) { response.Dispose(); throw new ConflictException(); }
                 if (!response.IsSuccessStatusCode)
                 {
                     int status = (int)response.StatusCode; response.Dispose();
+                    if (status == 401 || status == 403) throw new RepositoryException("Firebase denied the authenticated read. Check the service account's database permissions and Firebase configuration.");
                     throw new RepositoryException("Firebase request failed (HTTP " + status + ").");
                 }
                 return response;
             }
             catch (HttpRequestException) { throw new RepositoryException("Firebase connection failed."); }
-            catch (TaskCanceledException) { throw new RepositoryException("Firebase request timed out or was canceled."); }
+            catch (OperationCanceledException error) { throw new RepositoryException("Firebase request timed out or was canceled.", error); }
         }
         private async Task WriteDraftAsync<T>(string path, T value, string expected, bool create) where T : EvaluationRecord
         {

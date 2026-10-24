@@ -1,4 +1,5 @@
 using System;
+using System.Text;
 using System.IO;
 using System.Security.Cryptography;
 using System.Threading.Tasks;
@@ -24,6 +25,7 @@ namespace University_Internship_Management_System.Coordinator
             public string Password {get;set;}
             public DateTimeOffset ExpiresUtc {get;set;}
             public bool Created {get;set;}
+            public bool EmailSent {get;set;}
         }
         protected void Page_Load(object sender,EventArgs e)
         {
@@ -61,7 +63,7 @@ namespace University_Internship_Management_System.Coordinator
                     Session.Remove(CandidateKey);
                     var record=await service.LookupAsync(((string)request["staffId"]??"").Trim());
                     var candidate=new Candidate{Record=record,Password=StudentManagementService.GeneratePassword(),ExpiresUtc=DateTimeOffset.UtcNow.AddMinutes(15)};
-                    Store(candidate);Reply(200,new{record,temporaryPassword=candidate.Password,message="Official record found. Confirm to create the Firebase account."});return;
+                    Store(candidate);Reply(200,new{record,message="Official record found. Confirm to create the Firebase account."});return;
                 }
                 if(action=="generate"||action=="create")
                 {
@@ -70,10 +72,21 @@ namespace University_Internship_Management_System.Coordinator
                     {
                         if(candidate.Created)throw new StudentManagementException("This account was already created. Its password cannot be regenerated here.");
                         candidate.Password=StudentManagementService.GeneratePassword();Store(candidate);
-                        Reply(200,new{temporaryPassword=candidate.Password});return;
+                        Reply(200,new{message="Account password is managed through the email setup link."});return;
                     }
                     if(!candidate.Created){await service.CreateAsync(candidate.Record,candidate.Password,actor);candidate.Created=true;Store(candidate);}
-                    Reply(200,new{message="Academic supervisor account saved. No email was sent. Copy the temporary password; it must be changed on first login.",temporaryPassword=candidate.Password,email=candidate.Record.Email});return;
+                    if(candidate.EmailSent)throw new StudentManagementException("Account details have already been sent.");
+                    try { await new FirebaseAuthService().SendAccountSetupEmailAsync(candidate.Record.Email); }
+                    catch(StudentManagementException error)
+                    {
+                        Reply(200,new{created=true,emailSent=false,message=error.Message});return;
+                    }
+                    catch(Exception)
+                    {
+                        Reply(200,new{created=true,emailSent=false,message="Email delivery was not confirmed. The account is saved. Use Retry Send; a retry may send a duplicate."});return;
+                    }
+                    candidate.EmailSent=true;candidate.Password=null;Store(candidate);
+                    Reply(200,new{created=true,emailSent=true,message="Academic supervisor account saved. Firebase accepted a password setup email for " + candidate.Record.Email + ". Check inbox and spam, then sign in using this same email address."});return;
                 }
                 Reply(200,new{message=await service.ActAsync((string)request["uid"],action,actor)});
             }
@@ -94,12 +107,12 @@ namespace University_Internship_Management_System.Coordinator
         }
         private Candidate ReadCandidate(string staffId)
         {
-            string json=Session[CandidateKey] as string;var candidate=string.IsNullOrEmpty(json)?null:JsonConvert.DeserializeObject<Candidate>(json);
+            string json=Session[CandidateKey] as string;if(json!=null&&json.StartsWith("{")){Session.Remove(CandidateKey);json=null;}var candidate=string.IsNullOrEmpty(json)?null:JsonConvert.DeserializeObject<Candidate>(Encoding.UTF8.GetString(MachineKey.Unprotect(Convert.FromBase64String(json), CandidateKey, Session.SessionID)));
             if(candidate==null||candidate.Record==null||candidate.ExpiresUtc<=DateTimeOffset.UtcNow||candidate.Record.StaffId!=(staffId??"").Trim())
                 throw new StudentManagementException("Find this staff ID in university records again before confirming.");
             return candidate;
         }
-        private void Store(Candidate candidate){Session[CandidateKey]=JsonConvert.SerializeObject(candidate);}
+        private void Store(Candidate candidate){Session[CandidateKey]=Convert.ToBase64String(MachineKey.Protect(Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(candidate)), CandidateKey, Session.SessionID));}
         private void Reply(int status,object data)
         {
             Response.StatusCode=status;Response.TrySkipIisCustomErrors=true;Response.SuppressFormsAuthenticationRedirect=true;
