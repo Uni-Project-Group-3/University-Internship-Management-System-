@@ -1,6 +1,6 @@
 ﻿<%@ Page Language="C#" AutoEventWireup="true" CodeBehind="MyApplications.aspx.cs" Inherits="University_Internship_Management_System.Student.MyApplications" %>
 
-<script src="../Js_project/Demo/demo-store.js?v=20261023-hide-unavailable-notice"></script>
+<script src="../Js_project/Demo/demo-store.js?v=20261021-original-ui"></script>
 <script runat="server">
     protected void btnLogout_Click(object sender, System.EventArgs e)
     {
@@ -36,7 +36,6 @@
 <li><a href="StudentDashboard.aspx"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m3 10 9-7 9 7v10h-6v-7H9v7H3V10Z"/></svg><span>Dashboard</span></a></li>
 <li><a href="ExploreOpportunities.aspx"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="m8 12 3 3 5-6"/></svg><span>Explore Opportunities</span></a></li>
 <li><a href="MyApplications.aspx" class="active" aria-current="page"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="m8 12 3 3 5-6"/></svg><span>My Applications</span></a></li>
-<li><a href="ApplicationForm.aspx"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="m8 12 3 3 5-6"/></svg><span>Application Form</span></a></li>
 <li><a href="Profile.aspx"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="7" r="3"/><path d="M5 21v-3a7 7 0 0 1 14 0v3"/></svg><span>My Profile</span></a></li>
 
 <li><a href="MyTasks.aspx"><svg class="nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M4 5h16v14H4zM8 9h8M8 13h6" /></svg><span>My Tasks</span></a></li>
@@ -49,11 +48,17 @@
                 <ul class="side-nav"><li><a href="../Contact.aspx"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="m8 12 3 3 5-6"/></svg><span>Help &amp; contact</span></a></li>
 </ul>
 
+                <div class="side-promo">
+                    <i class="bi bi-mortarboard-fill"></i>
+                    <p>Build your future<br />with real experience.</p>
+                    <a href="ExploreOpportunities.aspx">Explore opportunities &rarr;</a>
+                </div>
             </aside>
             <div id="sidebarBackdrop" class="sidebar-backdrop" aria-hidden="true"></div>
             <div class="main" id="studentMain">
                 <header class="topbar">
                     <button type="button" class="menu-btn" id="openSidebar" aria-label="Open navigation" aria-controls="studentSidebar" aria-expanded="false"><i class="bi bi-list"></i></button>
+
                     <div class="topbar-actions">
                         <button type="button" class="icon-btn" id="navbarNotifications" aria-label="Notifications preview"><i class="bi bi-bell"></i><span class="dot"></span></button>
                         <div class="dropdown">
@@ -73,7 +78,6 @@
                 </header>
                 <p id="navbarNotice" class="navbar-notice" role="status" hidden></p>
         <main class="applications-page">
-            <p class="preview-note" id="previewNote">Sample applications for preview. These are separate from the application form. Confirmation resets when you refresh.</p>
 
             <header class="page-heading">
                 <div class="heading-text">
