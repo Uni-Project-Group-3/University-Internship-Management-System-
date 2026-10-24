@@ -22,6 +22,8 @@
     <link href="../Assets/shared/colors.css" rel="stylesheet" />
     <link runat="server" href="~/Assets/coordinator/final-completion-review.css?v=20261024-coordinator-review-v2" rel="stylesheet" />
     <link href="../Assets/shared/evaluation-workspace.css?v=20261023" rel="stylesheet" />
+<link href="../Assets/shared/workspace-identity.css?v=20261024-polish" rel="stylesheet" />
+<script src="../Js_project/workspace-navigation-unified.js?v=20261024-polish" defer></script>
 </head>
 <body class="standalone-shell">
     <form id="reviewForm" runat="server">

@@ -16,6 +16,7 @@ document.addEventListener('click', async event => {
 });
 (() => {
     'use strict';
+    if(document.querySelector('.workspace-canonical-sidebar'))return;
     const sidebar = document.getElementById('dashboardSidebar');
     if (!sidebar) {
         const legacySidebar = document.getElementById('sidebar');

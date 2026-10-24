@@ -1,4 +1,4 @@
-<%@ Page Language="C#" AutoEventWireup="true" CodeBehind="MyTasks.aspx.cs" Inherits="University_Internship_Management_System.Student.MyTasks" %>
+﻿<%@ Page Language="C#" AutoEventWireup="true" CodeBehind="MyTasks.aspx.cs" Inherits="University_Internship_Management_System.Student.MyTasks" %>
 <%@ Register Src="~/Shared/StudentSidebar.ascx" TagPrefix="just" TagName="RoleSidebar" %>
 
 
@@ -18,6 +18,8 @@
 <link rel="stylesheet" href="../Assets/shared/role-sidebar.css" />
 <link rel="stylesheet" href="../Assets/shared/just-theme.css" />
 
+<link href="../Assets/shared/workspace-identity.css?v=20261024-polish" rel="stylesheet" />
+<script src="../Js_project/workspace-navigation-unified.js?v=20261024-polish" defer></script>
 </head>
     <body class="uims-tasks-theme" data-demo-role="student">
         <form id="form1" runat="server">
@@ -52,7 +54,7 @@
                         <section class="tasks-premium-hero"><div><span class="tasks-role-badge">JUST / STUDENT WORKSPACE</span><h1>My Tasks & Exams</h1><p>Track your assignments, examinations and progress in one place.</p></div><div class="tasks-hero-metrics"><span><strong id="heroTaskCount">—</strong> active tasks</span><span><strong id="heroExamCount">—</strong> exam tasks</span></div></section>
 
                         <!-- STATS CARDS -->
-                        <div class="stats-grid tasks-premium-stats"><article class="stat-card"><span class="tasks-stat-symbol" aria-hidden="true">&#8801;</span><div class="stat-details"><h3>—</h3><span>Total Tasks</span></div></article><article class="stat-card"><span class="tasks-stat-symbol" aria-hidden="true">&#9719;</span><div class="stat-details"><h3>—</h3><span>New / Pending</span></div></article><article class="stat-card"><span class="tasks-stat-symbol" aria-hidden="true">&#9655;</span><div class="stat-details"><h3>—</h3><span>In Progress</span></div></article><article class="stat-card"><span class="tasks-stat-symbol" aria-hidden="true">&#9678;</span><div class="stat-details"><h3>—</h3><span>Awaiting Review</span></div></article><article class="stat-card"><span class="tasks-stat-symbol" aria-hidden="true">&#10003;</span><div class="stat-details"><h3>—</h3><span>Complete</span></div></article></div>
+                        <div class="stats-grid tasks-premium-stats"><article class="stat-card"><span class="tasks-stat-symbol" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg></span><div class="stat-details"><h3>—</h3><span>Total Tasks</span></div></article><article class="stat-card"><span class="tasks-stat-symbol" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M12 3v9l6 3M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"/></svg></span><div class="stat-details"><h3>—</h3><span>New / Pending</span></div></article><article class="stat-card"><span class="tasks-stat-symbol" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M5 12h14m-5-5 5 5-5 5"/></svg></span><div class="stat-details"><h3>—</h3><span>In Progress</span></div></article><article class="stat-card"><span class="tasks-stat-symbol" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M5 3h14v18H5V3Zm4 5h6m-6 5h6"/></svg></span><div class="stat-details"><h3>—</h3><span>Awaiting Review</span></div></article><article class="stat-card"><span class="tasks-stat-symbol" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="m5 12 4 4L19 6"/></svg></span><div class="stat-details"><h3>—</h3><span>Complete</span></div></article></div>
 
 
                         <!-- SEARCH & FILTER TOOLBAR -->
@@ -144,8 +146,8 @@
         <link href="../Assets/task-workspace.css?v=20261023-task-connection" rel="stylesheet" />
 <link href="../Assets/tasks-premium.css?v=20261023-closeout" rel="stylesheet" />
         <script src="../Js_project/firebase-client.js?v=20261023-task-connection"></script>
-        <script src="../Js_project/task-dialogs.js?v=20261023-task-connection"></script>
-        <script src="../Js_project/Student/TaskExams.js?v=20261024-submission-receipt"></script>
+        <script src="../Js_project/task-dialogs.js?v=20261024-polish"></script>
+        <script src="../Js_project/Student/TaskExams.js?v=20261024-polish"></script>
         <script src="../Js_project/workflow-dialogs.js?v=20261023"></script>
         <script src="../Js_project/Student/MyTasks.js?v=20261024-student-identity">
         </script>

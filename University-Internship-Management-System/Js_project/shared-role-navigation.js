@@ -1,6 +1,6 @@
 (() => {
  'use strict';
- const sidebar=document.querySelector('[data-uims-sidebar-role]');if(!sidebar)return;
+ const sidebar=document.querySelector('[data-uims-sidebar-role]');if(!sidebar||sidebar.classList.contains('workspace-canonical-sidebar'))return;
  document.body.classList.add('uims-role-shell');
  const backdrop=document.querySelector('.uims-unified-backdrop'),close=sidebar.querySelector('[data-sidebar-close]');
  const button=document.createElement('button');button.type='button';button.className='uims-sidebar-toggle';button.textContent='☰ Menu';button.setAttribute('aria-controls',sidebar.id);button.setAttribute('aria-expanded','false');document.body.append(button);

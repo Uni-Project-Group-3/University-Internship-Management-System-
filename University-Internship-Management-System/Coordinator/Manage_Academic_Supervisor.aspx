@@ -11,112 +11,17 @@
 
         <link href="../Assets/shared/colors.css" rel="stylesheet" />
         <link href="../Assets/coordinator/Manage_Academic_Supervisor.css?v=20261024-link-cleanup" rel="stylesheet" />
-    </head>
+    <link href="../Assets/shared/workspace-identity.css?v=20261024-polish" rel="stylesheet" />
+<script src="../Js_project/workspace-navigation-unified.js?v=20261024-polish" defer></script>
+</head>
     <body class="management-page" data-page="manage-academic-supervisors">
         <form id="form1" runat="server" novalidate="novalidate"><asp:HiddenField ID="academicCsrf" runat="server" ClientIDMode="Static" />
             <div class="app">
 
                 <!-- ============ SIDEBAR (Coordinator) ============ -->
-                <aside class="sidebar" id="sidebar" aria-label="Coordinator navigation">
-                    <button type="button" class="sidebar-close" aria-label="Close navigation">
-                        <i class="bi bi-x-lg" aria-hidden="true">
-                        </i>
-                    </button>
-                    <a href="CoordinatorDashboard.aspx" class="brand">
-                        <img class="brand-logo" src="../Assets/shared/images/JUST-Logo-01.png" alt="JUST logo" width="48" height="48" />
-                        <div class="brand-text">
-                            <strong>JUST</strong>
-                            <span>Internships</span>
-                        </div>
-                    </a>
-
-                    <ul class="side-nav">
-                        <li>
-                            <a href="CoordinatorDashboard.aspx">
-                                <i class="bi bi-house-door" aria-hidden="true">
-                                </i>
-                                <span>Dashboard</span>
-                            </a>
-                        </li>
-                        <li>
-                            <a href="ManageStudents.aspx">
-                                <i class="bi bi-mortarboard" aria-hidden="true">
-                                </i>
-                                <span>Manage Students</span>
-                            </a>
-                        </li>
-                        <li>
-                            <a href="ManageCompanies.aspx">
-                                <i class="bi bi-building" aria-hidden="true">
-                                </i>
-                                <span>Manage Companies</span>
-                            </a>
-                        </li>
-                        <li>
-                            <a href='<%= ResolveUrl("~/Coordinator/Manage_Academic_Supervisor.aspx") %>' class="active" aria-current="page">
-                                <i class="bi bi-person-badge" aria-hidden="true">
-                                </i>
-                                <span>Manage Academic Supervisors</span>
-                            </a>
-                        </li>
-                        <li>
-                            <a href="Assign_Supervisors.aspx">
-                                <i class="bi bi-diagram-3" aria-hidden="true">
-                                </i>
-                                <span>Assign Academic Supervisors</span>
-                            </a>
-                        </li>
-                        <li>
-                            <a href="MonitorPlacementsProgress.aspx">
-                                <i class="bi bi-activity" aria-hidden="true">
-                                </i>
-                                <span>Monitor Placements &amp; Progress</span>
-                            </a>
-                        </li>
-                        <li>
-                            <a href="FinalCompletionReview.aspx">
-                                <i class="bi bi-patch-check" aria-hidden="true">
-                                </i>
-                                <span>Final Completion Review</span>
-                            </a>
-                        </li>
-                        <li>
-                            <a href="ContactMessages.aspx">
-                                <i class="bi bi-envelope" aria-hidden="true">
-                                </i>
-                                <span>Contact Messages</span>
-                            </a>
-                        </li>
-                    </ul>
-
-                    <div class="side-divider">
-                    </div>
-
-                    <ul class="side-nav">
-                        <li>
-                            <a href="CoordinatorAccountProfile.aspx">
-                                <i class="bi bi-gear" aria-hidden="true">
-                                </i>Coordinator Account</a>
-                        </li>
-                        <li>
-                            <a href="../Contact.aspx">
-                                <i class="bi bi-question-circle" aria-hidden="true">
-                                </i>Help</a>
-                        </li>
-                        <li>
-                            <asp:LinkButton ID="btnLogout" runat="server" OnClick="btnLogout_Click" CssClass="text-danger">
+                <aside class="sidebar workspace-canonical-sidebar" id="sidebar" aria-label="Coordinator navigation"><a class="brand workspace-nav-brand" href="CoordinatorDashboard.aspx"><img class="brand-logo" src="../Assets/shared/images/JUST-Logo-01.png" alt="JUST logo" width="50" height="50"/><span class="brand-text"><strong>JUST</strong><small>Internships</small></span></a><button type="button" class="workspace-nav-close" data-workspace-close aria-label="Close navigation">&times;</button><p class="workspace-nav-role">Internship Coordinator</p><nav class="workspace-nav-primary" aria-label="Internship Coordinator pages"><a class="workspace-nav-link" href="CoordinatorDashboard.aspx"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 10 12 3l9 7v10h-6v-7H9v7H3V10Z"/></svg><span>Dashboard</span></a><a class="workspace-nav-link" href="../Coordinator/UniversityRecords.aspx"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M4 4h16v16H4V4Zm4 0v16M4 9h16M4 14h16"/></svg><span>University Records</span></a><a class="workspace-nav-link" href="ManageStudents.aspx"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 21v-3a8 8 0 0 1 16 0v3M16 7a4 4 0 1 1-8 0 4 4 0 0 1 8 0Z"/></svg><span>Manage Students</span></a><a class="workspace-nav-link" href="ManageCompanies.aspx"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7h18v14H3V7Zm5 0V3h8v4M3 12h18"/></svg><span>Manage Companies</span></a><a class="workspace-nav-link active" href="Manage_Academic_Supervisor.aspx" aria-current="page"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 21v-3a8 8 0 0 1 16 0v3M16 7a4 4 0 1 1-8 0 4 4 0 0 1 8 0Z"/></svg><span>Manage Academic Supervisors</span></a><a class="workspace-nav-link" href="Assign_Supervisors.aspx"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 21v-3a8 8 0 0 1 16 0v3M16 7a4 4 0 1 1-8 0 4 4 0 0 1 8 0Z"/></svg><span>Assign Academic Supervisors</span></a><a class="workspace-nav-link" href="MonitorPlacementsProgress.aspx"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 20h18M5 16v-5m6 5V4m6 12V8"/></svg><span>Placements &amp; Progress</span></a><a class="workspace-nav-link" href="ContactMessages.aspx"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h9l4 4v14H6V3Zm9 0v5h4M9 12h7M9 16h7"/></svg><span>Contact Messages</span></a></nav><div class="workspace-nav-account"><a class="workspace-nav-link" href="CoordinatorAccountProfile.aspx"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 21v-3a8 8 0 0 1 16 0v3M16 7a4 4 0 1 1-8 0 4 4 0 0 1 8 0Z"/></svg><span>My Account</span></a><a class="workspace-nav-link" href="../Contact.aspx"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 17v1M9 9a3 3 0 1 1 5 2c-2 1-2 2-2 3M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"/></svg><span>Help &amp; contact</span></a><asp:LinkButton ID="btnLogout" runat="server" OnClick="btnLogout_Click" CssClass="text-danger">
                                 <i class="bi bi-box-arrow-right" aria-hidden="true">
-                                </i>Logout</asp:LinkButton>
-                        </li>
-                    </ul>
-
-                    <div class="side-promo">
-                        <i class="bi bi-person-plus" aria-hidden="true">
-                        </i>
-                        <p>New semester?<br />Add students and assign groups.</p>
-                        <a href="ManageStudents.aspx">Add students &rarr;</a>
-                    </div>
-                </aside>
+                                </i>Logout</asp:LinkButton></div><div class="workspace-nav-public"><a class="workspace-nav-link workspace-home-link" href="../Public/home.aspx"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 10 12 3l9 7v10h-6v-7H9v7H3V10Z"/></svg><span>Home</span></a></div></aside>
                 <div class="sidebar-backdrop" aria-hidden="true">
                 </div>
 
