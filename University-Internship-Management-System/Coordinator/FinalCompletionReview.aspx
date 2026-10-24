@@ -24,7 +24,7 @@
     <link href="../Content/bootstrap.min.css" rel="stylesheet" />
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet" media="print" data-evaluation-external="true" />
     <link href="../Assets/shared/evaluation-colors.css?v=20261024-fast-paint" rel="stylesheet" />
-    <link runat="server" href="~/Assets/coordinator/final-completion-review.css?v=20261024-coordinator-review-v2" rel="stylesheet" />
+    <link runat="server" href="~/Assets/coordinator/final-completion-review.css?v=20261024-coordinator-company-shell-v5" rel="stylesheet" />
     <link href="../Assets/shared/evaluation-workspace.css?v=20261023" rel="stylesheet" />
     <script>
         document.querySelectorAll('link[data-evaluation-external]').forEach(function (link) {
@@ -69,14 +69,13 @@
                 <p id="navbarNotice" class="navbar-notice" role="status" hidden></p>
         <main class="review-page">
             <asp:HiddenField ID="detailsVisible" runat="server" ClientIDMode="Static" />
-            <section class="uims-page-hero" aria-labelledby="completionReviewTitle"><div class="uims-hero-copy"><p class="uims-hero-eyebrow">JUST / COORDINATOR WORKSPACE</p><h1 id="completionReviewTitle"><i class="bi bi-clipboard-check" aria-hidden="true"></i> Final Completion Review</h1><p>Review approved evaluations and verify every requirement before completing an internship.</p></div>
-<section class="completion-statistics uims-hero-stats" aria-label="Authorized completion statistics">
-                <article class="completion-stat stat-ready uims-hero-stat"><i class="bi bi-people" aria-hidden="true"></i><div><strong><asp:Literal ID="readyCount" runat="server" Mode="Encode" Text="—" /></strong><h2>Ready for Final Review</h2><p>All readiness checks satisfied</p></div></article>
-                <article class="completion-stat stat-review uims-hero-stat"><i class="bi bi-clock" aria-hidden="true"></i><div><strong><asp:Literal ID="inReviewCount" runat="server" Mode="Encode" Text="—" /></strong><h2>In Review</h2><p>Saved UnderReview status</p></div></article>
-                <article class="completion-stat stat-complete uims-hero-stat"><i class="bi bi-check-circle" aria-hidden="true"></i><div><strong><asp:Literal ID="completedCount" runat="server" Mode="Encode" Text="—" /></strong><h2>Completed Internships</h2><p>Saved Approved decisions</p></div></article>
-                <article class="completion-stat stat-returned uims-hero-stat"><i class="bi bi-file-earmark-text" aria-hidden="true"></i><div><strong><asp:Literal ID="returnedCount" runat="server" Mode="Encode" Text="—" /></strong><h2>Returned for Revision</h2><p>Saved ChangesRequested decisions</p></div></article>
+            <section class="uims-page-hero" aria-labelledby="completionReviewTitle"><div class="uims-hero-copy"><p class="uims-hero-eyebrow">JUST / COORDINATOR WORKSPACE</p><h1 id="completionReviewTitle"><i class="bi bi-clipboard-check" aria-hidden="true"></i> Final Completion Review</h1><p>Review approved evaluations and verify internship requirements before confirming final completion.</p></div></section>
+            <section class="completion-statistics coordinator-summary" aria-label="Authorized completion statistics">
+                <article class="completion-stat stat-ready"><i class="bi bi-people" aria-hidden="true"></i><div><strong><asp:Literal ID="readyCount" runat="server" Mode="Encode" Text="—" /></strong><h2>Ready for Final Review</h2><p>All readiness checks satisfied</p></div></article>
+                <article class="completion-stat stat-review"><i class="bi bi-clock" aria-hidden="true"></i><div><strong><asp:Literal ID="inReviewCount" runat="server" Mode="Encode" Text="—" /></strong><h2>In Review</h2><p>Saved UnderReview status</p></div></article>
+                <article class="completion-stat stat-complete"><i class="bi bi-check-circle" aria-hidden="true"></i><div><strong><asp:Literal ID="completedCount" runat="server" Mode="Encode" Text="—" /></strong><h2>Completed Internships</h2><p>Saved Approved decisions</p></div></article>
+                <article class="completion-stat stat-returned"><i class="bi bi-file-earmark-text" aria-hidden="true"></i><div><strong><asp:Literal ID="returnedCount" runat="server" Mode="Encode" Text="—" /></strong><h2>Returned for Revision</h2><p>Saved ChangesRequested decisions</p></div></article>
             </section>
-</section>
 
             <section class="completion-filters" aria-label="Filter authorized students">
                 <label>Search students<input type="search" id="completionSearch" placeholder="Student name or ID" class="form-control" /></label>

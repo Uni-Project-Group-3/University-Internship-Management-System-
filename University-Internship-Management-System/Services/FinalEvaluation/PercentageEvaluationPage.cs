@@ -24,11 +24,15 @@ namespace University_Internship_Management_System.Services.FinalEvaluation
     {
         protected override void OnPreInit(EventArgs e)
         {
-            UIMS.Services.FinalReportPageRoute.TransferIfEnabled(this, Academic ? "academicSupervisor" : "companySupervisor");
+            if (UseUnifiedFinalReportRoute)
+                UIMS.Services.FinalReportPageRoute.TransferIfEnabled(this, Academic ? "academicSupervisor" : "companySupervisor");
             base.OnPreInit(e);
         }
         private static readonly HttpClient FirebaseReadClient = new HttpClient { Timeout = TimeSpan.FromSeconds(15) };
         protected abstract bool Academic { get; }
+        // The Academic page has its own role-specific review workflow and must not be
+        // transferred to the Company-facing unified reports page.
+        protected virtual bool UseUnifiedFinalReportRoute { get { return true; } }
         private string operation;
         private PercentagePageContext context;
         private T Field<T>(string id) where T : Control { return (T)Find(this, id); }
