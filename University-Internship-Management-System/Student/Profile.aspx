@@ -16,6 +16,8 @@
         href="~/Assets/student/profile.css?v=20261024-student-hero" rel="stylesheet" />
     <link runat="server" href="~/Assets/shared/account-form-design.css?v=20261024-hide-firebase-badge" rel="stylesheet" />
     <link runat="server" href="~/Assets/shared/role-sidebars.css?v=20261023" rel="stylesheet" />
+<link href="../Assets/shared/workspace-identity.css?v=20261024-polish" rel="stylesheet" />
+<script src="../Js_project/workspace-navigation-unified.js?v=20261024-polish" defer></script>
 </head>
 
 <body class="app-page role-shell student-profile-page" data-demo-role="student">
@@ -37,7 +39,7 @@
                                 <li><a class="dropdown-item" href="Profile.aspx" aria-current="page"><svg class="bi bi-person nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="12" cy="7" r="4"/><path d="M4 21v-2a8 8 0 0 1 16 0v2"/></svg>My Profile</a></li>
                                 <li><a class="dropdown-item" role="link" aria-disabled="true" title="This page is not available in the project yet"><svg class="bi bi-key nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="7" cy="8" r="4"/><path d="m10 11 10 10m-4-4 3-3m-6 0 3-3"/></svg>Change Password</a></li>
                                 <li><hr class="dropdown-divider" /></li>
-                                <li><button id="btnLogout" type="button" class="dropdown-item" disabled="disabled" title="Sign-in is not connected yet"><svg class="bi bi-box-arrow-right nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M10 3H3v18h7m4-15 6 6-6 6M8 12h12"/></svg>Log out</button></li>
+                                <li><button id="btnLogout" type="button" class="dropdown-item"><svg class="bi bi-box-arrow-right nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M10 3H3v18h7m4-15 6 6-6 6M8 12h12"/></svg>Log out</button></li>
                             </ul></details>
                     </div>
                 </header>

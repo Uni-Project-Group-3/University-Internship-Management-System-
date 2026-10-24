@@ -701,3 +701,6 @@ const CONFIG={
    Object.assign(vid.style,{left:x0+'px',top:y0+'px',width:(x1-x0)+'px',height:(y1-y0)+'px'})}
  };
 })();
+
+// Public-page navigation resolves named journey stops after the 3D scene is ready.
+(()=>{const name=decodeURIComponent(location.hash.slice(1));const aliases={about:'gateOverview',process:'walkwayOverview',opportunities:'opportunityColumn',colleges:'courtyardReturn',video:'platformVideo',contact:'facultyQuestions'};const stage=aliases[name]||name;if(!stage)return;let attempts=0;const timer=setInterval(()=>{if(window.campusStages&&window.__just?.J?.segs?.length){clearInterval(timer);window.campusStages.goTo(stage)}else if(++attempts>100)clearInterval(timer)},100)})();

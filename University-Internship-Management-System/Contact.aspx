@@ -7,25 +7,9 @@
     <title>Contact Us | JUST Internships</title>
     <link runat="server" href="~/Assets/shared/colors.css" rel="stylesheet" />
     <link runat="server" href="~/Assets/public/contact.css?v=2" rel="stylesheet" />
-</head>
+<link href="Assets/public/public-campus.css?v=20261024" rel="stylesheet" /></head>
 <body class="contact-page">
-    <header class="home-header">
-    <nav class="home-navbar" aria-label="Public navigation">
-        <a class="home-navbar__brand" runat="server" href="~/Default.aspx">
-            <img class="home-navbar__logo" runat="server" src="~/Assets/shared/images/just-logo.png" width="40" height="40" alt="Official JUST emblem" />
-            <span><strong>UIMS</strong><span class="home-navbar__subtitle">JUST Internships</span></span>
-        </a>
-        <button class="home-navbar__toggle" type="button" aria-label="Open navigation menu" aria-expanded="false" aria-controls="publicNavigationLinks" hidden="hidden">
-            <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16" /></svg>
-        </button>
-        <div id="publicNavigationLinks" class="home-navbar__links">
-            <a id="HomeLink" class="home-navbar__link" runat="server" href="~/Default.aspx">Home</a>
-            <a id="AboutLink" class="home-navbar__link" runat="server" href="~/About.aspx">About Us</a>
-            <a id="ContactLink" class="home-navbar__link is-active" aria-current="page" runat="server" href="~/Contact.aspx">Contact Us</a>
-            <a id="LoginLink" class="home-navbar__link home-navbar__sign-in" runat="server" href="~/Auth/Login.aspx">Sign In</a>
-        </div>
-    </nav>
-</header>
+    <header class="nav campus-public-nav" role="banner"><a class="brand" href="Public/home.aspx" aria-label="JUST Internships home"><img src="Assets/public/images/team-brand.png" alt="Jordan University of Science and Technology" /></a><nav aria-label="Main"><ul><li><a class="lnk" href="Public/home.aspx#gateOverview">About</a></li><li><a class="lnk" href="Public/home.aspx#walkwayOverview">Process</a></li><li><a class="lnk" href="Public/home.aspx#opportunityColumn">Opportunities</a></li><li><a class="lnk" href="Public/home.aspx#courtyardReturn">Colleges</a></li><li><a class="lnk" href="Public/home.aspx#platformVideo">Video</a></li><li><a class="lnk" href="Contact.aspx" aria-current="page">Contact</a></li><li><a class="lnk" href="Public/team.aspx">Team</a></li><li><a class="lnk login" href="Auth/Login.aspx">Login</a></li></ul></nav></header>
     <main id="contactMain" class="contact-main">
         <header class="contact-heading">
             <p class="contact-eyebrow">HERE TO HELP</p>
@@ -114,5 +98,5 @@
 })();
 
 </script>
-<script src="Js_project/Demo/demo-store.js"></script><script src="Js_project/Public/contact-demo.js?v=2"></script></body>
+<script src="Js_project/Public/contact-demo.js?v=2"></script></body>
 </html>

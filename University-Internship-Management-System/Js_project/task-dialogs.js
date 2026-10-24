@@ -41,6 +41,7 @@
                 close(true);
             };
             dialog.addEventListener('cancel', e => { e.preventDefault(); close(false); });
+            dialog.addEventListener('click', e => { const r=dialog.getBoundingClientRect(); if(e.target===dialog&&(e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom))close(false); });
             dialog.showModal(); (options.focusConfirm ? confirm : cancel).focus();
         });
     }

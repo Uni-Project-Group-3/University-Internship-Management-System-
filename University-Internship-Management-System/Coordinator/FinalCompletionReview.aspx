@@ -33,6 +33,9 @@
             if (link.sheet) activate();
         });
     </script>
+<link href="../Assets/shared/workspace-identity.css?v=20261024-polish" rel="stylesheet" />
+<script src="../Js_project/workspace-navigation-unified.js?v=20261024-polish" defer></script>
+
 </head>
 <body class="standalone-shell">
     <form id="reviewForm" runat="server">

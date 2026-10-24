@@ -1,4 +1,4 @@
-<%@ Page Language="C#" AutoEventWireup="true" CodeBehind="ManageTasks.aspx.cs" Inherits="University_Internship_Management_System.Company.ManageTasks" %>
+﻿<%@ Page Language="C#" AutoEventWireup="true" CodeBehind="ManageTasks.aspx.cs" Inherits="University_Internship_Management_System.Company.ManageTasks" %>
 <%@ Register Src="~/Shared/CompanySidebar.ascx" TagPrefix="just" TagName="RoleSidebar" %>
 
 
@@ -18,6 +18,8 @@
 <link rel="stylesheet" href="../Assets/shared/role-sidebar.css" />
 <link rel="stylesheet" href="../Assets/shared/just-theme.css" />
 
+<link href="../Assets/shared/workspace-identity.css?v=20261024-polish" rel="stylesheet" />
+<script src="../Js_project/workspace-navigation-unified.js?v=20261024-polish" defer></script>
 </head>
     <body class="uims-tasks-theme" data-demo-role="company">
         <form id="form1" runat="server">
@@ -54,10 +56,9 @@
                                 <i class="bi bi-plus-lg me-2" aria-hidden="true">
                                 </i>Create New Task
                             </button>
-                        </div>
 
                         <!-- STATS GRID -->
-                        <div class="stats-grid tasks-premium-stats"><article class="stat-card"><span class="tasks-stat-symbol" aria-hidden="true">≡</span><div class="stat-details"><h3>—</h3><span>Total Tasks</span></div></article><article class="stat-card"><span class="tasks-stat-symbol" aria-hidden="true">◷</span><div class="stat-details"><h3>—</h3><span>New / Pending</span></div></article><article class="stat-card"><span class="tasks-stat-symbol" aria-hidden="true">▷</span><div class="stat-details"><h3>—</h3><span>In Progress</span></div></article><article class="stat-card"><span class="tasks-stat-symbol" aria-hidden="true">◎</span><div class="stat-details"><h3>—</h3><span>Awaiting Review</span></div></article><article class="stat-card"><span class="tasks-stat-symbol" aria-hidden="true">✓</span><div class="stat-details"><h3>—</h3><span>Complete</span></div></article></div>
+                        <div class="stats-grid tasks-premium-stats"><article class="stat-card"><span class="tasks-stat-symbol" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg></span><div class="stat-details"><h3>—</h3><span>Total Tasks</span></div></article><article class="stat-card"><span class="tasks-stat-symbol" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M12 3v9l6 3M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"/></svg></span><div class="stat-details"><h3>—</h3><span>New / Pending</span></div></article><article class="stat-card"><span class="tasks-stat-symbol" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M5 12h14m-5-5 5 5-5 5"/></svg></span><div class="stat-details"><h3>—</h3><span>In Progress</span></div></article><article class="stat-card"><span class="tasks-stat-symbol" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M5 3h14v18H5V3Zm4 5h6m-6 5h6"/></svg></span><div class="stat-details"><h3>—</h3><span>Awaiting Review</span></div></article><article class="stat-card"><span class="tasks-stat-symbol" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="m5 12 4 4L19 6"/></svg></span><div class="stat-details"><h3>—</h3><span>Complete</span></div></article></div>
 
                         <div class="toolbar task-filter-toolbar" id="taskBoardToolbar" aria-label="Task filters and view">
                             <label class="task-filter-field" for="taskSearch">Task Name<select id="taskSearch" aria-label="Task Name"><option value="">All Tasks</option></select></label>
@@ -201,8 +202,8 @@
         <link href="../Assets/task-workspace.css?v=20261023-task-connection" rel="stylesheet" />
 <link href="../Assets/tasks-premium.css?v=20261023-closeout" rel="stylesheet" />
         <script src="../Js_project/firebase-client.js?v=20261023-task-connection"></script>
-        <script src="../Js_project/task-dialogs.js?v=20261023-task-connection"></script>
-        <script src="../Js_project/Company/TaskExams.js?v=20261023-task-connection"></script>
+        <script src="../Js_project/task-dialogs.js?v=20261024-polish"></script>
+        <script src="../Js_project/Company/TaskExams.js?v=20261024-polish"></script>
         <script src="../Js_project/Company/ManageTasks.js?v=20261023-closeout">
         </script>
         <script src="../Js_project/Company/TaskComposer.js?v=20261023-exam-readiness"></script>

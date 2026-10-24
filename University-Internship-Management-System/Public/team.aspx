@@ -13,19 +13,11 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;1,9..144,400&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../Assets/public/team.css?v=20261024" />
-</head>
+<link href="../Assets/public/public-campus.css?v=20261024" rel="stylesheet" /></head>
 <body>
-<header class="nav" role="banner">
+<header class="nav campus-public-nav" role="banner">
  <a class="brand" href="#" data-home="" aria-label="JUST Internships – back to the homepage"><img src="../Assets/public/images/team-brand.png" alt="Jordan University of Science and Technology"></a>
- <nav aria-label="Main"><ul>
-  <li><a class="lnk" href="#" data-home="#process">Process</a></li>
-  <li><a class="lnk" href="#" data-home="#opportunities">Opportunities</a></li>
-  <li><a class="lnk" href="#" data-home="#colleges">Colleges</a></li>
-  <li><a class="lnk" href="#" data-home="#about">About</a></li>
-  <li><a class="lnk" href="#" data-home="#contact">Contact</a></li>
-  <li><a class="lnk" href="#team" aria-current="page">Team</a></li>
-  <li><a class="lnk login" href="../Auth/Login.aspx" data-link="login">Login</a></li>
- </ul></nav>
+ <nav aria-label="Main"><ul><li><a class="lnk" href="home.aspx#gateOverview">About</a></li><li><a class="lnk" href="home.aspx#walkwayOverview">Process</a></li><li><a class="lnk" href="home.aspx#opportunityColumn">Opportunities</a></li><li><a class="lnk" href="home.aspx#courtyardReturn">Colleges</a></li><li><a class="lnk" href="home.aspx#platformVideo">Video</a></li><li><a class="lnk" href="../Contact.aspx">Contact</a></li><li><a class="lnk" href="team.aspx" aria-current="page">Team</a></li><li><a class="lnk login" href="../Auth/Login.aspx">Login</a></li></ul></nav>
 </header>
 
 <main id="team">
