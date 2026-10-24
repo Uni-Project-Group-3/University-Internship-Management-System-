@@ -134,10 +134,21 @@ internal static partial class Program
         public Task<bool> CanAccessAsync(string user, string internship, string student, string capability) { return Task.FromResult(Allowed); }
     }
     private sealed class Token : IAccessTokenProvider { public Task<string> GetAccessTokenAsync() { return Task.FromResult("local-test-token"); } }
+    private sealed class CancellableToken : ICancellableAccessTokenProvider
+    {
+        public Task<string> GetAccessTokenAsync() { return Task.FromResult("local-test-token"); }
+        public async Task<string> GetAccessTokenAsync(CancellationToken cancellationToken)
+        { await Task.Delay(Timeout.Infinite, cancellationToken); return ""; }
+    }
     private sealed class Handler : HttpMessageHandler
     {
         public Func<HttpRequestMessage, HttpResponseMessage> Respond;
         protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken token) { return Task.FromResult(Respond(request)); }
+    }
+    private sealed class DelayedHandler : HttpMessageHandler
+    {
+        protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken token)
+        { await Task.Delay(Timeout.Infinite, token); return Response("{}"); }
     }
     private static HttpResponseMessage Response(string json, string etag = "\"test-version\"")
     {
@@ -148,6 +159,34 @@ internal static partial class Program
     private static FirebaseFinalEvaluationRepository Rest(Handler handler)
     {
         return new FirebaseFinalEvaluationRepository(new HttpClient(handler), new Token(), OfflineFirebaseConfiguration());
+    }
+    private static async Task FirebaseReadTimeoutsAreBounded()
+    {
+        var tokenTimer = System.Diagnostics.Stopwatch.StartNew();
+        var tokenRepository = new FirebaseFinalEvaluationRepository(new HttpClient(new Handler { Respond = _ => Response("{}") }),
+            new CancellableToken(), OfflineFirebaseConfiguration(), TimeSpan.FromMilliseconds(80), TimeSpan.FromMilliseconds(150));
+        try { await tokenRepository.GetCompanyAsync("fictional-internship"); throw new Exception("A stalled OAuth token request was accepted."); }
+        catch (RepositoryException error) { Assert(error.Message.Contains("timed out")); }
+        Assert(tokenTimer.Elapsed < TimeSpan.FromSeconds(2));
+
+        var requestTimer = System.Diagnostics.Stopwatch.StartNew();
+        var requestRepository = new FirebaseFinalEvaluationRepository(new HttpClient(new DelayedHandler()), new Token(), OfflineFirebaseConfiguration(),
+            TimeSpan.FromMilliseconds(80), TimeSpan.FromMilliseconds(100));
+        try { await requestRepository.GetCompanyAsync("fictional-internship"); throw new Exception("A stalled Firebase request was accepted."); }
+        catch (RepositoryException error) { Assert(error.Message.Contains("timed out")); }
+        Assert(requestTimer.Elapsed < TimeSpan.FromSeconds(2));
+
+        var denied = Rest(new Handler { Respond = _ => new HttpResponseMessage(HttpStatusCode.Forbidden) });
+        try { await denied.GetCompanyAsync("fictional-internship"); throw new Exception("Firebase permission denial was accepted."); }
+        catch (RepositoryException error) { Assert(error.Message.Contains("denied") && error.Message.Contains("permissions")); }
+    }
+    private static async Task FirebaseTestPolicyIsNotProductionApproved()
+    {
+        var repository = new FirebaseFinalEvaluationRepository(
+            new HttpClient(new Handler { Respond = _ => Response("{\"policyId\":\"test-policy\",\"version\":\"v1\",\"isApproved\":true,\"isTestPolicy\":true}") }),
+            new Token(), OfflineFirebaseConfiguration());
+        var policy = await repository.GetPolicyAsync("test-policy");
+        Assert(policy != null && policy.IsApproved && policy.IsTestPolicy && !policy.IsProductionApproved);
     }
     private static async Task FirebaseDisabledBlocksNetwork()
     {
@@ -470,6 +509,7 @@ internal static partial class Program
     }
     private static async Task Run()
     {
+        await RunLiveIntegrationTests();
         await RunAcademicAssignmentTests();
         await Test("existing Firebase role aliases normalize without schema changes", () => {
             Func<string, string> normalize = University_Internship_Management_System.Shared.FirebaseSignInService.CanonicalRole;
@@ -491,6 +531,8 @@ internal static partial class Program
         await Test("sign-in trusts Firebase-issued UID and avoids a duplicate auth lookup", LoginUsesTrustedAuthResponseUid);
         await Test("authentication throttling preserves 429 Retry-After and transient refresh errors never masquerade as revoked sessions", AuthenticationTransientFailuresKeepTheirStatus);
         await Test("Firebase disabled blocks all service transports before HTTP", FirebaseDisabledBlocksNetwork);
+        await Test("Firebase OAuth and REST reads cancel at bounded timeouts and preserve permission errors", FirebaseReadTimeoutsAreBounded);
+        await Test("Firebase test policies deserialize explicitly but cannot authorize production decisions", FirebaseTestPolicyIsNotProductionApproved);
         await Test("opportunity reads fail closed before Firebase transport when disabled", OpportunityServiceHonorsDisabledFirebase);
         await Test("applications, company decisions, and placement confirmation preserve authorization and idempotency", ApplicationPlacementLifecycleUsesAuthorizedRecords);
         await Test("task API resolves roles and executes authorized task lifecycle with mocked Firebase REST", TaskApiOfflineTests);

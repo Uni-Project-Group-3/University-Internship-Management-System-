@@ -17,7 +17,7 @@ namespace University_Internship_Management_System.Services.FinalEvaluation
     public interface IStudentOverallProgressReader { Task<TrustedCompletionData<decimal?>> GetAsync(string internshipId); }
     public interface IStudentCompletionReportLocator
     { Task<string> GetIssuedDocumentIdAsync(string internshipId, string studentId); }
-    public enum StudentTaskStatus { Assigned, Submitted, Evaluated, Revision }
+    public enum StudentTaskStatus { Assigned, InProgress, Submitted, Evaluated, Revision }
     // These adapters belong to the placement/hours/tasks teams. Publication is explicit;
     // unpublished grades/feedback are never copied into the returned student projection.
     public sealed class StudentTaskRecord
@@ -116,7 +116,7 @@ namespace University_Internship_Management_System.Services.FinalEvaluation
             try
             {
                 var policy = await repository.GetPolicyAsync(placement.PolicyId);
-                if (policy != null && policy.IsApproved && policy.PolicyId == placement.PolicyId && policy.Version == placement.PolicyVersion && policy.StudentFinalOutcomeDisclosureAllowed == true)
+                if (policy != null && policy.IsProductionApproved && policy.PolicyId == placement.PolicyId && policy.Version == placement.PolicyVersion && policy.StudentFinalOutcomeDisclosureAllowed == true)
                 {
                     var source = repository as IPercentageEvaluationRepository;
                     var evaluation = source == null ? null : (await source.GetPercentageAsync(internshipId)).Value;
@@ -173,8 +173,8 @@ namespace University_Internship_Management_System.Services.FinalEvaluation
                 var records = tasks == null ? null : await tasks.GetAsync(internshipId).ConfigureAwait(false);
                 if (!Matches(records, placement) || records.Value == null || records.Value.Any(t => t == null || !Enum.IsDefined(typeof(StudentTaskStatus), t.Status))) notices.Add("Student-visible task results are unavailable.");
                 else { view.TasksVerified = true; view.PublishedTaskGradeCount = records.Value.Count(t => t.IsVisibleToStudent && t.IsResultPublished && t.Grade.HasValue); view.Tasks = records.Value.Where(t => t.IsVisibleToStudent).Select(t => new StudentVisibleTask {
-                    Title = t.Title, Reference = t.Id, StatusKey = t.Status.ToString().ToLowerInvariant(), Status = t.Status == StudentTaskStatus.Revision ? "Revision required" : t.Status.ToString(),
-                    Badge = t.Status == StudentTaskStatus.Evaluated ? "success" : "warning", Feedback = t.IsResultPublished ? (t.StudentVisibleFeedback ?? "No student-visible feedback supplied.") : "Task feedback has not been published.",
+                    Title = t.Title, Reference = t.Id, StatusKey = t.Status.ToString().ToLowerInvariant(), Status = t.Status == StudentTaskStatus.Revision ? "Revision required" : t.Status == StudentTaskStatus.InProgress ? "In progress" : t.Status.ToString(),
+                    Badge = t.Status == StudentTaskStatus.Evaluated ? "success" : t.Status == StudentTaskStatus.Revision ? "danger" : "warning", Feedback = t.IsResultPublished ? (t.StudentVisibleFeedback ?? "No student-visible feedback supplied.") : "Task feedback has not been published.",
                     NextStep = t.IsResultPublished && t.Grade.HasValue ? "Published task grade: " + t.Grade.Value.ToString(CultureInfo.InvariantCulture) + (t.MaximumGrade.HasValue ? " / " + t.MaximumGrade.Value.ToString(CultureInfo.InvariantCulture) : "") : "No published task grade supplied.",
                     NoteClass = "", History = "Task history integration is not connected." }).ToArray(); }
             }

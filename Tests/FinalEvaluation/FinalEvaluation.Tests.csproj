@@ -35,9 +35,17 @@
     <Reference Include="Newtonsoft.Json"><HintPath>..\..\packages\Newtonsoft.Json.13.0.4\lib\net45\Newtonsoft.Json.dll</HintPath></Reference>
     <ProjectReference Include="..\..\University-Internship-Management-System\University-Internship-Management-System.csproj"><Project>{267BD94B-0DF8-4B5C-A2A1-7D11DF7FA241}</Project><Name>UIMS</Name></ProjectReference>
     <Compile Include="Program.cs" />
+    <Compile Include="LiveIntegrationTests.cs" />
     <Compile Include="FinalReportWorkflowTests.cs" />
-<Compile Include="AcademicAssignmentTests.cs" />
-    <Compile Include="FinalReportPreflight.cs" /><Compile Include="StudentIntegrationAudit.cs" /><Compile Include="FirebaseDemoRepositoryTests.cs" /><Compile Include="PercentageRequirementsTests.cs" /><Compile Include="PercentageSecurityTests.cs" /><Compile Include="DevelopmentIntegrationTests.cs" /><Compile Include="TaskExamTests.cs" /><Compile Include="WeeklyReportTests.cs" />
+    <Compile Include="AcademicAssignmentTests.cs" />
+    <Compile Include="FinalReportPreflight.cs" />
+    <Compile Include="StudentIntegrationAudit.cs" />
+    <Compile Include="FirebaseDemoRepositoryTests.cs" />
+    <Compile Include="PercentageRequirementsTests.cs" />
+    <Compile Include="PercentageSecurityTests.cs" />
+    <Compile Include="DevelopmentIntegrationTests.cs" />
+    <Compile Include="TaskExamTests.cs" />
+    <Compile Include="WeeklyReportTests.cs" />
     <Compile Include="CompanyDraftWorkflowTests.cs" />
     <Compile Include="CompanySubmissionTests.cs" />
     <Compile Include="AcademicDraftTests.cs" />

@@ -145,12 +145,13 @@
     <Content Include="Js_project\Student\application-form.js" />
     <Content Include="Js_project\Student\explore-opportunities.js" />
     <Content Include="Assets\shared\colors.css" />
+    <Content Include="Assets\shared\evaluation-workspace.css" />
+    <Content Include="Shared\CompanySidebar.ascx" />
+    <Content Include="Shared\AcademicSidebar.ascx" />
+    <Content Include="Shared\CoordinatorSidebar.ascx" />
+    <Content Include="Shared\StudentSidebar.ascx" />
     <Content Include="Assets\shared\images\JUST-Logo-01.png" />
     <Content Include="Shared\Sidebar.ascx" />
-    <Content Include="Shared\StudentSidebar.ascx" />
-    <Content Include="Shared\AcademicSidebar.ascx" />
-    <Content Include="Shared\CompanySidebar.ascx" />
-    <Content Include="Shared\CoordinatorSidebar.ascx" />
     <Content Include="Shared\HomeNavbar.ascx" />
     <Content Include="Shared\WorkspaceNavbar.ascx" />
     <Content Include="Assets\shared\workspace-navigation.css" />
@@ -458,11 +459,11 @@
     <Compile Include="Shared\AccountHistoryCleanup.cs" />
     <Compile Include="Shared\CompanyManagementService.cs" />
     <Compile Include="Shared\AcademicSupervisorService.cs" />
-    <Compile Include="Shared\Sidebar.ascx.cs">
-      <DependentUpon>Sidebar.ascx</DependentUpon>
+    <Compile Include="Shared\RoleSidebarBase.cs">
       <SubType>ASPXCodeBehind</SubType>
     </Compile>
-    <Compile Include="Shared\RoleSidebarBase.cs">
+    <Compile Include="Shared\Sidebar.ascx.cs">
+      <DependentUpon>Sidebar.ascx</DependentUpon>
       <SubType>ASPXCodeBehind</SubType>
     </Compile>
     <Compile Include="Shared\Sidebar.ascx.designer.cs">
@@ -939,6 +940,7 @@
     <Compile Include="Services\FinalEvaluation\CompanyDraftWorkflow.cs" />
     <Compile Include="Services\FinalEvaluation\CompanyDraftPageIntegration.cs" />
     <Compile Include="Services\FinalEvaluation\PercentagePageIntegration.cs" />
+    <Compile Include="Services\FinalEvaluation\FinalEvaluationFirebaseIntegration.cs" />
     <Compile Include="Services\FinalEvaluation\PercentageEvaluationPage.cs">
       <SubType>ASPXCodeBehind</SubType>
     </Compile>

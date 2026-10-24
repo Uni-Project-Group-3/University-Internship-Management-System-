@@ -2,7 +2,6 @@ namespace University_Internship_Management_System.Company { public partial class
         protected global::System.Web.UI.WebControls.Literal OverviewCounts;
         protected global::System.Web.UI.WebControls.Literal FinalOutcome;
         protected global::System.Web.UI.ScriptManager PageScripts;
-        protected global::System.Web.UI.WebControls.LinkButton btnLogout;
         protected global::System.Web.UI.WebControls.Literal NavName;
         protected global::System.Web.UI.WebControls.Literal DraftAvailability;
         protected global::System.Web.UI.WebControls.HiddenField selectedInternship;

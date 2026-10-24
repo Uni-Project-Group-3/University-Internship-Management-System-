@@ -557,3 +557,98 @@ progress::-moz-progress-bar { background: var(--primary); }
 .company-review-stat { padding: 14px 16px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); }
 .company-review-stat h2 { margin: 0 0 8px; color: var(--text-secondary); font-size: 12px; font-weight: 600; line-height: 1.5; }
 .company-review-stat strong { display: block; color: var(--primary); font-size: 26px; line-height: 1.2; font-variant-numeric: tabular-nums; }
+
+/* Current Web Forms markup: modal, details and dropdown treatment scoped to this page. */
+.company-evaluation .evaluation-panel { overflow: visible; }
+.company-evaluation .evaluation-panel-heading { align-items: center; margin-bottom: 18px; }
+.company-evaluation .evaluation-panel-heading h2 { margin: 0; }
+.company-evaluation .evaluation-toolbar { display: grid; grid-template-columns: minmax(220px, 1fr) minmax(180px, 260px) auto; align-items: end; gap: 14px; margin-bottom: 18px; }
+.company-evaluation .evaluation-toolbar .workspace-field { margin: 0; color: var(--text); font-size: 12px; font-weight: 600; }
+.company-evaluation .evaluation-toolbar .workspace-input { margin-top: 7px; min-height: 44px; }
+.company-evaluation .evaluation-table-wrap { overflow: visible; }
+.company-evaluation .trainee-table { min-width: 0; margin-bottom: 0; }
+.company-evaluation .trainee-table th { padding: 13px 16px; }
+.company-evaluation .trainee-table td { padding: 14px 16px; vertical-align: middle; }
+.company-evaluation .trainee-identity strong { color: var(--dark); font-weight: 650; }
+.company-evaluation .evaluation-chip { white-space: nowrap; }
+.company-evaluation .company-action-dropdown { position: relative; }
+.company-evaluation .company-action-toggle { min-height: 38px; padding: 8px 13px; border-color: var(--border); border-radius: 8px; color: var(--primary); background: var(--surface); font-size: 12px; font-weight: 650; }
+.company-evaluation .company-action-toggle:hover, .company-evaluation .company-action-toggle:focus-visible { border-color: var(--primary); color: var(--primary); background: var(--primary-soft); }
+.company-evaluation .company-action-menu { z-index: 1085; min-width: 220px; padding: 7px; border: 1px solid var(--border-light); border-radius: 11px; background: var(--surface); box-shadow: 0 12px 32px rgb(36 40 68 / 16%); }
+.company-evaluation .company-action-menu .dropdown-item { display: flex; align-items: center; gap: 10px; min-height: 40px; padding: 9px 11px; border-radius: 7px; color: var(--text); font-size: 12px; font-weight: 550; white-space: normal; }
+.company-evaluation .company-action-menu .dropdown-item i { width: 17px; color: var(--primary); font-size: 15px; text-align: center; }
+.company-evaluation .company-action-menu .dropdown-item:hover, .company-evaluation .company-action-menu .dropdown-item:focus-visible { color: var(--primary); background: var(--primary-soft); }
+.company-evaluation .modal { --bs-modal-bg: var(--surface); --bs-modal-border-color: var(--border); --bs-modal-border-radius: 16px; --bs-modal-box-shadow: 0 24px 70px rgb(36 40 68 / 22%); }
+.company-evaluation .modal-backdrop.show { opacity: .52; }
+.company-evaluation .modal-content { overflow: hidden; border: 1px solid var(--border); border-radius: 16px; color: var(--text); box-shadow: 0 24px 70px rgb(36 40 68 / 22%); }
+.company-evaluation .company-modal-header { align-items: flex-start; gap: 16px; padding: 22px 26px 18px; border-bottom: 1px solid var(--border-light); background: linear-gradient(135deg, var(--surface) 55%, var(--primary-soft)); }
+.company-evaluation .company-modal-header .btn-close { flex: 0 0 auto; margin-top: 4px; }
+.company-evaluation .company-modal-eyebrow { margin: 0 0 5px; color: var(--primary); font-size: 10px; font-weight: 750; letter-spacing: .09em; text-transform: uppercase; }
+.company-evaluation .company-modal-header h2 { margin: 0; color: var(--dark); font-size: 21px; line-height: 1.3; }
+.company-evaluation .company-modal-student { margin: 5px 0 0; color: var(--muted); font-size: 13px; font-weight: 550; overflow-wrap: anywhere; }
+.company-evaluation .company-evaluation-body { display: grid; gap: 16px; padding: 22px 26px; }
+.company-evaluation .company-modal-section { min-width: 0; padding: 17px 18px; border: 1px solid var(--border); border-radius: 11px; background: var(--surface); }
+.company-evaluation .company-section-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 14px; }
+.company-evaluation .company-section-heading .company-modal-eyebrow { margin-bottom: 3px; }
+.company-evaluation .company-section-heading h3 { margin: 0; color: var(--dark); font-size: 15px; }
+.company-evaluation .company-status-badge { display: inline-flex; align-items: center; min-height: 28px; padding: 5px 10px; border: 1px solid var(--border); border-radius: 999px; color: var(--primary); background: var(--primary-soft); font-size: 11px; font-weight: 700; white-space: nowrap; }
+.company-evaluation .company-status-badge[data-status="submitted"], .company-evaluation .company-status-badge[data-status="approved"] { border-color: transparent; color: var(--success); background: var(--success-light); }
+.company-evaluation .company-status-badge[data-status="draft"], .company-evaluation .company-status-badge[data-status="revision-requested"] { border-color: transparent; color: var(--warning); background: var(--warning-light); }
+.company-evaluation .company-summary-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin: 0; }
+.company-evaluation .company-summary-grid > div { min-width: 0; padding: 11px 12px; border-radius: 8px; background: var(--surface-alt); }
+.company-evaluation .company-summary-grid dt, .company-evaluation .company-details-grid dt { margin-bottom: 4px; color: var(--muted); font-size: 11px; font-weight: 550; }
+.company-evaluation .company-summary-grid dd, .company-evaluation .company-details-grid dd { margin: 0; color: var(--text); font-size: 12px; font-weight: 650; overflow-wrap: anywhere; }
+.company-evaluation .company-outcome { margin: 12px 0 0; }
+.company-evaluation .evaluation-field { margin: 0; }
+.company-evaluation .evaluation-field label, .company-evaluation .company-revision-panel > label { margin-bottom: 7px; color: var(--text); font-size: 12px; font-weight: 650; }
+.company-evaluation .company-percentage-control { position: relative; }
+.company-evaluation .company-modal-input { min-height: 45px; border-color: var(--border); border-radius: 8px; color: var(--text); background: var(--surface); font: inherit; font-size: 14px; }
+.company-evaluation .company-percentage-control input { padding-right: 44px; font-variant-numeric: tabular-nums; }
+.company-evaluation .company-percentage-control > span { position: absolute; top: 50%; right: 14px; transform: translateY(-50%); color: var(--muted); font-weight: 650; pointer-events: none; }
+.company-evaluation .company-modal-input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgb(31 61 120 / 12%); }
+.company-evaluation .company-modal-input[readonly], .company-evaluation .company-modal-input:disabled { background: var(--surface-alt); }
+.company-evaluation .company-modal-input[readonly], .company-evaluation .company-modal-input:disabled { color: var(--muted); cursor: not-allowed; }
+.company-evaluation .company-comments { min-height: 112px; resize: vertical; }
+.company-evaluation .company-field-help { display: block; margin-top: 7px; color: var(--muted); font-size: 11px; line-height: 1.6; }
+.company-evaluation .company-separate-grades { margin: -5px 2px 0; }
+.company-evaluation .company-confirmation { padding: 13px 16px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface-alt); }
+.company-evaluation .company-confirmation .form-check { display: flex; align-items: flex-start; gap: 9px; min-height: 0; margin: 0; padding: 0; }
+.company-evaluation .company-confirmation .form-check-input { flex: 0 0 auto; margin: 3px 0 0; }
+.company-evaluation .company-confirmation input[type="checkbox"] { flex: 0 0 auto; width: 17px; height: 17px; margin: 2px 0 0; accent-color: var(--primary); }
+.company-evaluation .company-confirmation .form-check-label { color: var(--text-secondary); font-size: 12px; line-height: 1.55; }
+.company-evaluation .company-form-message { margin: 0; }
+.company-evaluation .company-modal-footer { display: flex; flex-wrap: wrap; gap: 9px; padding: 16px 26px 22px; border-top: 1px solid var(--border-light); background: var(--surface); }
+.company-evaluation .company-modal-button { min-height: 40px; padding: 9px 15px; border-radius: 8px; font-size: 12px; font-weight: 650; }
+.company-evaluation .company-close-button, .company-evaluation .company-save-button { border: 1px solid var(--border); color: var(--primary); background: var(--surface); }
+.company-evaluation .company-close-button:hover, .company-evaluation .company-save-button:hover { border-color: var(--primary); color: var(--primary); background: var(--primary-soft); }
+.company-evaluation .company-submit-button { border: 1px solid var(--primary); color: var(--text-inverse); background: var(--primary); }
+.company-evaluation .company-submit-button:hover { border-color: var(--primary-hover); color: var(--text-inverse); background: var(--primary-hover); }
+.company-evaluation .company-revision-button { border: 1px solid var(--danger); color: var(--danger); background: var(--surface); }
+.company-evaluation .company-revision-button:hover { color: var(--text-inverse); background: var(--danger); }
+.company-evaluation .company-details-body { display: grid; gap: 14px; padding: 22px 26px; }
+.company-evaluation .company-details-section { padding: 16px 18px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); }
+.company-evaluation .company-details-section h3 { margin: 0 0 12px; color: var(--dark); font-size: 14px; }
+.company-evaluation .company-details-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin: 0; }
+.company-evaluation .company-details-grid > div { min-width: 0; padding: 10px 11px; border-radius: 7px; background: var(--surface-alt); }
+.company-evaluation .company-details-structured { white-space: normal; }
+@media (max-width: 767.98px) {
+    .company-evaluation .evaluation-toolbar { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+    .company-evaluation .evaluation-toolbar > button { justify-self: start; }
+    .company-evaluation .company-modal-header { padding: 18px 18px 15px; }
+    .company-evaluation .company-evaluation-body, .company-evaluation .company-details-body { padding: 16px 18px; }
+    .company-evaluation .company-modal-section, .company-evaluation .company-details-section { padding: 14px; }
+    .company-evaluation .company-modal-footer { padding: 14px 18px 18px; }
+}
+@media (max-width: 575.98px) {
+    .company-evaluation .evaluation-toolbar { grid-template-columns: minmax(0, 1fr); }
+    .company-evaluation .evaluation-table-wrap { overflow: visible; }
+    .company-evaluation .trainee-table thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+    .company-evaluation .trainee-table tbody { display: block; }
+    .company-evaluation .trainee-table tr { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 11px 14px; padding: 16px 0; border-bottom: 1px solid var(--border); }
+    .company-evaluation .trainee-table td { min-width: 0; padding: 0 8px; border: 0; }
+    .company-evaluation .trainee-table td[data-label]::before { display: block; margin-bottom: 5px; color: var(--muted); content: attr(data-label); font-size: 10px; font-weight: 600; }
+    .company-evaluation .trainee-table .trainee-identity, .company-evaluation .trainee-table .trainee-action-cell { grid-column: 1 / -1; }
+    .company-evaluation .company-action-menu { min-width: min(220px, calc(100vw - 48px)); }
+    .company-evaluation .company-summary-grid, .company-evaluation .company-details-grid { grid-template-columns: minmax(0, 1fr); }
+    .company-evaluation .company-modal-footer .company-modal-button { flex: 1 1 calc(50% - 9px); }
+}

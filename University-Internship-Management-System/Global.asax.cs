@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Web;
 using System.Web.Security;
 using System.Security.Principal;
@@ -60,6 +60,7 @@ namespace University_Internship_Management_System
             University_Internship_Management_System.Services.FinalEvaluation.LiveFirebaseIntegration.Register();
             RouteConfig.RegisterRoutes(RouteTable.Routes);
             BundleConfig.RegisterBundles(BundleTable.Bundles);
+            Services.FinalEvaluation.FinalEvaluationFirebaseIntegration.Register();
 
         }
     }

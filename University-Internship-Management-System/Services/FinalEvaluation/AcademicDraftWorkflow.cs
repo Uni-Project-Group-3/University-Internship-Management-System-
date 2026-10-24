@@ -82,7 +82,7 @@ namespace University_Internship_Management_System.Services.FinalEvaluation
             string policyId = record.Value == null ? placement.PolicyId : record.Value.PolicyId;
             string version = record.Value == null ? placement.PolicyVersion : record.Value.PolicyVersion;
             var policy = await repository.GetPolicyAsync(policyId).ConfigureAwait(false);
-            if (policy == null || !policy.IsApproved || policy.Version != version || policy.AcademicCriteria == null || policy.AcademicCriteria.Count == 0)
+            if (policy == null || !policy.IsProductionApproved || policy.Version != version || policy.AcademicCriteria == null || policy.AcademicCriteria.Count == 0)
                 throw new ArgumentException("An applicable approved academic evaluation policy is required.");
             FinalEvaluationValidation.Evaluation(new AcademicFinalEvaluation { InternshipId = internshipId, StudentId = placement.StudentId,
                 EvaluatorId = user.UserId, PolicyId = policyId, PolicyVersion = version }, policy, false);

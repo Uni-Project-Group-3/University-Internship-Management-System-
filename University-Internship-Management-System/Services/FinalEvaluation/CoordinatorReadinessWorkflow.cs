@@ -13,6 +13,10 @@ namespace University_Internship_Management_System.Services.FinalEvaluation
         public string InternshipId { get; set; }
         public string StudentId { get; set; }
         public string DisplayName { get; set; }
+        public string CompanyName { get; set; }
+        public string PlacementId { get; set; }
+        public string StartDate { get; set; }
+        public string EndDate { get; set; }
         public string PolicyId { get; set; }
         public string PolicyVersion { get; set; }
     }
@@ -106,8 +110,8 @@ namespace University_Internship_Management_System.Services.FinalEvaluation
             result.ApplicablePolicy = policy;
             if (policy == null || policy.PolicyId != placement.PolicyId || policy.Version != placement.PolicyVersion)
                 reasons.Add("Applicable university policy is missing or its version does not match.");
-            else if (!policy.IsApproved) reasons.Add("Applicable university policy is not approved.");
-            if (policy != null && policy.IsApproved)
+            else if (!policy.IsProductionApproved) reasons.Add(policy.IsTestPolicy ? "Applicable policy is marked for development/testing and cannot authorize official completion." : "Applicable university policy is not approved.");
+            if (policy != null && policy.IsProductionApproved)
             {
                 if (!policy.PassingThreshold.HasValue) reasons.Add("Approved passing threshold is unavailable; final result cannot be determined.");
                 else if (policy.PassingThreshold < 0 || policy.PassingThreshold > 100) reasons.Add("Approved passing threshold is invalid.");

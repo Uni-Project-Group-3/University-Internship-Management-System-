@@ -1,4 +1,5 @@
 <%@ Page Language="C#" AutoEventWireup="true" Async="true" EnableViewState="false" CodeBehind="FinalCompletionReview.aspx.cs" Inherits="University_Internship_Management_System.Coordinator.FinalCompletionReview" %>
+<%@ Register Src="~/Shared/CoordinatorSidebar.ascx" TagPrefix="uims" TagName="CoordinatorSidebar" %>
 
 
 <script runat="server">
@@ -19,46 +20,14 @@
     <link href="../Content/bootstrap.min.css" rel="stylesheet" />
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet" />
     <link href="../Assets/shared/colors.css" rel="stylesheet" />
-    <link runat="server" href="~/Assets/coordinator/final-completion-review.css?v=bc8409d2f5de" rel="stylesheet" />
-    <link href="../Assets/shared/workflow-ui.css?v=20261023" rel="stylesheet" />
+    <link runat="server" href="~/Assets/coordinator/final-completion-review.css?v=20261024-coordinator-review-v2" rel="stylesheet" />
+    <link href="../Assets/shared/evaluation-workspace.css?v=20261023" rel="stylesheet" />
 </head>
 <body class="standalone-shell">
     <form id="reviewForm" runat="server">
         <div class="app">
             <!-- سايد بار المنسق داخل الصفحة مباشرة حسب التنظيم المتفق عليه -->
-            <aside class="sidebar" id="coordinatorSidebar" aria-label="Coordinator navigation">
-                <button type="button" id="closeSidebar" class="sidebar-close" aria-label="Close navigation">&times;</button>
-                <a href="CoordinatorDashboard.aspx" class="brand">
-                    <img class="brand-logo" src="../Assets/shared/images/JUST-Logo-01.png" alt="Jordan University of Science and Technology logo" width="52" height="52" />
-                    <div class="brand-text"><strong>JUST</strong><span>Internships</span></div>
-                </a>
-
-                <ul class="side-nav" aria-label="Coordinator pages">
-<li><a href="CoordinatorDashboard.aspx"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m3 10 9-7 9 7v10h-6v-7H9v7H3V10Z"/></svg><span>Dashboard</span></a></li>
-<li><a href="ManageStudents.aspx"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="m8 12 3 3 5-6"/></svg><span>Manage Students</span></a></li>
-<li><a href="ManageCompanies.aspx"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 21V4h11v17M15 9h5v12M1 21h22M8 8h3m-3 4h3m-3 4h3"/></svg><span>Manage Companies</span></a></li>
-<li><a href="MonitorPlacementsProgress.aspx"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12h5l3-9 4 18 3-9h5"/></svg><span>Placements &amp; Progress</span></a></li>
-<li><a href="FinalCompletionReview.aspx" class="active" aria-current="page"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="m8 12 3 3 5-6"/></svg><span>Final Completion Review</span></a></li>
-<li><a href="ContactMessages.aspx"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="m8 12 3 3 5-6"/></svg><span>Contact Messages</span></a></li>
-
-<li><a href='<%= ResolveUrl("~/Coordinator/Manage_Academic_Supervisor.aspx") %>'><svg class="nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M4 5h16v14H4zM8 9h8M8 13h6" /></svg><span>Manage Academic Supervisors</span></a></li>
-
-<li><a href="Assign_Supervisors.aspx"><svg class="nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M4 5h16v14H4zM8 9h8M8 13h6" /></svg><span>Assign Academic Supervisors</span></a></li>
-
-<li><a href="CoordinatorAccountProfile.aspx"><svg class="nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M4 5h16v14H4zM8 9h8M8 13h6" /></svg><span>Coordinator Account</span></a></li>
-</ul>
-
-                <div class="side-divider"></div>
-
-                <ul class="side-nav"><li><a href="../Contact.aspx"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="m8 12 3 3 5-6"/></svg><span>Help &amp; contact</span></a></li>
-</ul>
-
-                <div class="side-promo">
-                    <i class="bi bi-person-plus"></i>
-                    <p>New semester?<br />Add students and assign groups.</p>
-                    <a href="ManageStudents.aspx">Add students &rarr;</a>
-                </div>
-            </aside>
+            <uims:CoordinatorSidebar ID="coordinatorSidebarControl" runat="server" SidebarId="coordinatorSidebar" />
             <div id="sidebarBackdrop" class="sidebar-backdrop" aria-hidden="true"></div>
             <div class="main" id="coordinatorMain">
                 <header class="topbar">
@@ -86,37 +55,33 @@
                 <p id="navbarNotice" class="navbar-notice" role="status" hidden></p>
         <main class="review-page">
             <asp:HiddenField ID="detailsVisible" runat="server" ClientIDMode="Static" />
-            <header class="page-heading">
-                <p class="eyebrow">JUST / COORDINATOR WORKSPACE</p>
-                <h1><i class="bi bi-clipboard-check" aria-hidden="true"></i> Final Completion Review</h1>
-                <p>Review approved evaluations and verify every requirement before completing an internship.</p>
-            </header>
-
-            <p class="preview-note"><asp:Literal ID="integrationNotice" runat="server" Mode="Encode" /></p>
-
-            <section class="completion-statistics" aria-label="Authorized completion statistics">
-                <article class="completion-stat stat-ready"><i class="bi bi-people" aria-hidden="true"></i><div><strong><asp:Literal ID="readyCount" runat="server" Mode="Encode" Text="—" /></strong><h2>Ready for Final Review</h2><p>All readiness checks satisfied</p></div></article>
-                <article class="completion-stat stat-review"><i class="bi bi-clock" aria-hidden="true"></i><div><strong><asp:Literal ID="inReviewCount" runat="server" Mode="Encode" Text="—" /></strong><h2>In Review</h2><p>Saved UnderReview status</p></div></article>
-                <article class="completion-stat stat-complete"><i class="bi bi-check-circle" aria-hidden="true"></i><div><strong><asp:Literal ID="completedCount" runat="server" Mode="Encode" Text="—" /></strong><h2>Completed Internships</h2><p>Saved Approved decisions</p></div></article>
-                <article class="completion-stat stat-returned"><i class="bi bi-file-earmark-text" aria-hidden="true"></i><div><strong><asp:Literal ID="returnedCount" runat="server" Mode="Encode" Text="—" /></strong><h2>Returned for Revision</h2><p>Saved ChangesRequested decisions</p></div></article>
+            <section class="uims-page-hero" aria-labelledby="completionReviewTitle"><div class="uims-hero-copy"><p class="uims-hero-eyebrow">JUST / COORDINATOR WORKSPACE</p><h1 id="completionReviewTitle"><i class="bi bi-clipboard-check" aria-hidden="true"></i> Final Completion Review</h1><p>Review approved evaluations and verify every requirement before completing an internship.</p></div>
+<section class="completion-statistics uims-hero-stats" aria-label="Authorized completion statistics">
+                <article class="completion-stat stat-ready uims-hero-stat"><i class="bi bi-people" aria-hidden="true"></i><div><strong><asp:Literal ID="readyCount" runat="server" Mode="Encode" Text="—" /></strong><h2>Ready for Final Review</h2><p>All readiness checks satisfied</p></div></article>
+                <article class="completion-stat stat-review uims-hero-stat"><i class="bi bi-clock" aria-hidden="true"></i><div><strong><asp:Literal ID="inReviewCount" runat="server" Mode="Encode" Text="—" /></strong><h2>In Review</h2><p>Saved UnderReview status</p></div></article>
+                <article class="completion-stat stat-complete uims-hero-stat"><i class="bi bi-check-circle" aria-hidden="true"></i><div><strong><asp:Literal ID="completedCount" runat="server" Mode="Encode" Text="—" /></strong><h2>Completed Internships</h2><p>Saved Approved decisions</p></div></article>
+                <article class="completion-stat stat-returned uims-hero-stat"><i class="bi bi-file-earmark-text" aria-hidden="true"></i><div><strong><asp:Literal ID="returnedCount" runat="server" Mode="Encode" Text="—" /></strong><h2>Returned for Revision</h2><p>Saved ChangesRequested decisions</p></div></article>
             </section>
+</section>
+
             <section class="completion-filters" aria-label="Filter authorized students">
                 <label>Search students<input type="search" id="completionSearch" placeholder="Student name or ID" class="form-control" /></label>
                 <label>Academic approval<select id="academicFilter" class="form-select"><option value="">All statuses</option><option>Approved</option><option>Pending Review</option><option>Revision Requested</option><option>Unavailable</option></select></label>
                 <label>Final completion<select id="completionFilter" class="form-select"><option value="">All statuses</option><option>Ready for Final Review</option><option>Pending</option><option>In Review</option><option>Completed</option><option>Returned for Revision</option><option>Rejected</option><option>Unavailable</option></select></label>
-                <label>Placement period<select id="periodFilter" class="form-select" disabled aria-describedby="periodExplanation"><option value="">Unavailable</option></select></label>
+                <label>Placement period<asp:DropDownList ID="periodFilter" runat="server" ClientIDMode="Static" CssClass="form-select" Enabled="false" aria-describedby="periodExplanation" /></label>
                 <button type="button" id="clearCompletionFilters" class="primary-button">Clear filters</button>
-                <p id="periodExplanation" class="filter-note">Placement periods are unavailable from the current trusted review contract.</p>
+                <p id="periodExplanation" class="filter-note">Placement period options appear only when trusted start and end dates are available.</p>
             </section>
             <p id="completionLoading" role="status" hidden><span class="spinner-border spinner-border-sm" aria-hidden="true"></span> Loading authorized review…</p>
             <div class="completion-dashboard">
             <section class="review-card completion-list" aria-labelledby="completionListTitle">
                 <div class="completion-list-heading"><h2 id="completionListTitle">Students for Final Completion Review</h2><span id="completionResultCount" role="status"></span><button type="button" id="showStudentDetails" class="secondary-button">Show details</button></div>
+                <asp:Panel ID="reviewErrorPanel" runat="server" Visible="false" CssClass="completion-error" role="alert"><asp:Literal ID="reviewErrorMessage" runat="server" Mode="Encode" /></asp:Panel>
                 <div class="completion-table-scroll"><table class="table completion-table"><thead><tr><th scope="col">Student</th><th scope="col">Company</th><th scope="col">Academic Approval</th><th scope="col">Final Completion</th><th scope="col">Placement Period</th><th scope="col">Actions</th></tr></thead><tbody><asp:Literal ID="completionRows" runat="server" /></tbody></table></div>
                 <p id="noCompletionMatches" role="status" hidden>No authorized students match your filters.</p>
                 <details class="completion-selector"><summary>Select a student or refresh readiness</summary><label for="studentSelect" class="form-label">Student to review</label><asp:DropDownList ID="studentSelect" runat="server" ClientIDMode="Static" CssClass="form-select" AutoPostBack="true" OnSelectedIndexChanged="StudentSelect_Changed" /><asp:Button ID="refreshReview" runat="server" Text="Refresh readiness" CssClass="secondary-button" OnClick="RefreshReview_Click" CausesValidation="false" /></details>
             </section>
-            <section id="studentDetailsPanel" class="completion-details" aria-labelledby="studentDetailsTitle" tabindex="-1">
+            <section id="studentDetailsPanel" class="completion-details" aria-labelledby="studentDetailsTitle" tabindex="-1" hidden>
                 <div class="details-heading"><h2 id="studentDetailsTitle">Student Details</h2><button type="button" id="closeStudentDetails" class="btn-close" aria-label="Close student details"></button></div>
                 <span id="reviewStatus" runat="server" ClientIDMode="Static" class="status-badge status-pending" role="status">Unavailable</span>
             <div class="completion-detail-content">
@@ -126,8 +91,10 @@
                         <dl class="information-grid">
                             <div><dt>Student</dt><dd id="studentName" runat="server" ClientIDMode="Static"></dd></div>
                             <div><dt>Student ID</dt><dd id="studentNumber" runat="server" ClientIDMode="Static"></dd></div>
-                            <div><dt>University / College</dt><dd>Not connected</dd></div>
+                            <div><dt>University / College</dt><dd id="studentUniversityCollege" runat="server" ClientIDMode="Static">Not available</dd></div>
                             <div><dt>Specialization</dt><dd id="studentMajor" runat="server" ClientIDMode="Static"></dd></div>
+                            <div><dt>Placement ID</dt><dd id="placementNumber" runat="server" ClientIDMode="Static">Not available</dd></div>
+                            <div><dt>Placement period</dt><dd id="placementPeriod" runat="server" ClientIDMode="Static">Unavailable</dd></div>
                             <div><dt>Company</dt><dd id="companyName" runat="server" ClientIDMode="Static"></dd></div>
                             <div><dt>Internship</dt><dd id="internshipTitle" runat="server" ClientIDMode="Static"></dd></div>
                             <div><dt>Company supervisor</dt><dd id="companySupervisor" runat="server" ClientIDMode="Static"></dd></div>
@@ -191,7 +158,7 @@
             <div class="review-actions"><button ID="openCompletionChanges" runat="server" ClientIDMode="Static" type="button" class="secondary-button" data-bs-toggle="modal" data-bs-target="#changesModal" Visible="false">Request Changes</button><button ID="openCompletionReject" runat="server" ClientIDMode="Static" type="button" class="secondary-button" data-bs-toggle="modal" data-bs-target="#rejectModal" Visible="false">Reject Completion</button></div><div id="approvalNotice" class="approval-notice" role="status" tabindex="-1" hidden></div><p role="status" aria-live="polite"><asp:Literal ID="decisionMessage" runat="server" Mode="Encode" /></p><asp:HiddenField ID="decisionTicket" runat="server" ClientIDMode="Static" />
 
             <!-- هذا القسم وحده يظهر عند الطباعة، دون التقييمات أو ملاحظات المنسق -->
-            
+
 
             <div class="modal fade" id="changesModal" tabindex="-1" aria-labelledby="changesModalTitle" aria-hidden="true"><div class="modal-dialog modal-dialog-centered"><div class="modal-content"><div class="modal-header"><h2 class="modal-title fs-5" id="changesModalTitle">Confirm Request Changes</h2><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cancel decision"></button></div><div class="modal-body"><p>Confirm the reason and acknowledgment entered in the decision panel. The server rechecks policy, scope and concurrency. Company evaluations are not unlocked by a Coordinator decision.</p></div><div class="modal-footer"><button type="button" class="secondary-button" data-bs-dismiss="modal">Cancel</button><asp:Button ID="requestCompletionChanges" runat="server" Text="Request Changes" CssClass="secondary-button" Visible="false" OnClick="RequestCompletionChanges_Click" /></div></div></div></div><div class="modal fade" id="rejectModal" tabindex="-1" aria-labelledby="rejectModalTitle" aria-hidden="true"><div class="modal-dialog modal-dialog-centered"><div class="modal-content"><div class="modal-header"><h2 class="modal-title fs-5" id="rejectModalTitle">Confirm Completion Rejection</h2><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cancel decision"></button></div><div class="modal-body"><p>Confirm the reason and acknowledgment entered in the decision panel. The server rechecks policy, scope and concurrency. Company evaluations are not unlocked by a Coordinator decision.</p></div><div class="modal-footer"><button type="button" class="secondary-button" data-bs-dismiss="modal">Cancel</button><asp:Button ID="rejectCompletion" runat="server" Text="Reject Completion" CssClass="secondary-button" Visible="false" OnClick="RejectCompletion_Click" /></div></div></div></div><div class="modal fade" id="approvalModal" tabindex="-1" aria-labelledby="approvalTitle" aria-hidden="true">
                 <div class="modal-dialog modal-dialog-centered"><div class="modal-content">
@@ -207,7 +174,6 @@
         </div>
     </form>
     <script src="../Scripts/bootstrap.bundle.min.js"></script>
-    <script src="../Js_project/Coordinator/final-completion-review.js?v=20261023-dashboard"></script>
-<script src="../Js_project/final-report-summary.js?v=20261023"></script>
+    <script src="../Js_project/Coordinator/final-completion-review.js?v=20261024-coordinator-review-v2"></script>
 </body>
 </html>
