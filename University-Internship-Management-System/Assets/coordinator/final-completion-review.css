@@ -378,3 +378,221 @@ body:not(#coordinator-style-scope) :is(main.app-content,main.content,main.review
 @media(prefers-reduced-motion:reduce){body:not(#coordinator-style-scope) :is(main.app-content,main.content,main.review-page),body:not(#coordinator-style-scope) :is(main.app-content,main.content,main.review-page) *{animation:none!important;transition:none!important}}
 @media(max-width:991.98px){body:not(#coordinator-style-scope) :is(main.app-content,main.content,main.review-page){padding:16px 20px 28px!important}body:not(#coordinator-style-scope) :is(.topbar,.dash-topbar,.workspace-navbar){padding:16px 20px 12px!important}}
 @media(max-width:767px){body:not(#coordinator-style-scope) :is(main.app-content,main.content,main.review-page){padding:16px!important}body:not(#coordinator-style-scope) :is(.topbar,.dash-topbar,.workspace-navbar){padding:12px 16px!important}body:not(#coordinator-style-scope) :is(.management-hero,.hero-banner,.messages-hero,.workspace-header,.uims-page-hero,.content>.hero){padding:26px 2px!important}}
+
+/* Match the Company evaluation workspace shell while keeping Coordinator navigation and behavior. */
+.standalone-shell .app { min-height: 100dvh; background: var(--background); }
+.standalone-shell .main > .topbar {
+    min-height: 64px;
+    margin: 0;
+    padding: 10px 24px !important;
+    border-bottom: 1px solid var(--border) !important;
+    background: var(--surface) !important;
+    box-shadow: 0 4px 18px rgba(36, 40, 68, .045) !important;
+}
+.standalone-shell main.review-page {
+    box-sizing: border-box;
+    width: 100%;
+    max-width: none;
+    margin: 0;
+    padding: 26px clamp(18px, 3vw, 42px) 42px !important;
+}
+.standalone-shell main.review-page > .uims-page-hero {
+    position: relative;
+    isolation: isolate;
+    min-height: 248px;
+    margin: 4px 0 26px !important;
+    padding: 34px clamp(24px, 3vw, 42px) !important;
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, .15) !important;
+    border-radius: 26px !important;
+    background: linear-gradient(105deg, var(--hero-gradient-start) 0%, var(--hero-gradient-mid) 58%, var(--hero-gradient-end) 100%) !important;
+    box-shadow: 0 18px 42px rgba(28, 48, 84, .16) !important;
+    color: #fff !important;
+}
+.standalone-shell main.review-page > .uims-page-hero::before,
+.standalone-shell main.review-page > .uims-page-hero::after {
+    content: "" !important;
+    position: absolute;
+    z-index: -1;
+    border: 1px solid rgba(255, 255, 255, .13) !important;
+    border-radius: 50% !important;
+    background: none !important;
+    filter: none !important;
+    opacity: 1 !important;
+    box-shadow: none !important;
+    transform: none !important;
+}
+.standalone-shell main.review-page > .uims-page-hero::before { width: 390px; height: 390px; top: -245px; right: 7%; }
+.standalone-shell main.review-page > .uims-page-hero::after { width: 560px; height: 560px; top: -365px; right: -12%; }
+.standalone-shell main.review-page .uims-hero-copy h1 { color: #fff !important; }
+.standalone-shell main.review-page .uims-hero-copy > p:last-child { color: rgba(255, 255, 255, .86) !important; }
+.standalone-shell main.review-page .uims-hero-eyebrow {
+    min-height: 34px;
+    padding: 7px 15px;
+    border: 1px solid rgba(255, 255, 255, .28) !important;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, .1) !important;
+    color: #fff !important;
+    font-size: 11px !important;
+    letter-spacing: .06em;
+}
+.standalone-shell main.review-page > .coordinator-summary {
+    display: grid !important;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 16px;
+    margin: 0 0 24px !important;
+    padding: 0;
+    border: 0 !important;
+    background: transparent !important;
+}
+.standalone-shell main.review-page > .coordinator-summary .completion-stat {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    min-width: 0;
+    min-height: 132px;
+    margin: 0;
+    padding: 20px 18px;
+    border: 1px solid var(--border) !important;
+    border-radius: 18px !important;
+    background: var(--surface) !important;
+    box-shadow: 0 8px 24px rgba(36, 40, 68, .055) !important;
+    color: var(--text) !important;
+}
+.standalone-shell main.review-page > .coordinator-summary .completion-stat > i {
+    display: grid;
+    flex: 0 0 46px;
+    width: 46px;
+    height: 46px;
+    place-items: center;
+    border-radius: 14px;
+    background: var(--primary-light);
+    color: var(--primary);
+    font-size: 20px;
+}
+.standalone-shell main.review-page > .coordinator-summary .stat-review > i { background: #eef0fb; color: #626ca7; }
+.standalone-shell main.review-page > .coordinator-summary .stat-complete > i { background: #e3f4ec; color: #218457; }
+.standalone-shell main.review-page > .coordinator-summary .stat-returned > i { background: #fff1d7; color: #a76a08; }
+.standalone-shell main.review-page > .coordinator-summary .completion-stat > div { min-width: 0; }
+.standalone-shell main.review-page > .coordinator-summary .completion-stat strong { display: block; margin: 0 0 3px; color: var(--primary) !important; font: 800 26px/1.1 Manrope, sans-serif; }
+.standalone-shell main.review-page > .coordinator-summary .completion-stat h2 { margin: 0 0 3px; color: var(--text) !important; font: 700 13px/1.35 Inter, sans-serif; }
+.standalone-shell main.review-page > .coordinator-summary .completion-stat p { margin: 0; color: var(--text-secondary) !important; font: 400 11px/1.4 Inter, sans-serif; }
+.standalone-shell .sidebar .workspace-nav-link[aria-current="page"] {
+    background: rgba(255, 255, 255, .13) !important;
+    border-color: rgba(174, 189, 211, .3) !important;
+    box-shadow: inset 3px 0 #a5bde0 !important;
+    color: #fff !important;
+}
+@media(max-width:991.98px) {
+    .standalone-shell .main > .topbar { min-height: 60px; padding: 10px 18px !important; }
+    .standalone-shell main.review-page { padding: 20px 20px 32px !important; }
+    .standalone-shell main.review-page > .uims-page-hero { min-height: 0; }
+    .standalone-shell main.review-page > .coordinator-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media(max-width:640px) {
+    .standalone-shell main.review-page { padding: 16px 14px 26px !important; }
+    .standalone-shell main.review-page > .uims-page-hero { gap: 18px; margin: 0 0 18px !important; padding: 24px 20px !important; border-radius: 20px !important; }
+    .standalone-shell main.review-page > .coordinator-summary { gap: 11px; margin-bottom: 18px !important; }
+    .standalone-shell main.review-page > .coordinator-summary .completion-stat { min-height: 112px; gap: 10px; padding: 14px 12px; }
+    .standalone-shell main.review-page > .coordinator-summary .completion-stat > i { flex-basis: 38px; width: 38px; height: 38px; font-size: 17px; }
+    .standalone-shell main.review-page > .coordinator-summary .completion-stat strong { font-size: 22px; }
+    .standalone-shell main.review-page > .coordinator-summary .completion-stat h2 { font-size: 12px; }
+    .standalone-shell main.review-page > .coordinator-summary .completion-stat p { font-size: 10px; }
+}
+
+/* Keep the page-scoped shell above shared identity resets while retaining shared sidebar rules. */
+body:not(#coordinator-style-scope).standalone-shell {
+    --primary: #1F3D78;
+    --primary-hover: #294D91;
+    --primary-light: #DCE9F7;
+    --primary-soft: #DCE9F7;
+    --background: #F4F3EF;
+    --surface: #FFFFFF;
+    --surface-alt: #F6F7FA;
+    --text: #242844;
+    --text-secondary: #66718A;
+    --border: #DFE3EB;
+    background: var(--background) !important;
+    color: var(--text);
+}
+body:not(#coordinator-style-scope).standalone-shell .main { background: var(--background) !important; }
+body:not(#coordinator-style-scope).standalone-shell .main > .topbar {
+    min-height: 64px !important;
+    padding: 10px 24px !important;
+    border-bottom: 1px solid var(--border) !important;
+    background: var(--surface) !important;
+    box-shadow: 0 4px 18px rgba(36, 40, 68, .045) !important;
+}
+body:not(#coordinator-style-scope).standalone-shell main.review-page > .uims-page-hero {
+    min-height: 248px !important;
+    margin: 4px 0 26px !important;
+    padding: 34px clamp(24px, 3vw, 42px) !important;
+    border: 1px solid rgba(255, 255, 255, .15) !important;
+    border-radius: 26px !important;
+    background: linear-gradient(105deg, var(--hero-gradient-start) 0%, var(--hero-gradient-mid) 58%, var(--hero-gradient-end) 100%) !important;
+    background-image: linear-gradient(105deg, var(--hero-gradient-start) 0%, var(--hero-gradient-mid) 58%, var(--hero-gradient-end) 100%) !important;
+    box-shadow: 0 18px 42px rgba(28, 48, 84, .16) !important;
+    color: #fff !important;
+}
+body:not(#coordinator-style-scope).standalone-shell main.review-page > .uims-page-hero h1 {
+    color: #fff !important;
+    font: 800 clamp(34px, 4vw, 56px)/1.08 Manrope, sans-serif !important;
+    letter-spacing: -1.8px !important;
+}
+body:not(#coordinator-style-scope).standalone-shell main.review-page > .uims-page-hero .uims-hero-copy > p:last-child {
+    color: rgba(255, 255, 255, .86) !important;
+    font: 400 16px/1.65 Inter, sans-serif !important;
+}
+body:not(#coordinator-style-scope).standalone-shell main.review-page > .uims-page-hero .uims-hero-eyebrow {
+    border: 1px solid rgba(255, 255, 255, .28) !important;
+    border-radius: 999px !important;
+    background: rgba(255, 255, 255, .1) !important;
+    color: #fff !important;
+}
+body:not(#coordinator-style-scope).standalone-shell main.review-page > .uims-page-hero::before,
+body:not(#coordinator-style-scope).standalone-shell main.review-page > .uims-page-hero::after {
+    content: "" !important;
+    position: absolute !important;
+    z-index: -1 !important;
+    border: 1px solid rgba(255, 255, 255, .13) !important;
+    border-radius: 50% !important;
+    background: none !important;
+    background-image: none !important;
+    filter: none !important;
+    opacity: 1 !important;
+}
+body:not(#coordinator-style-scope).standalone-shell main.review-page > .uims-page-hero::before { width: 390px; height: 390px; top: -245px; right: 7%; }
+body:not(#coordinator-style-scope).standalone-shell main.review-page > .uims-page-hero::after { width: 560px; height: 560px; top: -365px; right: -12%; }
+body:not(#coordinator-style-scope).standalone-shell main.review-page > .completion-filters {
+    background: var(--surface) !important;
+    border: 1px solid var(--border) !important;
+    border-radius: 18px !important;
+    box-shadow: 0 8px 24px rgba(36, 40, 68, .045) !important;
+}
+body:not(#coordinator-style-scope).standalone-shell main.review-page > .completion-filters label {
+    color: var(--text) !important;
+    font: 600 13px/1.5 Inter, sans-serif !important;
+}
+body:not(#coordinator-style-scope).standalone-shell main.review-page > .completion-filters :is(input, select) {
+    min-height: 48px;
+    border: 1px solid var(--border) !important;
+    border-radius: 10px !important;
+    background: var(--surface) !important;
+    color: var(--text) !important;
+    font: 500 14px/1.4 Inter, sans-serif !important;
+}
+body:not(#coordinator-style-scope).standalone-shell main.review-page > .completion-filters #clearCompletionFilters {
+    min-height: 48px;
+    border: 1px solid var(--primary) !important;
+    border-radius: 10px !important;
+    background: var(--primary) !important;
+    color: #fff !important;
+    font: 700 14px/1.2 Inter, sans-serif !important;
+}
+body:not(#coordinator-style-scope).standalone-shell main.review-page > .completion-filters #clearCompletionFilters:hover { background: var(--primary-hover) !important; }
+@media(max-width:991.98px) {
+    body:not(#coordinator-style-scope).standalone-shell main.review-page > .uims-page-hero { min-height: 0 !important; }
+}
+@media(max-width:640px) {
+    body:not(#coordinator-style-scope).standalone-shell main.review-page > .uims-page-hero { margin: 0 0 18px !important; padding: 24px 20px !important; border-radius: 20px !important; }
+}

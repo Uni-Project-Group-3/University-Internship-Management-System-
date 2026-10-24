@@ -1,0 +1,277 @@
+/* Company shell for the shared final reports workflow. Page content and workflow remain unchanged. */
+body.company-report-shell {
+    background: var(--background);
+    color: var(--text);
+    font-family: var(--font-body);
+}
+
+.company-report-shell .final-reports-layout {
+    min-height: 100dvh;
+    align-items: stretch;
+}
+
+.company-report-shell .final-reports-main {
+    min-width: 0;
+    flex: 1 1 auto;
+}
+
+.company-report-shell .company-report-topbar {
+    min-height: 64px;
+    padding: 10px 24px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+}
+
+.company-report-shell .company-report-account {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 36px;
+    min-height: 36px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    color: var(--primary);
+    background: var(--surface);
+}
+
+.company-report-shell .company-report-account svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+
+.company-report-shell .topbar-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-left: auto;
+}
+
+.company-report-shell .company-report-avatar {
+    display: grid;
+    place-items: center;
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    background: var(--primary-light);
+    color: var(--primary);
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.company-report-shell .company-report-user strong,
+.company-report-shell .company-report-user small { display: block; }
+.company-report-shell .company-report-user strong { color: var(--text); font-size: 12px; }
+.company-report-shell .company-report-user small { margin-top: 2px; color: var(--muted); font-size: 10px; }
+
+.company-report-shell .workspace-canonical-sidebar .workspace-nav-link[href$="ReportsFinalEvaluation.aspx"] {
+    background: #ffffff10 !important;
+    border-color: #aebdd33b;
+    box-shadow: inset 2px 0 #a5bde0;
+    color: #fff !important;
+    font-weight: 600;
+}
+
+.company-report-shell .final-workspace {
+    width: 100%;
+    max-width: 1440px;
+    margin: 0 auto;
+    padding: 24px 32px 40px;
+    color: var(--text);
+}
+
+.company-report-shell .final-workspace > .final-report-heading {
+    margin: 0;
+    padding: 0;
+    border: 0;
+    min-height: 0;
+}
+
+.company-report-shell .final-report-hero {
+    position: relative;
+    isolation: isolate;
+    display: flex;
+    align-items: center;
+    min-height: 248px;
+    margin: 4px 0 24px;
+    padding: 38px 42px;
+    overflow: hidden;
+    border-radius: 28px;
+    color: var(--text-inverse);
+    background: linear-gradient(105deg, var(--hero-gradient-start) 0%, var(--hero-gradient-mid) 58%, var(--hero-gradient-end) 100%);
+    box-shadow: 0 18px 42px rgba(28, 48, 84, .16);
+}
+
+.company-report-shell .final-report-hero::before,
+.company-report-shell .final-report-hero::after {
+    position: absolute;
+    z-index: -1;
+    content: "";
+    border: 1px solid rgba(255, 255, 255, .12);
+    border-radius: 50%;
+    pointer-events: none;
+}
+
+.company-report-shell .final-report-hero::before {
+    width: 440px;
+    height: 440px;
+    top: -260px;
+    right: 7%;
+}
+
+.company-report-shell .final-report-hero::after {
+    width: 600px;
+    height: 600px;
+    top: -330px;
+    right: -6%;
+}
+
+.company-report-shell .final-report-hero-copy { position: relative; z-index: 1; max-width: 820px; }
+
+.company-report-shell .final-report-hero-kicker {
+    display: inline-flex;
+    align-items: center;
+    min-height: 34px;
+    margin-bottom: 18px;
+    padding: 7px 15px;
+    border: 1px solid rgba(255, 255, 255, .25);
+    border-radius: 999px;
+    background: rgba(255, 255, 255, .1);
+    color: #fff;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: .07em;
+}
+
+.company-report-shell .final-report-hero h1 {
+    margin: 0 0 10px;
+    color: #fff;
+    font-family: var(--font-heading);
+    font-size: clamp(32px, 3vw, 44px);
+    font-weight: 750;
+    line-height: 1.15;
+    letter-spacing: -.035em;
+}
+
+.company-report-shell .final-report-hero p {
+    max-width: 720px;
+    margin: 0;
+    color: rgba(255, 255, 255, .84);
+    font-size: 17px;
+    line-height: 1.6;
+}
+
+.company-report-shell #finalSummary {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 18px;
+    margin: 0 0 24px;
+}
+
+.company-report-shell #finalSummary article {
+    display: flex;
+    min-height: 132px;
+    flex-direction: column;
+    justify-content: center;
+    gap: 12px;
+    margin: 0;
+    padding: 24px 28px;
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    background: var(--surface-alt);
+    box-shadow: 0 8px 26px rgba(31, 61, 120, .045);
+}
+
+.company-report-shell #finalSummary article p {
+    margin: 0;
+    color: var(--text-secondary);
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.company-report-shell #finalSummary article strong {
+    color: var(--text);
+    font-family: var(--font-heading);
+    font-size: 34px;
+    font-weight: 750;
+    line-height: 1;
+}
+
+.company-report-shell #finalNotice { margin: 0 0 8px; }
+.company-report-shell #finalNotice:empty { display: none; margin: 0; }
+.company-report-shell .final-workspace > .final-storage-note { margin-top: 0; }
+
+.company-report-shell .report-tools {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
+    align-items: end;
+    gap: 16px;
+}
+
+.company-report-shell .report-tools label { min-width: 0; }
+.company-report-shell .report-tools input,
+.company-report-shell .report-tools select { min-height: 44px; margin: 7px 0 0; }
+.company-report-shell .report-tools #finalReload { min-height: 44px; margin: 0; white-space: nowrap; }
+
+/* Keep Company report actions aligned with the shared JUST color tokens. */
+.company-report-shell .final-workspace button {
+    border: 1px solid var(--primary);
+    background: var(--primary);
+    color: var(--text-inverse);
+    transition: background-color .16s ease, border-color .16s ease, box-shadow .16s ease;
+}
+
+.company-report-shell .final-workspace button:hover:not(:disabled) {
+    border-color: var(--primary-hover);
+    background: var(--primary-hover);
+}
+
+.company-report-shell .final-workspace button:focus-visible {
+    outline: 3px solid var(--primary-light);
+    outline-offset: 2px;
+}
+
+.company-report-shell .final-workspace button:disabled {
+    opacity: .58;
+    cursor: not-allowed;
+}
+
+.company-report-shell .final-workspace .dialog-actions button:first-child,
+.company-report-shell .final-workspace .evaluation-weekly button,
+.company-report-shell .final-workspace .automatic-refresh {
+    border-color: var(--border);
+    background: var(--primary-light);
+    color: var(--primary);
+}
+
+.company-report-shell .final-workspace .dialog-actions button:first-child:hover:not(:disabled),
+.company-report-shell .final-workspace .evaluation-weekly button:hover:not(:disabled),
+.company-report-shell .final-workspace .automatic-refresh:hover:not(:disabled) {
+    border-color: var(--primary);
+    background: var(--primary-soft);
+    color: var(--primary);
+}
+
+@media (max-width: 991.98px) {
+    .company-report-shell .company-report-topbar { min-height: 58px; padding: 9px 14px; gap: 8px; }
+    .company-report-shell .company-report-user { display: none; }
+    .company-report-shell .final-workspace { padding: 22px 18px 34px; }
+}
+
+@media (max-width: 600px) {
+    .company-report-shell .final-workspace { padding: 18px 14px 28px; }
+    .company-report-shell .final-report-hero { min-height: 0; margin: 0 0 18px; padding: 26px 22px; border-radius: 22px; }
+    .company-report-shell .final-report-hero-kicker { margin-bottom: 14px; font-size: 10px; }
+    .company-report-shell .final-report-hero p { font-size: 15px; }
+    .company-report-shell #finalSummary { grid-template-columns: minmax(0, 1fr); gap: 12px; margin-bottom: 18px; }
+    .company-report-shell #finalSummary article { min-height: 108px; padding: 20px 22px; }
+}
+
+@media (min-width: 601px) and (max-width: 900px) {
+    .company-report-shell #finalSummary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .company-report-shell #finalSummary article:last-child { grid-column: 1 / -1; }
+}
+
+@media (max-width: 700px) {
+    .company-report-shell .report-tools { grid-template-columns: minmax(0, 1fr); }
+    .company-report-shell .report-tools #finalReload { width: 100%; }
+}

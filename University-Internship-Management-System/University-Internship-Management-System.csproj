@@ -751,6 +751,7 @@
       <DependentUpon>ReportsFinalEvaluation.aspx</DependentUpon>
     </Compile>
     <Content Include="Assets\company\reports-final-evaluation.css" />
+    <Content Include="Assets\company\final-reports-shell.css" />
     <Content Include="Js_project\Company\reports-final-evaluation.js" />
   </ItemGroup>
   <ItemGroup>
