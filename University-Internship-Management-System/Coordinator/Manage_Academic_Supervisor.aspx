@@ -11,10 +11,10 @@
 
         <link href="../Assets/shared/colors.css" rel="stylesheet" />
         <link href="../Assets/coordinator/Manage_Academic_Supervisor.css?v=20261024-link-cleanup" rel="stylesheet" />
-    <link href="../Assets/shared/workspace-identity.css?v=20261024-refine" rel="stylesheet" />
+    <link href="../Assets/shared/workspace-identity.css?v=20261024-coordinator-banner" rel="stylesheet" />
 <script src="../Js_project/workspace-navigation-unified.js?v=20261024-refine" defer></script>
 </head>
-    <body class="management-page" data-page="manage-academic-supervisors">
+    <body class="coordinator-banner management-page" data-page="manage-academic-supervisors">
         <form id="form1" runat="server" novalidate="novalidate"><asp:HiddenField ID="academicCsrf" runat="server" ClientIDMode="Static" />
             <div class="app">
 
@@ -186,7 +186,7 @@
         </form>
 <script src="../Scripts/bootstrap.bundle.min.js">
         </script>
-        <script src="../Js_project/Coordinator/Manage_Academic_Supervisor.js?v=20261024-link-cleanup">
+        <script src="../Js_project/Coordinator/Manage_Academic_Supervisor.js?v=20261024-directory-load">
         </script>
     </body>
 </html>
