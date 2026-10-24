@@ -306,7 +306,7 @@ async function loadAttendance() {
     loading = true;
     document.getElementById("connectionStatus").textContent = "Refreshing\u2026";
     const version = dataVersion;
-    ["checkInButton", "checkOutButton", "earlyButton", "resetTodayButton"].forEach(function (id) { document.getElementById(id).disabled = true; });
+    if (!attendance) ["checkInButton", "checkOutButton", "earlyButton", "resetTodayButton"].forEach(function (id) { document.getElementById(id).disabled = true; });
     ["historyRows", "todayStatus", "actualCheckIn", "actualCheckOut"].forEach(function (id) {
         document.getElementById(id).setAttribute("aria-busy", "true");
     });
@@ -339,9 +339,15 @@ async function loadAttendance() {
 }
 
 async function showQr(action, button) {
-    if (loading || saving || !attendance || !(action === "checkIn" ? attendance.canCheckIn : attendance.canCheckOut)) return;
+    if (saving) return;
+    if (!attendance || !(action === "checkIn" ? attendance.canCheckIn : attendance.canCheckOut)) {
+        showNotice('Refresh attendance and ask your supervisor to issue a current QR for this action.', true);
+        return;
+    }
+    button = button || document.getElementById(action === 'checkIn' ? 'checkInButton' : 'checkOutButton');
     saving = true;
-    button.disabled = true;
+    dataVersion++;
+    if (button) button.disabled = true;
     clearInterval(qrTimer);
     const dialog = document.getElementById("qrDialog");
     document.getElementById("qrCode").replaceChildren();

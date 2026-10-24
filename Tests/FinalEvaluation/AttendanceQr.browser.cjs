@@ -10,11 +10,16 @@ const {chromium}=require(path.join(process.env.USERPROFILE,'.cache/codex-runtime
   await page.addScriptTag({content:fs.readFileSync(path.join(root,'Js_project/Student/attendance-qrcodegen.js'),'utf8')});
   const source=fs.readFileSync(path.join(root,'Js_project/Student/my-attendance.js'),'utf8');
   const functions=source.slice(source.indexOf('async function showQr('),source.indexOf('document.getElementById("qrDialog").addEventListener("close"'));
-  await page.addScriptTag({content:`let loading=false,saving=false,attendance={canCheckIn:true,canCheckOut:true,student:{name:'Offline student'},company:{name:'Offline company'}},qrTimer,qrDeadline,qrAction;let mode='missing';function openDialog(){document.getElementById('qrDialog').showModal();}function showNotice(){}function renderStudent(){document.getElementById('open').disabled=false;}async function api(){if(mode==='missing')throw new Error('No current QR. Ask your supervisor to issue one, then try again.');return {token:'UIMSATT1:P:'+'A'.repeat(240)+'.'+'B'.repeat(43),expiresAt:Date.now()+120000,serverNow:Date.now()};}${functions}`});
+  await page.addScriptTag({content:`let dataVersion=0,loading=false,saving=false,attendance={canCheckIn:true,canCheckOut:true,student:{name:'Offline student'},company:{name:'Offline company'}},qrTimer,qrDeadline,qrAction;let mode='missing';function openDialog(){document.getElementById('qrDialog').showModal();}function showNotice(){}function renderStudent(){document.getElementById('open').disabled=false;}async function api(){if(mode==='missing')throw new Error('No current QR. Ask your supervisor to issue one, then try again.');return {token:'UIMSATT1:P:'+'A'.repeat(240)+'.'+'B'.repeat(43),expiresAt:Date.now()+120000,serverNow:Date.now()};}${functions}`});
   await page.evaluate(()=>showQr('checkIn',document.getElementById('open')));
   assert(await page.locator('#qrDialog').evaluate(d=>d.open));assert((await page.locator('#qrDescription').textContent()).includes('supervisor to issue'));assert.strictEqual(await page.locator('#qrCode svg').count(),0);
   await page.evaluate(()=>{document.getElementById('qrDialog').close();mode='ready';return showQr('checkIn',document.getElementById('open'));});
   assert(await page.locator('#qrDialog').evaluate(d=>d.open));assert.strictEqual(await page.locator('#qrCode svg').count(),1);assert((await page.locator('#qrCountdown').textContent()).includes('Expires in'));
+  await page.evaluate(()=>{document.getElementById('qrDialog').close();loading=true;return showQr('checkIn');});
+  assert(await page.locator('#qrDialog').evaluate(d=>d.open),'Automatic QR opening works without a button during background refresh');
+  assert.strictEqual(await page.locator('#qrCode svg').count(),1);
+  assert.strictEqual(await page.evaluate(()=>saving),false,'QR opening never leaves the saving flag locked');
+  await page.evaluate(()=>{loading=false;document.getElementById('qrDialog').close();return showQr('checkIn',document.getElementById('open'));});
   await page.addScriptTag({content:fs.readFileSync(path.join(root,'Js_project/Company/attendance-jsqr.js'),'utf8')});
   const decoded=await page.evaluate(async()=>{
     const svg=document.querySelector('#qrCode svg'), image=new Image();
@@ -27,6 +32,7 @@ const {chromium}=require(path.join(process.env.USERPROFILE,'.cache/codex-runtime
     return jsQR(pixels.data,pixels.width,pixels.height,{inversionAttempts:'attemptBoth'})?.data;
   });
   assert.strictEqual(decoded,'UIMSATT1:P:'+'A'.repeat(240)+'.'+'B'.repeat(43),'The company decoder must read the exact student token');
+  await page.addScriptTag({content:'let scanFeedbackBlocking=false;'});
   const scannerSource=fs.readFileSync(path.join(root,'Js_project/Company/verify-attendance.js'),'utf8');
   const scanFrame=scannerSource.slice(scannerSource.indexOf('async function scanFrame('),scannerSource.indexOf('document.getElementById("openCamera").addEventListener'));
   await page.addScriptTag({content:`let cameraStream=null,cameraVersion=1,nativeQrDetector=null,lastFrameAt=0,scanScaleIndex=0,frameId;const scannerDiagnosticsEnabled=false;const video=document.createElement('video'),scanCanvas=document.createElement('canvas'),scanContext=scanCanvas.getContext('2d',{willReadFrequently:true});let scannedTokens=[];function scannerDiagnostic(){}function stopCamera(){cameraVersion++;cameraStream?.getTracks().forEach(t=>t.stop());cameraStream=null;}function processToken(token){scannedTokens.push(token);}window.requestAnimationFrame=()=>0;${scanFrame}`});
