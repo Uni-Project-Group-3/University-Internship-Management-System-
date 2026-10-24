@@ -1,20 +1,147 @@
-(function(){'use strict';
-const by=id=>document.getElementById(id),dialog=by('assignmentDialog');let data={groups:[],professors:[],students:[],departments:{}},group=null,step=0,selected=new Set(),busy=false,retry=null,dirty=false;
-const node=(tag,text,cls)=>{const e=document.createElement(tag);if(text!=null)e.textContent=String(text);if(cls)e.className=cls;return e;};
-async function api(input){const response=await fetch('../AcademicAssignmentsApi.ashx',{method:input?'POST':'GET',credentials:'same-origin',cache:'no-store',signal:AbortSignal.timeout(90000),headers:input?{'Content-Type':'application/json'}:{},body:input?JSON.stringify(input):undefined});const result=await response.json();if(!response.ok)throw Error(result.message||'Assignment request failed.');return result;}
-function notice(text){by('assignmentNotice').textContent=text;}
-async function load(){data=await api();render();notice('Current assignments loaded from Firebase.');}
-function departmentName(id){return data.departments[id]||id;}
-function professorName(id){return data.professors.find(p=>p.id===id)?.name||id||'Unassigned';}
-function render(){const host=by('assignmentRows');host.replaceChildren();const query=by('assignmentSearch').value.toLowerCase();for(const g of data.groups.filter(g=>[g.name,departmentName(g.department),professorName(g.supervisorId)].join(' ').toLowerCase().includes(query))){const row=node('tr');[g.name,departmentName(g.department),professorName(g.supervisorId),Object.values(g.students||{}).filter(Boolean).length].forEach(v=>row.append(node('td',v)));const action=node('td'),button=node('button','Manage assignment','secondary');button.type='button';button.onclick=()=>open(g);action.append(button);row.append(action);host.append(row);}if(!host.children.length){const row=node('tr'),cell=node('td','No groups match this view.');cell.colSpan=5;row.append(cell);host.append(row);}const stats=by('assignmentStats');stats.replaceChildren();for(const [label,count] of [['Groups',data.groups.length],['Assigned groups',data.groups.filter(g=>g.supervisorId).length],['Students assigned',data.students.filter(s=>s.supervisorIds.length).length]]){const card=node('article');card.append(node('strong',count),node('span',label));stats.append(card);}}
-function options(control,rows,placeholder){control.replaceChildren(new Option(placeholder,''));rows.forEach(r=>control.append(new Option(r.name,r.id)));}
-function open(g){group=g;step=0;selected=new Set();retry=null;dirty=false;by('assignmentError').textContent='';by('assignmentName').value=g?.name||'';by('assignmentName').readOnly=!!g;options(by('assignmentDepartment'),Object.entries(data.departments).map(([id,name])=>({id,name})),'Select department');by('assignmentDepartment').value=g?.department||'';by('assignmentDepartment').disabled=!!g;professors();by('studentSearch').value='';showStep();dialog.showModal();}
-function professors(){const dept=by('assignmentDepartment').value;options(by('assignmentProfessor'),data.professors.filter(p=>p.department===dept),'Select professor');by('assignmentProfessor').value=group?.supervisorId||'';by('assignmentProfessor').disabled=!!group?.supervisorId;by('professorEmpty').textContent=data.professors.some(p=>p.department===dept)?'':'No active professors are available in this department.';students();}
-function blocked(s){return s.conflict||s.groupIds.some(id=>id!==group?.id)||s.supervisorIds.some(id=>id!==by('assignmentProfessor').value)||(s.groupIds.includes(group?.id)&&s.supervisorIds.includes(by('assignmentProfessor').value));}
-function students(){const host=by('assignmentStudents'),query=by('studentSearch').value.toLowerCase(),dept=by('assignmentDepartment').value;host.replaceChildren();for(const s of data.students.filter(s=>s.department===dept&&[s.name,s.id,departmentName(s.department)].join(' ').toLowerCase().includes(query))){const label=node('label',null,'assignment-student'),check=document.createElement('input');check.type='checkbox';check.checked=selected.has(s.id);check.disabled=blocked(s);check.onchange=()=>{if(check.checked)selected.add(s.id);else selected.delete(s.id);dirty=true;retry=null;students();};const info=node('span');info.append(node('strong',s.name),node('small',s.id+' · '+departmentName(s.department)),node('small',s.conflict?'Conflicting assignments — coordinator review required':s.supervisorIds.length?'Assigned to '+s.supervisorIds.map(professorName).join(', '):'Unassigned'));label.append(check,info);host.append(label);}if(!host.children.length)host.append(node('p','No students in this department match your search.','muted'));by('studentCount').textContent=selected.size+' selected';const chips=by('studentChips');chips.replaceChildren();for(const id of selected){const s=data.students.find(s=>s.id===id),chip=node('button',(s?.name||id)+' ×','secondary');chip.type='button';chip.onclick=()=>{selected.delete(id);retry=null;students();};chips.append(chip);}}
-function showStep(){document.querySelectorAll('[data-step]').forEach(e=>e.hidden=Number(e.dataset.step)!==step);document.querySelectorAll('.assignment-steps li').forEach((e,i)=>e.classList.toggle('active',i===step));by('assignmentBack').hidden=step===0;by('assignmentNext').textContent=step===2?'Review & confirm':'Next';}
-function validate(){by('assignmentError').textContent='';const field=step===0?(!by('assignmentName').value.trim()?by('assignmentName'):by('assignmentDepartment')):by('assignmentProfessor');if(step<2&&!field.value.trim()){field.classList.add('is-invalid');field.setAttribute('aria-invalid','true');by('assignmentError').textContent='Complete the required field before continuing.';field.focus();return false;}if(step===2&&!selected.size&&!(group&&!group.supervisorId&&Object.keys(group.students||{}).length)){by('assignmentError').textContent='Select at least one eligible student.';return false;}return true;}
-by('assignmentNext').onclick=async()=>{if(busy||!validate())return;if(step<2){step++;showStep();students();return;}if(!await workflowConfirm('Confirm academic assignment?',selected.size+' selected student(s) will be assigned to '+professorName(by('assignmentProfessor').value)+'. Existing unrelated records are preserved.','Save assignment'))return;const payload={groupId:group?.id||'',name:by('assignmentName').value.trim(),department:by('assignmentDepartment').value,supervisorId:by('assignmentProfessor').value,studentIds:[...selected].sort()};const signature=JSON.stringify(payload);if(!retry||retry.signature!==signature)retry={signature,id:crypto.randomUUID()};payload.requestId=retry.id;busy=true;by('assignmentNext').disabled=true;try{await api(payload);dirty=false;dialog.close();await load();notice('Assignment saved to Firebase. Student profiles and linked active placements were updated.');}catch(e){by('assignmentError').textContent=e.message;}finally{busy=false;by('assignmentNext').disabled=false;}};
-by('assignmentBack').onclick=()=>{if(!busy){step--;showStep();}};by('assignmentDepartment').onchange=()=>{selected.clear();dirty=true;professors();};by('assignmentProfessor').onchange=()=>{selected.clear();dirty=true;students();};by('studentSearch').oninput=students;by('studentSelectAll').onclick=()=>{data.students.filter(s=>s.department===by('assignmentDepartment').value&&!blocked(s)).forEach(s=>selected.add(s.id));dirty=true;retry=null;students();};by('studentClear').onclick=()=>{selected.clear();retry=null;students();};
-async function close(){if(busy)return;if(dirty&&!await workflowConfirm('Discard unsaved assignment?','No unsaved selections will be written to Firebase.','Discard'))return;dialog.close();}by('assignmentClose').onclick=close;dialog.oncancel=e=>{e.preventDefault();close();};by('newAssignment').onclick=()=>open(null);by('assignmentSearch').oninput=render;load().catch(e=>notice(e.message));window.addEventListener('focus',()=>{if(!dialog.open)load().catch(e=>notice(e.message));});
+(function () {
+    'use strict';
+    const by = id => document.getElementById(id), dialog = by('assignmentDialog');
+    let data = null, group = null, selected = new Set(), busy = false, retry = null;
+    const node = (tag, text, className) => {
+        const e = document.createElement(tag);
+        if (text != null) e.textContent = String(text);
+        if (className) e.className = className;
+        return e;
+    };
+    const majorName = id => data.departments[id] || id;
+    const professor = () => data.professors.find(p => p.id === by('assignmentProfessor').value);
+    const professorName = id => data.professors.find(p => p.id === id)?.name || id || 'Unassigned';
+    const notice = text => { by('assignmentNotice').textContent = text; };
+    function options(control, rows, placeholder) {
+        control.replaceChildren(new Option(placeholder, ''));
+        rows.forEach(r => control.append(new Option(r.name || r.id, r.id)));
+    }
+    async function api(input) {
+        const response = await fetch('../AcademicAssignmentsApi.ashx', {
+            method: input ? 'POST' : 'GET', credentials: 'same-origin', cache: 'no-store',
+            signal: AbortSignal.timeout(90000), headers: input ? { 'Content-Type': 'application/json' } : {},
+            body: input ? JSON.stringify(input) : undefined
+        });
+        let result;
+        try { result = await response.json(); } catch (_) { throw Error('The server response could not be verified. Refresh or retry the same request.'); }
+        if (!response.ok) throw Error(result.message || 'The assignment request failed.');
+        return result;
+    }
+    function render() {
+        const host = by('assignmentRows');
+        host.replaceChildren();
+        for (const g of data.groups.filter(g => !by('departmentFilter').value || g.department === by('departmentFilter').value)) {
+            const row = node('tr'), title = node('td');
+            title.append(node('strong', g.name, 'group-name'), node('small', g.id, 'group-id'));
+            row.append(title, node('td', majorName(g.department)), node('td', Object.values(g.students || {}).filter(v => v === true).length), node('td', professorName(g.supervisorId)));
+            const action = node('td'), button = node('button', 'View / add students', 'assignment-secondary');
+            button.type = 'button'; button.onclick = () => open(g);
+            action.append(button); row.append(action); host.append(row);
+        }
+        if (!host.children.length) {
+            const row = node('tr'), cell = node('td', 'No groups yet in this view. Add a group to assign students.');
+            cell.colSpan = 5; row.append(cell); host.append(row);
+        }
+    }
+    async function load() {
+        const fresh = await api();
+        data = fresh;
+        const filter = by('departmentFilter').value;
+        options(by('departmentFilter'), Object.entries(data.departments).map(([id, name]) => ({ id, name })), 'All majors');
+        if (data.departments[filter]) by('departmentFilter').value = filter;
+        render(); by('newAssignment').disabled = false;
+    }
+    function open(g) {
+        group = g; selected = new Set(); retry = null;
+        by('assignmentError').textContent = ''; by('assignmentName').value = g?.name || '';
+        by('assignmentName').readOnly = !!g; by('studentSearch').value = '';
+        by('assignmentTitle').textContent = g ? 'Group students' : 'Add student group';
+        by('assignmentSave').textContent = g ? 'Add selected students' : 'Create group';
+        options(by('assignmentProfessor'), data.professors.filter(p => !p.conflict || p.id === g?.supervisorId).map(p => ({ id: p.id, name: p.name + (p.conflict ? ' - review assignments required' : '') })), 'Select academic supervisor');
+        by('assignmentProfessor').value = g?.supervisorId || '';
+        by('assignmentProfessor').disabled = !!g;
+        majors(); dialog.showModal(); dialog.scrollTop = 0;
+    }
+    function majors() {
+        selected.clear(); by('assignmentError').textContent = '';
+        const p = professor();
+        const available = p && !p.conflict ? Object.entries(data.departments).filter(([id]) => !p.department || p.department === id).map(([id, name]) => ({ id, name })) : [];
+        options(by('assignmentDepartment'), available, 'Select university major');
+        by('assignmentDepartment').disabled = !p || p.conflict || !!group;
+        // Even an existing responsibility is chosen explicitly after the supervisor.
+        by('assignmentDepartment').value = group?.department || '';
+        by('assignmentMajorHint').textContent = !p ? 'Choose the supervisor first.' : p.conflict ? 'This supervisor has conflicting majors. Review existing assignments before adding students.' : p.department ? 'This supervisor is responsible for ' + majorName(p.department) + '.' : 'The selected major will become this supervisor\'s responsibility.';
+        students();
+    }
+    function blocked(s) {
+        const p = professor();
+        if (!p || p.conflict || s.conflict) return true;
+        if (['universityId', 'collegeId'].some(f => s[f] && p[f] && s[f] !== p[f])) return true;
+        return s.groupIds.some(id => id !== group?.id) || s.supervisorIds.some(id => id !== p.id) || s.groupIds.includes(group?.id);
+    }
+    function students() {
+        const host = by('assignmentStudents'), major = by('assignmentDepartment').value, query = by('studentSearch').value.trim().toLowerCase();
+        const enabled = !!major && !!professor() && !professor().conflict;
+        by('studentSearch').disabled = !enabled; by('studentSelectAll').disabled = !enabled;
+        host.replaceChildren();
+        if (enabled) {
+            for (const s of data.students.filter(s => s.department === major && [s.name, s.id].join(' ').toLowerCase().includes(query))) {
+                const label = node('label', null, 'assignment-student'), check = document.createElement('input');
+                check.type = 'checkbox'; check.disabled = blocked(s); check.checked = selected.has(s.id);
+                check.onchange = () => { by('assignmentError').textContent = ''; if (check.checked) selected.add(s.id); else selected.delete(s.id); students(); };
+                const info = node('span');
+                info.append(node('strong', s.name || s.id), node('small', 'Student ID: ' + s.id));
+                const reason = s.groupIds.includes(group?.id) ? 'Already in this group' : blocked(s) ? 'Unavailable - existing assignment or account mismatch' : 'Available';
+                info.append(node('small', reason, blocked(s) ? 'assignment-unavailable' : 'assignment-available'));
+                label.append(check, info); host.append(label);
+            }
+        }
+        if (!host.children.length) host.append(node('p', enabled ? 'No students match this major and search.' : 'Choose a supervisor and major to see students.', 'assignment-empty'));
+        by('studentCount').textContent = selected.size + ' selected' + (group ? ' · ' + Object.values(group.students || {}).filter(v => v === true).length + ' already in group' : '');
+    }
+    async function close() {
+        if (busy) return;
+        dialog.close();
+    }
+    by('assignmentSave').onclick = async () => {
+        if (busy) return;
+        const p = professor(), major = by('assignmentDepartment').value, error = by('assignmentError');
+        error.textContent = '';
+        if (!p || p.conflict) { error.textContent = 'Choose an eligible academic supervisor first.'; by('assignmentProfessor').focus(); return; }
+        if (!major) { error.textContent = 'Select the university major.'; by('assignmentDepartment').focus(); return; }
+        if (!selected.size) { error.textContent = 'Select at least one available student.'; return; }
+        const payload = { groupId: group?.id || '', name: by('assignmentName').value.trim() || (majorName(major) + ' - ' + p.name).slice(0, 120), department: major, supervisorId: p.id, studentIds: [...selected].sort() };
+        const signature = JSON.stringify(payload);
+        if (!retry || retry.signature !== signature) retry = { signature, id: crypto.randomUUID() };
+        payload.requestId = retry.id;
+        busy = true; by('assignmentSave').disabled = true; by('assignmentFields').inert = true;
+        try {
+            const saved = await api(payload);
+            if (!saved.saved) throw Error('The server did not confirm this assignment. Retry the same selections.');
+            dialog.close();
+            notice('Group saved. Refreshing assignments...');
+            try { await load(); notice('Group saved. The selected students are assigned to their academic supervisor.'); }
+            catch (e) { by('newAssignment').disabled = true; notice('The group was saved, but the table could not refresh. Use Refresh before adding another group. ' + e.message); }
+        } catch (e) { error.textContent = e.message; }
+        finally { busy = false; by('assignmentSave').disabled = false; by('assignmentFields').inert = false; }
+    };
+    by('assignmentProfessor').onchange = majors;
+    by('assignmentDepartment').onchange = () => { selected.clear(); by('assignmentError').textContent = ''; students(); };
+    by('studentSearch').oninput = students;
+    by('studentSelectAll').onclick = () => {
+        // Select all matching students, including those outside the current search.
+        by('assignmentError').textContent = '';
+        data.students.filter(s => s.department === by('assignmentDepartment').value && !blocked(s)).forEach(s => selected.add(s.id)); students();
+    };
+    by('studentClear').onclick = () => { selected.clear(); students(); };
+    by('assignmentClose').onclick = close; by('assignmentCancel').onclick = close;
+    dialog.oncancel = e => { e.preventDefault(); close(); };
+    by('newAssignment').onclick = () => open(null); by('departmentFilter').onchange = render;
+    by('refreshAssignments').onclick = async () => {
+        if (busy) return;
+        by('refreshAssignments').disabled = true;
+        try { await load(); notice('Groups refreshed.'); } catch (e) { notice(e.message); }
+        finally { by('refreshAssignments').disabled = false; }
+    };
+    load().then(() => notice('')).catch(e => notice('Groups could not be loaded. ' + e.message));
 }());

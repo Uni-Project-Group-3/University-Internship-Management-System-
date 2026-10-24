@@ -1,6 +1,9 @@
 using System;
 using System.Collections.Generic;
 using System.Net;
+using System.Linq;
+using Newtonsoft.Json.Linq;
+using UIMS.Services;
 using System.Web.Script.Serialization;
 using System.Web.Security;
 using System.Web.UI;
@@ -19,11 +22,14 @@ namespace University_Internship_Management_System.Academic
         protected void Page_Load(object sender, EventArgs e)
         {
             var identity = Context.User?.Identity as FormsIdentity;
-            if (identity == null || !identity.IsAuthenticated)
+            if (identity == null || !identity.IsAuthenticated || identity.Ticket.Expired)
             {
                 Response.Redirect("~/Auth/Login.aspx");
                 return;
             }
+
+            if (FirebaseSignInService.CanonicalRole(identity.Ticket.UserData) != "academicSupervisor")
+                throw new System.Web.HttpException(403, "Academic supervisor access is required.");
 
             if (!IsPostBack)
             {
@@ -44,17 +50,14 @@ namespace University_Internship_Management_System.Academic
                     string tasksJson = DownloadSafe(client, "tasks.json");
                     string attendanceJson = DownloadSafe(client, "uimsAttendance/attendance.json");
 
-                    var allAssignments = ParseJson<Dictionary<string, AssignmentData>>(serializer, assignmentsJson) ?? new Dictionary<string, AssignmentData>();
+                    var currentAssignments = JsonObject(DownloadSafe(client, "supervisorAssignments.json"));
+                    var groups = JsonObject(DownloadSafe(client, "groups.json"));
                     var users = ParseJson<Dictionary<string, UserData>>(serializer, usersJson) ?? new Dictionary<string, UserData>();
                     var placements = ParseJson<Dictionary<string, PlacementData>>(serializer, placementsJson) ?? new Dictionary<string, PlacementData>();
                     var tasks = ParseJson<Dictionary<string, TaskData>>(serializer, tasksJson) ?? new Dictionary<string, TaskData>();
                     var attendance = ParseJson<Dictionary<string, Dictionary<string, AttendanceRecord>>>(serializer, attendanceJson) ?? new Dictionary<string, Dictionary<string, AttendanceRecord>>();
 
-                    List<string> myStudentIds = new List<string>();
-                    foreach (var a in allAssignments.Values)
-                    {
-                        if (a != null && a.academicSupervisorId == CurrentSupervisorId && !myStudentIds.Contains(a.studentId)) myStudentIds.Add(a.studentId);
-                    }
+                    var myStudentIds = AcademicAssignmentService.AssignedStudentIds(CurrentSupervisorId, JsonObject(usersJson), groups, currentAssignments, JsonObject(assignmentsJson)).ToList();
 
                     int activeInternships = 0, completedTasks = 0;
                     List<StudentRow> tableRows = new List<StudentRow>();
@@ -246,11 +249,14 @@ namespace University_Internship_Management_System.Academic
             University_Internship_Management_System.Services.FinalEvaluation.FirebaseKey.Require(studentId);
             using (var client = new AuthenticatedFirebaseClient())
             {
-                var assignments = Newtonsoft.Json.Linq.JObject.Parse(client.DownloadString(FirebaseUrl + "assignments.json"));
-                if (!System.Linq.Enumerable.Any(assignments.Properties(), p => (string)p.Value["studentId"] == studentId && (string)p.Value["academicSupervisorId"] == CurrentSupervisorId && (bool?)p.Value["active"] != false))
-                    throw new System.Web.HttpException(403, "Not assigned.");
+                var ids = AcademicAssignmentService.AssignedStudentIds(CurrentSupervisorId,
+                    JsonObject(DownloadSafe(client, "users.json")), JsonObject(DownloadSafe(client, "groups.json")),
+                    JsonObject(DownloadSafe(client, "supervisorAssignments.json")), JsonObject(DownloadSafe(client, "assignments.json")));
+                if (!ids.Contains(studentId)) throw new System.Web.HttpException(403, "Not assigned.");
             }
         }
+
+        private static JObject JsonObject(string json) { return string.IsNullOrEmpty(json) || json == "null" ? new JObject() : JObject.Parse(json); }
 
         private string DownloadSafe(WebClient client, string path) { return client.DownloadString(FirebaseUrl + path); }
         private T ParseJson<T>(JavaScriptSerializer serializer, string json) { if (string.IsNullOrEmpty(json) || json == "null") return default(T); return serializer.Deserialize<T>(json); }
