@@ -1,4 +1,4 @@
-﻿"use strict";
+"use strict";
 
 let supervisorData = null;
 let loading = false;
@@ -34,23 +34,27 @@ function scannerDiagnostic(stage, details) {
 const sidebar = document.getElementById("sidebar");
 const menuButton = document.querySelector(".menu-btn");
 const mainArea = document.querySelector(".main");
+// The canonical workspace drawer is owned by the shared navigation script.
+const canonicalSidebar = !!sidebar && sidebar.classList.contains("workspace-canonical-sidebar");
 const mobileScreen = window.matchMedia("(max-width: 991.98px)");
 
 function setSidebarOpen(open) {
+    if (canonicalSidebar || !sidebar || !menuButton || !mainArea) return;
     const visible = open && mobileScreen.matches;
     document.body.classList.toggle("sidebar-open", visible);
     menuButton.setAttribute("aria-expanded", String(visible));
     sidebar.inert = mobileScreen.matches && !visible;
     mainArea.inert = visible;
-    if (visible) sidebar.querySelector("button").focus();
+    if (visible) sidebar.querySelector("button")?.focus();
 }
 function toggleSidebar() { setSidebarOpen(!document.body.classList.contains("sidebar-open")); }
-document.querySelector(".legacy-sidebar-close").addEventListener("click", function () {
+document.querySelector(".legacy-sidebar-close")?.addEventListener("click", function () {
     setSidebarOpen(false);
-    menuButton.focus();
+    menuButton?.focus();
 });
 mobileScreen.addEventListener("change", function () { setSidebarOpen(false); });
-sidebar.addEventListener("keydown", function (event) {
+sidebar?.addEventListener("keydown", function (event) {
+    if (canonicalSidebar) return;
     if (!mobileScreen.matches || !document.body.classList.contains("sidebar-open")) return;
     if (event.key === "Escape") { setSidebarOpen(false); menuButton.focus(); }
     if (event.key === "Tab") {
@@ -312,9 +316,18 @@ function renderRecords() {
     list.replaceChildren();
     const query = document.getElementById("attendanceSearch").value.trim().toLowerCase();
     const records = supervisorData ? supervisorData.records : [];
+    const pending = function (record) { return record.hoursApprovalStatus === "pending" && Number(record.checkOutAt) > 0 && Number(record.workedMinutes) > 0; };
+    const count = records.filter(pending).length;
+    document.getElementById("pendingApprovalSummary").textContent = count
+        ? count + " completed attendance record(s) awaiting hours approval. Search by student name or ID, or select Pending approval."
+        : "No completed attendance is waiting for hours approval.";
+    const onlyPending = document.getElementById("approvalFilter").value === "pending";
     records.filter(function (record) {
-        return (record.studentName + " " + record.attendanceDate + " " + record.status).toLowerCase().includes(query);
-    }).sort(function (a, b) { return b.attendanceDate.localeCompare(a.attendanceDate); }).forEach(function (record) {
+        return (!onlyPending || pending(record)) &&
+            (record.studentName + " " + (record.studentId || "") + " " + record.attendanceDate + " " + record.status).toLowerCase().includes(query);
+    }).sort(function (a, b) {
+        return Number(pending(b)) - Number(pending(a)) || b.attendanceDate.localeCompare(a.attendanceDate);
+    }).forEach(function (record) {
         const row = document.createElement("tr");
         const status = record.status === "checkedIn" && !record.checkOutAt && Number(record.scheduledEndAt) < Date.now()
             ? "missingCheckOut" : record.status;
@@ -348,8 +361,35 @@ async function review(record, decision) {
 }
 
 // نوقف تكرار قراءة الإطار بالمتصفح، والتحقق النهائي ومنع التسجيل المكرر يبقيان على السيرفر.
+// Visual feedback only: successful attendance still comes exclusively from the existing C# scan response.
+let scanFeedbackTimer = 0;
+let scanFeedbackBlocking = false;
+function setScanFeedback(state, action, message) {
+    clearTimeout(scanFeedbackTimer);
+    const frame = document.getElementById("attendanceScannerFrame");
+    const feedback = document.getElementById("scanFeedback");
+    if (!frame || !feedback) return;
+    scanFeedbackBlocking = state === "checking" || state === "error";
+    frame.dataset.scanState = state;
+    feedback.dataset.state = state;
+    feedback.hidden = state === "idle";
+    document.getElementById("scanFeedbackTitle").textContent = state === "success"
+        ? (action === "checkOut" ? "Check-out recorded successfully" : "Check-in recorded successfully")
+        : state === "error" ? "QR could not be confirmed" : "Checking your QR…";
+    document.getElementById("scanFeedbackDescription").textContent = state === "error"
+        ? String(message || "Check the attendance records before trying again.")
+        : state === "checking" ? "Waiting for attendance confirmation" : "";
+    if (state === "success" || state === "error") {
+        scanFeedbackTimer = setTimeout(function () {
+            setScanFeedback("idle");
+            // The full validation message remains readable in the compact result area.
+            if (state === "error") document.getElementById("scanStatus").textContent = "Ready to scan / check records";
+        }, 1500);
+    }
+}
+
 async function processToken(token) {
-    if (saving) return;
+    if (saving || scanFeedbackBlocking) return;
     token = String(token || "").trim();
     if (!token) { scannerDiagnostic("qr.empty-result"); return; }
     if (token === lastToken && Date.now() - lastTokenAt < 5000) return;
@@ -363,12 +403,14 @@ async function processToken(token) {
     errorBox.hidden = true;
     document.getElementById("verificationDetails").hidden = true;
     document.getElementById("scanStatus").textContent = "Validating and saving…";
+    setScanFeedback("checking");
     try {
         const result = await api("scan", { token: token });
         scannerDiagnostic("response.accepted");
         scanStage = "display";
-        stopCamera();
+        stopCamera(true);
         showStudent(result);
+        setScanFeedback("success", result.action);
         scannerDiagnostic("result.displayed");
         // السجل المحفوظ يأتي من C#؛ نحدّث صفه مباشرة، وباقي السجل من زر Refresh.
         if (supervisorData && result.record) {
@@ -380,14 +422,23 @@ async function processToken(token) {
             else supervisorData.records.push(row);
         }
         saved = true;
-        showNotice("Attendance saved. Hours pending approval.");
+        if (result.action === "checkOut") {
+            // Reveal the actual saved student's row, even if a search previously hid it.
+            document.getElementById("attendanceSearch").value = "";
+            document.getElementById("approvalFilter").value = "pending";
+        }
+        showNotice(result.action === "checkOut"
+            ? "Check-out saved. Review Pending approval below, then select Approve hours."
+            : "Check-in saved. Scan a new check-out QR when the student leaves.");
     } catch (error) {
         scannerDiagnostic("scan.failed", { stage: scanStage, errorType: error.name });
         document.getElementById("scanStatus").textContent = "Not recorded / check state";
         errorBox.textContent = error.message; errorBox.hidden = false;
+        setScanFeedback("error", null, error.message);
     } finally {
         saving = false;
         renderRequests(); renderRecords();
+        if (saved) document.getElementById("approvalFilter").dispatchEvent(new Event("change", { bubbles: true }));
         // عند الخطأ نقرأ الحالة الحقيقية احتياطًا لاحتمال حفظ العملية قبل انقطاع الرد.
         if (!saved || !supervisorData) {
             if (loading) refreshAfterLoad = true;
@@ -428,14 +479,24 @@ function showStudent(result) {
     }
 }
 
-function stopCamera() {
+function stopCamera(preservePreview) {
+    const snapshot = document.getElementById("scanSnapshot");
+    snapshot.hidden = true;
+    if (preservePreview === true && video.videoWidth && video.videoHeight) {
+        try {
+            snapshot.width = video.videoWidth; snapshot.height = video.videoHeight;
+            snapshot.getContext("2d").drawImage(video, 0, 0);
+            snapshot.hidden = false;
+        } catch (_) { /* A preview failure must not affect the saved attendance. */ }
+    }
+    document.getElementById("attendanceScannerFrame").dataset.cameraActive = "false";
     if (cameraStream || cameraOpening) scannerDiagnostic("camera.stopped");
     cameraVersion++;
     cancelAnimationFrame(frameId);
     if (cameraStream) cameraStream.getTracks().forEach(function (track) { track.stop(); });
     cameraStream = null;
     video.srcObject = null; video.hidden = true;
-    document.getElementById("cameraPlaceholder").hidden = false;
+    document.getElementById("cameraPlaceholder").hidden = !snapshot.hidden;
     document.getElementById("stopCamera").disabled = true;
     document.getElementById("stopCamera").hidden = true;
     document.getElementById("openCamera").disabled = false;
@@ -446,14 +507,14 @@ async function scanFrame(timestamp) {
     if (!cameraStream) return;
     const version = cameraVersion;
     try {
-    if (!saving && timestamp - lastFrameAt > 120 && video.readyState >= 2 && video.videoWidth > 0 && video.videoHeight > 0) {
+    if (!saving && !scanFeedbackBlocking && timestamp - lastFrameAt > 120 && video.readyState >= 2 && video.videoWidth > 0 && video.videoHeight > 0) {
         lastFrameAt = timestamp;
         // Use the browser's accelerated decoder when available; jsQR remains the offline fallback.
         if (nativeQrDetector) {
             try {
                 const detected = await nativeQrDetector.detect(video);
                 if (version !== cameraVersion || !cameraStream) return;
-                const match = detected.find(item => typeof item.rawValue === "string" && item.rawValue.trim().startsWith("UIMSATT1:"));
+                const match = detected.find(item => typeof item.rawValue === "string" && item.rawValue.trim());
                 if (match) {
                     processToken(match.rawValue);
                     if (cameraStream) frameId = requestAnimationFrame(scanFrame);
@@ -497,7 +558,7 @@ async function scanFrame(timestamp) {
                 code.binaryData.every(function (value) { return value >= 32 && value <= 126; })) {
                 decoded = String.fromCharCode.apply(null, code.binaryData);
             }
-            if (decoded.startsWith("UIMSATT1:")) processToken(decoded);
+            if (decoded) processToken(decoded);
         }
     }
     } catch (error) {
@@ -516,6 +577,7 @@ document.getElementById("openCamera").addEventListener("click", async function (
     if (!window.isSecureContext || !navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
         showNotice("Camera access needs HTTPS or localhost and a supported browser. Allow camera access to scan attendance.", true); return;
     }
+    setScanFeedback("idle");
     cameraOpening = true;
     nativeQrDetector = null;
     try { if (typeof window.BarcodeDetector === "function") nativeQrDetector = new window.BarcodeDetector({ formats: ["qr_code"] }); } catch (_) { /* Use jsQR. */ }
@@ -532,6 +594,8 @@ document.getElementById("openCamera").addEventListener("click", async function (
         const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: "environment" }, width: { ideal: 1920 }, height: { ideal: 1080 } }, audio: false });
         if (version !== cameraVersion) { stream.getTracks().forEach(function (track) { track.stop(); }); return; }
         cameraStream = stream; video.srcObject = stream; video.hidden = false;
+        document.getElementById("scanSnapshot").hidden = true;
+        document.getElementById("attendanceScannerFrame").dataset.cameraActive = "true";
         document.getElementById("cameraPlaceholder").hidden = true;
         await video.play();
         if (version === cameraVersion) {
@@ -558,6 +622,7 @@ window.addEventListener("pagehide", stopCamera);
 document.addEventListener("visibilitychange", function () { if (document.hidden) stopCamera(); });
 
 document.getElementById("attendanceSearch").addEventListener("input", renderRecords);
+document.getElementById("approvalFilter").addEventListener("change", renderRecords);
 document.getElementById("refreshAttendance").addEventListener("click", loadSupervisor);
 // نحمّل البيانات عند فتح الصفحة؛ تحديث تغييرات الطرف الآخر يكون يدويًا من زر Refresh.
 loadSupervisor();

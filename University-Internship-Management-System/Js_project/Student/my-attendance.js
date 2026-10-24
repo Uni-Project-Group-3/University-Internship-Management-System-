@@ -1,4 +1,4 @@
-"use strict";
+﻿"use strict";
 
 let attendance = null;
 let loading = false;
@@ -12,23 +12,27 @@ let serverSessionVerified = false;
 const sidebar = document.getElementById("sidebar");
 const menuButton = document.querySelector(".menu-btn");
 const mainArea = document.querySelector(".main");
+// The canonical workspace drawer is owned by the shared navigation script.
+const canonicalSidebar = !!sidebar && sidebar.classList.contains("workspace-canonical-sidebar");
 const mobileScreen = window.matchMedia("(max-width: 991.98px)");
 
 function setSidebarOpen(open) {
+    if (canonicalSidebar || !sidebar || !menuButton || !mainArea) return;
     const visible = open && mobileScreen.matches;
     document.body.classList.toggle("sidebar-open", visible);
     menuButton.setAttribute("aria-expanded", String(visible));
     sidebar.inert = mobileScreen.matches && !visible;
     mainArea.inert = visible;
-    if (visible) sidebar.querySelector("button").focus();
+    if (visible) sidebar.querySelector("button")?.focus();
 }
 function toggleSidebar() { setSidebarOpen(!document.body.classList.contains("sidebar-open")); }
-document.querySelector(".legacy-sidebar-close").addEventListener("click", function () {
+document.querySelector(".legacy-sidebar-close")?.addEventListener("click", function () {
     setSidebarOpen(false);
-    menuButton.focus();
+    menuButton?.focus();
 });
 mobileScreen.addEventListener("change", function () { setSidebarOpen(false); });
-sidebar.addEventListener("keydown", function (event) {
+sidebar?.addEventListener("keydown", function (event) {
+    if (canonicalSidebar) return;
     if (!mobileScreen.matches || !document.body.classList.contains("sidebar-open")) return;
     if (event.key === "Escape") { setSidebarOpen(false); menuButton.focus(); }
     if (event.key === "Tab") {
@@ -213,6 +217,9 @@ function renderStudent(data) {
         document.getElementById(id).removeAttribute("aria-busy");
     });
     attendance = data;
+    const resetButton = document.getElementById("resetTodayButton");
+    document.getElementById("resetTodayTools").hidden = !data.canResetToday;
+    resetButton.disabled = saving || !data.canResetToday;
     connected(data, data.student.name);
     const assigned = data.hasAssignment;
     const assignment = data.assignment || {};
@@ -250,7 +257,12 @@ function renderStudent(data) {
         : !data.actionsEnabled ? "Attendance actions are disabled in Firebase settings. Reading history remains available."
         : !schedule.assignmentId ? "No schedule exists for today. Ask your supervisor to configure it."
         : !schedule.isTrainingDay ? "Scheduled day off. No absence is counted."
-        : record.checkOutAt ? "Attendance complete."
+        : record.checkOutAt ? (record.hoursApprovalStatus === "approved"
+            ? "Attendance complete. Your approved time is included in Approved hours and deducted from Remaining hours."
+            : record.hoursApprovalStatus === "pending" ? (Number(record.workedMinutes) > 0
+                ? "Attendance complete: " + Number(record.workedMinutes) + " minute(s) awaiting your supervisor’s hours approval. Refresh attendance after approval to update your totals."
+                : "Attendance complete, but less than one full minute was recorded. No whole training minute can be approved. Wait at least one minute between check-in and check-out when testing.")
+            : "Attendance complete. Hours status: " + label(record.hoursApprovalStatus) + ".")
         : record.checkInAt ? "Your supervisor can issue your check-out QR now. Actual worked time counts after hours approval."
         : "Flexible attendance today. Generate your check-in QR and ask your supervisor to scan it.";
     if (document.getElementById("qrDialog").open && ((qrAction === "checkIn" && record.checkInAt) || (qrAction === "checkOut" && record.checkOutAt))) {
@@ -285,7 +297,7 @@ async function loadAttendance() {
     loading = true;
     document.getElementById("connectionStatus").textContent = "Refreshing…";
     const version = dataVersion;
-    ["checkInButton", "checkOutButton", "earlyButton"].forEach(function (id) { document.getElementById(id).disabled = true; });
+    ["checkInButton", "checkOutButton", "earlyButton", "resetTodayButton"].forEach(function (id) { document.getElementById(id).disabled = true; });
     ["historyRows", "todayStatus", "actualCheckIn", "actualCheckOut"].forEach(function (id) {
         document.getElementById(id).setAttribute("aria-busy", "true");
     });
@@ -313,7 +325,7 @@ async function loadAttendance() {
             document.getElementById("historyEmpty").textContent = "Attendance could not be loaded.";
             ["approvedHours", "remainingHours", "progressText"].forEach(function (id) { document.getElementById(id).textContent = "Unavailable"; });
         }
-        ["checkInButton", "checkOutButton", "earlyButton"].forEach(function (id) { document.getElementById(id).disabled = true; });
+        ["checkInButton", "checkOutButton", "earlyButton", "resetTodayButton"].forEach(function (id) { document.getElementById(id).disabled = true; });
     } finally { loading = false; }
 }
 
@@ -411,3 +423,40 @@ document.getElementById("attendanceSearch").addEventListener("input", renderHist
 document.getElementById("refreshAttendance").addEventListener("click", function () { loadAttendance(); });
 // نحمّل البيانات عند فتح الصفحة؛ تحديث تغييرات الطرف الآخر يكون يدويًا من زر Refresh.
 loadAttendance();
+
+// Local reset still uses the same authenticated/CSRF-protected attendance API.
+let resetPreview = null;
+document.getElementById("resetTodayButton").addEventListener("click", async function () {
+    if (loading || saving || !attendance || !attendance.canResetToday) return;
+    saving = true; this.disabled = true; resetPreview = null;
+    try {
+        resetPreview = await api("resetPreview");
+        const minutes = Number(resetPreview.approvedMinutesRemoved || 0);
+        document.getElementById("resetTodayImpact").textContent = minutes > 0
+            ? "Date: " + resetPreview.date + ". This will remove " + minutes + " approved minute(s) (" + (minutes / 60).toFixed(2) + " h) from your current total."
+            : "Date: " + resetPreview.date + ". No approved hours will be removed.";
+        document.getElementById("resetTodayError").hidden = true;
+        document.getElementById("confirmResetToday").disabled = false;
+        openDialog("resetTodayDialog", this);
+    } catch (error) { showNotice(error.message, true); }
+    finally { saving = false; this.disabled = !attendance || !attendance.canResetToday; }
+});
+document.getElementById("confirmResetToday").addEventListener("click", async function () {
+    if (loading || saving || !resetPreview) return;
+    saving = true; this.disabled = true;
+    const modal = document.getElementById("resetTodayDialog");
+    // Closing remains safe while a request is in flight; the operation is never silently retried.
+    try {
+        const data = await api("resetToday", { expectedVersion: resetPreview.expectedVersion, expectedDate: resetPreview.date });
+        resetPreview = null;
+        if (document.getElementById("qrDialog").open) document.getElementById("qrDialog").close();
+        clearInterval(qrTimer); document.getElementById("qrCode").replaceChildren();
+        saving = false; renderStudent(data); modal.close();
+        showNotice("Today’s attendance was reset. Ask your supervisor to issue a new check-in QR.");
+    } catch (error) {
+        resetPreview = null;
+        document.getElementById("resetTodayError").textContent = error.message + " Close this window and refresh attendance before trying again.";
+        document.getElementById("resetTodayError").hidden = false;
+    } finally { saving = false; }
+});
+document.getElementById("resetTodayDialog").addEventListener("close", function () { if (!saving) resetPreview = null; });

@@ -28,7 +28,7 @@ namespace UIMS.Attendance
                     !(context.Handler is University_Internship_Management_System.Company.VerifyAttendance)) || context.Request.HttpMethod != "POST" ||
                     context.Request.QueryString["attendanceApi"] != "1") return;
                 string action = context.Request.Form["action"];
-                if (action == "load" || action == "qr" || action == "scan" || action == "requestEarly" || action == "review" || action == "issueQr")
+                if (action == "load" || action == "qr" || action == "scan" || action == "requestEarly" || action == "review" || action == "issueQr" || action == "resetPreview" || action == "resetToday")
                     context.SetSessionStateBehavior(SessionStateBehavior.ReadOnly);
                 // identity وnewTest يحتاجان تعديل Session، فيبقى لهما القفل الافتراضي.
             };

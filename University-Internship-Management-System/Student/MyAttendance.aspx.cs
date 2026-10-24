@@ -38,6 +38,13 @@ namespace University_Internship_Management_System.Student
                 JObject data;
                 switch (action)
                 {
+                    case "resetPreview":
+                        data = await attendanceService.PreviewTodayReset(studentId, uid);
+                        break;
+                    case "resetToday":
+                        await attendanceService.ResetToday(studentId, uid, Request.Form["expectedVersion"], Request.Form["expectedDate"]);
+                        data = await LoadAttendance(studentId, student);
+                        break;
                     case "qr":
                         data = await LoadIssuedQr(studentId);
                         break;
@@ -80,6 +87,7 @@ namespace University_Internship_Management_System.Student
                     .OrderByDescending(p => p.Name).Select(p => p.Value)),
                 ["approvedMinutes"] = state.ApprovedMinutes, ["canCheckIn"] = state.CanCheckIn,
                 ["canCheckOut"] = state.CanCheckOut, ["canRequestEarly"] = state.CanRequestEarly,
+                ["canResetToday"] = service.CanOfferStudentReset && AttendanceService.Number(state.Record, "checkInAt") > 0,
                 ["actionsEnabled"] = AttendanceService.Flag(state.Settings, "enabled")
             };
         }
