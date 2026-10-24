@@ -10,8 +10,8 @@
       "name": "Yasmeen Talafha",
       "role": "Computer Science",
       "bio": "",
-      "photo": "",
-      "alt": "",
+      "photo": "../img/team/yasmeen-talafha.jpg",
+      "alt": "Portrait of Yasmeen Talafha",
       "links": [
         {
           "label": "Portfolio",
@@ -24,7 +24,7 @@
       "name": "Deyaa Alwardat",
       "role": "Computer Science",
       "bio": "",
-      "photo": "../Assets/public/images/team/deyaa-alwardat.png",
+      "photo": "../img/team/deyaa-alwardat.jpg",
       "alt": "Portrait of Deyaa Alwardat",
       "links": [
         {
@@ -38,7 +38,7 @@
       "name": "Roa’a Basil Ajlouni",
       "role": "Computer Science",
       "bio": "",
-      "photo": "../Assets/public/images/team/roaa-basil-ajlouni.png",
+      "photo": "../img/team/roaa-basil-ajlouni.jpg",
       "alt": "Portrait of Roa’a Basil Ajlouni",
       "links": [
         {
@@ -52,7 +52,7 @@
       "name": "Anas Ghawanmeh",
       "role": "Computer Information Systems",
       "bio": "",
-      "photo": "../Assets/public/images/team/anas-ghawanmeh.png",
+      "photo": "../img/team/anas-ghawanmeh.jpg",
       "alt": "Portrait of Anas Ghawanmeh",
       "links": [
         {
@@ -66,7 +66,7 @@
       "name": "Mohammad Mustafa",
       "role": "Computer Science",
       "bio": "",
-      "photo": "../Assets/public/images/team/mohammad-mustafa.png",
+      "photo": "../img/team/mohammad-mustafa.jpg",
       "alt": "Portrait of Mohammad Mustafa",
       "links": [
         {
@@ -80,18 +80,28 @@
       "name": "Tariq Bataineh",
       "role": "Computer Science",
       "bio": "",
-      "photo": "",
-      "alt": "",
-      "links": [],
+      "photo": "../img/team/tariq-bataineh.jpg",
+      "alt": "Portrait of Tariq Bataineh",
+      "links": [
+        {
+          "label": "Portfolio",
+          "url": "https://my-portfolio-tariq.netlify.app/"
+        }
+      ],
       "placeholder": false
     },
     {
-      "name": "Eiad Mansour",
+      "name": "Eyad Mansur",
       "role": "Computer Science",
       "bio": "",
-      "photo": "",
-      "alt": "",
-      "links": [],
+      "photo": "../img/team/eiad-mansour.jpg",
+      "alt": "Portrait of Eyad Mansur",
+      "links": [
+        {
+          "label": "Portfolio",
+          "url": "https://eyad-03.github.io/Eyad-Portfolio/"
+        }
+      ],
       "placeholder": false
     }
   ]
@@ -114,8 +124,8 @@
  const L=(a,b,t)=>a+(b-a)*t,C=(x,a=0,b=1)=>Math.min(b,Math.max(a,x)),E=t=>t<.5?4*t*t*t:1-Math.pow(-2*t+2,3)/2;
  const rnd=(i,k)=>{const x=Math.sin(i*127.1+k*311.7)*43758.5453;return x-Math.floor(x)};
  const CAPS=[['01 · Introduction','Seven people.'],['02 · Transformation','One gateway.'],['03 · Meet the team','Every stone holds the arch.']];
- let W,H,mob,R,tw,th,phase=-1,act=-2;
- const size=()=>{W=innerWidth;H=innerHeight;mob=W<900;R=mob?Math.min(W*.36,H*.27):Math.min(W*.25,H*.46);tw=R*(mob?.38:.32);th=tw*1.3;tiles.forEach(t=>{t.style.width=tw+'px';t.style.height=th+'px';t.style.setProperty('--tw',tw+'px')})};
+ let W,H,mob,R,tw,th,renderScale,phase=-1,act=-2;
+ const size=()=>{W=innerWidth;H=innerHeight;mob=W<900;R=mob?Math.min(W*.36,H*.27):Math.min(W*.25,H*.46);tw=R*(mob?.38:.32);th=tw*1.3;renderScale=(mob?.9/.38:.6/.32);tiles.forEach(t=>{t.style.width=tw*renderScale+'px';t.style.height=th*renderScale+'px';t.style.setProperty('--tw',tw*renderScale+'px')})};
  const show=i=>{const m=T[i];$('#irole').textContent=m.role;$('#iname').textContent=m.name;$('#ibio').textContent=m.bio;$('#isoc').innerHTML=soc(m);$('#pos').textContent=String(i+1).padStart(2,'0')+' / '+String(n).padStart(2,'0');info.classList.remove('sw');void info.offsetWidth;info.classList.add('sw')};
  function frame(t){
   const s=-story.getBoundingClientRect().top/H,g=C((s-.9)/1.3),ex=E(C((s-2.1)/.5)),e=(s-2.5)/.8;
@@ -129,9 +139,8 @@
    let x=L(sx,cx+R*Math.cos(th0),gi),y=L(sy,cy-R*Math.sin(th0),gi),r=L((rnd(i,3)-.5)*50,90-th0*180/Math.PI,gi),sc=L(d,1,gi);
    const a=E(C(1.4-Math.abs(e-i)*1.8)),pw=R*(mob?.9:.6);
    x=L(x,cx,a);y=L(y,cy-R*(mob?.5:.38),a);r=L(r,0,a);sc=L(sc,pw/tw,a);
-   const b=(1-gi)*(1.15-d)*6;
-   el.style.transform=`translate3d(${x-tw/2}px,${y-th/2}px,0) rotate(${r}deg) scale(${sc})`;
-   el.style.zIndex=a>0?50:Math.round(sc*10);el.style.filter=b>.2?`blur(${b.toFixed(1)}px)`:'none';el.classList.toggle('on',a>.6)});
+   el.style.transform=`translate3d(${x-tw*renderScale/2}px,${y-th*renderScale/2}px,0) rotate(${r}deg) scale(${sc/renderScale})`;
+   el.style.zIndex=a>0?50:Math.round(sc*10);el.style.filter='none';el.classList.toggle('on',a>.6)});
   const ph=s<1.2?0:s<2.4?1:2;if(ph!==phase){phase=ph;$('#capk').textContent=CAPS[ph][0];$('#capt').textContent=CAPS[ph][1];cap.classList.remove('sw');void cap.offsetWidth;cap.classList.add('sw')}
   cap.style.opacity=mob&&ph===2?0:1;
   const na=e>-.5?C(Math.round(e),0,n-1):-1;if(na!==act){act=na;if(na>=0)show(na);tiles.forEach((el,i)=>el.setAttribute('aria-pressed',i===na))}

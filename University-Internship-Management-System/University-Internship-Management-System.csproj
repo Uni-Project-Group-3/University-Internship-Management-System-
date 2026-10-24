@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="..\packages\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.2.0.1\build\net46\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.props" Condition="Exists('..\packages\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.2.0.1\build\net46\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.props')" />
   <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
@@ -1028,6 +1028,14 @@
 <ItemGroup><Content Include="Assets\public\public-campus.css" /></ItemGroup>
 
 
-  <ItemGroup><Compile Include="Services\Attendance\AttendanceReset.cs" /></ItemGroup>
-
-<ItemGroup><Content Include="Js_project\Public\public-workspace.js" /><Content Include="ApplicationCv.ashx" /></ItemGroup><ItemGroup><Compile Include="ApplicationCv.ashx.cs" /></ItemGroup></Project>
+<ItemGroup><Compile Include="Services\Attendance\AttendanceReset.cs" /></ItemGroup>
+<ItemGroup><Content Include="Js_project\Public\public-workspace.js" /><Content Include="ApplicationCv.ashx" /></ItemGroup><ItemGroup><Compile Include="ApplicationCv.ashx.cs" /></ItemGroup><ItemGroup>
+    <Content Include="img\team\yasmeen-talafha.jpg" />
+    <Content Include="img\team\deyaa-alwardat.jpg" />
+    <Content Include="img\team\roaa-basil-ajlouni.jpg" />
+    <Content Include="img\team\anas-ghawanmeh.jpg" />
+    <Content Include="img\team\mohammad-mustafa.jpg" />
+    <Content Include="img\team\tariq-bataineh.jpg" />
+    <Content Include="img\team\eiad-mansour.jpg" />
+</ItemGroup>
+</Project>

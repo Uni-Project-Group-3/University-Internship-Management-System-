@@ -87,3 +87,5 @@ footer{padding:20px 8% 45px;background:#e4dcc6}
  .hero{padding:150px 8% 110px}.count{position:static;text-align:left;margin-top:26px}.count b{font-size:72px;display:inline}.count span{margin-left:10px}
  .fm{grid-template-columns:1fr 1fr}.fb{grid-column:1/-1}.fc{padding:26px 22px}.flat li{flex-direction:column;align-items:flex-start}
 }
+
+.step button{display:inline-flex;align-items:center;justify-content:center;flex-shrink:0}.step button svg{display:block;pointer-events:none}
