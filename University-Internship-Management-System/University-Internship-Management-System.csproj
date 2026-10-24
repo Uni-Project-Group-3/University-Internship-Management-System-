@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="..\packages\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.2.0.1\build\net46\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.props" Condition="Exists('..\packages\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.2.0.1\build\net46\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.props')" />
   <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
@@ -162,6 +162,8 @@
     <Content Include="Js_project\Public\dashboard-navigation.js" />
     <Content Include="Auth\Login.aspx" />
     <Content Include="Assets\auth\auth.css" />
+    <Content Include="Assets\auth\login-card.css" />
+    <Content Include="Js_project\Auth\login-card.js" />
     <Content Include="Js_project\Auth\auth.js" />
     <Content Include="Assets\auth\just-campus.jpg" />
     <Content Include="Assets\shared\images\just-logo.png" />
@@ -482,6 +484,7 @@
     <Content Include="Assets\company\verify-attendance.css" />
     <Content Include="Js_project\Student\my-attendance.js" />
     <Content Include="Js_project\Student\attendance-qrcode.min.js" />
+    <Content Include="Js_project\Student\attendance-qrcodegen.js" />
     <Content Include="Js_project\Company\verify-attendance.js" />
     <Content Include="Js_project\Company\attendance-jsqr.js" />
   </ItemGroup>
@@ -799,9 +802,12 @@
     <Compile Include="Services\FirebaseConfiguration.cs" />
     <Compile Include="Services\FirebaseApiHandler.cs" />
     <Compile Include="Services\ApplicationWorkflowService.cs" />
+    <Compile Include="Services\StudentAuthAuditFailure.cs" />
+    <Compile Include="Services\Attendance\AttendanceOnboarding.cs" />
     <Compile Include="Services\AcademicAssignmentService.cs" />
     <Compile Include="Services\AcademicAssignmentsApi.cs" />
     <Compile Include="Services\FirebaseFileStorageService.cs" />
+    <Compile Include="Services\SupabaseFileStorage.cs" />
     <Compile Include="Services\TaskService.cs" />
     <Compile Include="Shared\FirebaseServerCredential.cs" />
     <Compile Include="Services\Attendance\ApprovedTrainingMinutes.cs" />
@@ -957,5 +963,33 @@
       <SpecificVersion>True</SpecificVersion>
       <Private>True</Private>
     </Reference>
+  </ItemGroup>
+  <ItemGroup>
+  </ItemGroup>
+  <ItemGroup>
+  </ItemGroup>
+  <ItemGroup>
+  </ItemGroup>
+  <ItemGroup>
+  </ItemGroup>
+  <ItemGroup>
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="Assets\shared\just-theme.css" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="Js_project\shared-role-navigation.js" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="Assets\shared\role-sidebar.css" />
+  </ItemGroup>
+  <ItemGroup>
+  </ItemGroup>
+  <ItemGroup>
+  </ItemGroup>
+  <ItemGroup>
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="Assets\tasks-premium.css" />
   </ItemGroup>
 </Project>

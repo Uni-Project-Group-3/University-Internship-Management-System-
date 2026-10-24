@@ -27,6 +27,7 @@ namespace UIMS.Tasks
         private readonly TaskActor actor;
         private readonly Func<CancellationToken, Task<string>> tokenProvider;
         private readonly UIMS.Services.FirebaseFileStorageService storage;
+        private readonly bool customDownload;
         private readonly Func<string, string, string, byte[], CancellationToken, Task<UIMS.Services.StoredFile>> upload;
         private readonly Func<string, CancellationToken, Task<byte[]>> download;
         private readonly Func<string, CancellationToken, Task> delete;
@@ -49,6 +50,7 @@ namespace UIMS.Tasks
             tokenProvider = accessTokenProvider ?? GetAccessTokenAsync;
             storage = fileStorage ?? new UIMS.Services.FirebaseFileStorageService(setting, httpClient);
             upload = uploadOverride ?? storage.UploadAsync;
+            customDownload = downloadOverride != null;
             download = downloadOverride ?? storage.DownloadAsync;
             delete = deleteOverride ?? storage.DeleteObjectAsync;
             root = (setting("FirebaseDatabaseUrl") ?? "").TrimEnd('/');
@@ -449,13 +451,13 @@ namespace UIMS.Tasks
             if (stored == null || stored.ObjectPath != objectPath || stored.ContentType != DocxMime || stored.SizeBytes != bytes.LongLength)
             {
                 try { await delete(objectPath, CancellationToken.None).ConfigureAwait(false); } catch { }
-                throw new UIMS.Services.FirebaseException(502, "Firebase Storage did not confirm the exact weekly report upload.");
+                throw new UIMS.Services.FirebaseException(502, "File Storage did not confirm the exact weekly report upload.");
             }
             string now = UtcNow();
             var metadata = new JObject { ["id"] = fileId, ["purpose"] = "weeklyReport", ["status"] = "ready", ["reportId"] = reportId, ["revisionId"] = revisionId,
                 ["placementId"] = placementId, ["studentId"] = studentId, ["ownerUid"] = actor.Uid, ["ownerProfileId"] = actor.CompanySupervisorId,
                 ["fileName"] = stored.FileName, ["contentType"] = stored.ContentType, ["sizeBytes"] = stored.SizeBytes, ["sha256"] = stored.Sha256,
-                ["storagePath"] = stored.ObjectPath, ["storageGeneration"] = stored.Generation, ["createdAt"] = now };
+                ["storageProvider"] = stored.Provider, ["storagePath"] = stored.ObjectPath, ["storageGeneration"] = stored.Generation, ["createdAt"] = now };
 
             bool reportWriteAttempted = false;
             try
@@ -524,7 +526,7 @@ namespace UIMS.Tasks
         private JObject Revision(string revisionId, int number, UIMS.Services.StoredFile file, string fileId, string comments, string submittedAt)
         {
             return new JObject { ["revisionId"] = revisionId, ["revisionNumber"] = number, ["fileId"] = fileId, ["fileName"] = file.FileName,
-                ["contentType"] = file.ContentType, ["sizeBytes"] = file.SizeBytes, ["sha256"] = file.Sha256, ["storagePath"] = file.ObjectPath,
+                ["contentType"] = file.ContentType, ["sizeBytes"] = file.SizeBytes, ["sha256"] = file.Sha256, ["storageProvider"] = file.Provider, ["storagePath"] = file.ObjectPath,
                 ["storageGeneration"] = file.Generation, ["companyComments"] = string.IsNullOrWhiteSpace(comments) ? null : comments.Trim(),
                 ["submittedAt"] = submittedAt, ["uploadedByUid"] = actor.Uid };
         }
@@ -647,7 +649,7 @@ namespace UIMS.Tasks
             if (string.IsNullOrWhiteSpace(revisionId)) revisionId = Text(report, "currentRevisionId");
             var revision = report["revisions"]?[revisionId] as JObject; if (revision == null) throw new UIMS.Services.FirebaseException(404, "The report revision was not found.");
             string path = Text(revision, "storagePath"); if (path.Length == 0 || Text(revision, "contentType") != DocxMime) throw new UIMS.Services.FirebaseException(404, "The private Word report is unavailable.");
-            byte[] contents = await download(path, cancellation).ConfigureAwait(false);
+            byte[] contents = await (customDownload ? download(path, cancellation) : storage.DownloadAsync(path, Text(revision, "storageProvider"), cancellation)).ConfigureAwait(false);
             UIMS.Services.FirebaseFileStorageService.ValidateFile(Text(revision, "fileName"), DocxMime, contents);
             string hash; using (var sha = SHA256.Create()) hash = BitConverter.ToString(sha.ComputeHash(contents)).Replace("-", "").ToLowerInvariant();
             if (contents.LongLength != (long?)revision["sizeBytes"] || !string.Equals(hash, Text(revision, "sha256"), StringComparison.OrdinalIgnoreCase))

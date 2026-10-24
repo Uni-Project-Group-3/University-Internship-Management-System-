@@ -21,6 +21,7 @@ namespace University_Internship_Management_System.Shared
         private static bool Done(JToken t) { return new[] { "completed", "evaluated" }.Contains(T(t, "status").ToLowerInvariant()); }
         private async System.Threading.Tasks.Task LoadAsync()
         {
+            if ((bool?)Context.Items["Uims.SignedOut"] == true) return;
             try
             {
                 var data = await LiveFirebaseData.OpenAsync(Context);
@@ -50,6 +51,6 @@ namespace University_Internship_Management_System.Shared
             catch (UnauthorizedAccessException) { Response.Redirect(ResolveUrl("~/Auth/Login.aspx"), false); Context.ApplicationInstance.CompleteRequest(); }
             catch (Exception error) { Trace.Warn("Dashboard", error.GetType().Name); foreach (string id in new[] { "lblApplied", "lblInReview", "lblTasks", "lblHours", "lblOpportunities", "lblApplications", "lblTrainees", "lblToReview", "lblStudents", "lblInTraining", "lblDelayed", "lblEvalDue", "lblCompanies", "lblAwaiting" }) Set(id, "—"); DashboardContent = "<div role='alert' class='alert alert-danger'>Firebase dashboard data could not be loaded. Refresh or sign in again.</div>"; }
         }
-        protected void btnLogout_Click(object sender, EventArgs e) { System.Web.Security.FormsAuthentication.SignOut(); Session.Clear(); Session.Abandon(); Response.Redirect("~/Auth/Login.aspx", false); Context.ApplicationInstance.CompleteRequest(); }
+        protected void btnLogout_Click(object sender, EventArgs e) { University_Internship_Management_System.Shared.LoginSession.End(Context); Session.Clear(); Session.Abandon(); Response.Redirect(ResolveUrl("~/Auth/Login.aspx?account=new"), false); Context.ApplicationInstance.CompleteRequest(); }
     }
 }

@@ -168,6 +168,7 @@ namespace UIMS.Attendance
         public string DatabaseUrl { get { return (Setting("FirebaseDatabaseUrl") ?? "").TrimEnd('/'); } }
         public bool Enabled { get { return Setting("AttendanceEnabled") == "true"; } }
         public bool LiveWritesEnabled { get { return Setting("AttendanceLiveWritesEnabled") == "true"; } }
+        public bool AuthenticatedWritesEnabled { get { return Setting("AttendanceProductionWritesEnabled") == "true"; } }
         public static bool IsLocalDevelopment(System.Web.HttpContext context)
         {
             // Do not create a localhost-only identity or business-data repository.
@@ -224,7 +225,7 @@ namespace UIMS.Attendance
 
         public void EnsureWriteScope(string path, JObject data)
         {
-            if (Setting("AttendanceProductionWritesEnabled") == "true")
+            if (AuthenticatedWritesEnabled)
             {
                 CheckProductionWrite(path, data);
                 return;
@@ -278,12 +279,13 @@ namespace UIMS.Attendance
                 !DateTime.TryParseExact(parts[2], "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out date) ||
                 string.CompareOrdinal(parts[2], AttendanceService.Today()) > 0 || data == null ||
                 (string)data["assignmentId"] != parts[1] || (string)data["attendanceDate"] != parts[2] ||
-                data["isTestData"] == null || data["isTestData"].Type != JTokenType.Boolean || (bool)data["isTestData"])
+                data["isTestData"] == null || data["isTestData"].Type != JTokenType.Boolean)
                 throw new UIMS.Services.FirebaseException(403, "Production attendance write is outside the authenticated local request scope.");
             foreach (string field in new[] { "studentId", "companyId", "companySupervisorId", "assignmentId" })
                 AttendanceFirebase.CheckKey(AttendanceService.Text(data, field));
-            bool student = actor.Role == "student" && actor.Action == "requestEarly" &&
-                parts[0] == "earlyCheckoutRequests" && (string)data["studentId"] == actor.Id;
+            bool student = actor.Role == "student" && (string)data["studentId"] == actor.Id &&
+                ((actor.Action == "requestEarly" && parts[0] == "earlyCheckoutRequests") ||
+                 (actor.Action == "qr" && parts[0] == "attendance"));
             bool supervisor = actor.Role == "company" && (string)data["companySupervisorId"] == actor.Id &&
                 ((parts[0] == "attendance" && (actor.Action == "issueQr" || actor.Action == "scan" || actor.Action == "review")) ||
                  (parts[0] == "earlyCheckoutRequests" && actor.Action == "review"));

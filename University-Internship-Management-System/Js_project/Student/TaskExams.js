@@ -5,6 +5,7 @@
     let exam, attempt, answers = {}, busy = false, saveTimer, timer, anchor, saveQueue = Promise.resolve();
     let refreshDetails = null;
     let taskFilter = new URLSearchParams(location.search).get('taskId'), loadVersion = 0;
+    let indexedTasks = new Set();
     const notice = $('notice');
     function message(value, error) { notice.textContent = value; notice.className = 'notice ' + (error ? 'error' : 'success'); }
     const now = () => anchor ? anchor.server + performance.now() - anchor.local : null;
@@ -23,7 +24,7 @@
     async function load() {
         const version = ++loadVersion, filter = taskFilter;
         try {
-            const items = await call('list'); if (version !== loadVersion) return; $('examList').replaceChildren();
+            const items = await call('list'); if (version !== loadVersion) return; indexedTasks = new Set(Object.values(items || {}).filter(x=>x?.versionData).map(x=>x.taskId)); window.dispatchEvent(new Event('task-exam-index')); $('examList').replaceChildren();
             for (const [id, item] of Object.entries(items || {})) {
                 if (!item?.versionData || (filter && item.taskId !== filter)) continue;
                 const card = element('article', '', 'exam-card'), button = element('button', 'View exam', 'primary');
@@ -101,6 +102,9 @@
         previous.onclick = () => step(-1); next.onclick = () => step(1);
         actions.append(previous, next, close, submit); popup.append(clock, progress, completion, nav, status, content, actions); update(); selectQuestion(0); popup.showModal(); popup.oncancel = e => { e.preventDefault(); close.click(); };
         if (attempt.status !== 'inProgress') {
+            // A finalized attempt is a receipt, not an editable examination.
+            clock.remove(); progress.remove(); completion.remove(); nav.remove(); content.remove();
+            previous.remove(); next.remove(); submit.remove();
             status.textContent = resultLabel(attempt); close.textContent = 'Close'; close.onclick = () => popup.close();
             const examId = exam.id, attemptId = attempt.id;
             const refreshResult = async () => {
@@ -131,7 +135,7 @@
             if (attempt.status !== 'inProgress') { clearInterval(timer); renderAttempt(); message(resultLabel(attempt)); await load(); } return true;
         } catch (e) { status.textContent = 'Save failed: ' + e.message + ' Your answers remain on this page. Retry when connected.'; return false; } finally { busy = false; }
     }
-    window.StudentTaskExams = Object.freeze({ showTask(id) { taskFilter = id; $('examList').replaceChildren(); notice.textContent = 'Loading examination from Firebase…'; return load(); }, async refresh() { if (refreshDetails) await refreshDetails(); else if (canRefresh()) await load(); } });
+    window.StudentTaskExams = Object.freeze({ hasTask: id => indexedTasks.has(id), index: load, showTask(id) { taskFilter = id; $('examList').replaceChildren(); notice.textContent = 'Loading examination from Firebase…'; return load(); }, async refresh() { if (refreshDetails) await refreshDetails(); else if (canRefresh()) await load(); } });
     if (!embedded) load();
     const canRefresh = () => !document.querySelector('dialog[open]') && (!embedded || (!document.getElementById('studentPanelExam').hidden && document.getElementById('submitModal').classList.contains('show')));
     window.addEventListener('focus', () => { if (canRefresh()) load(); });

@@ -12,20 +12,15 @@
         if (notice) { notice.dataset.tone = error ? 'error' : 'success'; notice.setAttribute('role', error ? 'alert' : 'status'); }
     };
     const connection = value => { const status = document.querySelector('.preview-note'); if (status) status.textContent = value; };
+    function emptyAssignmentMessage() { return state.identity ? 'No tasks are assigned to student ' + state.identity + '. Confirm that your supervisor selected this student account.' : 'Assigned tasks will appear here once your supervisor adds them.'; }
     const modal = id => window.bootstrap && bootstrap.Modal.getOrCreateInstance(by(id));
-    function selectTaskTab(name) {
-        document.querySelectorAll('[data-student-tab]').forEach(button => { const active = button.dataset.studentTab === name; button.setAttribute('aria-selected', String(active)); button.tabIndex = active ? 0 : -1; });
-        document.querySelectorAll('[data-student-panel]').forEach(panel => { panel.hidden = panel.dataset.studentPanel !== name; });
-        by('confirmSubmitBtn').hidden = name !== 'submission' || !editing || by('workDesc').readOnly;
-        if (name === 'exam') window.StudentTaskExams?.showTask(selectedId);
+    function selectTaskTab() {
+        const task=state.tasks.find(t=>t.id===selectedId),isExam=!!(task?.examId||task?.taskType==='exam'||window.StudentTaskExams?.hasTask(task?.id));
+        document.querySelectorAll('[data-student-panel]').forEach(panel=>{panel.hidden=isExam?panel.dataset.studentPanel!=='exam':panel.dataset.studentPanel==='exam';});
+        by('confirmSubmitBtn').hidden=isExam||!editing||by('workDesc').readOnly;
+        if(isExam){by('studentTaskWorkAction').hidden=true;by('requestTaskExtension').hidden=true;}
+        if(isExam)window.StudentTaskExams?.showTask(selectedId);
     }
-    document.querySelector('.student-task-tabs')?.addEventListener('click', event => { const button = event.target.closest('[data-student-tab]'); if (button) selectTaskTab(button.dataset.studentTab); });
-    document.querySelector('.student-task-tabs')?.addEventListener('keydown', event => {
-        const tabs = [...document.querySelectorAll('[data-student-tab]')], index = tabs.indexOf(document.activeElement);
-        if (index < 0 || !['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
-        event.preventDefault(); const next = event.key === 'Home' ? 0 : event.key === 'End' ? tabs.length - 1 : (index + (event.key === 'ArrowRight' ? 1 : -1) + tabs.length) % tabs.length;
-        tabs[next].focus(); selectTaskTab(tabs[next].dataset.studentTab);
-    });
     by('taskFilter')?.add(new Option('Archived', 'archived'));
     async function request(action, data, requestedMethod) {
         const method = requestedMethod || (action ? 'POST' : 'GET');
@@ -54,12 +49,17 @@
         return result;
     }
     async function loadAttachments(taskId) {
-        const host = by('studentTaskAttachments'); if (!host) return;
-        host.textContent = 'Loading authorized task files…';
-        try {
-            const result = await request('attachments', { taskId }, 'GET');
-            host.innerHTML = result.files.length ? result.files.map(file => '<div><a href="../TasksApi.ashx?action=download&fileId=' + encodeURIComponent(file.id) + '">' + escapeHtml(file.fileName) + '</a> <span class="text-muted">(' + escapeHtml(Math.ceil(file.sizeBytes / 1024)) + ' KB · ' + escapeHtml(file.purpose === 'taskAttachment' ? 'Task resource' : 'Submission') + ')</span></div>').join('') : '<span class="text-muted">No files attached to this task.</span>';
-        } catch (error) { host.textContent = error.message; }
+        const host=by('studentTaskAttachments');host.textContent='Loading authorized files…';
+        try{const result=await request('attachments',{taskId},'GET');if(selectedId!==taskId)return;host.replaceChildren();
+            for(const [purpose,label]of [['taskAttachment','Company Resources'],['submissionAttachment','Student Submission Files']]){
+                const group=document.createElement('section'),heading=document.createElement('h6');heading.textContent=label;group.append(heading);
+                const files=result.files.filter(f=>purpose==='taskAttachment'?f.purpose==='taskAttachment':f.purpose!=='taskAttachment');
+                if(!files.length){const empty=document.createElement('p');empty.className='text-muted';empty.textContent='No files provided.';group.append(empty);}
+                for(const file of files){const row=document.createElement('div'),name=document.createElement('span'),button=document.createElement('button');row.className='task-file-row';name.textContent=file.fileName+' · '+Math.ceil(file.sizeBytes/1024)+' KB';button.type='button';button.className='btn btn-light';button.textContent='Download';
+                    button.onclick=async()=>{button.disabled=true;try{const response=await fetch('../TasksApi.ashx?action=download&fileId='+encodeURIComponent(file.id),{credentials:'same-origin',cache:'no-store'});if(!response.ok)throw Error('Authorized download failed. Please retry.');const url=URL.createObjectURL(await response.blob()),link=document.createElement('a');link.href=url;link.download=file.fileName;link.click();setTimeout(()=>URL.revokeObjectURL(url),10000);}catch(e){const error=document.createElement('p');error.className='field-error';error.textContent=e.message;row.append(error);}finally{button.disabled=false;}};row.append(name,button);group.append(row);
+                }host.append(group);
+            }
+        }catch(e){host.textContent=e.message;}
     }
     function statusLabel(status) { return ({ assigned: 'New', inprogress: 'In progress', submitted: 'Awaiting review', revision: 'Not complete', completed: 'Completed' })[status] || status || 'Unknown'; }
     function dateLabel(value) { const date = new Date(value); return isNaN(date.getTime()) ? (value || 'No deadline') : date.toLocaleString(); }
@@ -71,62 +71,57 @@
             if (now() >= deadline) { const status = document.createElement('p'); status.className = 'task-overdue'; status.textContent = task.extension?.status === 'pending' ? 'Overdue · Extension pending' : task.extension?.status === 'rejected' ? 'Overdue · Extension rejected (final)' : 'Overdue · Request an extension to submit'; card.append(status); }
         });
     }
+
+    function syncTaskTitles(){const select=by('taskSearch'),old=select.value,titles=[...new Set(state.tasks.map(t=>t.title))].sort();select.replaceChildren(new Option('All Tasks',''));titles.forEach(t=>select.add(new Option(t,t.toLowerCase())));if(titles.some(t=>t.toLowerCase()===old))select.value=old;by('heroTaskCount').textContent=state.tasks.filter(t=>t.status!=='completed'&&!t.archived).length;by('heroExamCount').textContent=state.tasks.filter(t=>t.examId||t.taskType==='exam'||window.StudentTaskExams?.hasTask(t.id)).length;}
+    function premiumCard(task){const exam=!!(task.examId||task.taskType==='exam'||window.StudentTaskExams?.hasTask(task.id)),pending=task.status==='assigned',working=['inprogress','revision'].includes(task.status),due=Date.parse(task.deadline||task.dueDate),left=due-now();return '<article class="task-card task-board-card task-board-card-readonly" data-status="'+escapeHtml(task.status)+'"><div class="task-board-card-head"><h3>'+escapeHtml(task.title)+'</h3><span class="status-badge">'+escapeHtml(statusLabel(task.status))+'</span></div><p class="task-desc">'+escapeHtml(task.description)+'</p><div class="task-card-dates"><span>Start: '+escapeHtml(dateLabel(task.startsAt||task.createdAt))+'</span><span>Due: '+escapeHtml(dateLabel(task.deadline||task.dueDate))+'</span><span class="'+(left<0?'task-overdue':'')+'">'+(task.status==='completed'?'Completed':task.status==='submitted'?'Submitted for review':Number.isFinite(left)?left<0?'Overdue':Math.ceil(left/3600000)+' hours remaining':'No deadline supplied')+'</span></div><span class="task-type-badge">'+(exam?'Exam':'Standard Task')+'</span>'+(task.status==='submitted'?'<p class="task-review-notice">Awaiting Supervisor Review</p>':'')+(task.status==='completed'?'<p class="task-approved-notice">Approved'+(!exam&&task.score!=null?' · '+escapeHtml(task.score)+' / '+escapeHtml(task.maximum):'')+'</p>':'')+(task.attachmentIds?.length?'<small>Attachments available</small>':'')+'<div class="task-action"><button type="button" class="btn btn-light" data-task-action="details" data-task-id="'+escapeHtml(task.id)+'">'+(working?'Continue Task':'View Details')+'</button>'+(pending?'<button type="button" class="btn btn-primary" data-task-action="start" data-task-id="'+escapeHtml(task.id)+'">Accept Task</button>':'')+'</div></article>';}
+
+    function matchesFilters(task) {
+        const title = (by('taskSearch')?.value || '').toLowerCase();
+        const status = by('taskFilter')?.value || '';
+        return (!task.archived || status === 'archived') && (!title || task.title.toLowerCase() === title) &&
+            (!status || status === 'all' || task.status === status);
+    }
+
     function render() {
-        const query = (by('taskSearch')?.value || '').trim().toLowerCase();
-        const filter = by('taskFilter')?.value || '';
-        const tasks = state.tasks.filter(task => (!task.archived || filter === 'archived') && (!query || (task.title + ' ' + task.description).toLowerCase().includes(query)) && (!filter || filter === 'all' || task.status === filter));
+        syncTaskTitles();
+        const tasks = state.tasks.filter(matchesFilters);
         const list = by('taskList');
         list.querySelectorAll('.task-card').forEach(card => card.remove());
-        const markup = tasks.map(task => {
-            const latest = state.submissions.filter(sub => sub.taskId === task.id).slice(-1)[0];
-            const action = task.status === 'revision' ? 'Resubmit' : task.status === 'inprogress' ? 'Continue task' : task.status === 'assigned' ? 'Start task' : 'View details';
-            const actionName = task.status === 'revision' || task.status === 'inprogress' ? 'submit' : task.status === 'assigned' ? 'start' : 'details';
-            return '<article class="task-card" data-status="' + escapeHtml(task.status) + '"><div class="task-info"><div class="task-head"><h3 class="task-title">' + escapeHtml(task.title) + '</h3><span class="status-badge">' + escapeHtml(statusLabel(task.status)) + '</span></div><p class="task-desc">' + escapeHtml(task.description) + '</p>' +
-                (task.feedback ? '<div class="feedback-note"><strong>Supervisor feedback:</strong> ' + escapeHtml(task.feedback) + '</div>' : '') +
-                '<div class="task-meta"><span><i class="bi bi-calendar-event" aria-hidden="true"></i> ' + escapeHtml(dateLabel(task.deadline)) + '</span><span>' + (task.score == null ? 'Not graded' : 'Score ' + escapeHtml(task.score) + ' / ' + escapeHtml(task.maximum)) + '</span>' + (latest ? '<span>Submission ' + escapeHtml(latest.revision) + '</span>' : '') + '</div></div><div class="task-action"><button type="button" class="btn btn-primary submit-btn" data-task-action="' + actionName + '" data-task-id="' + escapeHtml(task.id) + '">' + action + '</button></div></article>';
-        }).join('');
+        const markup = tasks.map(task => premiumCard(task)).join('');
         if (markup) by('noTasksMsg').insertAdjacentHTML('beforebegin', markup);
         decorateTaskStates(list);
         const empty = by('noTasksMsg');
         if (empty) {
             empty.style.display = tasks.length ? 'none' : 'block';
             empty.querySelector('h4').textContent = state.tasks.length ? 'No tasks match these filters' : 'No tasks assigned yet';
-            empty.querySelector('p').textContent = state.tasks.length ? 'Clear the search or choose All Statuses to see tasks.' : 'Assigned tasks will appear here once your supervisor adds them.';
+            empty.querySelector('p').textContent = state.tasks.length ? 'Choose All Tasks or All Statuses to see tasks.' : emptyAssignmentMessage();
         }
-        document.querySelectorAll('.stat-details h3').forEach((el, i) => { el.textContent = [state.tasks.length, state.tasks.filter(t => t.status === 'inprogress').length, state.tasks.filter(t => t.status === 'submitted').length, state.tasks.filter(t => t.status === 'revision').length][i] ?? 0; });
-        const select = by('boardPlacementSelect');
-        if (select) {
-            const previous = select.value;
-            const placements = Array.from(new Map(state.tasks.filter(task => task.placementId).map(task => [task.placementId, task])).entries());
-            select.innerHTML = placements.map(([id]) => '<option value="' + escapeHtml(id) + '">' + escapeHtml(id) + '</option>').join('');
-            if (!placements.length) select.add(new Option(boardLoadError ? 'Placements unavailable' : 'No linked task placements', ''));
-            if (placements.some(([id]) => id === previous)) select.value = previous;
-            else if (placements.length) select.value = placements[0][0];
-        }
+        document.querySelectorAll('.stat-details h3').forEach((el, i) => { el.textContent = [state.tasks.length,state.tasks.filter(t=>t.status==='assigned').length,state.tasks.filter(t=>['inprogress','revision'].includes(t.status)).length,state.tasks.filter(t=>t.status==='submitted').length,state.tasks.filter(t=>t.status==='completed').length][i] ?? 0; });
         const board = by('taskBoard'), listHost = by('taskList');
         if (board && listHost) { board.hidden = viewMode !== 'board'; listHost.hidden = viewMode === 'board'; }
         renderBoard();
     }
     function renderBoard() {
         const host = by('taskBoard'); if (!host) return;
+        const scrollPositions = new Map([...host.querySelectorAll('.task-board-column')].map(column => [column.dataset.columnId, column.querySelector('.task-board-dropzone')?.scrollTop || 0]));
+        if(boardState){boardState.columns=[{id:'todo',title:'New / Pending'},{id:'inProgress',title:'In Progress'},{id:'review',title:'Review'},{id:'done',title:'Complete'}];boardState.tasks.forEach(t=>t.columnId=({assigned:'todo',inprogress:'inProgress',revision:'inProgress',submitted:'review',completed:'done'})[t.status]||'todo');}
         if (viewMode !== 'board') { host.hidden = true; return; }
         host.hidden = false;
         host.setAttribute('aria-busy', 'false');
-        if (!boardState || !boardState.columns.length) { TaskDialogs.renderBoardShell(host, { loading: loadingTasks, error: boardLoadError }); return; }
-        const query = (by('taskSearch')?.value || '').trim().toLowerCase(), filter = by('taskFilter')?.value || '';
-        const tasks = boardState.tasks.filter(task => (!query || (task.title + ' ' + task.description).toLowerCase().includes(query)) && (!filter || filter === 'all' || task.status === filter));
+        if (!boardState || !boardState.columns.length) { TaskDialogs.renderBoardShell(host, { loading: loadingTasks, error: boardLoadError }); if (!loadingTasks && !boardLoadError && !state.tasks.length) host.querySelector('.board-state-notice span').textContent = emptyAssignmentMessage(); return; }
+        const tasks = state.tasks.filter(matchesFilters).map(task => ({ ...task, ...boardState.tasks.find(card => card.id === task.id), columnId: ({assigned:'todo',inprogress:'inProgress',revision:'inProgress',submitted:'review',completed:'done',archived:'done'})[task.status] || 'todo', order: boardState.tasks.find(card => card.id === task.id)?.order || 0 }));
         host.innerHTML = '<div class="task-board-columns">' + boardState.columns.map(column => {
             const cards = tasks.filter(task => task.columnId === column.id).sort((a, b) => a.order - b.order || a.id.localeCompare(b.id));
-            return '<section class="task-board-column" data-column-id="' + escapeHtml(column.id) + '"><header><h5>' + escapeHtml(column.title) + '</h5><span>' + cards.length + '</span></header><div class="task-board-dropzone">' + cards.map(task =>
-                '<article class="task-board-card task-board-card-readonly"><div class="task-board-card-head"><strong>' + escapeHtml(task.title) + '</strong><span class="status-badge">' + escapeHtml(statusLabel(task.status)) + '</span></div><p>' + escapeHtml(task.description) + '</p><small>Due ' + escapeHtml(dateLabel(task.dueDate)) + '</small><button type="button" class="btn btn-light" data-task-action="details" data-task-id="' + escapeHtml(task.id) + '">View task</button></article>'
-            ).join('') + (cards.length ? '' : '<div class="task-board-column-empty">No tasks in this column</div>') + '</div></section>';
+            return '<section class="task-board-column" data-column-id="' + escapeHtml(column.id) + '"><header><h5>' + escapeHtml(column.title) + '</h5><span>' + cards.length + '</span></header><div class="task-board-dropzone">' + cards.map(task => premiumCard({...state.tasks.find(t=>t.id===task.id),...task})).join('') + (cards.length ? '' : '<div class="task-board-column-empty">No tasks in this column</div>') + '</div></section>';
         }).join('') + '</div>';
         decorateTaskStates(host);
+        host.querySelectorAll('.task-board-column').forEach(column => { column.querySelector('.task-board-dropzone').scrollTop = scrollPositions.get(column.dataset.columnId) || 0; });
     }
     async function refreshBoard() {
-        const placementId = by('boardPlacementSelect')?.value;
-        if (!placementId) { boardState = null; renderBoard(); return false; }
-        try { boardState = await request('board', { placementId }, 'GET'); boardLoadError = ''; renderBoard(); return true; }
+        const placements = [...new Set(state.tasks.map(task => task.placementId).filter(Boolean))];
+        if (!placements.length) { boardState = null; renderBoard(); return false; }
+        try { const boards = await Promise.all(placements.map(placementId => request('board', { placementId }, 'GET')));
+            boardState = { canMove: false, columns: boards[0].columns, tasks: boards.flatMap(board => board.tasks) }; boardLoadError = ''; renderBoard(); return true; }
         catch (error) { boardState = null; boardLoadError = error.message; loadingTasks = false; renderBoard(); message(error.message, true); return false; }
     }
     function openSubmit(task, readOnly) {
@@ -134,7 +129,7 @@
         editing = !readOnly; allowClose = false;
         let information = by('studentTaskInstructions');
         if (!information) { information = document.createElement('section'); information.id = 'studentTaskInstructions'; information.className = 'feedback-note'; by('submitModal').querySelector('.modal-body').prepend(information); }
-        information.innerHTML = '<h6>Task instructions</h6><p style="white-space:pre-wrap">' + escapeHtml(task.description) + '</p><p style="white-space:pre-wrap">' + escapeHtml(task.evaluationCriteria || task.instructions || '') + '</p><p>Deadline: ' + escapeHtml(dateLabel(task.deadline)) + ' · Maximum grade: ' + escapeHtml(task.maximum) + '</p>';
+        information.innerHTML = '<div class="task-detail-metrics">Start: ' + escapeHtml(dateLabel(task.startsAt || task.createdAt)) + ' · Deadline: ' + escapeHtml(dateLabel(task.deadline)) + '</div><h6>Task instructions</h6><p style="white-space:pre-wrap">' + escapeHtml(task.description) + '</p><p style="white-space:pre-wrap">' + escapeHtml(task.criteria || task.evaluationCriteria || task.instructions || '') + '</p><p>Deadline: ' + escapeHtml(dateLabel(task.deadline)) + ' · Maximum grade: ' + escapeHtml(task.maximum) + '</p>';
         let action = by('studentTaskWorkAction');
         if (!action) { action = document.createElement('button'); action.id = 'studentTaskWorkAction'; action.type = 'button'; action.className = 'btn btn-primary'; by('submitModal').querySelector('.modal-footer').prepend(action); }
         action.hidden = !readOnly || task.archived || !['assigned', 'inprogress', 'revision'].includes(task.status) || task.score != null;
@@ -149,7 +144,7 @@
         };
         let examLink = by('studentTaskExamLink');
         if (!examLink) { examLink = document.createElement('button'); examLink.type = 'button'; examLink.id = 'studentTaskExamLink'; examLink.className = 'btn btn-light'; by('submitModal').querySelector('.modal-footer').prepend(examLink); }
-        examLink.textContent = 'View exam'; examLink.onclick = () => selectTaskTab('exam');
+        examLink.hidden = true; examLink.textContent = 'View exam'; examLink.onclick = () => selectTaskTab('exam');
         const submissions = state.submissions.filter(sub => sub.taskId === task.id);
         const latest = submissions.slice(-1)[0];
         by('submitModal').querySelector('.modal-title').textContent = task.title + (task.score == null ? '' : ' · Company task grade');
@@ -169,13 +164,6 @@
         by('studentTaskAttachments').textContent = 'Loading authorized task files…';
         for (const [version, instruction] of Object.entries(task.instructionVersions || {}).filter(([, value]) => value)) { const details = document.createElement('details'), heading = document.createElement('summary'), text = document.createElement('p'); heading.textContent = 'Previous instructions · version ' + version; text.textContent = instruction.title + '\n' + instruction.description + '\n' + instruction.evaluationCriteria; details.append(heading, text); by('studentSubmissionHistory').append(details); }
         for (const notification of task.notifications || []) { const p = document.createElement('p'); p.textContent = notification.message; by('studentSubmissionHistory').append(p); }
-        let taskInfo = by('studentTaskInstructions');
-        if (!taskInfo) { taskInfo = document.createElement('section'); taskInfo.id = 'studentTaskInstructions'; taskInfo.className = 'wr-detail-block'; by('workDesc').closest('.mb-4')?.prepend(taskInfo); if (!taskInfo.isConnected) by('workDesc').before(taskInfo); }
-        taskInfo.replaceChildren();
-        const heading = document.createElement('h3'); heading.textContent = 'Task instructions';
-        const description = document.createElement('p'); description.textContent = task.description || 'No description supplied.';
-        const instructions = document.createElement('p'); instructions.textContent = task.instructions || '';
-        taskInfo.append(heading, description, instructions);
         by('workDesc').value = readOnly ? (latest?.description || '') : '';
         by('workLink').value = readOnly ? (latest?.link || '') : '';
         if (!readOnly) by('workFile').value = '';
@@ -193,7 +181,7 @@
             if (!await TaskDialogs.open('Request deadline extension', body, { confirm: 'Send request' })) return;
             try { await request('extension', { taskId: task.id, reason: body.querySelector('textarea').value, deadline: new Date(body.querySelector('input').value).toISOString() }); allowClose = true; modal('submitModal').hide(); await refresh(); message('Extension request sent to your company supervisor.', false); } catch (error) { by('modalError').textContent = error.message; }
         };
-        selectTaskTab(readOnly ? 'details' : 'submission');
+        selectTaskTab();
         modal('submitModal')?.show();
         loadAttachments(task.id);
     }
@@ -231,7 +219,7 @@
         if (busy || !selectedId) return;
         const description = by('workDesc').value.trim(), link = by('workLink').value.trim();
         let firstInvalid = null;
-        for (const [id, value] of [['workDesc', description], ['workLink', link]]) {
+        for (const [id, value] of [['workDesc', description || by('workFile').files.length], ['workLink', link || by('workFile').files.length]]) {
             const field = by(id); let error = by(id + 'Validation');
             if (!error) { error = document.createElement('p'); error.id = id + 'Validation'; error.className = 'field-error'; field.after(error); field.setAttribute('aria-describedby', error.id); }
             field.classList.toggle('is-invalid', !value); field.setAttribute('aria-invalid', String(!value)); error.textContent = value ? '' : 'This field is required.';
@@ -251,15 +239,14 @@
     });
     by('boardModeButton')?.addEventListener('click', () => { viewMode = 'board'; by('boardModeButton').classList.add('btn-primary'); by('boardModeButton').classList.remove('btn-outline-primary'); by('listModeButton').classList.remove('btn-primary'); by('listModeButton').classList.add('btn-outline-primary'); by('boardModeButton').setAttribute('aria-pressed', 'true'); by('listModeButton').setAttribute('aria-pressed', 'false'); render(); });
     by('listModeButton')?.addEventListener('click', () => { viewMode = 'list'; by('listModeButton').classList.add('btn-primary'); by('listModeButton').classList.remove('btn-outline-primary'); by('boardModeButton').classList.remove('btn-primary'); by('boardModeButton').classList.add('btn-outline-primary'); by('boardModeButton').setAttribute('aria-pressed', 'false'); by('listModeButton').setAttribute('aria-pressed', 'true'); render(); });
-    by('boardPlacementSelect')?.addEventListener('change', refreshBoard);
-    by('taskSearch')?.addEventListener('input', render); by('taskFilter')?.addEventListener('change', render);
-    by('taskFilter')?.addEventListener('change', () => { if (by('taskFilter').value === 'archived') by('listModeButton').click(); });
+    by('taskSearch')?.addEventListener('change', render); by('taskFilter')?.addEventListener('change', render);
     function idleRefresh() { if (document.hidden || busy || by('submitModal').classList.contains('show')) return; if (!refreshPending) refreshPending = refresh().finally(() => { refreshPending = null; }); }
     by('submitModal').addEventListener('hide.bs.modal', event => {
         if (busy && !allowClose) { event.preventDefault(); return; }
         if (allowClose || !editing || !(by('workDesc').value.trim() || by('workLink').value.trim() || by('workFile').files.length)) return;
         event.preventDefault(); TaskDialogs.confirm('Discard unfinished submission?', 'Your unsent work will be discarded.', 'Discard').then(confirmed => { if (confirmed) { allowClose = true; modal('submitModal').hide(); } });
     });
+    window.StudentTaskExams?.index(); window.addEventListener('task-exam-index',()=>{render();});
     window.addEventListener('focus', idleRefresh); document.addEventListener('visibilitychange', idleRefresh);
     TaskDialogs.watch(refresh, () => !busy);
     if (window.Sys?.WebForms?.PageRequestManager) Sys.WebForms.PageRequestManager.getInstance().add_endRequest(refresh);

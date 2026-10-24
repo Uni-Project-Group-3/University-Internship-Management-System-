@@ -86,7 +86,7 @@ namespace University_Internship_Management_System.Student
 
         private Task<JObject> LoadIssuedQr(string studentId)
         {
-            return attendanceService.ReadIssuedQr(studentId, Request.Form["attendanceAction"], LocalDemoAllowed);
+            return attendanceService.CreateQr(studentId, Request.Form["attendanceAction"], LocalDemoAllowed, attendanceRequest.VerifiedUid ?? "");
         }
 
         private async Task RequestEarlyDeparture(string studentId)

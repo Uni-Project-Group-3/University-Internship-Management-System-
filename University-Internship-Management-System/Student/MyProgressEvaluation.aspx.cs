@@ -32,8 +32,7 @@ namespace University_Internship_Management_System.Student
         protected void DemoStudentChoice_Changed(object sender, EventArgs e) { demoSelectionChanged = true; }
         protected void ToggleExamDemo_Click(object sender, EventArgs e) { }
         protected void Exams_ItemCommand(object source, RepeaterCommandEventArgs e) { }
-        protected void btnLogout_Click(object sender, EventArgs e)
-        { System.Web.Security.FormsAuthentication.SignOut(); Session.Clear(); Session.Abandon(); Response.Redirect("~/Auth/Login.aspx", false); Context.ApplicationInstance.CompleteRequest(); }
+        protected void btnLogout_Click(object sender, EventArgs e) { University_Internship_Management_System.Shared.LoginSession.End(Context); Session.Clear(); Session.Abandon(); Response.Redirect(ResolveUrl("~/Auth/Login.aspx?account=new"), false); Context.ApplicationInstance.CompleteRequest(); }
         protected override void Render(HtmlTextWriter writer)
         {
             if (fileResponse) return; // CompleteRequest alone does not stop the Web Forms renderer.

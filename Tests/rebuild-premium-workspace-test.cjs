@@ -1,0 +1,25 @@
+const fs=require('fs'),cp=require('child_process');const p='Tests/FinalEvaluation/TaskWorkspace.browser.cjs';let s=cp.execFileSync('git',['show','HEAD:'+p],{encoding:'utf8'}).replaceAll('\r\n','\n');
+function cut(from,to,insert=''){const a=s.indexOf(from),b=s.indexOf(to,a+from.length);if(a<0||b<0)throw Error('Missing test marker '+from);s=s.slice(0,a)+insert+s.slice(b);}
+cut("        await page.locator('[data-board-task-id=\"TEST-T-0\"]').dragTo", "        await page.locator('[data-board-task-id=\"TEST-T-0\"] [data-task-action=\"review\"]').click();",`        await page.locator('[data-board-task-id="TEST-T-0"]').dragTo(page.locator('[data-column-id="done"] .task-board-dropzone'));
+        await page.getByText('Use the authorized task action to change its stage. Drag only reorders within a stage.',{exact:true}).waitFor();assert(!positions.has('TEST-T-0'));assert(!positions.has('TEST-T-1'));
+        console.log('PASS dragging cannot bypass acceptance or supervisor approval');
+`);
+s=s.replace("assert.strictEqual(await page.locator('[data-company-tab]').count(), 6)","assert.strictEqual(await page.locator('[data-company-tab]').count(), 0)");
+cut("        await page.getByLabel('Move card to column')","        await page.locator('#reviewModal .btn-close')");
+cut('        const cardMove =',"        await page.locator('[data-bs-target=\"#createTaskModal\"]').click();","        console.log('PASS company single popup and shared board/list filters');\n");
+s=s.replaceAll("['newTaskDeadline', '2027-01-01T14:30']","['newTaskStart', '2026-10-23T09:00'], ['newTaskDeadline', '2027-01-01T14:30']");
+cut("        for (const [tab, panel]","        await page.locator('dialog[open] .exam-overview-grid').waitFor();",`        assert.strictEqual(await page.locator('[data-student-tab]').count(),0);assert.equal(await page.locator('#studentPanelSubmission').isVisible(),false);
+        await page.locator('#taskExamList').getByRole('button',{name:'View exam',exact:true}).click();
+`);
+s=s.replace("        await page.locator('#studentTaskInstructions').waitFor();\n        assert.strictEqual", "        assert.strictEqual");
+cut("        await page.locator('#studentTabDetails').click();","        await page.locator('#studentTaskInstructions').waitFor();",`        console.log('PASS exam task popup has examination-only content');
+        await page.locator('#submitModal .btn-close').click();tasks[0].id='TEST-STANDARD';tasks[0].taskType='standard';tasks[0].status='assigned';
+        await page.goto(base+'/Student/MyTasks.aspx');await page.locator('#taskBoard [data-task-action="details"][data-task-id="TEST-STANDARD"]').click();
+`);
+s=s.replace("taskId: tasks[0].id, serverNow:","taskId: 'TEST-T-0', serverNow:");
+s=s.replaceAll('companyMonitor.locator(\'[data-board-task-id="TEST-T-0"]','companyMonitor.locator(\'[data-board-task-id="TEST-STANDARD"]');
+s=s.replace("await page.locator('[data-board-task-id=\"TEST-T-0\"] [data-task-action=\"review\"]').click(); await page.locator('[data-company-tab=\"grading\"]').click();","await page.locator('[data-board-task-id=\"TEST-STANDARD\"] [data-task-action=\"review\"]').click();");
+s=s.replace("['To Do', 'In Progress', 'Awaiting Review', 'Done']","['New / Pending', 'In Progress', 'Review', 'Complete']");
+s=s.replace(".replace(/<%@[^%]*%>/g, '')",".replace(/<script runat=\"server\">[\\s\\S]*?<\\/script>/g,'').replace(/<%@[^%]*%>/g, '')");
+s=s.replace("file.endsWith('.aspx') ? 'text/html'","file.endsWith('.aspx') ? 'text/html; charset=utf-8'");
+fs.writeFileSync(p,s);

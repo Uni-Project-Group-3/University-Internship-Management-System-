@@ -4,28 +4,35 @@
     const storageKey = 'uims.firebase.authentication';
     const form = document.querySelector('.auth-layout');
     let busy = false, refreshing, cooldownUntil = 0, cooldownTimer, authRetryAt = 0;
+    let signingOut = false;
     function cooldown(seconds) {
         cooldownUntil = performance.now() + Math.max(1, Math.min(3600, Number(seconds) || 60)) * 1000;
         clearInterval(cooldownTimer);
         const tick = () => {
             const left = Math.max(0, Math.ceil((cooldownUntil - performance.now()) / 1000)), button = document.getElementById('SignIn');
-            if (button) { button.disabled = busy || left > 0; button.textContent = left ? 'Sign In (' + String(Math.floor(left / 60)).padStart(2, '0') + ':' + String(left % 60).padStart(2, '0') + ')' : 'Sign In'; }
+            if (button) {
+                button.disabled = busy || left > 0;
+                const label = window.UimsLoginAnimation ? 'Login' : 'Sign In';
+                const text = left ? label + ' (' + String(Math.floor(left / 60)).padStart(2, '0') + ':' + String(left % 60).padStart(2, '0') + ')' : label;
+                if (button.tagName === 'INPUT') button.value = text; else button.textContent = text;
+            }
             if (!left) clearInterval(cooldownTimer);
         }; tick(); cooldownTimer = setInterval(tick, 1000);
     }
     function load() { try { return JSON.parse(sessionStorage.getItem(storageKey) || 'null'); } catch { sessionStorage.removeItem(storageKey); return null; } }
     function save(data) {
+        if (signingOut) return;
         const lifetime = Number(data.expiresIn);
         if (!data.idToken || !data.refreshToken || !Number.isFinite(lifetime) || lifetime <= 0) throw Error('Firebase returned an incomplete authentication session.');
         sessionStorage.setItem(storageKey, JSON.stringify({ idToken: data.idToken, refreshToken: data.refreshToken, tabTicket: data.tabTicket, expiresAt: Date.now() + Math.min(lifetime, 1800) * 1000 }));
     }
-    async function request(action, payload = {}) {
+    async function request(action, payload = {}, logoutSession = null) {
         if (['signIn', 'refresh', 'identity'].includes(action) && performance.now() < authRetryAt) {
             const error = Error('Authentication requests are temporarily paused. Your existing session is retained.');
             error.status = 429; error.retryAfterSeconds = Math.max(1, Math.ceil((authRetryAt - performance.now()) / 1000)); throw error;
         }
-        let auth = load();
-        if (auth && !['configuration', 'signIn', 'refresh'].includes(action) && auth.expiresAt < Date.now() + 90000) {
+        let auth = logoutSession || load();
+        if (auth && !['configuration', 'signIn', 'refresh', 'logout'].includes(action) && auth.expiresAt < Date.now() + 90000) {
             if (!refreshing) refreshing = request('refresh', { refreshToken: auth.refreshToken }).then(save).finally(() => { refreshing = null; });
             await refreshing; auth = load();
         }
@@ -33,7 +40,7 @@
         const timeout = setTimeout(() => controller.abort(), 65000);
         try {
             const response = await fetch(endpoint, { method: 'POST', credentials: 'same-origin', cache: 'no-store', signal: controller.signal,
-                headers: { 'Content-Type': 'application/json', ...(auth?.idToken && !['signIn', 'configuration', 'refresh'].includes(action) ? { Authorization: 'Bearer ' + auth.idToken } : {}) },
+                headers: { 'Content-Type': 'application/json', ...(auth?.idToken && !['signIn', 'configuration', 'refresh'].includes(action) ? { Authorization: 'Bearer ' + auth.idToken } : {}), ...(action === 'logout' && auth?.tabTicket ? { 'X-UIMS-Session': auth.tabTicket } : {}) },
                 body: JSON.stringify({ ...payload, action }) });
             const responseText = await response.text();
             let result;
@@ -65,6 +72,10 @@
         if (error.status === 429) { status(''); if (form) cooldown(error.retryAfterSeconds); return; }
         status(error.message);
     }
+    async function loginFeedback(phase) {
+        // Presentation is optional; an animation failure must never interrupt authentication.
+        try { if (form) await window.UimsLoginAnimation?.[phase]?.(); } catch (_) { /* Preserve the existing auth flow. */ }
+    }
     function schemaTools() {
         if (document.getElementById('firebaseSchemaInspect')) return;
         const mount = document.getElementById('loginContent') || document.querySelector('main');
@@ -81,18 +92,20 @@
         });
     }
     async function acceptSignIn(data) {
+        if (signingOut) return;
         if (data.mustChangePassword) {
             sessionStorage.removeItem(storageKey);
+            await loginFeedback('success');
             const url = new URL('Auth/Login.aspx?change=required', new URL('./', endpoint));
             location.assign(url.href);
             return;
         }
         save(data);
         const password = document.getElementById('Password'); if (password) password.value = '';
-        status('Firebase identity verified: ' + data.role + ' / ' + data.profileId + '.');
+        status(window.UimsLoginAnimation ? 'Signed in. Opening your workspace…' : 'Firebase identity verified: ' + data.role + ' / ' + data.profileId + '.');
         const old = document.getElementById('firebaseSchemaInspect');
         if (data.role !== 'admin' && old) ['firebaseSchemaInspect', 'firebaseSchemaCollection', 'firebaseSchemaResult'].forEach(id => document.getElementById(id)?.remove());
-        if (form) await navigate(dashboards[data.role]);
+        if (form) { await loginFeedback('success'); await navigate(dashboards[data.role]); }
     }
     if (form) form.addEventListener('submit', async event => {
         if (event.submitter && event.submitter.dataset.action !== 'login') return;
@@ -100,11 +113,21 @@
         if (busy) return;
         if (performance.now() < cooldownUntil) return;
         const email = document.getElementById('Email'), password = document.getElementById('Password');
-        if (!email.value.trim() || !email.checkValidity() || !password.value) { status('Enter a valid email and password.'); return; }
+        if (!email.value.trim() || !email.checkValidity() || !password.value) {
+            const emailValid = !!email.value.trim() && email.checkValidity();
+            email.setAttribute('aria-invalid', String(!emailValid)); password.setAttribute('aria-invalid', String(!password.value));
+            const emailError = document.getElementById('emailError'), passwordError = document.getElementById('passwordError');
+            if (emailError) emailError.textContent = emailValid ? '' : 'Enter a valid email address.';
+            if (passwordError) passwordError.textContent = password.value ? '' : 'Enter your password.';
+            status('Enter a valid email and password.'); (emailValid ? password : email).focus(); return;
+        }
+        email.removeAttribute('aria-invalid'); password.removeAttribute('aria-invalid');
+        for (const id of ['emailError', 'passwordError']) { const node = document.getElementById(id); if (node) node.textContent = ''; }
         busy = true; const button = document.getElementById('SignIn'); button.disabled = true; form.setAttribute('aria-busy', 'true');
-        status('Verifying Firebase Authentication and the UID/profile mapping…');
+        loginFeedback('begin');
+        status(window.UimsLoginAnimation ? 'Signing in…' : 'Verifying Firebase Authentication and the UID/profile mapping…');
         try { await acceptSignIn(await request('signIn', { email: email.value.trim(), password: password.value })); }
-        catch (error) { showError(error); }
+        catch (error) { showError(error); await loginFeedback('error'); }
         finally { busy = false; button.disabled = performance.now() < cooldownUntil; form.removeAttribute('aria-busy'); }
     }, true);
     const dashboards = {
@@ -123,6 +146,7 @@
         return auth.idToken;
     }
     async function navigate(target) {
+        if (signingOut) return;
         const url = new URL(target, new URL('./', endpoint));
         if (url.origin !== endpoint.origin) throw Error('Invalid application navigation target.');
         if (!load()) { location.assign(url.href); return; }
@@ -137,6 +161,10 @@
         document.body.append(post); post.submit();
     }
     document.addEventListener('click', event => {
+        const logoutControl = event.target.closest('a,button,input[type="submit"]');
+        if (logoutControl && (/log\s*out/i.test(logoutControl.textContent || logoutControl.value || '') || /logout/i.test(logoutControl.id))) {
+            event.preventDefault(); event.stopImmediatePropagation(); window.UimsFirebase.logout(); return;
+        }
         const anchor = event.target.closest('a[href]');
         if (!anchor || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey || anchor.target === '_blank') return;
         if (/log\s*out/i.test(anchor.textContent) || /logout/i.test(anchor.id)) {
@@ -146,7 +174,7 @@
         if (url.origin === endpoint.origin && /\/Auth\/Login(?:\.aspx)?$/i.test(url.pathname)) sessionStorage.removeItem(storageKey);
         if (url.origin !== endpoint.origin || !/\/(Student|Company|Academic|Coordinator)\/[^/]+(?:\.aspx)?$/i.test(url.pathname)) return;
         event.preventDefault(); navigate(url.href).catch(showError);
-    });
+    }, true);
     if (!form && /Dashboard(?:\.aspx)?$/i.test(location.pathname)) {
         document.querySelectorAll('main tbody').forEach(body => { body.replaceChildren(); const row = body.insertRow(); const cell = row.insertCell(); cell.colSpan = 20; cell.textContent = 'Live dashboard records are pending verified schema mapping.'; });
         document.querySelectorAll('main .list-row').forEach(row => row.remove());
@@ -155,9 +183,12 @@
         request('identity').then(data => { if (data.role === 'admin') schemaTools(); }).catch(showError);
     }
     window.UimsFirebase = Object.freeze({ request, acceptSignIn, getIdToken, navigate, async logout() {
-        try { await request('logout'); } catch (_) { /* local tab tokens are still cleared below */ }
+        if (signingOut) return;
+        const session = load(); signingOut = true;
+        // Clear this tab before awaiting the network so an in-flight refresh cannot restore it.
         sessionStorage.removeItem(storageKey);
-        location.href = new URL('Auth/Login.aspx', new URL('./', endpoint)).href;
+        try { await request('logout', {}, session); } catch (_) { /* Login stays in explicit account-entry mode even if the network fails. */ }
+        location.replace(new URL('Auth/Login.aspx?account=new', new URL('./', endpoint)).href);
     } });
     async function restoreSession() {
         if (new URLSearchParams(location.search).get('account') === 'new') { sessionStorage.removeItem(storageKey); return; }

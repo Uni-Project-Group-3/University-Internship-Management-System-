@@ -110,7 +110,6 @@ namespace University_Internship_Management_System.Coordinator
             if(api){Response.ContentType="application/json";writer.Write(result??"{\"error\":\"Refresh the page and retry.\"}");return;}
             if(authorized)base.Render(writer);
         }
-        protected void btnLogout_Click(object sender,EventArgs e)
-        {FormsAuthentication.SignOut();Session.Clear();Session.Abandon();Response.Redirect("~/Auth/Login.aspx",false);Context.ApplicationInstance.CompleteRequest();}
+        protected void btnLogout_Click(object sender,EventArgs e) { University_Internship_Management_System.Shared.LoginSession.End(Context); Session.Clear(); Session.Abandon(); Response.Redirect(ResolveUrl("~/Auth/Login.aspx?account=new"), false); Context.ApplicationInstance.CompleteRequest(); }
     }
 }

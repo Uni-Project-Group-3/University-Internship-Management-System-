@@ -23,39 +23,58 @@ internal static partial class Program
         var student = UIMS.Tasks.TaskActor.FromVerifiedProfile("auth-student", "student",
             JObject.Parse("{\"role\":\"student\",\"isActive\":true,\"studentId\":\"ST-1\"}"));
         var db = TaskDbWithPlacement();
+        var examOnly = BoardTask("EXAM-ONLY", status: "In Progress");
+        examOnly["taskType"] = "exam"; examOnly["dueDate"] = DateTimeOffset.UtcNow.AddDays(1).ToString("o");
+        db.Records["tasks/EXAM-ONLY"] = examOnly;
+        await Reject<UIMS.Services.FirebaseException>(() => OfflineTaskService(db, student, settings).SubmitAsync("EXAM-ONLY", "Completed", "https://example.test/work", "", CancellationToken.None));
+        examOnly["status"] = "Submitted"; examOnly["submissions"] = JArray.Parse("[{\"description\":\"Previous work\"}]");
+        await Reject<UIMS.Services.FirebaseException>(() => OfflineTaskService(db, company, settings).ReviewAsync("EXAM-ONLY", "grade", 1, "", CancellationToken.None));
+        examOnly["score"] = 99; examOnly["feedback"] = "Private legacy exam feedback";
+        var privateBoard = await OfflineTaskService(db, student, settings).LoadBoardAsync("PLACE-1", CancellationToken.None);
+        Assert(privateBoard["tasks"].First(x => (string)x["id"] == "EXAM-ONLY")["score"].Type == JTokenType.Null);
+        var privateList = await OfflineTaskService(db, student, settings).LoadAsync("student", CancellationToken.None);
+        var privateExam = privateList["tasks"].First(x => (string)x["id"] == "EXAM-ONLY");
+        Assert(privateExam["score"].Type == JTokenType.Null && (string)privateExam["feedback"] == "");
+        db.Records.Remove("tasks/EXAM-ONLY");
+        var scheduled = BoardTask("SCHEDULED", status: "Assigned"); scheduled["startsAt"] = DateTimeOffset.UtcNow.AddDays(1).ToString("o");
+        db.Records["tasks/SCHEDULED"] = scheduled;
+        await Reject<UIMS.Services.FirebaseException>(() => OfflineTaskService(db, student, settings).StartAsync("SCHEDULED", CancellationToken.None));
+        db.Records.Remove("tasks/SCHEDULED");
         db.Records["tasks/TASK-A"] = BoardTask("TASK-A", status: "Submitted");
-        db.Records["tasks/TASK-B"] = BoardTask("TASK-B", status: "Completed");
+        db.Records["tasks/TASK-B"] = BoardTask("TASK-B", status: "Submitted");
         db.Records["tasks/TASK-C"] = BoardTask("TASK-C", status: "In Progress");
 
         var loaded = await UIMS.Tasks.TasksApiHandler.DispatchAsync(OfflineTaskService(db, company, settings), "GET", "board",
             new JObject { ["placementId"] = "PLACE-1" }, CancellationToken.None);
         Assert((string)loaded["placementId"] == "PLACE-1" && (bool)loaded["canMove"]);
         Assert(((JArray)loaded["columns"]).Count == 4 && ((JArray)loaded["tasks"]).Count == 3);
-        Assert(((JArray)loaded["tasks"]).All(x => (string)x["columnId"] == "todo")); // Legacy records default to To do.
+        Assert((string)loaded["tasks"].First(x => (string)x["id"] == "TASK-A")["columnId"] == "review");
+        Assert((string)loaded["tasks"].First(x => (string)x["id"] == "TASK-C")["columnId"] == "inProgress");
+        await Reject<UIMS.Services.FirebaseException>(() => OfflineTaskService(db, company, settings).MoveBoardTaskAsync("PLACE-1", "TASK-A", "done", null, "forbidden-completion", CancellationToken.None));
         Assert(!(bool)(await UIMS.Tasks.TasksApiHandler.DispatchAsync(OfflineTaskService(db, student, settings), "GET", "board",
             new JObject { ["placementId"] = "PLACE-1" }, CancellationToken.None))["canMove"]);
 
         var moved = await UIMS.Tasks.TasksApiHandler.DispatchAsync(OfflineTaskService(db, company, settings), "POST", "move",
-            new JObject { ["placementId"] = "PLACE-1", ["taskId"] = "TASK-A", ["columnId"] = "inProgress", ["beforeTaskId"] = JValue.CreateNull(), ["operationId"] = "op-move-a" }, CancellationToken.None);
+            new JObject { ["placementId"] = "PLACE-1", ["taskId"] = "TASK-A", ["columnId"] = "review", ["beforeTaskId"] = JValue.CreateNull(), ["operationId"] = "op-move-a" }, CancellationToken.None);
         Assert((bool)moved["success"] && !(bool)moved["duplicate"]);
         Assert((string)((JObject)db.Records["tasks/TASK-A"])["status"] == "Submitted"); // Board movement never changes lifecycle status.
-        Assert((string)((JObject)db.Records["taskBoards/PLACE-1"])["positions"]["TASK-A"]["columnId"] == "inProgress");
+        Assert((string)((JObject)db.Records["taskBoards/PLACE-1"])["positions"]["TASK-A"]["columnId"] == "review");
 
         await UIMS.Tasks.TasksApiHandler.DispatchAsync(OfflineTaskService(db, company, settings), "POST", "move",
-            new JObject { ["placementId"] = "PLACE-1", ["taskId"] = "TASK-B", ["columnId"] = "inProgress", ["beforeTaskId"] = "TASK-A", ["operationId"] = "op-move-b" }, CancellationToken.None);
+            new JObject { ["placementId"] = "PLACE-1", ["taskId"] = "TASK-B", ["columnId"] = "review", ["beforeTaskId"] = "TASK-A", ["operationId"] = "op-move-b" }, CancellationToken.None);
         var board = (JObject)db.Records["taskBoards/PLACE-1"];
         Assert((int)board["positions"]["TASK-B"]["order"] < (int)board["positions"]["TASK-A"]["order"]);
         await UIMS.Tasks.TasksApiHandler.DispatchAsync(OfflineTaskService(db, company, settings), "POST", "move",
-            new JObject { ["placementId"] = "PLACE-1", ["taskId"] = "TASK-A", ["columnId"] = "inProgress", ["beforeTaskId"] = "TASK-B", ["operationId"] = "op-reorder-a" }, CancellationToken.None);
+            new JObject { ["placementId"] = "PLACE-1", ["taskId"] = "TASK-A", ["columnId"] = "review", ["beforeTaskId"] = "TASK-B", ["operationId"] = "op-reorder-a" }, CancellationToken.None);
         board = (JObject)db.Records["taskBoards/PLACE-1"];
         Assert((int)board["positions"]["TASK-A"]["order"] < (int)board["positions"]["TASK-B"]["order"]);
 
         int savedVersion = db.Requests;
         var retry = await UIMS.Tasks.TasksApiHandler.DispatchAsync(OfflineTaskService(db, company, settings), "POST", "move",
-            new JObject { ["placementId"] = "PLACE-1", ["taskId"] = "TASK-A", ["columnId"] = "inProgress", ["beforeTaskId"] = "TASK-B", ["operationId"] = "op-reorder-a" }, CancellationToken.None);
+            new JObject { ["placementId"] = "PLACE-1", ["taskId"] = "TASK-A", ["columnId"] = "review", ["beforeTaskId"] = "TASK-B", ["operationId"] = "op-reorder-a" }, CancellationToken.None);
         Assert((bool)retry["duplicate"] && db.Requests == savedVersion + 3); // Placement + task + board receipt reads; no board write.
         await Reject<UIMS.Services.FirebaseException>(() => OfflineTaskService(db, company, settings).MoveBoardTaskAsync("PLACE-1", "TASK-A", "todo", null, "op-reorder-a", CancellationToken.None));
-        Assert((string)((JObject)db.Records["tasks/TASK-B"])["status"] == "Completed");
+        Assert((string)((JObject)db.Records["tasks/TASK-B"])["status"] == "Submitted");
 
         await Reject<UIMS.Services.FirebaseException>(() => UIMS.Tasks.TasksApiHandler.DispatchAsync(OfflineTaskService(db, company, settings), "POST", "move",
             new JObject { ["placementId"] = "PLACE-1", ["taskId"] = "TASK-A", ["columnId"] = "not-a-column", ["operationId"] = "op-invalid" }, CancellationToken.None));
@@ -79,8 +98,8 @@ internal static partial class Program
         var positionsBefore = ((JObject)db.Records["taskBoards/PLACE-1"])["positions"].DeepClone();
         await OfflineTaskService(db, company, settings).ReorderColumnsAsync("PLACE-1", new JArray("done", "review", "inProgress", "todo"), "column-reorder", CancellationToken.None);
         var reordered = await OfflineTaskService(db, company, settings).LoadBoardAsync("PLACE-1", CancellationToken.None);
-        Assert((string)reordered["columns"][0]["id"] == "done");
-        Assert((string)reordered["tasks"].First(t => (string)t["id"] == "TASK-C")["columnId"] == "todo");
+        Assert((string)reordered["columns"][0]["id"] == "todo"); // Rendering always keeps the four workflow columns fixed.
+        Assert((string)reordered["tasks"].First(t => (string)t["id"] == "TASK-C")["columnId"] == "inProgress");
         Assert(JToken.DeepEquals(positionsBefore["TASK-A"], db.Records["taskBoards/PLACE-1"]["positions"]["TASK-A"]));
         Assert((bool)(await OfflineTaskService(db, company, settings).ReorderColumnsAsync("PLACE-1", new JArray("done", "review", "inProgress", "todo"), "column-reorder", CancellationToken.None))["duplicate"]);
         await Reject<UIMS.Services.FirebaseException>(() => OfflineTaskService(db, student, settings).ReorderColumnsAsync("PLACE-1", new JArray("done", "review", "inProgress", "todo"), "denied-columns", CancellationToken.None));
