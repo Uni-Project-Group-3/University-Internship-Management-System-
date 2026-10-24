@@ -20,8 +20,8 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet" />
     <link href="../Assets/shared/colors.css" rel="stylesheet" />
     <link href="../Assets/student/application-form.css?v=20261023-modern" rel="stylesheet" />
-<link href="../Assets/shared/workspace-identity.css?v=20261024-polish" rel="stylesheet" />
-<script src="../Js_project/workspace-navigation-unified.js?v=20261024-polish" defer></script>
+<link href="../Assets/shared/workspace-identity.css?v=20261024-refine" rel="stylesheet" />
+<script src="../Js_project/workspace-navigation-unified.js?v=20261024-refine" defer></script>
 </head>
 <body class="standalone-shell" data-demo-role="student">
     <form id="applicationForm" runat="server">
@@ -145,12 +145,12 @@
                                 <span class="section-number" aria-hidden="true">02</span>
                                 <div><h2 id="supportHeading">Supporting information</h2><p>Share a little about your skills and interests.</p></div>
                             </div>
-                            <label for="cvLink" class="form-label">CV link *</label>
+                            <label for="cvAttachment" class="form-label">CV attachment *</label>
                             <div class="input-icon">
                                 <i class="bi bi-file-earmark-person"></i>
-                                <input id="cvLink" name="cvLink" class="form-control" type="url" placeholder="https://" maxlength="500" aria-describedby="cvHelp" required />
+                                <input id="cvAttachment" name="cvAttachment" class="form-control" type="file" accept=".pdf,.doc,.docx" aria-describedby="cvHelp" required /><input id="cvLink" type="hidden" /><input id="cvAttachmentId" type="hidden" />
                             </div>
-                            <p id="cvHelp" class="field-help"><i class="bi bi-link-45deg"></i> Use a shareable link that the company supervisor can access.</p>
+                            <p id="cvHelp" class="field-help"><i class="bi bi-link-45deg"></i> Attach a PDF, DOC or DOCX file up to 10 MiB. Only you and the receiving company can download it.</p>
 
                             <label for="portfolioLink" class="form-label">Portfolio <span>(optional)</span></label>
                             <div class="input-icon">
@@ -215,7 +215,7 @@
                             <h3>Application checklist</h3>
                             <ul class="checklist" id="checklist">
                                 <li data-check="personal"><span class="check-dot"><i class="bi bi-check"></i></span> Personal information</li>
-                                <li data-check="supporting"><span class="check-dot"><i class="bi bi-check"></i></span> CV link added</li>
+                                <li data-check="supporting"><span class="check-dot"><i class="bi bi-check"></i></span> CV attached</li>
                                 <li data-check="review"><span class="check-dot"><i class="bi bi-check"></i></span> Information confirmed</li>
                             </ul>
                         </div>

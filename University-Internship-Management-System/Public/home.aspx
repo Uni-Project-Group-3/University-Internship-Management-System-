@@ -1,4 +1,4 @@
-<%@ Page Language="C#" AutoEventWireup="true" CodeBehind="home.aspx.cs" Inherits="University_Internship_Management_System.Public.home" %>
+﻿<%@ Page Language="C#" AutoEventWireup="true" CodeBehind="home.aspx.cs" Inherits="University_Internship_Management_System.Public.home" %>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -16,7 +16,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Naskh+Arabic:wght@600;700&family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;1,9..144,400&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../Assets/public/home.css?v=20261023-evolved">
-<link href="../Assets/public/public-campus.css?v=20261024" rel="stylesheet" /></head>
+<link href="../Assets/public/public-campus.css?v=20261024-refine" rel="stylesheet" /></head>
 <body>
 
 <div id="scene-layer"><canvas id="scene" role="img" aria-label="Three-dimensional walkthrough of the campus: main gate, campus courtyard and the Faculty of Computer and Information Technology"></canvas></div>
@@ -120,5 +120,5 @@
 
 
 
-</body>
+<script src="../Js_project/firebase-client.js?v=20261024-refine"></script><script src="../Js_project/Public/public-workspace.js?v=20261024-refine"></script></body>
 </html>

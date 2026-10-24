@@ -196,15 +196,19 @@
         set('fullName', view.user.name); set('studentNumber', view.user.universityId); set('email', view.user.email); set('phone', view.user.phone);
         ['fullName', 'studentNumber', 'email'].forEach(id => by(id).readOnly = true);
         on('motivation', 'input', () => { const length = by('motivation').value.length; text('characterCount', length + ' / 1000'); by('characterCount').classList.toggle('near-limit', length >= 900); });
-        on('applicationForm', 'submit', event => {
-            event.preventDefault(); if (!opportunity || alreadyApplied || !valid(['fullName', 'studentNumber', 'email', 'phone', 'major', 'cvLink', 'portfolioLink', 'motivation', 'confirmInformation'])) return;
+        on('applicationForm', 'submit', async event => {
+            event.preventDefault(); if (!opportunity || alreadyApplied || !valid(['fullName', 'studentNumber', 'email', 'phone', 'major', 'cvAttachment', 'portfolioLink', 'motivation', 'confirmInformation'])) return;
+            const cvFile=by('cvAttachment').files[0];if(!cvFile||cvFile.size>10*1024*1024||!/\.(pdf|docx?)$/i.test(cvFile.name)){notice('Choose a PDF, DOC or DOCX CV up to 10 MiB.');return;}
+            if(by('applicationFields').dataset.submitting)return;by('applicationFields').dataset.submitting='true';
+            try{const upload=new FormData();upload.append('cv',cvFile);const response=await fetch('../ApplicationCv.ashx',{method:'POST',credentials:'same-origin',headers:{'X-UIMS-Attachment':'upload'},body:upload,signal:AbortSignal.timeout(60000)});const reply=await response.json();if(!response.ok||!reply.attachmentId)throw Error(reply.error||'CV upload failed.');set('cvAttachmentId',reply.attachmentId);set('cvLink',reply.fileName);}catch(e){notice(e.message);delete by('applicationFields').dataset.submitting;return;}
+            delete by('applicationFields').dataset.submitting;
             by('applicationFields').querySelectorAll('[data-uims-error]').forEach(el => el.remove());
-            const result = transact('apply', { opportunityId, motivation: value('motivation'), phone: value('phone'), cvLink: value('cvLink'), portfolioLink: value('portfolioLink') });
+            const result = transact('apply', { opportunityId, motivation: value('motivation'), phone: value('phone'), cvLink: value('cvLink'), cvAttachmentId: value('cvAttachmentId'), portfolioLink: value('portfolioLink') });
             if (!result.ok) { const message = by('uimsPageNotice')?.textContent; if (message) { const box = document.createElement('p'); box.dataset.uimsError = ''; box.className = 'uims-error'; box.setAttribute('role', 'alert'); box.textContent = message; by('applicationFields').querySelector('.review-section .form-actions')?.before(box); } return; }
             by('applicationFields').disabled = true; by('applicationFields').hidden = true; by('previewResult').hidden = false;
             const heading = by('previewResult').querySelector('h2'); if (heading) heading.textContent = 'Application submitted';
-            text('previewSummary', 'Your application to ' + (opportunity.title || 'this opportunity') + (company?.name ? ' at ' + company.name : '') + ' was saved in the connected local demo. The Company portal can now review it.');
-            by('previewResult').querySelector('p:not([id])').textContent = 'No real application or personal information was sent to a server.';
+            text('previewSummary', 'Your application to ' + (opportunity.title || 'this opportunity') + (company?.name ? ' at ' + company.name : '') + ' was submitted. The company can now review your application and attached CV.');
+            by('previewResult').querySelector('p:not([id])').textContent = 'Your CV is stored privately and is available to the receiving company.';
             by('editApplication').textContent = 'View My Applications';
             by('previewResult').focus(); window.scrollTo({ top: 0, behavior: 'smooth' });
         });
@@ -229,7 +233,7 @@
         const ok = id => { const el = $(id); return !!el && el.value.trim() !== '' && el.checkValidity(); };
         const steps = {
             personal: () => ['fullName', 'studentNumber', 'email', 'phone', 'major'].every(ok),
-            supporting: () => ok('cvLink') && ($('portfolioLink')?.checkValidity() ?? true),
+            supporting: () => ok('cvAttachment') && ($('portfolioLink')?.checkValidity() ?? true),
             review: () => !!$('confirmInformation')?.checked
         };
         const titles = ['Let’s get started', 'Good start', 'Almost there', 'Ready to submit'];

@@ -11,8 +11,8 @@
     <link runat="server" href="~/Assets/academic/supervisor-account.css?v=20261024-academic-hero" rel="stylesheet" />
     <link runat="server" href="~/Assets/shared/account-form-design.css?v=20261024-hide-firebase-badge" rel="stylesheet" />
     <link runat="server" href="~/Assets/shared/role-sidebars.css?v=20261023" rel="stylesheet" />
-<link href="../Assets/shared/workspace-identity.css?v=20261024-polish" rel="stylesheet" />
-<script src="../Js_project/workspace-navigation-unified.js?v=20261024-polish" defer></script>
+<link href="../Assets/shared/workspace-identity.css?v=20261024-refine" rel="stylesheet" />
+<script src="../Js_project/workspace-navigation-unified.js?v=20261024-refine" defer></script>
 </head>
 <body class="app-page supervisor-account-page role-shell" data-demo-role="academic">
     <form id="form1" runat="server">

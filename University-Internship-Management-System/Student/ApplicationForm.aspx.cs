@@ -42,10 +42,13 @@ namespace University_Internship_Management_System.Student
             string cvLink = S(d["cvLink"]).Trim();
             string portfolio = S(d["portfolioLink"]).Trim();
             if (phone == "") throw new AppError("Enter your phone number.");
-            if (!IsUrl(cvLink)) throw new AppError("Enter a valid CV link (https://...).");
+            string attachmentId = FirebaseDb.Key(S(d["cvAttachmentId"]));
+            var attachment = Db.GetObject("applicationAttachments/" + attachmentId);
+            if (attachment == null || S(attachment["ownerUid"]) != Uid) throw new AppError("Attach your CV before submitting.");
             if (portfolio != "" && !IsUrl(portfolio)) throw new AppError("Enter a valid portfolio link.");
 
             string id = FirebaseDb.NewId("APP");
+            cvLink = new Uri(Request.Url, ResolveUrl("~/ApplicationCv.ashx?applicationId=" + Uri.EscapeDataString(id))).AbsoluteUri;
             var application = new JObject
             {
                 ["id"] = id,
@@ -57,6 +60,7 @@ namespace University_Internship_Management_System.Student
                 ["studentName"] = S(Profile["fullName"]),
                 ["phone"] = phone,
                 ["cvLink"] = cvLink,
+                ["cvAttachmentId"] = attachmentId,
                 ["portfolioLink"] = portfolio,
                 ["motivation"] = S(d["motivation"]).Trim(),
                 ["reason"] = "",

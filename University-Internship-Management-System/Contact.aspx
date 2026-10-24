@@ -7,7 +7,7 @@
     <title>Contact Us | JUST Internships</title>
     <link runat="server" href="~/Assets/shared/colors.css" rel="stylesheet" />
     <link runat="server" href="~/Assets/public/contact.css?v=2" rel="stylesheet" />
-<link href="Assets/public/public-campus.css?v=20261024" rel="stylesheet" /></head>
+<link href="Assets/public/public-campus.css?v=20261024-refine" rel="stylesheet" /></head>
 <body class="contact-page">
     <header class="nav campus-public-nav" role="banner"><a class="brand" href="Public/home.aspx" aria-label="JUST Internships home"><img src="Assets/public/images/team-brand.png" alt="Jordan University of Science and Technology" /></a><nav aria-label="Main"><ul><li><a class="lnk" href="Public/home.aspx#gateOverview">About</a></li><li><a class="lnk" href="Public/home.aspx#walkwayOverview">Process</a></li><li><a class="lnk" href="Public/home.aspx#opportunityColumn">Opportunities</a></li><li><a class="lnk" href="Public/home.aspx#courtyardReturn">Colleges</a></li><li><a class="lnk" href="Public/home.aspx#platformVideo">Video</a></li><li><a class="lnk" href="Contact.aspx" aria-current="page">Contact</a></li><li><a class="lnk" href="Public/team.aspx">Team</a></li><li><a class="lnk login" href="Auth/Login.aspx">Login</a></li></ul></nav></header>
     <main id="contactMain" class="contact-main">
@@ -98,5 +98,5 @@
 })();
 
 </script>
-<script src="Js_project/Public/contact-demo.js?v=2"></script></body>
+<script src="Js_project/Public/contact-demo.js?v=2"></script><script src="Js_project/firebase-client.js?v=20261024-refine"></script><script src="Js_project/Public/public-workspace.js?v=20261024-refine"></script></body>
 </html>
