@@ -68,12 +68,9 @@
     by('viewTraineeProgress').onclick = async () => {
         if (!selected) return; const trainee = { ...selected }, view = workspace('Training progress · ' + trainee.name), status = node('p', 'Loading authorized placement records…'); view.body.append(status);
         try {
-            const [tasksResponse, evaluationResponse] = await Promise.all([
-                fetch('../TasksApi.ashx', { credentials: 'same-origin', cache: 'no-store', signal: AbortSignal.timeout(60000) }),
-                fetch('../FinalReportsApi.ashx?action=detail&placementId=' + encodeURIComponent(trainee.placementId), { credentials: 'same-origin', cache: 'no-store', signal: AbortSignal.timeout(60000) })
-            ]);
+            const tasksResponse = await fetch('../TasksApi.ashx?action=traineeProgress&placementId=' + encodeURIComponent(trainee.placementId), { credentials: 'same-origin', cache: 'no-store', signal: AbortSignal.timeout(60000) });
             const data = await tasksResponse.json(); if (!tasksResponse.ok) throw Error(data.message || 'Task progress unavailable.');
-            const evaluation = await evaluationResponse.json(); if (!view.dialog.open) return;
+            const evaluation = data, evaluationResponse = tasksResponse; if (!view.dialog.open) return;
             const tasks = (data.tasks || []).filter(task => task.placementId === trainee.placementId && task.studentId === trainee.studentId);
             status.textContent = trainee.studentId + ' · ' + trainee.internship;
             const stats = node('div', null, 'trainee-progress-stats');

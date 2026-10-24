@@ -40,21 +40,32 @@ namespace UIMS.Services
             if (login.Role != FirebaseSignInService.CanonicalRole(ticketRole)) throw new FirebaseException(403, "The current account role changed.");
             var p = O(await db.ReadAsync("placements/" + placementId));
             string studentId = T(p, "studentId"), company = T(p, "companyId"), supervisor = T(p, "companySupervisorId"), academic = T(p, "academicSupervisorId");
-            if (studentId.Length == 0 || company.Length == 0 || supervisor.Length == 0 || academic.Length == 0) throw new FirebaseException(409, "The placement requires existing student, company and both supervisor assignments.");
+            if (supervisor.Length == 0) supervisor = T(p, "supervisorId");
+            if (studentId.Length == 0 || company.Length == 0 || supervisor.Length == 0) throw new FirebaseException(409, "The placement is missing its student, company or company supervisor. The coordinator must complete these existing relationships.");
             string status = T(p, "status").ToLowerInvariant(); if (!new[] { "active", "confirmed", "completed" }.Contains(status)) throw new FirebaseException(409, "The placement is not confirmed or active.");
             var allProfiles = O(await db.ReadAsync("users"));
-            var academicProfile = allProfiles.Properties().Where(entry => entry.Name == academic || T(entry.Value, "academicSupervisorId") == academic)
-                .Select(entry => entry.Value).FirstOrDefault(value => FirebaseSignInService.CanonicalRole(T(value, "role")) == "academicSupervisor" && (bool?)value["isActive"] == true && (T(value, "accountSetupStatus").Length == 0 || T(value, "accountSetupStatus") == "complete"));
-            if (academicProfile == null) throw new FirebaseException(409, "The current academic supervisor has no active completed account. The coordinator must resolve the existing assignment.");
             var students = new JObject(allProfiles.Properties().Where(entry => T(entry.Value, "studentId") == studentId).Select(entry => new JProperty(entry.Name, entry.Value.DeepClone())));
             if (!students.HasValues) { var student = O(await db.ReadAsync("users/" + Key(studentId))); if (student.HasValues) students[studentId] = student; }
-            var studentProfile = students.Properties().FirstOrDefault(x => FirebaseSignInService.CanonicalRole(T(x.Value, "role")) == "student" && (bool?)x.Value["isActive"] == true);
+            string studentUid = T(p, "studentUid");
+            var studentProfile = students.Properties().FirstOrDefault(x => (studentUid.Length == 0 || x.Name == studentUid) && FirebaseSignInService.CanonicalRole(T(x.Value, "role")) == "student" && (bool?)x.Value["isActive"] == true);
             if (studentProfile == null) throw new FirebaseException(409, "The placement student has no active existing profile.");
             string profileAcademic = T(studentProfile.Value, "academicSupervisorId");
             var allAssignments = O(await db.ReadAsync("supervisorAssignments"));
             var assignments = new JObject(allAssignments.Properties().Where(entry => T(entry.Value, "studentId") == studentId).Select(entry => new JProperty(entry.Name, entry.Value.DeepClone())));
             var currentAssignments = assignments.Properties().Where(x => (bool?)x.Value["isActive"] != false && !new[] { "inactive", "ended", "reassigned" }.Contains(T(x.Value, "status").ToLowerInvariant())).Select(x => T(x.Value, "academicSupervisorId")).Where(x => x.Length > 0).Distinct().ToArray();
+            // Resolve a missing placement field only from the student's existing current
+            // assignment. Never select an arbitrary professor or persist a guessed mapping.
+            if (academic.Length == 0)
+            {
+                var assignedIds = currentAssignments.Concat(new[] { profileAcademic }).Where(x => x.Length > 0).Distinct().ToArray();
+                if (assignedIds.Length != 1) throw new FirebaseException(409, "No single current academic supervisor is assigned to this student. Assign the student through Assign Supervisors before final evaluation.");
+                academic = assignedIds[0];
+            }
             if ((profileAcademic.Length > 0 && profileAcademic != academic) || currentAssignments.Any(x => x != academic)) throw new FirebaseException(409, "Current academic assignment and placement disagree. Reconcile the assignment before review.");
+            var academicProfiles = allProfiles.Properties().Where(entry => entry.Name == academic || T(entry.Value, "academicSupervisorId") == academic)
+                .Select(entry => entry.Value).Where(value => FirebaseSignInService.CanonicalRole(T(value, "role")) == "academicSupervisor" && (bool?)value["isActive"] == true && (T(value, "accountSetupStatus").Length == 0 || T(value, "accountSetupStatus") == "complete")).ToArray();
+            if (academicProfiles.Length != 1) throw new FirebaseException(409, "The current academic supervisor must have exactly one active completed account. The coordinator must resolve the existing assignment.");
+            var academicProfile = academicProfiles[0];
             string actorSupervisor = T(profile, "companySupervisorId"); if (actorSupervisor.Length == 0) actorSupervisor = T(profile, "supervisorId");
             if (actorSupervisor.Length == 0 && login.Role == "companySupervisor") { var map = O(await db.ReadAsync("companySupervisors")); actorSupervisor = map.Properties().Where(x => T(x.Value, "firebaseUid") == uid && T(x.Value, "status") == "active").Select(x => x.Name).SingleOrDefault() ?? ""; }
             string actorAcademic = T(profile, "academicSupervisorId");

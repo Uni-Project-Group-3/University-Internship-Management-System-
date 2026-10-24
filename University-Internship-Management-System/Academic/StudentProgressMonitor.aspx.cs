@@ -16,6 +16,7 @@ namespace University_Internship_Management_System.Academic
     {
         private static string FirebaseUrl { get { return AuthenticatedFirebaseClient.DatabaseUrl; } }
         private string CurrentSupervisorId { get { return User.Identity.Name; } }
+        private readonly System.Collections.Concurrent.ConcurrentDictionary<string, string> requestReads = new System.Collections.Concurrent.ConcurrentDictionary<string, string>();
 
         protected void Page_Init(object sender, EventArgs e) { Session["FirebasePageBinding"] = true; ViewStateUserKey = Session.SessionID; }
 
@@ -37,83 +38,60 @@ namespace University_Internship_Management_System.Academic
             }
         }
 
+        // Request-local parallel reads: no stale cross-account or cross-request cache.
+        private Dictionary<string, JObject> ReadMonitorSources(params string[] paths)
+        {
+            var reads = paths.Select(path => System.Threading.Tasks.Task.Run(() => {
+                using (var client = new AuthenticatedFirebaseClient { Encoding = System.Text.Encoding.UTF8 })
+                    return new KeyValuePair<string, JObject>(path, JsonObject(DownloadSafe(client, path + ".json")));
+            })).ToArray();
+            System.Threading.Tasks.Task.WhenAll(reads).GetAwaiter().GetResult();
+            return reads.ToDictionary(read => read.Result.Key, read => read.Result.Value);
+        }
+
+        private static string Value(JToken token, string key) { return (string)token?[key] ?? ""; }
+
         private void LoadAssignedStudents()
         {
             try
             {
-                using (WebClient client = new AuthenticatedFirebaseClient { Encoding = System.Text.Encoding.UTF8 })
+                var sources = ReadMonitorSources("assignments", "users", "placements", "tasks", "uimsAttendance/attendance", "uimsAttendance/trainingAssignments", "supervisorAssignments", "groups");
+                var users = sources["users"]; var placements = sources["placements"]; var tasks = sources["tasks"];
+                var ids = AcademicAssignmentService.AssignedStudentIds(CurrentSupervisorId, users, sources["groups"], sources["supervisorAssignments"], sources["assignments"], placements);
+                var taskGroups = tasks.Properties().Where(x => x.Value is JObject).GroupBy(x => Value(x.Value, "studentId")).ToDictionary(g => g.Key, g => g.ToArray());
+                var placementGroups = placements.Properties().Where(x => x.Value is JObject).GroupBy(x => Value(x.Value, "studentId")).ToDictionary(g => g.Key, g => g.ToArray());
+                int active = 0, completed = 0; var rows = new List<StudentRow>();
+                foreach (string id in ids)
                 {
-                    JavaScriptSerializer serializer = new JavaScriptSerializer();
-                    string assignmentsJson = DownloadSafe(client, "assignments.json");
-                    string usersJson = DownloadSafe(client, "users.json");
-                    string placementsJson = DownloadSafe(client, "placements.json");
-                    string tasksJson = DownloadSafe(client, "tasks.json");
-                    string attendanceJson = DownloadSafe(client, "uimsAttendance/attendance.json");
-
-                    var currentAssignments = JsonObject(DownloadSafe(client, "supervisorAssignments.json"));
-                    var groups = JsonObject(DownloadSafe(client, "groups.json"));
-                    var users = ParseJson<Dictionary<string, UserData>>(serializer, usersJson) ?? new Dictionary<string, UserData>();
-                    var placements = ParseJson<Dictionary<string, PlacementData>>(serializer, placementsJson) ?? new Dictionary<string, PlacementData>();
-                    var tasks = ParseJson<Dictionary<string, TaskData>>(serializer, tasksJson) ?? new Dictionary<string, TaskData>();
-                    var attendance = ParseJson<Dictionary<string, Dictionary<string, AttendanceRecord>>>(serializer, attendanceJson) ?? new Dictionary<string, Dictionary<string, AttendanceRecord>>();
-
-                    var myStudentIds = AcademicAssignmentService.AssignedStudentIds(CurrentSupervisorId, JsonObject(usersJson), groups, currentAssignments, JsonObject(assignmentsJson)).ToList();
-
-                    int activeInternships = 0, completedTasks = 0;
-                    List<StudentRow> tableRows = new List<StudentRow>();
-
-                    foreach (string sId in myStudentIds)
+                    var profile = users.Properties().First(p => Value(p.Value, "studentId") == id && FirebaseSignInService.CanonicalRole(Value(p.Value, "role")) == "student" && (bool?)p.Value["isActive"] == true);
+                    var ownPlacements = placementGroups.ContainsKey(id) ? placementGroups[id].Where(p => string.IsNullOrEmpty(Value(p.Value, "studentUid")) || Value(p.Value, "studentUid") == profile.Name).ToArray() : new JProperty[0];
+                    var placementIds = new HashSet<string>(ownPlacements.Select(p => p.Name));
+                    var ownTasks = taskGroups.ContainsKey(id) ? taskGroups[id].Where(t => Value(t.Value, "placementId").Length == 0 || placementIds.Contains(Value(t.Value, "placementId"))).ToArray() : new JProperty[0];
+                    int done = ownTasks.Count(t => Value(t.Value, "status").Equals("Completed", StringComparison.OrdinalIgnoreCase)); completed += done;
+                    active += ownPlacements.Count(p => new[] { "active", "confirmed" }.Contains(Value(p.Value, "status").ToLowerInvariant()));
+                    long minutes = 0; var seen = new HashSet<string>();
+                    foreach (var placement in ownPlacements)
                     {
-                        StudentRow row = new StudentRow { StudentId = sId, StudentName = "Unknown", Major = "N/A", RequiredHours = 300, HasDelays = false };
-                        foreach (var u in users.Values)
+                        string assignmentId = Value(placement.Value, "trainingAssignmentId");
+                        if (assignmentId.Length == 0) assignmentId = Value(placement.Value, "attendanceAssignmentId");
+                        if (assignmentId.Length == 0)
                         {
-                            if (u != null && u.role == "student" && u.studentId == sId) { row.StudentName = u.fullName; row.Major = u.majorId ?? u.department ?? "N/A"; break; }
+                            var links = sources["uimsAttendance/trainingAssignments"].Properties().Where(a => Value(a.Value, "placementId") == placement.Name).ToArray();
+                            if (links.Length == 1) assignmentId = links[0].Name;
                         }
-
-                        bool isActive = false;
-                        foreach (var p in placements.Values)
-                        {
-                            if (p != null && p.studentId == sId)
-                            {
-                                row.RequiredHours = p.requiredHours > 0 ? p.requiredHours : 300;
-                                if (p.status == "active") { activeInternships++; isActive = true; }
-                            }
-                        }
-
-                        int totalApprovedMinutes = 0;
-                        foreach (var pAtt in attendance.Values)
-                        {
-                            if (pAtt == null) continue;
-                            foreach (var day in pAtt.Values)
-                            {
-                                if (day != null && day.studentId == sId && day.hoursApprovalStatus == "approved") totalApprovedMinutes += day.workedMinutes;
-                            }
-                        }
-                        row.ApprovedHours = totalApprovedMinutes / 60;
-
-                        int totalTasks = 0, compTasks = 0;
-                        foreach (var t in tasks.Values)
-                        {
-                            if (t != null && t.studentId == sId)
-                            {
-                                totalTasks++;
-                                if (t.status == "Completed") { compTasks++; completedTasks++; }
-                                else if (!string.IsNullOrEmpty(t.dueDate) && DateTime.TryParse(t.dueDate, out DateTime dDate) && dDate < DateTime.Now) row.HasDelays = true;
-                            }
-                        }
-
-                        if (totalTasks > 0) row.TaskPercentage = (int)Math.Round((double)compTasks / totalTasks * 100);
-                        if (isActive && row.ApprovedHours == 0 && row.TaskPercentage == 0) row.HasDelays = true;
-                        tableRows.Add(row);
+                        if (assignmentId.Length == 0 || !seen.Add(assignmentId)) continue;
+                        var assignment = sources["uimsAttendance/trainingAssignments"][assignmentId];
+                        string company = Value(placement.Value, "companyId");
+                        if (Value(assignment, "studentId") != id || Value(assignment, "companyId") != company || (Value(assignment, "placementId").Length > 0 && Value(assignment, "placementId") != placement.Name)) continue;
+                        minutes += UIMS.Attendance.ApprovedTrainingMinutes.Calculate(sources["uimsAttendance/attendance"][assignmentId] as JObject ?? new JObject(), assignmentId, id, company, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds());
                     }
-
-                    rptStudents.DataSource = tableRows; rptStudents.DataBind();
-                    lblAssignedStudents.Text = myStudentIds.Count.ToString();
-                    lblActiveInternships.Text = activeInternships.ToString();
-                    lblCompletedTasks.Text = completedTasks.ToString();
+                    int required = ownPlacements.Select(p => (int?)p.Value["requiredHours"] ?? 0).DefaultIfEmpty(0).Max();
+                    rows.Add(new StudentRow { StudentId = id, StudentName = Value(profile.Value, "fullName"), Major = Value(profile.Value, "majorId").Length > 0 ? Value(profile.Value, "majorId") : Value(profile.Value, "department"), RequiredHours = required > 0 ? required : 300, ApprovedHours = (int)(minutes / 60), TaskPercentage = ownTasks.Length > 0 ? (int)Math.Round(100d * done / ownTasks.Length) : 0, HasDelays = ownTasks.Any(t => !Value(t.Value, "status").Equals("Completed", StringComparison.OrdinalIgnoreCase) && DateTimeOffset.TryParse(Value(t.Value, "dueDate"), out var due) && due < DateTimeOffset.UtcNow) });
                 }
+                rptStudents.DataSource = rows; rptStudents.DataBind();
+                lblAssignedStudents.Text = rows.Count.ToString(); lblActiveInternships.Text = active.ToString(); lblCompletedTasks.Text = completed.ToString();
             }
-            catch (Exception ex) { lblMessage.Text = "Error loading data: " + ex.Message; }
+            catch (Exception ex) { Trace.Warn("StudentProgressMonitor", ex.GetType().Name); lblMessage.Text = "Student progress could not be loaded from Firebase. Refresh to retry."; }
         }
 
         protected void rptStudents_ItemCommand(object source, RepeaterCommandEventArgs e)
@@ -204,7 +182,7 @@ namespace University_Internship_Management_System.Academic
                                     Title = t.title ?? "Untitled",
                                     Status = t.status ?? "Pending",
                                     Score = t.score != null ? t.score.ToString() + " / " + (t.maximumScore ?? 100).ToString() : "Not Graded",
-                                    SubmissionLink = (t.submissions != null && t.submissions.Count > 0) ? t.submissions[0].link : ""
+                                    SubmissionLink = UIMS.Tasks.TaskSubmissionHistory.Read(t.submissions).Records.Select(r => (string)r["link"]).LastOrDefault() ?? ""
                                 });
                             }
                         }
@@ -247,24 +225,23 @@ namespace University_Internship_Management_System.Academic
         private void RequireStudentScope(string studentId)
         {
             University_Internship_Management_System.Services.FinalEvaluation.FirebaseKey.Require(studentId);
-            using (var client = new AuthenticatedFirebaseClient())
             {
+                var sources = ReadMonitorSources("users", "groups", "supervisorAssignments", "assignments", "placements");
                 var ids = AcademicAssignmentService.AssignedStudentIds(CurrentSupervisorId,
-                    JsonObject(DownloadSafe(client, "users.json")), JsonObject(DownloadSafe(client, "groups.json")),
-                    JsonObject(DownloadSafe(client, "supervisorAssignments.json")), JsonObject(DownloadSafe(client, "assignments.json")));
+                    sources["users"], sources["groups"], sources["supervisorAssignments"], sources["assignments"], sources["placements"]);
                 if (!ids.Contains(studentId)) throw new System.Web.HttpException(403, "Not assigned.");
             }
         }
 
         private static JObject JsonObject(string json) { return string.IsNullOrEmpty(json) || json == "null" ? new JObject() : JObject.Parse(json); }
 
-        private string DownloadSafe(WebClient client, string path) { return client.DownloadString(FirebaseUrl + path); }
-        private T ParseJson<T>(JavaScriptSerializer serializer, string json) { if (string.IsNullOrEmpty(json) || json == "null") return default(T); return serializer.Deserialize<T>(json); }
+        private string DownloadSafe(WebClient client, string path) { return requestReads.GetOrAdd(path, key => client.DownloadString(FirebaseUrl + key)); }
+        private T ParseJson<T>(JavaScriptSerializer serializer, string json) { if (string.IsNullOrEmpty(json) || json == "null") return default(T); return Newtonsoft.Json.JsonConvert.DeserializeObject<T>(json); }
 
         public class AssignmentData { public string academicSupervisorId { get; set; } public string studentId { get; set; } }
         public class UserData { public string fullName { get; set; } public string role { get; set; } public string studentId { get; set; } public string department { get; set; } public string majorId { get; set; } public string userId { get; set; } }
         public class PlacementData { public string studentId { get; set; } public string status { get; set; } public int requiredHours { get; set; } public string companyId { get; set; } public string companySupervisorId { get; set; } }
-        public class TaskData { public string studentId { get; set; } public string status { get; set; } public string title { get; set; } public string dueDate { get; set; } public int? score { get; set; } public int? maximumScore { get; set; } public List<SubmissionData> submissions { get; set; } }
+        public class TaskData { public string studentId { get; set; } public string status { get; set; } public string title { get; set; } public string dueDate { get; set; } public decimal? score { get; set; } public decimal? maximumScore { get; set; } public JToken submissions { get; set; } }
         public class SubmissionData { public string link { get; set; } }
         public class AttendanceRecord { public string studentId { get; set; } public string hoursApprovalStatus { get; set; } public int workedMinutes { get; set; } }
         public class StudentRow { public string StudentId { get; set; } public string StudentName { get; set; } public string Major { get; set; } public int ApprovedHours { get; set; } public int RequiredHours { get; set; } public int TaskPercentage { get; set; } public bool HasDelays { get; set; } }

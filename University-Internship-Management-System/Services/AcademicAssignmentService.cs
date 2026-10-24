@@ -46,13 +46,22 @@ namespace UIMS.Services
                 .Where(d => d.Length > 0).Distinct().ToArray();
         }
         // Shared by the monitor's roster and its detail/feedback authorization checks.
-        public static string[] AssignedStudentIds(string supervisorUid, JObject users, JObject groups, JObject assignments, JObject legacy)
+        public static string[] AssignedStudentIds(string supervisorUid, JObject users, JObject groups, JObject assignments, JObject legacy, JObject placements = null)
         {
             var professor = users.Properties().FirstOrDefault(p => p.Name == supervisorUid && ReadyProfile(p.Value) && FirebaseSignInService.CanonicalRole(T(p.Value, "role")) == "academicSupervisor");
             if (professor == null) return new string[0];
             string id = SupervisorId(professor);
             return users.Properties().Where(p => ReadyProfile(p.Value) && FirebaseSignInService.CanonicalRole(T(p.Value, "role")) == "student" && T(p.Value, "studentId").Length > 0)
-                .Where(p => { var claims = Claims(users, groups, assignments, legacy, p); return claims.Length == 1 && claims[0] == id; })
+                .Where(p => {
+                    string studentId = T(p.Value, "studentId");
+                    var placementClaims = (placements ?? new JObject()).Properties()
+                        .Where(x => Active(x.Value) && new[] { "active", "confirmed", "completed" }.Contains(T(x.Value, "status").ToLowerInvariant())
+                            && (T(x.Value, "studentId") == studentId || T(x.Value, "studentProfileId") == studentId)
+                            && (T(x.Value, "studentUid").Length == 0 || T(x.Value, "studentUid") == p.Name))
+                        .Select(x => CanonicalSupervisor(users, T(x.Value, "academicSupervisorId")));
+                    var claims = Claims(users, groups, assignments, legacy, p).Concat(placementClaims).Where(x => x.Length > 0).Distinct().ToArray();
+                    return claims.Length == 1 && claims[0] == id;
+                })
                 .Select(p => T(p.Value, "studentId")).Distinct().ToArray();
         }
         private async Task Authorize(string uid)

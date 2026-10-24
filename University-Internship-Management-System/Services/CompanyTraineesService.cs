@@ -46,5 +46,40 @@ namespace UIMS.Tasks
         }
         private bool OwnCompanyPlacement(JToken placement)
         { return Text(placement, "companySupervisorId") == actor.CompanySupervisorId && actor.CompanyId.Length > 0 && Text(placement, "companyId") == actor.CompanyId; }
+
+        public async Task<JObject> LoadTraineeProgressAsync(string placementId, CancellationToken cancellation)
+        {
+            Ensure(false, "companySupervisor");
+            if (string.IsNullOrWhiteSpace(placementId) || placementId.Any(c => ".#$[]/\\".Contains(c))) throw new UIMS.Services.FirebaseException(400, "Invalid placement.");
+            var placement = (await ReadAt("placements", placementId, cancellation).ConfigureAwait(false)).Data;
+            if (!OwnCompanyPlacement(placement)) throw new UIMS.Services.FirebaseException(403, "This placement is not assigned to your company supervisor account.");
+            if (!new[] { "active", "confirmed", "completed" }.Contains(Text(placement, "status").ToLowerInvariant())) throw new UIMS.Services.FirebaseException(409, "This placement is not confirmed or active.");
+            var studentId = Text(placement, "studentId");
+            var tasks = await ReadData("", cancellation).ConfigureAwait(false);
+            var rows = new JArray(Rows(tasks).Where(p => Text(p.Value, "placementId") == placementId && Text(p.Value, "studentId") == studentId && Text(p.Value, "assignedBy") == actor.CompanySupervisorId).Select(p => p.Value.DeepClone()));
+            long? minutes = null; string blocker = "";
+            string assignmentId = FirstText(placement, "trainingAssignmentId", "attendanceAssignmentId");
+            var mappings = (await ReadAt("uimsAttendance", "trainingAssignments", cancellation).ConfigureAwait(false)).Data;
+            if (assignmentId.Length == 0)
+            {
+                var matches = Rows(mappings).Where(p => Text(p.Value, "placementId") == placementId).Select(p => p.Name).ToArray();
+                if (matches.Length == 1) assignmentId = matches[0];
+            }
+            var assignment = assignmentId.Length > 0 ? mappings[assignmentId] : null;
+            if (assignment == null) blocker = "No verified attendance assignment is linked to this placement yet.";
+            else if (!new[] { "active", "completed" }.Contains(Text(assignment, "status").ToLowerInvariant())) blocker = "The linked attendance assignment is not active or completed.";
+            else if (Text(assignment, "studentId") != studentId || Text(assignment, "companyId") != actor.CompanyId || (Text(assignment, "placementId").Length > 0 && Text(assignment, "placementId") != placementId)) blocker = "The attendance assignment does not match this student and company.";
+            else
+            {
+                var allPlacements = (await ReadAt("placements", "", cancellation).ConfigureAwait(false)).Data;
+                if (Rows(allPlacements).Any(p => p.Name != placementId && (Text(p.Value, "trainingAssignmentId") == assignmentId || Text(p.Value, "attendanceAssignmentId") == assignmentId))) blocker = "The attendance assignment is linked to multiple placements.";
+                else
+                {
+                    var attendance = (await ReadAt("uimsAttendance", "attendance/" + assignmentId, cancellation).ConfigureAwait(false)).Data as JObject ?? new JObject();
+                    minutes = UIMS.Attendance.ApprovedTrainingMinutes.Calculate(attendance, assignmentId, studentId, actor.CompanyId, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds());
+                }
+            }
+            return new JObject { ["tasks"] = rows, ["approvedTrainingMinutes"] = minutes, ["eligibilityBlocker"] = blocker, ["requiredTrainingMinutes"] = 18000 };
+        }
     }
 }
