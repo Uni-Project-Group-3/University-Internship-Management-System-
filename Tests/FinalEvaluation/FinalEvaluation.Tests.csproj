@@ -46,7 +46,7 @@
     <Compile Include="PercentageSecurityTests.cs" />
     <Compile Include="DevelopmentIntegrationTests.cs" />
     <Compile Include="TaskExamTests.cs" />
-    <Compile Include="WeeklyReportTests.cs" />
+    <Compile Include="WeeklyReportTests.cs" /><Compile Include="ApplicationCvTests.cs" />
     <Compile Include="CompanyDraftWorkflowTests.cs" />
     <Compile Include="CompanySubmissionTests.cs" />
     <Compile Include="AcademicDraftTests.cs" />

@@ -53,13 +53,13 @@ function showNotice(message, error) {
     notice.classList.toggle("attendance-error", !!error);
     notice.hidden = false;
     notice.setAttribute("role", error ? "alert" : "status");
-    // النجاح يظهر مؤقتًا، أما الخطأ فيبقى حتى المعالجة أو التحديث.
+    // \u0627\u0644\u0646\u062c\u0627\u062d \u064a\u0638\u0647\u0631 \u0645\u0624\u0642\u062a\u064b\u0627\u060c \u0623\u0645\u0627 \u0627\u0644\u062e\u0637\u0623 \u0641\u064a\u0628\u0642\u0649 \u062d\u062a\u0649 \u0627\u0644\u0645\u0639\u0627\u0644\u062c\u0629 \u0623\u0648 \u0627\u0644\u062a\u062d\u062f\u064a\u062b.
     if (!error) noticeTimer = setTimeout(function () { notice.hidden = true; }, 6000);
 }
 function time(value) {
     return value ? new Date(Number(value)).toLocaleTimeString("en-GB", {
         timeZone: "Asia/Amman", hour: "2-digit", minute: "2-digit"
-    }) : "—";
+    }) : "\u2014";
 }
 function label(value) {
     return String(value || "Not recorded").replace(/([A-Z])/g, " $1").replace(/^./, function (c) { return c.toUpperCase(); });
@@ -71,7 +71,7 @@ function addCell(row, value) {
     return cell;
 }
 
-// الطلبات تذهب إلى C# بنفس الصفحة؛ التوكن السري الخاص بقاعدة البيانات لا يصل للمتصفح.
+// \u0627\u0644\u0637\u0644\u0628\u0627\u062a \u062a\u0630\u0647\u0628 \u0625\u0644\u0649 C# \u0628\u0646\u0641\u0633 \u0627\u0644\u0635\u0641\u062d\u0629\u061b \u0627\u0644\u062a\u0648\u0643\u0646 \u0627\u0644\u0633\u0631\u064a \u0627\u0644\u062e\u0627\u0635 \u0628\u0642\u0627\u0639\u062f\u0629 \u0627\u0644\u0628\u064a\u0627\u0646\u0627\u062a \u0644\u0627 \u064a\u0635\u0644 \u0644\u0644\u0645\u062a\u0635\u0641\u062d.
 async function api(action, values, onProgress) {
     if (action === "load") serverSessionVerified = false;
     const url = new URL(window.location.href);
@@ -91,7 +91,7 @@ async function api(action, values, onProgress) {
                 throw new Error("The Firebase authentication session is incomplete. Sign in again.");
         } catch (error) {
             const missingSession = error && error.message === "Sign in with your Firebase account to load attendance.";
-            // نجرب القراءة فقط أولاً؛ C# يوثق توكن Session ويطابق UID، ولا يكتفي بالـ Cookie.
+            // \u0646\u062c\u0631\u0628 \u0627\u0644\u0642\u0631\u0627\u0621\u0629 \u0641\u0642\u0637 \u0623\u0648\u0644\u0627\u064b\u061b C# \u064a\u0648\u062b\u0642 \u062a\u0648\u0643\u0646 Session \u0648\u064a\u0637\u0627\u0628\u0642 UID\u060c \u0648\u0644\u0627 \u064a\u0643\u062a\u0641\u064a \u0628\u0627\u0644\u0640 Cookie.
             if (!missingSession || (action !== "load" && !serverSessionVerified)) {
                 serverSessionVerified = false;
                 throw error;
@@ -116,7 +116,7 @@ async function api(action, values, onProgress) {
         let result;
         try {
             if ((response.headers.get("Content-Type") || "").includes("application/x-ndjson") && response.body) {
-                // رسائل متعددة داخل نفس الرد؛ لا ننشئ طلب تحميل جديدًا لكل قسم.
+                // \u0631\u0633\u0627\u0626\u0644 \u0645\u062a\u0639\u062f\u062f\u0629 \u062f\u0627\u062e\u0644 \u0646\u0641\u0633 \u0627\u0644\u0631\u062f\u061b \u0644\u0627 \u0646\u0646\u0634\u0626 \u0637\u0644\u0628 \u062a\u062d\u0645\u064a\u0644 \u062c\u062f\u064a\u062f\u064b\u0627 \u0644\u0643\u0644 \u0642\u0633\u0645.
                 const reader = response.body.getReader();
                 const decoder = new TextDecoder();
                 let pending = "";
@@ -144,7 +144,7 @@ async function api(action, values, onProgress) {
                 : "The server did not return attendance JSON. Check the server build and page configuration.");
         }
         if (!response.ok || !result || !result.success) throw new Error(result && result.message || "Attendance request failed.");
-        // هذا شرط واجهة فقط؛ السيرفر يعيد فحص الهوية والصلاحيات لكل عملية لاحقة.
+        // \u0647\u0630\u0627 \u0634\u0631\u0637 \u0648\u0627\u062c\u0647\u0629 \u0641\u0642\u0637\u061b \u0627\u0644\u0633\u064a\u0631\u0641\u0631 \u064a\u0639\u064a\u062f \u0641\u062d\u0635 \u0627\u0644\u0647\u0648\u064a\u0629 \u0648\u0627\u0644\u0635\u0644\u0627\u062d\u064a\u0627\u062a \u0644\u0643\u0644 \u0639\u0645\u0644\u064a\u0629 \u0644\u0627\u062d\u0642\u0629.
         if (useServerSession && action === "load") serverSessionVerified = true;
         return result.data;
     } catch (error) {
@@ -161,7 +161,7 @@ function connected(data, name) {
     document.getElementById("connectionStatus").textContent = "Firebase connected";
     document.getElementById("navName").textContent = name || "Attendance";
     document.getElementById("modeMessage").textContent = data.localDemo
-        ? "Local test accounts · real Firebase"
+        ? "Local test accounts \u00b7 real Firebase"
         : "Signed in";
 
 }
@@ -193,17 +193,17 @@ function renderStudentProgress(type, data) {
         if (attendance && attendance.identityId !== data.identityId) {
             attendance = null;
             document.getElementById("historyRows").replaceChildren();
-            document.getElementById("historyEmpty").textContent = "Loading attendance…";
+            document.getElementById("historyEmpty").textContent = "Loading attendance\u2026";
             document.getElementById("historyEmpty").hidden = false;
             ["approvedHours", "remainingHours", "progressText", "todayStatus", "companyName", "supervisorName"].forEach(function (id) {
-                document.getElementById(id).textContent = "Loading…";
+                document.getElementById(id).textContent = "Loading\u2026";
             });
-            document.getElementById("actualCheckIn").textContent = "—";
-            document.getElementById("actualCheckOut").textContent = "—";
+            document.getElementById("actualCheckIn").textContent = "\u2014";
+            document.getElementById("actualCheckOut").textContent = "\u2014";
         }
         connected(data, data.student.name);
-        document.getElementById("studentName").textContent = data.student.name + (data.student.studentNumber ? " · " + data.student.studentNumber : "");
-        document.getElementById("connectionStatus").textContent = "Loading attendance…";
+        document.getElementById("studentName").textContent = data.student.name + (data.student.studentNumber ? " \u00b7 " + data.student.studentNumber : "");
+        document.getElementById("connectionStatus").textContent = "Loading attendance\u2026";
     } else if (type === "profile") {
         document.getElementById("companyName").textContent = data.company.name;
         document.getElementById("supervisorName").textContent = data.supervisor.name;
@@ -228,18 +228,18 @@ function renderStudent(data) {
     const request = data.earlyRequest || {};
     const required = Number(assignment.requiredHours || 0);
     const approved = Number(data.approvedMinutes || 0) / 60;
-    document.getElementById("studentName").textContent = data.student.name + (data.student.studentNumber ? " · " + data.student.studentNumber : "");
+    document.getElementById("studentName").textContent = data.student.name + (data.student.studentNumber ? " \u00b7 " + data.student.studentNumber : "");
     document.getElementById("companyName").textContent = assigned ? data.company.name : "No active assignment";
     document.getElementById("supervisorName").textContent = assigned ? data.supervisor.name : "Not assigned";
-    document.getElementById("requiredHours").textContent = assigned ? required + " h" : "—";
-    document.getElementById("approvedHours").textContent = assigned ? approved.toFixed(2) + " h" : "—";
-    document.getElementById("remainingHours").textContent = assigned ? Math.max(0, required - approved).toFixed(2) + " h" : "—";
+    document.getElementById("requiredHours").textContent = assigned ? required + " h" : "\u2014";
+    document.getElementById("approvedHours").textContent = assigned ? approved.toFixed(2) + " h" : "\u2014";
+    document.getElementById("remainingHours").textContent = assigned ? Math.max(0, required - approved).toFixed(2) + " h" : "\u2014";
     document.getElementById("progressText").textContent = assigned ? approved.toFixed(2) + " / " + required + " hours" : "No active training requirement";
     const progress = document.getElementById("trainingProgress");
     progress.max = required || 1;
     progress.value = Math.min(required, approved);
-    document.getElementById("scheduleDate").textContent = data.today + " · Asia/Amman" +
-        (assignment.startDate && assignment.endDate ? " · Training: " + assignment.startDate + " – " + assignment.endDate : "");
+    document.getElementById("scheduleDate").textContent = data.today + " \u00b7 Asia/Amman" +
+        (assignment.startDate && assignment.endDate ? " \u00b7 Training: " + assignment.startDate + " \u2013 " + assignment.endDate : "");
     document.getElementById("scheduledStart").textContent = time(schedule.scheduledStartAt);
     document.getElementById("scheduledEnd").textContent = time(schedule.scheduledEndAt);
     document.getElementById("actualCheckIn").textContent = time(record.checkInAt);
@@ -285,8 +285,8 @@ function renderHistory() {
         const row = document.createElement("tr");
         const status = record.status === "checkedIn" && !record.checkOutAt && Number(record.scheduledEndAt) < Date.now() ? "missingCheckOut" : record.status;
         [record.attendanceDate, time(record.checkInAt), time(record.checkOutAt),
-            record.checkOutAt ? (Number(record.workedMinutes) / 60).toFixed(2) + " h" : "—",
-            label(status) + (record.isLate ? " · Late" : ""), label(record.hoursApprovalStatus)].forEach(function (value) { addCell(row, value); });
+            record.checkOutAt ? (Number(record.workedMinutes) / 60).toFixed(2) + " h" : "\u2014",
+            label(status) + (record.isLate ? " \u00b7 Late" : ""), label(record.hoursApprovalStatus)].forEach(function (value) { addCell(row, value); });
         list.append(row);
     });
     document.getElementById("historyEmpty").hidden = rows.length > 0;
@@ -295,18 +295,18 @@ function renderHistory() {
 async function loadAttendance() {
     if (loading || saving) return;
     loading = true;
-    document.getElementById("connectionStatus").textContent = "Refreshing…";
+    document.getElementById("connectionStatus").textContent = "Refreshing\u2026";
     const version = dataVersion;
     ["checkInButton", "checkOutButton", "earlyButton", "resetTodayButton"].forEach(function (id) { document.getElementById(id).disabled = true; });
     ["historyRows", "todayStatus", "actualCheckIn", "actualCheckOut"].forEach(function (id) {
         document.getElementById(id).setAttribute("aria-busy", "true");
     });
-    document.getElementById("todayStatus").textContent = "Loading…";
+    document.getElementById("todayStatus").textContent = "Loading\u2026";
     if (!attendance) {
-        document.getElementById("historyEmpty").textContent = "Loading attendance…";
+        document.getElementById("historyEmpty").textContent = "Loading attendance\u2026";
         document.getElementById("historyEmpty").hidden = false;
-        document.getElementById("todayStatus").textContent = "Loading…";
-        ["approvedHours", "remainingHours", "progressText"].forEach(function (id) { document.getElementById(id).textContent = "Loading…"; });
+        document.getElementById("todayStatus").textContent = "Loading\u2026";
+        ["approvedHours", "remainingHours", "progressText"].forEach(function (id) { document.getElementById(id).textContent = "Loading\u2026"; });
     }
     try {
         const data = await api("load", null, function (type, partial) {
@@ -337,7 +337,7 @@ async function showQr(action, button) {
     const dialog = document.getElementById("qrDialog");
     document.getElementById("qrCode").replaceChildren();
     document.getElementById("qrTitle").textContent = action === "checkIn" ? "Check-in QR" : "Check-out QR";
-    document.getElementById("qrCountdown").textContent = "Generating your secure QR…";
+    document.getElementById("qrCountdown").textContent = "Generating your secure QR\u2026";
     document.getElementById("qrDescription").textContent = "Your assigned supervisor must scan this code to record attendance. Each code is valid for 120 seconds.";
     if (!dialog.open) openDialog("qrDialog", button);
     try {
@@ -346,7 +346,7 @@ async function showQr(action, button) {
         const qr = await api("qr", { attendanceAction: action });
         if (!dialog.open) return;
         if (typeof qr.token !== "string" || !qr.token.length || !Number.isFinite(Number(qr.expiresAt)) || !Number.isFinite(Number(qr.serverNow))) throw new Error("The server returned an invalid QR response. Refresh attendance and retry.");
-        // نخصم مدة الطلب احتياطًا حتى لا نعرض الرمز مدة أطول من صلاحيته على السيرفر.
+        // \u0646\u062e\u0635\u0645 \u0645\u062f\u0629 \u0627\u0644\u0637\u0644\u0628 \u0627\u062d\u062a\u064a\u0627\u0637\u064b\u0627 \u062d\u062a\u0649 \u0644\u0627 \u0646\u0639\u0631\u0636 \u0627\u0644\u0631\u0645\u0632 \u0645\u062f\u0629 \u0623\u0637\u0648\u0644 \u0645\u0646 \u0635\u0644\u0627\u062d\u064a\u062a\u0647 \u0639\u0644\u0649 \u0627\u0644\u0633\u064a\u0631\u0641\u0631.
         qrDeadline = requestedAt + qr.expiresAt - qr.serverNow;
         if (performance.now() >= qrDeadline) throw new Error("QR expired while loading. Generate a new QR.");
         const container = document.getElementById("qrCode");
@@ -370,7 +370,7 @@ async function showQr(action, button) {
         path.setAttribute("d", squares); path.setAttribute("fill", "#000");
         svg.append(background, path); container.append(svg);
         document.getElementById("qrTitle").textContent = action === "checkIn" ? "Check-in QR" : "Check-out QR";
-        document.getElementById("qrDescription").textContent = attendance.student.name + " · " + attendance.company.name + ". Show this QR to your assigned supervisor.";
+        document.getElementById("qrDescription").textContent = attendance.student.name + " \u00b7 " + attendance.company.name + ". Show this QR to your assigned supervisor.";
         qrAction = action;
         clearInterval(qrTimer);
         qrTimer = setInterval(updateCountdown, 250);
@@ -421,7 +421,7 @@ document.getElementById("sendEarlyRequest").addEventListener("click", async func
 document.getElementById("historyFilter").addEventListener("change", renderHistory);
 document.getElementById("attendanceSearch").addEventListener("input", renderHistory);
 document.getElementById("refreshAttendance").addEventListener("click", function () { loadAttendance(); });
-// نحمّل البيانات عند فتح الصفحة؛ تحديث تغييرات الطرف الآخر يكون يدويًا من زر Refresh.
+// \u0646\u062d\u0645\u0651\u0644 \u0627\u0644\u0628\u064a\u0627\u0646\u0627\u062a \u0639\u0646\u062f \u0641\u062a\u062d \u0627\u0644\u0635\u0641\u062d\u0629\u061b \u062a\u062d\u062f\u064a\u062b \u062a\u063a\u064a\u064a\u0631\u0627\u062a \u0627\u0644\u0637\u0631\u0641 \u0627\u0644\u0622\u062e\u0631 \u064a\u0643\u0648\u0646 \u064a\u062f\u0648\u064a\u064b\u0627 \u0645\u0646 \u0632\u0631 Refresh.
 loadAttendance();
 
 // Local reset still uses the same authenticated/CSRF-protected attendance API.

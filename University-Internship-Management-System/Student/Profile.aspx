@@ -16,8 +16,8 @@
         href="~/Assets/student/profile.css?v=20261024-student-hero" rel="stylesheet" />
     <link runat="server" href="~/Assets/shared/account-form-design.css?v=20261024-hide-firebase-badge" rel="stylesheet" />
     <link runat="server" href="~/Assets/shared/role-sidebars.css?v=20261023" rel="stylesheet" />
-<link href="../Assets/shared/workspace-identity.css?v=20261024-polish" rel="stylesheet" />
-<script src="../Js_project/workspace-navigation-unified.js?v=20261024-polish" defer></script>
+<link href="../Assets/shared/workspace-identity.css?v=20261024-refine" rel="stylesheet" />
+<script src="../Js_project/workspace-navigation-unified.js?v=20261024-refine" defer></script>
 </head>
 
 <body class="app-page role-shell student-profile-page" data-demo-role="student">
@@ -180,7 +180,7 @@
                                             <label class="profile-save profile-file-picker" for="cvUpload">Choose File</label>
                                             <span id="cvSelectedName" class="profile-file-name" aria-live="polite"><asp:Literal ID="litCvFileName" runat="server" Mode="Encode" /></span>
                                         </div>
-                                        <a href="Profile.aspx?download=cv">Download saved CV</a>
+                                        <a class="profile-cv-download" href="Profile.aspx?download=cv"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M12 3v12m-5-5 5 5 5-5M4 16v5h16v-5"/></svg>Download saved CV</a>
                                         <span id="cvHelp" class="profile-help">PDF, DOC, or DOCX, up to 10 MiB. Files are stored privately and downloaded through your authenticated account.</span>
                                     </div>
 

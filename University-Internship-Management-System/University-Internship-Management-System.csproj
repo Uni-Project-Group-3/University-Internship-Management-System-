@@ -815,6 +815,7 @@
     <Compile Include="Shared\FirebaseServerCredential.cs" />
     <Compile Include="Services\Attendance\ApprovedTrainingMinutes.cs" />
     <Compile Include="Services\FinalEvaluation\FinalReportWorkflow.cs" />
+    <Compile Include="Services\FinalEvaluation\FinalReportDocuments.cs" />
     <Compile Include="Services\FinalEvaluation\FinalReportApi.cs" />
     <Content Include="AcademicAssignmentsApi.ashx" />
     <Content Include="Assets\coordinator\academic-assignment.css" />
@@ -1028,4 +1029,5 @@
 
 
   <ItemGroup><Compile Include="Services\Attendance\AttendanceReset.cs" /></ItemGroup>
-</Project>
+
+<ItemGroup><Content Include="Js_project\Public\public-workspace.js" /><Content Include="ApplicationCv.ashx" /></ItemGroup><ItemGroup><Compile Include="ApplicationCv.ashx.cs" /></ItemGroup></Project>

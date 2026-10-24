@@ -1,4 +1,4 @@
-
+﻿
 
 <%@ Page Title="Sign In | UIMS" Language="C#" AutoEventWireup="true" Async="true" EnableViewState="false" CodeBehind="Login.aspx.cs" Inherits="University_Internship_Management_System.Auth.Login" %>
 <!DOCTYPE html>
@@ -9,7 +9,7 @@
     <meta name="robots" content="noindex, nofollow" />
     <title>Sign In | UIMS</title>
     <link runat="server" href="~/Assets/shared/colors.css" rel="stylesheet" />
-    <link runat="server" href="~/Assets/auth/auth.css" rel="stylesheet" /><link href="../Assets/auth/login-card.css?v=20261024-card-login" rel="stylesheet" />
+    <link runat="server" href="~/Assets/auth/auth.css" rel="stylesheet" /><link href="../Assets/auth/login-card.css?v=20261024-reference-pulse" rel="stylesheet" />
 </head>
 <body class="auth-page">
     <svg class="auth-sprite" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
@@ -19,23 +19,7 @@
         <symbol id="icon-arrow" viewBox="0 0 24 24"><path d="M4 12h15m-6-6 6 6-6 6" /></symbol>
         <symbol id="icon-shield" viewBox="0 0 24 24"><path d="m12 3 8 3v6c0 5-8 9-8 9s-8-4-8-9V6l8-3Z" /><path d="m8 12 3 3 5-6" /></symbol>
     </svg>
-    <header class="home-header">
-    <nav class="home-navbar" aria-label="Public navigation">
-        <a class="home-navbar__brand" href="~/Default.aspx" runat="server">
-            <img class="home-navbar__logo" src="~/Assets/shared/images/just-logo.png" runat="server" width="40" height="40" alt="Official JUST emblem" />
-            <span><strong>UIMS</strong><span class="home-navbar__subtitle">JUST Internships</span></span>
-        </a>
-        <button class="home-navbar__toggle" type="button" aria-label="Open navigation menu" aria-expanded="false" aria-controls="publicNavigationLinks" hidden="hidden">
-            <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16" /></svg>
-        </button>
-        <div id="publicNavigationLinks" class="home-navbar__links">
-            <a id="HomeLink" ClientIDMode="Static" runat="server" class="home-navbar__link" href="~/Default.aspx">Home</a>
-            <a id="AboutLink" ClientIDMode="Static" runat="server" class="home-navbar__link" href="~/About.aspx">About Us</a>
-            <a id="ContactLink" ClientIDMode="Static" runat="server" class="home-navbar__link" href="~/Contact.aspx">Contact Us</a>
-            <a id="LoginLink" ClientIDMode="Static" runat="server" aria-current="page" class="home-navbar__link home-navbar__sign-in is-active" href="~/Auth/Login.aspx">Sign In</a>
-        </div>
-    </nav>
-</header>
+    <header class="nav campus-public-nav" role="banner"><a id="HomeLink" runat="server" class="brand" href="../Public/home.aspx" aria-label="JUST Internships home"><img src="../Assets/public/images/team-brand.png" alt="Jordan University of Science and Technology" /></a><nav aria-label="Main"><ul><li><a id="AboutLink" runat="server" class="lnk" href="../Public/home.aspx#gateOverview">About</a></li><li><a class="lnk" href="../Public/home.aspx#walkwayOverview">Process</a></li><li><a class="lnk" href="../Public/home.aspx#opportunityColumn">Opportunities</a></li><li><a class="lnk" href="../Public/home.aspx#courtyardReturn">Colleges</a></li><li><a class="lnk" href="../Public/home.aspx#platformVideo">Video</a></li><li><a id="ContactLink" runat="server" class="lnk" href="../Contact.aspx">Contact</a></li><li><a class="lnk" href="../Public/team.aspx">Team</a></li><li><a id="LoginLink" runat="server" class="lnk login" href="Login.aspx">Login</a></li></ul></nav></header>
     <form id="form1" runat="server" class="auth-layout" novalidate="novalidate">
         <asp:HiddenField ID="CsrfToken" runat="server" ClientIDMode="Static" />
         <main class="app">
@@ -52,12 +36,12 @@
                     <div class="logo-disc"><img src="../Assets/shared/images/just-logo.png" alt=""/></div>
                     <div><strong>JUST</strong><small>JORDAN UNIVERSITY OF SCIENCE &amp; TECHNOLOGY</small></div>
                   </div>
-                  <span class="card-ribbon">JUST · UNIVERSITY ACCESS</span>
+                  <span class="card-ribbon">JUST &middot; UNIVERSITY ACCESS</span>
                 </div>
                 <div class="card-body">
                   <img class="card-watermark" src="../Assets/shared/images/just-logo.png" alt="" aria-hidden="true"/>
-                  <div class="card-section">UNIVERSITY ACCESS</div>
-                  <div class="student-title">University ID</div>
+                  <div class="card-section">CAMPUS ACCESS · INTERNSHIPS · UNIVERSITY SERVICES</div>
+                  <div class="student-title">UNIVERSITY CARD</div><span class="reference-chip" aria-hidden="true"></span>
                   <div class="card-values">
                     <div class="card-detail">
                       <div class="detail-field" id="previewEmailField"><label>UNIVERSITY EMAIL</label><span class="value placeholder" id="previewEmail">student@just.edu.jo</span></div>
@@ -67,13 +51,15 @@
                       <svg viewBox="0 0 100 115" xmlns="http://www.w3.org/2000/svg" role="presentation"><defs><linearGradient id="g" x2="1" y2="1"><stop stop-color="#83a9da"/><stop offset="1" stop-color="#acc8eb"/></linearGradient></defs><circle cx="50" cy="42" r="22" fill="url(#g)"/><path d="M6 115c0-31 18-48 44-48s44 17 44 48" fill="url(#g)"/><circle cx="79" cy="16" r="28" fill="#fff" opacity=".25"/></svg>
                     </div>
                   </div>
-                  <div class="card-footer"><span class="chip"><b></b> SECURE UNIVERSITY ACCESS</span><span class="micro">JUST · UIMS</span></div>
+                  <div class="card-footer"><span class="chip"><b></b> SECURE UNIVERSITY ACCESS</span><span class="micro">JUST &middot; UIMS</span></div>
                 </div>
               </article>
               <article class="id-card back" aria-label="University card verification">
-                <div class="back-header"><span>JUST / UNIVERSITY ACCESS</span><span>✦</span></div>
-                <div class="back-center"><img src="../Assets/shared/images/just-logo.png" alt=""/><strong>JUST</strong><small id="cardAuthStatus" role="status" aria-live="polite">Secure sign-in</small></div>
-                <div class="back-foot"><span>INTERNSHIP MANAGEMENT</span><span>SECURE SIGN-IN</span></div>
+                <div class="back-contact">JORDAN UNIVERSITY OF SCIENCE AND TECHNOLOGY · www.just.edu.jo</div>
+                <div class="magnetic-strip" aria-hidden="true"></div>
+                <div class="verification-row"><div><span>AUTHORIZED ACCESS</span><div class="signature-strip" aria-hidden="true"></div></div><div><span>STATUS</span><div class="security-chip" aria-hidden="true"></div></div></div>
+                <div class="back-center"><img src="../Assets/shared/images/just-logo.png" alt="JUST university logo"/><strong>JORDAN UNIVERSITY OF<br/>SCIENCE AND TECHNOLOGY</strong><small id="cardAuthStatus" role="status" aria-live="polite">Secure sign-in</small></div>
+                <div class="back-foot"><span>JUST · INTERNSHIP MANAGEMENT</span><span>CONTACTLESS ACCESS</span></div>
               </article>
             </div>
           </div>
@@ -81,7 +67,7 @@
       </div>
     </section>
 <section class="login-panel" aria-label="Sign in"><div class="login-center" id="loginContent">
-                <div class="auth-fields">
+                <div class="login-introduction"><span class="auth-eyebrow">YOUR UNIVERSITY WORKSPACE</span><h1>Welcome back.</h1><p>One secure place for your internship journey.</p></div><div class="auth-fields">
                     <div class="field auth-field">
                         <label for="Email">Email address</label>
                         <div class="input-wrap auth-input-wrap">
@@ -164,8 +150,8 @@
     </form>
     <footer class="auth-public-footer"><span>&copy; <%= DateTime.Now.Year %> Jordan University of Science and Technology.</span><span>University Internship Management System.</span></footer>
 
-<script src="../Js_project/Auth/login-card.js?v=20261024-merged-link-flow" defer="defer"></script>
+<script src="../Js_project/Auth/login-card.js?v=20261024-reference-pulse" defer="defer"></script>
 <script src="../Js_project/firebase-client.js?v=20261024-merged-link-flow" defer="defer"></script>
 <script src="../Js_project/Auth/auth.js?v=20261024-merged-link-flow" defer="defer"></script>
-</body>
+<script src="../Js_project/Public/public-workspace.js?v=20261024-refine" defer></script></body>
 </html>

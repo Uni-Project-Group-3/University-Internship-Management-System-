@@ -18,6 +18,32 @@ internal static partial class Program
 {
     private static async Task RunWeeklyReportTests()
     {
+        await Test("weekly submission rejects a stale displayed academic recipient", async () => {
+            var db = new WeeklyReportDb(); SeedWeekly(db);
+            await Reject<UIMS.Services.FirebaseException>(() => WeeklyService(db, WeeklyCompanyActor()).SubmitAsync("PL-1", 1, "2026-10-24", "2026-10-24", "report.docx", WeeklyMime, WeeklyDocx(), "", CancellationToken.None, null, "AC-STALE"));
+        });
+        await Test("weekly recipient keeps assigned ID when names are unavailable", async () => {
+            var db = new WeeklyReportDb(); SeedWeekly(db);
+            db.Set("users/AC-1", new JObject { ["role"] = "academicSupervisor", ["email"] = "private@example.invalid" });
+            var rows = (await WeeklyService(db, WeeklyCompanyActor()).ListCompanyPlacementsAsync(CancellationToken.None))["placements"];
+            var row = rows.Single(p => (string)p["studentId"] == "ST-1");
+            Assert((string)row["academicSupervisorId"] == "AC-1" && (string)row["academicSupervisorName"] == "Name unavailable" && (bool)row["canSubmit"]);
+            Assert(!rows.ToString().Contains("private@example.invalid"));
+        });
+        await Test("weekly recipient resolves academic name through the matching users profile", async () => {
+            var db = new WeeklyReportDb(); SeedWeekly(db);
+            db.Set("users/UID-ACADEMIC", new JObject { ["role"] = "academicSupervisor", ["academicSupervisorId"] = "AC-1", ["fullName"] = "Verified recipient", ["privateField"] = "DO_NOT_EXPOSE" });
+            var row = (await WeeklyService(db, WeeklyCompanyActor()).ListCompanyPlacementsAsync(CancellationToken.None))["placements"].Single(p => (string)p["studentId"] == "ST-1");
+            Assert((string)row["academicSupervisorName"] == "Verified recipient" && !row.ToString().Contains("DO_NOT_EXPOSE"));
+        });
+        await Test("weekly conflicting recipient blocks only the affected student and submission", async () => {
+            var db = new WeeklyReportDb(); SeedWeekly(db);
+            db.Set("supervisorAssignments/CONFLICT", new JObject { ["studentId"] = "ST-1", ["academicSupervisorId"] = "AC-OTHER", ["isActive"] = true });
+            var service = WeeklyService(db, WeeklyCompanyActor());
+            var row = (await service.ListCompanyPlacementsAsync(CancellationToken.None))["placements"].Single(p => (string)p["studentId"] == "ST-1");
+            Assert(!(bool)row["canSubmit"] && ((string)row["submissionBlocker"]).Contains("conflicting"));
+            await Reject<UIMS.Services.FirebaseException>(() => NewWeeklyReport(service));
+        });
         await Test("academic review persists without enabling Storage or company report uploads", async () => {
             var db = new WeeklyReportDb(); SeedWeekly(db);
             var report = await NewWeeklyReport(WeeklyService(db, WeeklyCompanyActor()));
@@ -36,6 +62,14 @@ internal static partial class Program
             db.Set("supervisorAssignments/CONFLICT", new JObject { ["studentId"] = "ST-1", ["academicSupervisorId"] = "AC-2", ["isActive"] = true });
             data = await service.ListAcademicReportsAsync(CancellationToken.None);
             Assert(data["assignedStudents"].Count() == 0);
+        });
+        await Test("weekly premium PDF paginates long records and renders Arabic fields", async () => {
+            var method = typeof(WeeklyReportService).GetMethod("GeneratePdfReport", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static);
+            var tasks = new JArray(); for (int i = 0; i < 65; i++) tasks.Add(new JObject { ["title"] = "Training activity " + i, ["status"] = "Completed", ["dueDate"] = "2026-10-24" });
+            var bytes = (byte[])method.Invoke(null, new object[] { "ST-AR", "أنس غوانمة", new JObject { ["companyName"] = "شركة التدريب" }, "PL-AR", 3, "2026-10-19", "2026-10-24", "ملاحظات المشرف", tasks, new JObject { ["approvedTrainingHours"] = 12.5 }, new JArray() });
+            using (var memory = new MemoryStream(bytes)) using (var pdf = PdfSharp.Pdf.IO.PdfReader.Open(memory, PdfSharp.Pdf.IO.PdfDocumentOpenMode.Import)) Assert(pdf.PageCount >= 3 && pdf.PageCount < 12);
+            var preview = Environment.GetEnvironmentVariable("UIMS_WEEKLY_PREVIEW_PATH"); if (!string.IsNullOrWhiteSpace(preview)) File.WriteAllBytes(Path.ChangeExtension(preview, ".long.pdf"), bytes);
+            await Task.FromResult(0);
         });
         await Test("weekly company roster exposes only assigned academic recipient names", async () => {
             var db = new WeeklyReportDb(); SeedWeekly(db);

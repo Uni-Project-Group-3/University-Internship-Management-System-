@@ -33,3 +33,30 @@
 @media(max-width:900px){.nav.campus-public-nav{left:12px;right:12px;top:10px;flex-wrap:wrap;gap:12px;padding:14px 18px;border-radius:16px}.nav.campus-public-nav nav{width:100%;overflow-x:auto}.nav.campus-public-nav nav ul{width:max-content;gap:5px}.nav.campus-public-nav .brand img{height:35px;width:230px}.nav.campus-public-nav .lnk{padding:8px 10px}.contact-page .contact-main{padding:175px 24px 45px}.contact-page .contact-layout{grid-template-columns:minmax(0,1fr)}.contact-page .contact-heading{margin-bottom:30px}}
 @media(max-width:500px){.contact-page .contact-main{padding-inline:18px}.contact-page .contact-fields{grid-template-columns:minmax(0,1fr)}.contact-page .contact-support,.contact-page .contact-form-card{padding:24px}.contact-page .contact-heading h1{font-size:43px;letter-spacing:-1.3px}}
 @media(prefers-reduced-motion:reduce){.nav.campus-public-nav *{transition:none!important}}
+
+/* Compact navigation at intermediate widths; one menu at small widths. */
+.nav.campus-public-nav{box-sizing:border-box;flex-wrap:nowrap;gap:14px;padding:14px 22px}
+.nav.campus-public-nav .brand img{width:235px;height:43px}
+.nav.campus-public-nav .lnk{padding:10px 9px;font-size:12px}
+.campus-menu-toggle{display:none;border:1px solid #ffffff45;border-radius:9px;background:#ffffff0d;color:#fff;padding:10px 14px;font:600 13px 'Segoe UI',sans-serif}
+.campus-back{white-space:nowrap}
+@media(max-width:1200px){.nav.campus-public-nav .brand img{width:185px}.nav.campus-public-nav .lnk{font-size:11px;padding:9px 6px}.nav.campus-public-nav nav ul{gap:3px}}
+@media(max-width:1050px){.nav.campus-public-nav{top:12px;left:16px;right:16px;flex-wrap:nowrap;padding:12px 16px;border-radius:17px}.campus-menu-toggle{display:block}.nav.campus-public-nav nav{display:none;position:absolute;top:calc(100% + 8px);left:0;right:0;padding:14px;background:#1d3c60;border:1px solid #ffffff25;border-radius:16px;box-shadow:0 16px 30px #10284425}.nav.campus-public-nav.is-open nav{display:block}.nav.campus-public-nav nav ul{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}.nav.campus-public-nav .lnk{padding:12px;font-size:13px}.nav.campus-public-nav .lnk.login{margin:0;text-align:center}.nav.campus-public-nav .brand img{width:220px;height:38px}}
+@media(max-width:450px){.nav.campus-public-nav .brand img{width:175px}.nav.campus-public-nav{left:10px;right:10px}}
+/* Keep the access-card animation intact, frame it with a calmer sign-in form. */
+body.auth-page{display:block!important;padding:0!important;background:#eeede8!important}
+.auth-page .auth-layout{padding:120px 28px 24px!important;max-width:1440px;margin:0 auto;width:100%;box-sizing:border-box}
+.auth-page .app{border:1px solid #d2d7e1;border-radius:24px;overflow:hidden;box-shadow:0 18px 70px #25385813;min-height:690px}
+.auth-page .login-panel{background:#f7f6f2!important;padding:50px clamp(24px,4vw,68px)!important}
+.auth-page .login-center{max-width:420px;width:100%;margin:auto}
+.auth-page .login-introduction{margin-bottom:36px}.auth-page .login-introduction .auth-eyebrow{font-size:10px;letter-spacing:.15em;color:#77829b}.auth-page .login-introduction h1{font:500 clamp(32px,3vw,43px)/1.15 Georgia,serif;letter-spacing:-1px;color:#293852;margin:13px 0}.auth-page .login-introduction p{font-size:13px;line-height:1.7;color:#788298}
+.auth-page .auth-input-wrap{border:1px solid #c8cfdb!important;border-radius:11px!important;background:#eeeee9!important;box-shadow:none!important;min-height:54px}
+.auth-page .auth-input{background:transparent!important;color:#2c3c58!important;box-shadow:none!important;font-size:14px!important}
+.auth-page .auth-input-wrap:focus-within{border-color:#52688f!important;box-shadow:0 0 0 3px #52688f15!important}
+.auth-page input:-webkit-autofill{-webkit-box-shadow:0 0 0 1000px #eeeee9 inset!important;-webkit-text-fill-color:#2c3c58!important}
+.auth-page .auth-field label{color:#465470;font-size:12px;font-weight:600}.auth-page .auth-button{border-radius:10px!important;background:#354a78!important;box-shadow:0 5px 13px #293c6020!important;padding:17px!important;font-size:14px!important}
+@media(max-width:800px){.auth-page .auth-layout{padding:110px 16px 20px!important}.auth-page .app{min-height:0}.auth-page .login-panel{padding:32px 25px!important}.auth-page .login-introduction{margin-bottom:24px}}
+
+/* Opportunity announcements use the dashboard card language inside the campus scene. */
+.flyer{border:1px solid #cbd3e1!important;border-top:4px solid #354a78!important;border-radius:20px!important;background:#f7f6f2!important;box-shadow:0 14px 38px #1e355520!important;overflow:hidden}
+.flyer .fhead{padding:30px 34px 24px!important}.flyer .fco{font-family:'Segoe UI',sans-serif!important;font-size:17px!important;font-weight:650;color:#354a78!important}.flyer .mono{background:#e2e7f0!important;color:#354a78!important;border-radius:11px!important}.flyer h3{font-family:'Segoe UI',sans-serif!important;font-size:34px!important;font-weight:600!important;letter-spacing:-1px!important}.flyer .fkick{font-family:'Segoe UI',sans-serif!important;font-size:10px!important;letter-spacing:.12em!important;color:#77839a!important}.flyer .fbody{padding:24px 34px!important}.flyer .fbody p{font-size:15px!important;line-height:1.7!important}.flyer .fbody dl{gap:18px!important}.flyer .fbody dd{font-family:'Segoe UI',sans-serif!important;font-size:21px!important;color:#354a78!important}.flyer .ffoot{padding:24px 34px!important}.flyer .btn{background:#354a78!important;border-radius:10px!important;font-family:'Segoe UI',sans-serif!important;padding:13px 18px!important}.flyer .stamp{color:#79869d!important}

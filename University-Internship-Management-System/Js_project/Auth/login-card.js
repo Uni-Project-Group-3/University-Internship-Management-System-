@@ -10,10 +10,11 @@
     const pause = ms => new Promise(resolve => setTimeout(resolve, reduced.matches ? 0 : ms));
     function preview() {
         const value = email.value.trim(), count = password.value.length;
+        if(phase==='idle')workspace.classList.remove('is-error');
         document.getElementById('previewEmail').textContent = value || 'University email';
         document.getElementById('previewEmail').classList.toggle('placeholder', !value);
         // Only a count is mirrored. The password itself never enters another DOM node.
-        document.getElementById('previewPassword').textContent = count ? '•'.repeat(Math.min(count, 18)) : '••••••••';
+        document.getElementById('previewPassword').textContent = count ? '\u2022'.repeat(Math.min(count, 18)) : '\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022';
     }
     [email, password].forEach(input => {
         input.addEventListener('input', preview); input.addEventListener('change', preview);
@@ -34,20 +35,20 @@
             phase = 'loading'; started = performance.now(); preview();
             workspace.classList.remove('is-error', 'is-success'); workspace.classList.add('is-scanning');
             tilt.style.setProperty('--rx', '0deg'); tilt.style.setProperty('--ry', '0deg');
-            flipper.classList.add('flipped'); status.textContent = 'Signing in…';
+            flipper.classList.add('flipped'); status.textContent = 'Signing in\u2026';
         },
         async success() {
             if (phase !== 'loading') this.begin();
             await pause(Math.max(0, 850 - (performance.now() - started)));
             workspace.classList.remove('is-scanning'); workspace.classList.add('is-success');
             status.textContent = 'Signed in'; phase = 'success'; preview();
-            await pause(280);
+            await pause(900);
         },
         async error() {
             await pause(Math.max(0, 400 - (performance.now() - started)));
             workspace.classList.remove('is-scanning'); workspace.classList.add('is-error');
             flipper.classList.remove('flipped'); status.textContent = 'Sign-in unsuccessful';
-            await pause(450); phase = 'idle'; workspace.classList.remove('is-error');
+            await pause(450); phase = 'idle';
         }
     });
     // Native Web Forms posting still works if the enhanced authentication client is unavailable.

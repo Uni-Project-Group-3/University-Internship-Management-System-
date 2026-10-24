@@ -9,8 +9,8 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet" />
     <link href="../Assets/shared/colors.css" rel="stylesheet" />
     <link href="../Assets/student/my-attendance.css?v=20261024-reset" rel="stylesheet" />
-<link href="../Assets/shared/workspace-identity.css?v=20261024-polish" rel="stylesheet" />
-<script src="../Js_project/workspace-navigation-unified.js?v=20261024-polish" defer></script>
+<link href="../Assets/shared/workspace-identity.css?v=20261024-refine" rel="stylesheet" />
+<script src="../Js_project/workspace-navigation-unified.js?v=20261024-refine" defer></script>
 </head>
 <body>
     <form id="attendanceForm" runat="server">
@@ -49,20 +49,20 @@
 
 
 <main class="content attendance-content">
-    <div class="page-heading"><div><p class="eyebrow">TRAINING ATTENDANCE</p><h1>My Attendance</h1><p>Your training, attendance and hours.</p></div><span class="date-chip" id="connectionStatus">Connecting…</span></div>
+    <div class="page-heading"><div><p class="eyebrow">TRAINING ATTENDANCE</p><h1>My Attendance</h1><p>Your training, attendance and hours.</p></div><span class="date-chip" id="connectionStatus">Connecting&#8230;</span></div>
     <span id="modeMessage" class="visually-hidden"></span>
     <button type="button" id="refreshAttendance" class="text-action">Refresh attendance</button>
     <div id="pageNotice" class="page-notice" role="status" hidden></div>
     <section class="row g-3 metric-row" aria-label="Training hours">
-        <div class="col-sm-4"><div class="metric-card blue"><span>Approved hours</span><strong id="approvedHours">—</strong><small>Verified and approved only</small></div></div>
-        <div class="col-sm-4"><div class="metric-card ice"><span>Remaining hours</span><strong id="remainingHours">—</strong><small>Until your training requirement is met</small></div></div>
-        <div class="col-sm-4"><div class="metric-card"><span>Required hours</span><strong id="requiredHours">—</strong><small>Defined by your training assignment</small></div></div>
+        <div class="col-sm-4"><div class="metric-card blue"><span>Approved hours</span><strong id="approvedHours">&#8212;</strong><small>Verified and approved only</small></div></div>
+        <div class="col-sm-4"><div class="metric-card ice"><span>Remaining hours</span><strong id="remainingHours">&#8212;</strong><small>Until your training requirement is met</small></div></div>
+        <div class="col-sm-4"><div class="metric-card"><span>Required hours</span><strong id="requiredHours">&#8212;</strong><small>Defined by your training assignment</small></div></div>
     </section>
     <div class="row g-4 align-items-start">
         <div class="col-xl-8">
-            <section class="attendance-panel" aria-labelledby="todayHeading"><div class="panel-heading"><h2 id="todayHeading">Today's attendance</h2><span id="todayStatus" class="attendance-badge">—</span></div>
+            <section class="attendance-panel" aria-labelledby="todayHeading"><div class="panel-heading"><h2 id="todayHeading">Today's attendance</h2><span id="todayStatus" class="attendance-badge">&#8212;</span></div>
                 <p class="section-note" id="scheduleDate"></p>
-                <div class="schedule-grid"><div><span>Scheduled start</span><strong id="scheduledStart">—</strong></div><div><span>Scheduled end</span><strong id="scheduledEnd">—</strong></div><div><span>Actual check-in</span><strong id="actualCheckIn">—</strong></div><div><span>Actual check-out</span><strong id="actualCheckOut">—</strong></div></div>
+                <div class="schedule-grid"><div><span>Scheduled start</span><strong id="scheduledStart">&#8212;</strong></div><div><span>Scheduled end</span><strong id="scheduledEnd">&#8212;</strong></div><div><span>Actual check-in</span><strong id="actualCheckIn">&#8212;</strong></div><div><span>Actual check-out</span><strong id="actualCheckOut">&#8212;</strong></div></div>
                 <div class="timeline"><span id="scheduleHelp"></span></div>
                 <div class="attendance-actions"><button id="checkInButton" type="button" disabled class="primary-action">Show check-in QR</button><button id="checkOutButton" type="button" disabled class="primary-action">Show check-out QR</button></div>
                 <div id="resetTodayTools" class="attendance-reset-tools" hidden><button id="resetTodayButton" type="button" class="secondary-action" disabled>Reset today’s attendance</button><p class="section-note">Local testing only · previous attempts are preserved.</p></div>
@@ -73,7 +73,7 @@
             </section>
         </div>
         <aside class="col-xl-4">
-            <section class="attendance-panel assignment-panel"><p class="eyebrow">YOUR TRAINING</p><h2>Assignment details</h2><dl class="assignment-list"><div><dt>Student</dt><dd id="studentName">—</dd></div><div><dt>Company</dt><dd id="companyName">—</dd></div><div><dt>Company supervisor</dt><dd id="supervisorName">—</dd></div><div><dt>Training progress</dt><dd id="progressText">—</dd></div></dl><progress id="trainingProgress" max="1" value="0" aria-label="Approved training progress"></progress></section>
+            <section class="attendance-panel assignment-panel"><p class="eyebrow">YOUR TRAINING</p><h2>Assignment details</h2><dl class="assignment-list"><div><dt>Student</dt><dd id="studentName">&#8212;</dd></div><div><dt>Company</dt><dd id="companyName">&#8212;</dd></div><div><dt>Company supervisor</dt><dd id="supervisorName">&#8212;</dd></div><div><dt>Training progress</dt><dd id="progressText">&#8212;</dd></div></dl><progress id="trainingProgress" max="1" value="0" aria-label="Approved training progress"></progress></section>
             <details class="attendance-panel quick-help"><summary>How attendance works</summary><ol class="steps-list"><li>Display your temporary QR when the action is available.</li><li>Your assigned company supervisor checks your identity and scans it.</li><li>A valid scan records attendance automatically. Hours are approved separately.</li></ol><p class="section-note">A missing check-out does not receive full-day hours. Day-off records are not absences.</p></details>
         </aside>
     </div>
