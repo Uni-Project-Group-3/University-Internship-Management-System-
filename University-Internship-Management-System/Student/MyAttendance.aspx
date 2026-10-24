@@ -96,6 +96,6 @@
     <script src="../Js_project/firebase-client.js?v=20261024-attendance-session"></script>
     <script src="../Scripts/bootstrap.bundle.min.js"></script>
     <script src="../Js_project/Student/attendance-qrcodegen.js?v=nayuki-local-20261024"></script>
-    <script src="../Js_project/Student/my-attendance.js?v=20261024-qr-open-fix"></script>
+    <script src="../Js_project/Student/my-attendance.js?v=20261024-reset-refresh-fix"></script>
 </body>
 </html>

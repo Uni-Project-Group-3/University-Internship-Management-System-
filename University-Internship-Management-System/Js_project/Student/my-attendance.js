@@ -444,7 +444,10 @@ document.addEventListener('visibilitychange', () => { if (!document.hidden) load
 // Local reset still uses the same authenticated/CSRF-protected attendance API.
 let resetPreview = null;
 document.getElementById("resetTodayButton").addEventListener("click", async function () {
-    if (loading || saving || !attendance || !attendance.canResetToday) return;
+    if (saving || !attendance || !attendance.canResetToday) return;
+    // A background read must not silently discard a deliberate reset click.
+    // Invalidate any older load response; the server still rechecks the record and ETag.
+    dataVersion++;
     saving = true; this.disabled = true; resetPreview = null;
     try {
         resetPreview = await api("resetPreview");
@@ -459,13 +462,15 @@ document.getElementById("resetTodayButton").addEventListener("click", async func
     finally { saving = false; this.disabled = !attendance || !attendance.canResetToday; }
 });
 document.getElementById("confirmResetToday").addEventListener("click", async function () {
-    if (loading || saving || !resetPreview) return;
+    if (saving || !resetPreview) return;
+    dataVersion++;
     saving = true; this.disabled = true;
     const modal = document.getElementById("resetTodayDialog");
     // Closing remains safe while a request is in flight; the operation is never silently retried.
     try {
         const data = await api("resetToday", { expectedVersion: resetPreview.expectedVersion, expectedDate: resetPreview.date });
         resetPreview = null;
+        lastOpenedIssuedQr = "";
         if (document.getElementById("qrDialog").open) document.getElementById("qrDialog").close();
         clearInterval(qrTimer); document.getElementById("qrCode").replaceChildren();
         saving = false; renderStudent(data); modal.close();

@@ -13,7 +13,7 @@ function fixture(mode = 'success') {
     return elements.get(id);
   }
   const context = vm.createContext({ console, clearInterval() {}, document: { getElementById: element },
-    loading: false, saving: false, attendance: { canResetToday: true }, qrTimer: null,
+    dataVersion: 0, lastOpenedIssuedQr: "old-qr", loading: false, saving: false, attendance: { canResetToday: true }, qrTimer: null,
     openDialog(id) { element(id).open = true; }, showNotice(message, error) { notices.push({ message, error }); },
     renderStudent(data) { renders.push(data); },
     async api(action, body) {
@@ -51,6 +51,12 @@ function fixture(mode = 'success') {
   f = fixture(); f.context.attendance.canResetToday = false; await f.click('resetTodayButton');
   assert.strictEqual(f.calls.length, 0);
   f.context.attendance.canResetToday = true; f.context.loading = true; await f.click('resetTodayButton');
-  assert.strictEqual(f.calls.length, 0);
+  assert.strictEqual(f.calls.length, 1, 'Background refresh must not swallow reset preview');
+  assert(f.element('resetTodayDialog').open);
+  assert.strictEqual(f.context.dataVersion, 1, 'Ignore older load responses');
+  await f.click('confirmResetToday');
+  assert.strictEqual(f.calls.length, 2, 'Confirmation works during an in-flight background read');
+  assert.strictEqual(f.context.dataVersion, 2);
+  assert.strictEqual(f.context.lastOpenedIssuedQr, '', 'New QR may open after reset');
   console.log('PASS reset preview, explicit confirmation, cancel, updated totals, blocked identity state, report denial, concurrency feedback and no automatic retry. Offline only.');
 })().catch(error => { console.error(error); process.exitCode = 1; });
