@@ -8,7 +8,7 @@
     <link href="../Content/bootstrap.min.css" rel="stylesheet" />
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet" />
     <link href="../Assets/shared/colors.css" rel="stylesheet" />
-    <link href="../Assets/student/my-attendance.css?v=ui-simple1" rel="stylesheet" />
+    <link href="../Assets/student/my-attendance.css?v=20261024-reset" rel="stylesheet" />
 <link href="../Assets/shared/workspace-identity.css?v=20261024-refine" rel="stylesheet" />
 <script src="../Js_project/workspace-navigation-unified.js?v=20261024-refine" defer></script>
 </head>
@@ -65,6 +65,7 @@
                 <div class="schedule-grid"><div><span>Scheduled start</span><strong id="scheduledStart">&#8212;</strong></div><div><span>Scheduled end</span><strong id="scheduledEnd">&#8212;</strong></div><div><span>Actual check-in</span><strong id="actualCheckIn">&#8212;</strong></div><div><span>Actual check-out</span><strong id="actualCheckOut">&#8212;</strong></div></div>
                 <div class="timeline"><span id="scheduleHelp"></span></div>
                 <div class="attendance-actions"><button id="checkInButton" type="button" disabled class="primary-action">Show check-in QR</button><button id="checkOutButton" type="button" disabled class="primary-action">Show check-out QR</button></div>
+                <div id="resetTodayTools" class="attendance-reset-tools" hidden><button id="resetTodayButton" type="button" class="secondary-action" disabled>Reset today’s attendance</button><p class="section-note">Local testing only · previous attempts are preserved.</p></div>
                 <button id="earlyButton" type="button" disabled class="text-action">Request early check-out</button><p id="earlyStatus" class="section-note" aria-live="polite"></p>
             </section>
             <section class="attendance-panel" aria-labelledby="historyHeading"><div class="panel-heading"><h2 id="historyHeading">Attendance history</h2><label class="filter-label" for="historyFilter">Status<select id="historyFilter" class="form-select"><option value="all">All records</option><option value="approved">Approved hours</option><option value="pending">Pending hours</option><option value="absent">Absent</option></select></label></div>
@@ -77,6 +78,14 @@
         </aside>
     </div>
     <dialog id="qrDialog" class="attendance-dialog" aria-labelledby="qrTitle"><div class="panel-heading"><h2 id="qrTitle">Attendance QR</h2><button type="button" class="dialog-close" data-close-dialog="qrDialog" aria-label="Close QR">&times;</button></div><div class="qr-placeholder"><div id="qrCode" aria-label="Temporary attendance QR code"></div><strong id="qrCountdown" role="status"></strong></div><p id="qrDescription"></p><p class="section-note">Valid for 120 seconds. You or your supervisor can issue this QR. Only your assigned supervisor can scan it to record attendance.</p><button type="button" class="secondary-action" data-close-dialog="qrDialog">Close</button></dialog>
+    <dialog id="resetTodayDialog" class="attendance-dialog" aria-labelledby="resetTodayHeading" aria-describedby="resetTodayExplanation">
+        <div class="panel-heading"><h2 id="resetTodayHeading">Reset today’s attendance?</h2><button type="button" class="dialog-close" data-close-dialog="resetTodayDialog" aria-label="Cancel reset">&times;</button></div>
+        <p id="resetTodayExplanation">This resets your check-in, check-out and QR codes for today. A copy of this attempt is preserved. Your schedule and other days stay unchanged. Saved reports and files are not edited; live hours displayed in reports may change.</p>
+        <p id="resetTodayImpact" class="page-notice"></p>
+        <p class="section-note">After resetting, ask your company supervisor to issue a new check-in QR.</p>
+        <p id="resetTodayError" class="error-message" role="alert" hidden></p>
+        <div class="attendance-actions"><button type="button" class="secondary-action" data-close-dialog="resetTodayDialog">Cancel</button><button type="button" class="primary-action" id="confirmResetToday">Reset attendance</button></div>
+    </dialog>
     <dialog id="earlyDialog" class="attendance-dialog" aria-labelledby="earlyTitle"><div class="panel-heading"><h2 id="earlyTitle">Request early check-out</h2><button type="button" class="dialog-close" data-close-dialog="earlyDialog" aria-label="Close early check-out request">&times;</button></div><p class="section-note">Your supervisor must approve the request before an early check-out QR becomes available.</p><label for="earlyReason" class="form-label">Reason *</label><textarea id="earlyReason" class="form-control" rows="4" maxlength="500" placeholder="Explain why you need to leave early."></textarea><p id="reasonError" class="error-message" role="alert" hidden>Please enter a reason.</p><div class="attendance-actions"><button type="button" class="secondary-action" data-close-dialog="earlyDialog">Cancel</button><button type="button" class="primary-action" id="sendEarlyRequest">Send request</button></div></dialog>
     <noscript><p>Enable JavaScript to load attendance and display QR codes.</p></noscript>
 </main>
@@ -87,6 +96,6 @@
     <script src="../Js_project/firebase-client.js"></script>
     <script src="../Scripts/bootstrap.bundle.min.js"></script>
     <script src="../Js_project/Student/attendance-qrcodegen.js?v=nayuki-local-20261024"></script>
-    <script src="../Js_project/Student/my-attendance.js?v=20261024-nayuki-qr"></script>
+    <script src="../Js_project/Student/my-attendance.js?v=20261024-approval-visibility"></script>
 </body>
 </html>

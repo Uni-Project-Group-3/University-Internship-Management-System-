@@ -1028,6 +1028,7 @@
 <ItemGroup><Content Include="Assets\public\public-campus.css" /></ItemGroup>
 
 
+<ItemGroup><Compile Include="Services\Attendance\AttendanceReset.cs" /></ItemGroup>
 <ItemGroup><Content Include="Js_project\Public\public-workspace.js" /><Content Include="ApplicationCv.ashx" /></ItemGroup><ItemGroup><Compile Include="ApplicationCv.ashx.cs" /></ItemGroup><ItemGroup>
     <Content Include="img\team\yasmeen-talafha.jpg" />
     <Content Include="img\team\deyaa-alwardat.jpg" />

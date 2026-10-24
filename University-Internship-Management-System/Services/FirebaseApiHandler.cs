@@ -136,7 +136,7 @@ namespace UIMS
             var identity = RequireBearer(context.Request);
             var result = await new FirebaseSignInService().VerifySessionAsync(identity);
             context.Session["Uims.FirebaseIdToken"] = identity;
-            return new { uid = result.Uid, profileId = result.Uid, role = result.Role };
+            return new { uid = result.Uid, profileId = result.Uid, role = result.Role, displayName = (string)result.Profile?["fullName"] ?? (string)result.Profile?["displayName"] ?? (string)result.Profile?["name"] ?? "Account" };
         }
 
         private static object Logout(HttpContext context)
