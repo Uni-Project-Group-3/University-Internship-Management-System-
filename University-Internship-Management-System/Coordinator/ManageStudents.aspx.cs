@@ -173,7 +173,7 @@ namespace University_Internship_Management_System.Coordinator
                 candidate.Password = null;
                 StoreCandidate(candidate);
                 await LoadStudentsAsync();
-                studentLookupMessage.Text = HttpUtility.HtmlEncode("Student account saved. Firebase accepted a password setup email for " + candidate.Record.email + ". Check inbox and spam, then sign in using this same email address.");
+                studentLookupMessage.Text = HttpUtility.HtmlEncode("Student account saved. Firebase accepted a password setup email for " + candidate.Record.email + ". The student must open the newest email (check spam), set a password, then sign in with this same email address. Any earlier password or older setup link no longer works.");
             }, true);
         }
 
