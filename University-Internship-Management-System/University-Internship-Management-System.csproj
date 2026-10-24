@@ -815,6 +815,7 @@
     <Compile Include="Shared\FirebaseServerCredential.cs" />
     <Compile Include="Services\Attendance\ApprovedTrainingMinutes.cs" />
     <Compile Include="Services\FinalEvaluation\FinalReportWorkflow.cs" />
+    <Compile Include="Services\FinalEvaluation\FinalReportDocuments.cs" />
     <Compile Include="Services\FinalEvaluation\FinalReportApi.cs" />
     <Content Include="AcademicAssignmentsApi.ashx" />
     <Content Include="Assets\coordinator\academic-assignment.css" />

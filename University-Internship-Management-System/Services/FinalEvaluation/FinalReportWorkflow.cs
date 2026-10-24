@@ -11,7 +11,7 @@ using University_Internship_Management_System.Shared;
 namespace UIMS.Services
 {
     // One CAS-protected aggregate per existing placement. No attendance, account or grade source is fabricated.
-    public sealed class FinalReportWorkflow
+    public sealed partial class FinalReportWorkflow
     {
         public const long RequiredMinutes = 18000;
         private readonly IApplicationDatabase db;
@@ -30,7 +30,7 @@ namespace UIMS.Services
             if (string.IsNullOrWhiteSpace(name) || name.Length > 180 || name.IndexOfAny("/\\:\0".ToCharArray()) >= 0 || name.Any(char.IsControl)) throw new FirebaseException(400, "Enter a filename only, without a filesystem path.");
             return new JObject { ["fileName"] = name, ["storageProvider"] = null, ["storagePath"] = null, ["uploadStatus"] = "nameOnly" };
         }
-        private sealed class Access { public string Uid, Role, Student, CompanySupervisor, Academic; public JObject Profile, Placement; }
+        private sealed class Access { public string Uid, Role, Student, StudentName, AcademicName, CompanySupervisor, Academic; public JObject Profile, Placement; }
         private async Task<Access> Authorize(string uid, string ticketRole, string placementId)
         {
             Key(uid); Key(placementId);
@@ -61,7 +61,7 @@ namespace UIMS.Services
             bool allowed = login.Role == "coordinator" || (login.Role == "companySupervisor" && actorSupervisor == supervisor && T(profile, "companyId") == company) ||
                 (login.Role == "academicSupervisor" && (uid == academic || actorAcademic == academic)) || (login.Role == "student" && (uid == studentProfile.Name || T(profile, "studentId") == studentId));
             if (!allowed) throw new FirebaseException(403, "This placement is not assigned to your current account.");
-            return new Access { Uid = uid, Role = login.Role, Placement = p, Profile = profile, Student = studentId, CompanySupervisor = supervisor, Academic = academic };
+            return new Access { Uid = uid, Role = login.Role, Placement = p, Profile = profile, Student = studentId, StudentName = T(studentProfile.Value, "fullName").Length > 0 ? T(studentProfile.Value, "fullName") : T(studentProfile.Value, "displayName"), AcademicName = T(academicProfile, "fullName").Length > 0 ? T(academicProfile, "fullName") : T(academicProfile, "displayName"), CompanySupervisor = supervisor, Academic = academic };
         }
         private async Task<long> Minutes(string placementId, Access a)
         {
@@ -105,6 +105,55 @@ namespace UIMS.Services
             }
             return new JObject { ["reports"] = reports };
         }
+        public async Task<JObject> SourceSummaryAsync(string uid, string role, string placementId)
+        {
+            var a = await Authorize(uid, role, Key(placementId));
+            if (a.Role != "companySupervisor") throw new FirebaseException(403, "Only the assigned company supervisor can generate this report summary.");
+            var profiles = O(await db.ReadAsync("users"));
+            var names = profiles.Properties().Where(p => T(p.Value, "studentId") == a.Student && T(p.Value, "role") == "student").Select(p => T(p.Value, "fullName")).Where(n => n.Length > 0).Distinct().ToArray();
+            string name = names.Length == 1 ? names[0] : a.Student;
+            var tasks = O(await db.ReadAsync("tasks")); var taskRows = new JArray();
+            foreach (var entry in tasks.Properties()) if (T(entry.Value, "placementId") == placementId && T(entry.Value, "studentId") == a.Student)
+                taskRows.Add(new JObject { ["taskId"] = entry.Name, ["title"] = entry.Value["title"], ["status"] = entry.Value["status"], ["score"] = entry.Value["score"] ?? entry.Value["grade"], ["maximumScore"] = entry.Value["maximumScore"], ["taskType"] = entry.Value["taskType"], ["examId"] = entry.Value["examId"] });
+            var exams = O(await db.ReadAsync("taskExams")); var examRows = new JArray();
+            foreach (var exam in exams.Properties().Where(e => T(e.Value, "placementId") == placementId))
+                foreach (var attempt in O(await db.ReadAsync("taskExamAttempts/" + Key(exam.Name) + "/" + Key(a.Student))).Properties())
+                {
+                    if (!new[] { "submitted", "expired" }.Contains(T(attempt.Value, "status"))) continue;
+                    var row = new JObject { ["examId"] = exam.Name, ["taskId"] = exam.Value["taskId"], ["attemptId"] = attempt.Name, ["submittedAt"] = attempt.Value["submittedAt"], ["title"] = exam.Value["title"], ["status"] = attempt.Value["status"], ["resultStatus"] = attempt.Value["resultStatus"] };
+                    if (T(attempt.Value, "resultStatus") == "released") { row["score"] = attempt.Value["score"]; row["maximumScore"] = attempt.Value["maximumScore"]; }
+                    examRows.Add(row);
+                }
+            var gradeItems = new JArray(); int excluded = 0;
+            bool IncludeGrade(JToken item, string kind, string id)
+            {
+                decimal score, maximum;
+                if (!decimal.TryParse(T(item, "score"), NumberStyles.Number, CultureInfo.InvariantCulture, out score) || !decimal.TryParse(T(item, "maximumScore"), NumberStyles.Number, CultureInfo.InvariantCulture, out maximum) || maximum <= 0 || score < 0 || score > maximum) return false;
+                gradeItems.Add(new JObject { ["kind"] = kind, ["id"] = id, ["title"] = item["title"], ["score"] = score, ["maximumScore"] = maximum, ["percentage"] = score / maximum * 100m }); return true;
+            }
+            var linkedTasks = new System.Collections.Generic.HashSet<string>(exams.Properties().Where(e => T(e.Value, "placementId") == placementId).Select(e => T(e.Value, "taskId")).Where(id => id.Length > 0), StringComparer.Ordinal);
+            foreach (var task in taskRows)
+            {
+                if (linkedTasks.Contains(T(task, "taskId")) || T(task, "examId").Length > 0 || T(task, "taskType").Equals("exam", StringComparison.OrdinalIgnoreCase)) { ((JObject)task).Remove("score"); ((JObject)task).Remove("maximumScore"); continue; }
+                if (!T(task, "status").Equals("completed", StringComparison.OrdinalIgnoreCase) || !IncludeGrade(task, "task", T(task, "taskId"))) excluded++;
+            }
+            foreach (var group in examRows.GroupBy(e => T(e, "examId")))
+            {
+                var attempts = group.ToArray();
+                if (attempts.Length > 1 && attempts.Any(e => !DateTimeOffset.TryParse(T(e, "submittedAt"), CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal, out var ignored))) { excluded++; continue; }
+                var latest = attempts.OrderByDescending(e => { DateTimeOffset stamp; return DateTimeOffset.TryParse(T(e, "submittedAt"), CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal, out stamp) ? stamp : DateTimeOffset.MinValue; }).First();
+                if (T(latest, "resultStatus") != "released" || !IncludeGrade(latest, "exam", group.Key)) excluded++;
+            }
+            decimal? suggested = gradeItems.Count == 0 ? (decimal?)null : Math.Round(gradeItems.Average(x => (decimal)x["percentage"]), 2, MidpointRounding.AwayFromZero);
+            var calculation = new JObject { ["method"] = "equal-assessment-average-v1", ["percentage"] = suggested, ["items"] = gradeItems, ["includedCount"] = gradeItems.Count, ["excludedCount"] = excluded, ["provisional"] = excluded > 0, ["explanation"] = "Each completed ordinary task and latest released exam counts once after normalization to 100. Linked exam tasks are excluded. Missing/unreleased results are not zero grades. Final academic/admin approval remains separate." };
+            var weekly = (JArray)(await WeeklyReportsAsync(uid, role, placementId))["reports"];
+            long? minutes = null; string blocker = null; try { minutes = await Minutes(placementId, a); } catch (FirebaseException e) { blocker = e.Message; }
+            var lines = new System.Collections.Generic.List<string> { "Training report for " + name + " | Student ID: " + a.Student, "Generated: " + Now(), "Approved training minutes: " + (minutes.HasValue ? minutes.ToString() : "Unverified"), "Tasks recorded: " + taskRows.Count, "Submitted examination attempts: " + examRows.Count, "Weekly reports available: " + weekly.Count, "Calculated assessment percentage: " + (suggested.HasValue ? suggested.Value.ToString("0.00", CultureInfo.InvariantCulture) + "/100" : "Unavailable - no eligible grades"), "Calculation: equal average of " + gradeItems.Count + " assessments; " + excluded + " excluded" };
+            foreach (var task in taskRows) lines.Add("Task: " + T(task, "title") + " | " + T(task, "status"));
+            foreach (var exam in examRows) lines.Add("Exam: " + T(exam, "title") + " | " + (T(exam, "resultStatus") == "released" ? T(exam, "score") + "/" + T(exam, "maximumScore") : "Result awaiting release"));
+            string comments = string.Join("\n", lines); if (comments.Length > 4800) comments = comments.Substring(0, 4700) + "\nAdditional activity is available in the source records.";
+            return new JObject { ["studentId"] = a.Student, ["studentName"] = name, ["companyName"] = a.Placement["companyName"], ["academicSupervisorName"] = a.AcademicName, ["trainingStart"] = a.Placement["startDate"], ["trainingEnd"] = a.Placement["endDate"], ["requiredTrainingMinutes"] = RequiredMinutes, ["placementId"] = placementId, ["comments"] = comments, ["gradeCalculation"] = calculation, ["tasks"] = taskRows, ["exams"] = examRows, ["weeklyReports"] = weekly, ["approvedTrainingMinutes"] = minutes, ["eligibilityBlocker"] = blocker, ["generatedAt"] = Now(), ["fileName"] = "final-training-report-" + a.Student + ".pdf" };
+        }
         private async Task<JArray> WeeklySnapshots(string uid, string role, string placementId, JToken requested)
         {
             if (requested == null) return null;
@@ -145,9 +194,18 @@ namespace UIMS.Services
                     if (T(input, "expectedDraftVersion") != T(record, "draftVersion")) throw new FirebaseException(409, "The saved draft changed in another request. Reload before saving or submitting.");
                     if (action == "save")
                     {
+                        JObject generatedSource = null;
+                        if ((bool?)input["useCalculatedGrade"] == true)
+                        {
+                            generatedSource = await SourceSummaryAsync(uid, role, placementId);
+                            var calculated = generatedSource["gradeCalculation"]?["percentage"];
+                            if (calculated == null || calculated.Type == JTokenType.Null) throw new FirebaseException(409, "No completed approved tasks or released exam grades are available to calculate a percentage.");
+                            input["percentage"] = calculated.DeepClone(); input["comments"] = generatedSource["comments"].DeepClone(); input["fileName"] = generatedSource["fileName"].DeepClone(); input["weeklyReportIds"] = new JArray(((JArray)generatedSource["weeklyReports"]).Select(w => w["reportId"].DeepClone()));
+                        }
                         var snapshots = await WeeklySnapshots(uid, role, placementId, input["weeklyReportIds"]) ?? (record["draft"]?["weeklyReports"] as JArray)?.DeepClone() ?? new JArray();
                         record["draft"] = new JObject { ["percentage"] = Grade(input, "percentage"), ["comments"] = Text(input, "comments", 5000, true), ["companyResponse"] = Text(input, "companyResponse", 3000), ["attachment"] = Attachment(Text(input, "fileName", 180, true)), ["updatedAt"] = Now() };
                         record["draft"]["weeklyReports"] = snapshots;
+                        if (generatedSource != null) { record["draft"]["sourceSnapshot"] = generatedSource; record["draft"]["gradeCalculation"] = generatedSource["gradeCalculation"].DeepClone(); }
                         record["draftVersion"] = requestId;
                     }
                     else
@@ -261,28 +319,73 @@ namespace UIMS.Services
             if (a.Role == "student")
             {
                 var published = status == "completed" ? r["outcome"] : null;
-                return new JObject { ["placementId"] = placementId, ["status"] = status, ["completed"] = status == "completed", ["approvedTrainingMinutes"] = minutes, ["requiredTrainingMinutes"] = RequiredMinutes,
+                return new JObject { ["placementId"] = placementId, ["studentId"] = a.Student, ["studentName"] = a.StudentName, ["status"] = status, ["completed"] = status == "completed", ["approvedTrainingMinutes"] = minutes, ["requiredTrainingMinutes"] = RequiredMinutes,
                     ["outcome"] = published == null ? null : new JObject { ["finalGrade"] = published["finalGrade"], ["gradeMaximum"] = published["gradeMaximum"], ["approvedAt"] = published["approvedAt"], ["completionReport"] = published["completionReport"]?.DeepClone() },
                     ["notification"] = status != "completed" ? null : new JObject { ["id"] = r["studentNotification"]?["id"], ["message"] = r["studentNotification"]?["message"], ["createdAt"] = r["studentNotification"]?["createdAt"] } };
             }
-            return new JObject { ["placementId"] = placementId, ["studentId"] = a.Student, ["role"] = a.Role, ["status"] = status, ["record"] = r, ["approvedTrainingMinutes"] = minutes, ["requiredTrainingMinutes"] = RequiredMinutes, ["eligible"] = minutes >= RequiredMinutes, ["eligibilityBlocker"] = blocker };
+            return new JObject { ["placementId"] = placementId, ["studentId"] = a.Student, ["studentName"] = a.StudentName, ["academicSupervisorId"] = a.Academic, ["academicSupervisorName"] = a.AcademicName, ["role"] = a.Role, ["status"] = status, ["record"] = r, ["approvedTrainingMinutes"] = minutes, ["requiredTrainingMinutes"] = RequiredMinutes, ["eligible"] = minutes >= RequiredMinutes, ["eligibilityBlocker"] = blocker };
         }
         public async Task<JObject> ListAsync(string uid, string role)
         {
-            var placements = O(await db.ReadAsync("placements")); var output = new JArray();
-            foreach (var p in placements.Properties())
+            // This read-only cache belongs to this list request only. Mutations/detail requests
+            // keep using fresh authoritative reads and the existing CAS protections.
+            var cache = new ListReadDatabase(db);
+            if (!await cache.IsActiveAuthenticationUidAsync(uid)) throw new FirebaseException(401, "An active verified account is required.");
+            var profile = O(await cache.ReadAsync("users/" + Key(uid)));
+            var verified = FirebaseSignInService.ProfileResult(uid, profile);
+            if (verified.Role != FirebaseSignInService.CanonicalRole(role)) throw new FirebaseException(403, "The current account role changed.");
+            var placements = O(await cache.ReadAsync("placements")); var output = new JArray();
+            var reader = new FinalReportWorkflow(cache, clock);
+            using (var limit = new System.Threading.SemaphoreSlim(4))
             {
+            var reads = placements.Properties().Select(async p =>
+            {
+                await limit.WaitAsync();
                 try
                 {
-                    var view = await ReadAsync(uid, role, p.Name);
+                    var view = await reader.ReadAsync(uid, role, p.Name);
                     var canonical = FirebaseSignInService.CanonicalRole(role); string state = T(view, "status");
-                    if (canonical == "coordinator" && !new[] { "pendingAdminReview", "academicRevisionRequested", "completed" }.Contains(state)) continue;
-                    if (canonical == "academicSupervisor" && state == "draft") continue;
-                    output.Add(view);
+                    if (canonical == "coordinator" && !new[] { "pendingAdminReview", "academicRevisionRequested", "completed" }.Contains(state)) return null;
+                    if (canonical == "academicSupervisor" && state == "draft") return null;
+                    return view;
                 }
-                catch (FirebaseException e) when (e.StatusCode == 403 || e.StatusCode == 409) { }
+                catch (FirebaseException e) when (e.StatusCode == 403 || e.StatusCode == 409) { return null; }
+                finally { limit.Release(); }
+            }).ToArray();
+            foreach (var view in await Task.WhenAll(reads)) if (view != null) output.Add(view);
             }
             return new JObject { ["items"] = output, ["role"] = FirebaseSignInService.CanonicalRole(role), ["serverNow"] = Now() };
+        }
+        private sealed class ListReadDatabase : IApplicationDatabase
+        {
+            private readonly IApplicationDatabase inner;
+            private readonly System.Collections.Generic.Dictionary<string, Task<JToken>> reads = new System.Collections.Generic.Dictionary<string, Task<JToken>>(StringComparer.Ordinal);
+            private readonly System.Collections.Generic.Dictionary<string, Task<bool>> identities = new System.Collections.Generic.Dictionary<string, Task<bool>>(StringComparer.Ordinal);
+            private readonly object gate = new object();
+            internal ListReadDatabase(IApplicationDatabase source) { inner = source; }
+            public Task<JToken> ReadAsync(string path)
+            {
+                lock (gate)
+                {
+                    Task<JToken> result;
+                    if (reads.TryGetValue(path, out result)) return Clone(result);
+                    // Reuse already requested parent collections (users and placements) without new GETs.
+                    int slash = path.LastIndexOf('/');
+                    while (slash > 0)
+                    {
+                        string parent = path.Substring(0, slash);
+                        if (reads.TryGetValue(parent, out result)) { var relative = path.Substring(slash + 1); result = Child(result, relative); reads[path] = result; return Clone(result); }
+                        slash = path.LastIndexOf('/', slash - 1);
+                    }
+                    result = inner.ReadAsync(path); reads[path] = result; return Clone(result);
+                }
+            }
+            private static async Task<JToken> Child(Task<JToken> parent, string path) { var value = await parent; foreach (var key in path.Split('/')) value = value?[key]; return value; }
+            private static async Task<JToken> Clone(Task<JToken> read) { return (await read)?.DeepClone(); }
+            public Task<bool> IsActiveAuthenticationUidAsync(string uid) { lock(gate){Task<bool> value;if(!identities.TryGetValue(uid,out value))identities[uid]=value=inner.IsActiveAuthenticationUidAsync(uid);return value;} }
+            public Task<JToken> ReadEqualAsync(string path,string field,string value) { return inner.ReadEqualAsync(path,field,value); }
+            public Task<StudentVersion> ReadVersionAsync(string path) { throw new InvalidOperationException("List snapshots cannot authorize writes."); }
+            public Task<bool> CompareWriteAsync(string path,object value,string etag) { throw new InvalidOperationException("List snapshots are read-only."); }
         }
     }
 }

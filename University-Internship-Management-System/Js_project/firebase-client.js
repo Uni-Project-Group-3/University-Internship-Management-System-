@@ -198,9 +198,9 @@
     const originalFetch = window.fetch.bind(window);
     window.fetch = async function (input, options = {}) {
         const url = new URL(input instanceof Request ? input.url : input, location.href);
-        if (url.origin === endpoint.origin && /\/(?:TasksApi|TaskExamsApi|FirebaseApi)\.ashx$/i.test(url.pathname)) {
+        if (url.origin === endpoint.origin && /\/(?:TasksApi|TaskExamsApi|FinalReportsApi|FirebaseApi)\.ashx$/i.test(url.pathname)) {
             if (/\/(?:TasksApi|TaskExamsApi)\.ashx$/i.test(url.pathname)) { const role = /^\/Company\//i.test(location.pathname) ? 'companySupervisor' : /^\/Student\//i.test(location.pathname) ? 'student' : null; if (role) { const headers = new Headers(options.headers || (input instanceof Request ? input.headers : undefined)); headers.set('X-UIMS-Role', role); options = { ...options, headers }; } }
-            if (load()?.tabTicket && /\/(?:TasksApi|TaskExamsApi)\.ashx$/i.test(url.pathname)) await getIdToken();
+            if (load()?.tabTicket && /\/(?:TasksApi|TaskExamsApi|FinalReportsApi)\.ashx$/i.test(url.pathname)) await getIdToken();
             const ticket = load()?.tabTicket;
             if (ticket) { const headers = new Headers(options.headers || (input instanceof Request ? input.headers : undefined)); headers.set('X-UIMS-Session', ticket); options = { ...options, headers }; }
         }
