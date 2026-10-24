@@ -37,6 +37,68 @@ internal static partial class Program
             data = await service.ListAcademicReportsAsync(CancellationToken.None);
             Assert(data["assignedStudents"].Count() == 0);
         });
+        await Test("weekly company roster exposes only assigned academic recipient names", async () => {
+            var db = new WeeklyReportDb(); SeedWeekly(db);
+            db.Set("users/AC-1", new JObject { ["role"] = "academicSupervisor", ["fullName"] = "Assigned academic", ["password"] = "PRIVATE_NEVER_RETURN" });
+            var roster = await WeeklyService(db, WeeklyCompanyActor()).ListCompanyPlacementsAsync(CancellationToken.None);
+            var row = roster["placements"].Single(p => (string)p["studentId"] == "ST-1");
+            Assert((string)row["academicSupervisorName"] == "Assigned academic" && (string)row["academicSupervisorId"] == "AC-1");
+            Assert(!roster.ToString().Contains("PRIVATE_NEVER_RETURN"));
+        });
+        await Test("weekly Supabase writes do not require Firebase Storage gates", async () => {
+            var db = new WeeklyReportDb(); SeedWeekly(db); var settings = WeeklySettings();
+            settings["FileStorageProvider"] = "supabase"; settings["SupabaseStorageLiveWritesEnabled"] = "true";
+            settings["FirebaseStorageEnabled"] = settings["FirebaseStorageLiveWritesEnabled"] = "false";
+            var files = new Dictionary<string, byte[]>(StringComparer.Ordinal);
+            var service = WeeklyService(db, WeeklyCompanyActor(), settings, files);
+            var result = await NewWeeklyReport(service);
+            Assert((string)result["status"] == "submitted" && files.Count == 1);
+        });
+        await Test("company generates and sends a branded private PDF without an uploaded file", async () => {
+            var db = new WeeklyReportDb(); SeedWeekly(db); var files = new Dictionary<string, byte[]>(StringComparer.Ordinal);
+            var service = WeeklyService(db, WeeklyCompanyActor(), null, files);
+            var task = (JObject)db.Get("tasks/T-1"); task["assignedBy"] = "CS-1"; db.Set("tasks/T-1", task);
+            var response = await service.SubmitAsync("PL-1", 6, "2026-10-24", "2026-10-24", "weekly-report.docx", WeeklyMime, null, "Current progress <safe>", CancellationToken.None, new JArray("T-1"));
+            var report = response["report"]; var revision = report["revisions"][(string)report["currentRevisionId"]];
+            Assert((bool)revision["generatedBySystem"] && (string)report["academicSupervisorId"] == "AC-1" && (string)report["status"] == "submitted");
+            var file = await service.DownloadAsync((string)report["reportId"], null, CancellationToken.None);
+            if (!string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("UIMS_WEEKLY_PREVIEW_PATH"))) File.WriteAllBytes(Environment.GetEnvironmentVariable("UIMS_WEEKLY_PREVIEW_PATH"), file.Content);
+            Assert(file.ContentType == "application/pdf" && file.FileName.EndsWith(".pdf"));
+            University_Internship_Management_System.Services.FinalEvaluation.CompletionReportPdfRenderer.ValidatePdf(file.Content);
+            using (var stream = new MemoryStream(file.Content)) using (var pdf = PdfSharp.Pdf.IO.PdfReader.Open(stream, PdfSharp.Pdf.IO.PdfDocumentOpenMode.Import)) {
+                Assert(pdf.PageCount > 0 && pdf.Info.Title == "Internship Weekly Report");
+            }
+
+        });
+        await Test("company roster retains authorized students when academic setup is missing", async () => {
+            var db = new WeeklyReportDb(); SeedWeekly(db);
+            db.Set("placements/PL-NO-ACADEMIC", new JObject { ["studentId"] = "ST-NO-ACADEMIC", ["companyId"] = "CO-1", ["companySupervisorId"] = "CS-1", ["status"] = "confirmed" });
+            var service = WeeklyService(db, WeeklyCompanyActor());
+            var roster = await service.ListCompanyPlacementsAsync(CancellationToken.None);
+            var students = roster["placements"].ToList();
+            Assert(students.Any(p => (string)p["studentId"] == "ST-1"));
+            var blocked = students.Single(p => (string)p["studentId"] == "ST-NO-ACADEMIC");
+            Assert((bool)blocked["canSubmit"] == false && !string.IsNullOrEmpty((string)blocked["submissionBlocker"]));
+            Assert(!students.Any(p => (string)p["studentId"] == "ST-2"));
+        });
+        await Test("partial-week company report embeds completed exams and protects hidden grades", async () => {
+            var db = new WeeklyReportDb(); SeedWeekly(db); var files = new Dictionary<string, byte[]>(StringComparer.Ordinal);
+            db.Set("taskExams/EX-PARTIAL", new JObject { ["placementId"] = "PL-1", ["title"] = "Exam summary" });
+            db.Set("taskExamAttempts/EX-PARTIAL/ST-1/A-HIDDEN", new JObject { ["status"] = "submitted", ["resultStatus"] = "pendingApproval", ["score"] = 987654, ["answers"] = "DO_NOT_COPY" });
+            db.Set("taskExamAttempts/EX-PARTIAL/ST-1/A-RELEASED", new JObject { ["status"] = "submitted", ["resultStatus"] = "released", ["score"] = 82, ["maximumScore"] = 100 });
+            db.Set("taskExamAttempts/EX-PARTIAL/ST-1/A-ACTIVE", new JObject { ["status"] = "inProgress" });
+            var company = WeeklyService(db, WeeklyCompanyActor(), null, files);
+            var response = await company.SubmitAsync("PL-1", 5, "2026-10-24", "2026-10-24", "partial.docx", WeeklyMime, WeeklyDocx(), "Available so far", CancellationToken.None);
+            var report = response["report"]; var revision = report["revisions"][(string)report["currentRevisionId"]];
+            var snapshot = revision["examSnapshot"];
+            Assert(snapshot.Count(e => (string)e["examId"] == "EX-PARTIAL") == 2 && !snapshot.ToString().Contains("987654") && !snapshot.ToString().Contains("DO_NOT_COPY"));
+            var downloaded = await company.DownloadAsync((string)report["reportId"], null, CancellationToken.None);
+            using (var memory = new MemoryStream(downloaded.Content)) using (var archive = new ZipArchive(memory, ZipArchiveMode.Read)) using (var reader = new StreamReader(archive.GetEntry("word/document.xml").Open())) {
+                var xml = reader.ReadToEnd(); Assert(xml.Contains("EX-PARTIAL") && xml.Contains("82 / 100") && !xml.Contains("987654") && !xml.Contains("DO_NOT_COPY"));
+            }
+            db.Set("taskExams/EX-PARTIAL", new JObject { ["placementId"] = "PL-1", ["title"] = "Later change" });
+            Assert(!db.Get("weeklyReports/"+(string)report["reportId"]+"/revisions/"+(string)report["currentRevisionId"]+"/examSnapshot").ToString().Contains("Later change"));
+        });
         await Test("weekly reports persist company DOCX upload, review history and immutable resubmission revisions", WeeklyReportLifecycleOffline);
         await Test("weekly report authorization denies students, other companies and unassigned academic supervisors", WeeklyReportAuthorizationOffline);
         await Test("weekly report duplicate placement-week writes are conditional and retry-safe", WeeklyReportDuplicateConcurrencyOffline);
@@ -100,7 +162,7 @@ internal static partial class Program
             using (var archive = new ZipArchive(memory, ZipArchiveMode.Create, true))
             {
                 foreach (string entryName in new[] { "[Content_Types].xml", "word/document.xml" })
-                { var entry = archive.CreateEntry(entryName); entry.LastWriteTime = new DateTimeOffset(2020, 1, 1, 0, 0, 0, TimeSpan.Zero); using (var writer = new StreamWriter(entry.Open())) writer.Write("<root>fictional test report</root>"); }
+                { var entry = archive.CreateEntry(entryName); entry.LastWriteTime = new DateTimeOffset(2020, 1, 1, 0, 0, 0, TimeSpan.Zero); using (var writer = new StreamWriter(entry.Open())) writer.Write(entryName == "word/document.xml" ? "<w:document xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\"><w:body><w:p><w:r><w:t>fictional test report</w:t></w:r></w:p></w:body></w:document>" : "<root>fictional test report</root>"); }
             }
             return memory.ToArray();
         }
@@ -131,7 +193,7 @@ internal static partial class Program
         Assert((string)final["report"]["status"] == "approved" && (await company.GetCompanyReportAsync(id, CancellationToken.None))["reviews"].Children().Count() == 2);
         var student = WeeklyService(db, WeeklyStudentActor(), null, files); var studentList = await student.ListStudentReportsAsync(CancellationToken.None);
         Assert((string)studentList["reports"][id]["status"] == "approved" && studentList.ToString().IndexOf("storagePath", StringComparison.Ordinal) < 0);
-        Assert(files.Count == 2 && files.Values.All(v => v.SequenceEqual(WeeklyDocx())));
+        Assert(files.Count == 2 && files.Values.All(v => v.Length > 0));
     }
     private static async Task WeeklyReportAuthorizationOffline()
     {
@@ -157,8 +219,8 @@ internal static partial class Program
     {
         var db = new WeeklyReportDb(); SeedWeekly(db); var files = new Dictionary<string, byte[]>(); var report = await NewWeeklyReport(WeeklyService(db, WeeklyCompanyActor(), null, files));
         string id = (string)report["reportId"], revision = (string)report["currentRevisionId"];
-        var company = await WeeklyService(db, WeeklyCompanyActor(), null, files).DownloadAsync(id, revision, CancellationToken.None); Assert(company.Content.SequenceEqual(WeeklyDocx()));
-        var academic = await WeeklyService(db, WeeklyAcademicActor(), null, files).DownloadAsync(id, revision, CancellationToken.None); Assert(academic.Content.SequenceEqual(WeeklyDocx()));
+        var company = await WeeklyService(db, WeeklyCompanyActor(), null, files).DownloadAsync(id, revision, CancellationToken.None); Assert(company.Content.Length > 0);
+        var academic = await WeeklyService(db, WeeklyAcademicActor(), null, files).DownloadAsync(id, revision, CancellationToken.None); Assert(academic.Content.SequenceEqual(company.Content));
         await Reject<UIMS.Services.FirebaseException>(() => WeeklyService(db, WeeklyStudentActor(), null, files).DownloadAsync(id, revision, CancellationToken.None));
         db.Set("assignments/A-1", new JObject { ["studentId"] = "ST-1", ["academicSupervisorId"] = "AC-2", ["active"] = true });
         await Reject<UIMS.Services.FirebaseException>(() => WeeklyService(db, WeeklyAcademicActor(), null, files).DownloadAsync(id, revision, CancellationToken.None));

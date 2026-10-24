@@ -26,10 +26,16 @@ const server = http.createServer((req, res) => {
       const url = new URL(route.request().url());
       if (url.origin !== base) return route.abort();
       if (!url.pathname.endsWith('WeeklyReportsApi.ashx')) return route.continue();
+      if (route.request().method() === 'POST') {
+        assert.strictEqual(url.searchParams.get('action'), 'submit');
+        const payload = route.request().postData() || '';
+        assert(payload.includes('name="generate"') && payload.includes('true') && !payload.includes('filename='));
+        return route.fulfill({json:{message:'Generated report sent to academic supervisor.'}});
+      }
       assert.strictEqual(route.request().method(), 'GET');
       if (fail) return route.fulfill({ status: 503, json: { message: 'Isolated service error' } });
       return route.fulfill({ json: url.searchParams.get('action') === 'placements'
-        ? { placements: [{ studentName: 'Test trainee', studentId: 'ST0', placementId: 'P0' }] }
+        ? { placements: [{ studentName: 'Test trainee', studentId: 'ST0', placementId: 'P0', academicSupervisorId:'AC0', academicSupervisorName:'Assigned academic supervisor' }] }
         : { reports } });
     });
     await page.goto(base + '/Company/WeeklyReports.aspx');
@@ -39,7 +45,17 @@ const server = http.createServer((req, res) => {
     await page.getByRole('link', { name: 'Submit a report', exact: true }).click();
     assert(page.url().endsWith('#weeklySubmit'));
     await page.locator('#submitReport').click();
-    await page.waitForFunction(() => document.getElementById('wrNotice').textContent === 'Choose a Word .docx report.');
+    await page.waitForFunction(() => document.getElementById('wrNotice').textContent === 'Choose a student, training week and valid reporting dates.');
+    await page.locator('#placementSelect').selectOption('P0');
+    assert.strictEqual(await page.locator('#routingAcademicName').textContent(),'Assigned academic supervisor');
+    assert.strictEqual(await page.locator('#routingAcademicId').textContent(),'AC0');
+    assert.strictEqual(await page.locator('#routingStudentId').textContent(),'ST0');
+    await page.locator('#weekNumber').fill('1');
+    await page.locator('#weekStart').fill('2026-10-24');
+    await page.locator('#weekEnd').fill('2026-10-24');
+    assert.strictEqual(await page.locator('#reportFile').count(), 0);
+    await page.locator('#submitReport').click();
+    await page.waitForFunction(() => document.getElementById('wrNotice').textContent === 'Generated report sent to academic supervisor.');
     reports.R0.status = 'approved';
     await page.locator('#refreshCompany').click();
     await page.waitForFunction(() => document.querySelectorAll('.wr-badge.approved').length === 2);
@@ -53,8 +69,8 @@ const server = http.createServer((req, res) => {
     fail = true;
     await page.locator('#refreshCompany').click();
     await page.waitForFunction(() => document.getElementById('wrNotice').textContent === 'Isolated service error');
-    assert(await page.locator('#wrNotice').isHidden());
+    assert(await page.locator('#wrNotice').isVisible());
     assert.deepStrictEqual(errors, []);
-    console.log('PASS: report history without summary cards, updated statuses, empty/error states, submit navigation, file validation, and mobile layout. No Firebase writes.');
+    console.log('PASS: report history without summary cards, updated statuses, empty/error states, submit navigation, generation form validation, and mobile layout. No Firebase writes.');
   } finally { await browser.close(); }
 })().catch(error => { console.error(error); process.exitCode = 1; }).finally(() => server.close());
