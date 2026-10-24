@@ -9,6 +9,86 @@ using University_Internship_Management_System.Shared;
 
 internal static partial class Program
 {
+    private static async Task<int> AttendanceSetupKnownPlacement(string configPath, bool apply)
+    {
+        var xml=new XmlDocument();xml.Load(configPath);
+        var values=xml.SelectNodes("/configuration/appSettings/add").Cast<XmlElement>().ToDictionary(x=>x.GetAttribute("key"),x=>x.GetAttribute("value"));
+        Func<string,string> setting=k=>values.ContainsKey(k)?values[k]:null;
+        var config=new FirebaseConfiguration(setting("FirebaseEnabled"),setting("FirebaseProjectId"),setting("FirebaseDatabaseUrl"),setting("FirebaseApiKey"),setting("FirebaseLiveWritesEnabled"),setting("FirebaseTaskSchemaValidated"),setting("FirebaseSchemaValidated"),setting("FirebaseAuthenticationEnabled"));
+        var db=new StudentFirebaseGateway(config);
+        const string studentId="2023005",placementId="PLC-APP-20261024171210-6EB70F";
+        var p=await db.ReadAsync("placements/"+placementId) as JObject;
+        if(p==null || (string)p["studentId"]!=studentId || !new[]{"active","confirmed"}.Contains((string)p["status"]) || (string)p["startDate"]!="2026-10-24" || (string)p["endDate"]!="2026-12-19" || (int?)p["requiredHours"]!=300)throw new InvalidOperationException("Persisted placement dates/identity do not match the approved 24 October–19 December training period.");
+        string studentUid=(string)p["studentUid"],companyId=(string)p["companyId"],supervisorId=(string)p["companySupervisorId"];
+        var users=await db.ReadAsync("users") as JObject??new JObject();
+        var student=users[studentUid] as JObject;
+        var supervisors=users.Properties().Where(u=>FirebaseSignInService.CanonicalRole((string)u.Value["role"])=="companySupervisor" && (bool?)u.Value["isActive"]==true && (string)u.Value["companyId"]==companyId && ((string)u.Value["companySupervisorId"]==supervisorId || (string)u.Value["supervisorId"]==supervisorId || u.Name==supervisorId)).ToArray();
+        if(student==null || (string)student["studentId"]!=studentId || (bool?)student["isActive"]!=true || supervisors.Length!=1)throw new InvalidOperationException("The approved student and company supervisor identities are not unique and active.");
+        if(!await db.IsActiveAuthenticationUidAsync(studentUid)||!await db.IsActiveAuthenticationUidAsync(supervisors[0].Name))throw new InvalidOperationException("Both existing Authentication accounts must be active.");
+        var company=await db.ReadAsync("companies/"+companyId) as JObject;
+        if(company==null)throw new InvalidOperationException("The existing company record is missing.");
+        var state=await db.ReadVersionAsync("uimsAttendance");var original=state.Value??new JObject();var next=(JObject)original.DeepClone();
+        Action<string,string,JObject> addMissing=(branch,id,record)=>{
+            if(!(next[branch] is JObject))next[branch]=new JObject();
+            var existing=next[branch][id] as JObject;
+            if(existing!=null){foreach(var field in record.Properties())if(!JToken.DeepEquals(existing[field.Name],field.Value))throw new InvalidOperationException("An existing "+branch+" record conflicts; it was not overwritten.");}
+            else if(next[branch][id]!=null)throw new InvalidOperationException("Unexpected existing record shape.");
+            else next[branch][id]=record;
+        };
+        addMissing("companies",companyId,new JObject{["name"]=company["name"],["status"]="active"});
+        addMissing("companySupervisors",supervisorId,new JObject{["name"]=supervisors[0].Value["fullName"],["firebaseUid"]=supervisors[0].Name,["companyId"]=companyId,["status"]="active",["isTestData"]=false});
+        addMissing("schedules",placementId,BuildApprovedAttendanceCalendar(placementId));
+        next=UIMS.Attendance.AttendanceOnboarding.Build(next,studentUid,studentId,placementId,p,student);
+        Console.WriteLine("PLAN existing student/company/supervisor only; approved dates 2026-10-24 through 2026-12-19; Sunday–Thursday 08:00–18:00 Asia/Amman; calendar days="+((JObject)next["schedules"][placementId]).Count+"; attendance enabled="+((bool?)next["settings"]?["enabled"]==true)+"; changed="+!JToken.DeepEquals(original,next));
+        if(!apply){
+            string folder=Path.GetFullPath(Path.Combine("Tests","Reports","AttendanceSetup-2023005"));Directory.CreateDirectory(folder);
+            var instructions=new System.Text.StringBuilder("Firebase Realtime Database: import each file ONLY at its exact child path. These child records were absent when prepared. Do not import at the database root or at uimsAttendance. If a child now exists, stop and reconcile instead of overwriting it.\n\n");
+            int index=0;
+            foreach(string branch in new[]{"companies","companySupervisors","schedules","students","trainingAssignments","provisioningClaims"})
+                foreach(var entry in (next[branch] as JObject??new JObject()).Properties())
+                    if(original[branch]?[entry.Name]==null){string name=(++index).ToString("00")+"-"+branch+".json";File.WriteAllText(Path.Combine(folder,name),entry.Value.ToString());instructions.AppendLine("uimsAttendance/"+branch+"/"+entry.Name+"  <-  "+name);}
+            File.WriteAllText(Path.Combine(folder,"IMPORT-PATHS.txt"),instructions.ToString());
+            Console.WriteLine("Prepared "+index+" child import files: "+folder);Console.WriteLine("GET only. No writes.");return 0;
+        }
+        if(JToken.DeepEquals(original,next)){Console.WriteLine("Already configured. No writes.");return 0;}
+        string backup=Path.Combine(Path.GetTempPath(),"uims-attendance-before-setup-"+Guid.NewGuid().ToString("N")+".json");File.WriteAllText(backup,original.ToString());
+        if(string.IsNullOrWhiteSpace(state.ETag)||!await db.CompareWriteAsync("uimsAttendance",next,state.ETag))throw new InvalidOperationException("Concurrent change detected. No overwrite; inspect the saved backup before retrying.");
+        var saved=await db.ReadAsync("uimsAttendance") as JObject;
+        if(!JToken.DeepEquals(next,saved))throw new InvalidOperationException("Setup write was acknowledged, but readback changed. Reconcile before retrying.");
+        Console.WriteLine("PASS exact-ETag setup persisted and GET readback matched. Existing attendance/history preserved. Backup: "+backup);return 0;
+    }
+    private static JObject BuildApprovedAttendanceCalendar(string assignmentId)
+    {
+        var calendar=new JObject();var zone=TimeZoneInfo.FindSystemTimeZoneById("Jordan Standard Time");
+        for(var day=new DateTime(2026,10,24);day<=new DateTime(2026,12,19);day=day.AddDays(1))
+        {
+            string date=day.ToString("yyyy-MM-dd");bool training=day.DayOfWeek!=DayOfWeek.Friday&&day.DayOfWeek!=DayOfWeek.Saturday;
+            var row=new JObject{["assignmentId"]=assignmentId,["attendanceDate"]=date,["timeZone"]="Asia/Amman",["version"]=1,["isTrainingDay"]=training};
+            if(training){row["scheduledStartAt"]=new DateTimeOffset(TimeZoneInfo.ConvertTimeToUtc(day.AddHours(8),zone)).ToUnixTimeMilliseconds();row["scheduledEndAt"]=new DateTimeOffset(TimeZoneInfo.ConvertTimeToUtc(day.AddHours(18),zone)).ToUnixTimeMilliseconds();}
+            calendar[date]=row;
+        }return calendar;
+    }
+    private static async Task<int> AttendanceLinkReadOnly(string configPath, string studentId)
+    {
+        var xml = new XmlDocument(); xml.Load(configPath);
+        var values = xml.SelectNodes("/configuration/appSettings/add").Cast<XmlElement>().ToDictionary(x => x.GetAttribute("key"), x => x.GetAttribute("value"));
+        Func<string,string> setting = key => values.ContainsKey(key) ? values[key] : null;
+        var config = new FirebaseConfiguration(setting("FirebaseEnabled"), setting("FirebaseProjectId"), setting("FirebaseDatabaseUrl"), setting("FirebaseApiKey"), setting("FirebaseLiveWritesEnabled"), setting("FirebaseTaskSchemaValidated"), setting("FirebaseSchemaValidated"), setting("FirebaseAuthenticationEnabled"));
+        config.EnsureEnabled(); var gateway = new StudentFirebaseGateway(config);
+        var users = await gateway.ReadAsync("users") as JObject ?? new JObject();
+        var placements = await gateway.ReadAsync("placements") as JObject ?? new JObject();
+        var supervisors = await gateway.ReadAsync("uimsAttendance/companySupervisors") as JObject ?? new JObject();
+        var assignments = await gateway.ReadAsync("uimsAttendance/trainingAssignments") as JObject ?? new JObject();
+        var student = await gateway.ReadAsync("uimsAttendance/students/" + StudentManagementService.Key(studentId)) as JObject;
+        Console.WriteLine("READ ONLY student=" + studentId + "; active profiles=" + users.Properties().Count(p => (string)p.Value["studentId"] == studentId && (bool?)p.Value["isActive"] == true) + "; attendance student present=" + (student != null));
+        foreach (var p in placements.Properties().Where(p => (string)p.Value["studentId"] == studentId))
+        {
+            string company = (string)p.Value["companyId"], sup = (string)p.Value["companySupervisorId"];
+            var profiles = users.Properties().Where(u => (string)u.Value["companyId"] == company && FirebaseSignInService.CanonicalRole((string)u.Value["role"]) == "companySupervisor").ToArray();
+            Console.WriteLine("placement=" + p.Name + "; status=" + p.Value["status"] + "; start=" + p.Value["startDate"] + "; end=" + p.Value["endDate"] + "; requiredHours=" + p.Value["requiredHours"] + "; academic assigned=" + !string.IsNullOrWhiteSpace((string)p.Value["academicSupervisorId"]) + "; company profiles=" + profiles.Length + "; direct attendance supervisor=" + (sup != null && supervisors[sup] != null) + "; UID matched attendance supervisors=" + supervisors.Properties().Count(s => profiles.Any(u => u.Name == (string)s.Value["firebaseUid"]) && (string)s.Value["companyId"] == company) + "; linked attendance assignments=" + assignments.Properties().Count(a => (string)a.Value["placementId"] == p.Name));
+        }
+        Console.WriteLine("GET only. No Firebase writes."); return 0;
+    }
     private static async Task<int> FinalReportPreflight(string configPath)
     {
         try

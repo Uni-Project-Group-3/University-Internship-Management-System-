@@ -7,7 +7,7 @@
     <title>My Trainees | JUST Internships</title>
     <link runat="server" href="~/Assets/shared/colors.css" rel="stylesheet" />
 
-    <link runat="server" href="~/Assets/company/my-trainees.css?v=20261023-trainees-hero" rel="stylesheet" />
+    <link runat="server" href="~/Assets/company/my-trainees.css?v=20261024-progress" rel="stylesheet" />
 <link href="../Assets/shared/workspace-identity.css?v=20261024-refine" rel="stylesheet" />
 <script src="../Js_project/workspace-navigation-unified.js?v=20261024-refine" defer></script>
 </head>
@@ -130,6 +130,6 @@
             mobile.addEventListener("change", () => setSidebar(false));
         })();
     </script>
-<script src="../Js_project/Company/my-trainees.js?v=20261023-hide-connected-notice"></script>
+<script src="../Js_project/Company/my-trainees.js?v=20261024-progress"></script>
 </body>
 </html>

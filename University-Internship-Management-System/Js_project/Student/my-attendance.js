@@ -7,6 +7,7 @@ let dataVersion = 0;
 let qrDeadline = 0;
 let qrAction = "";
 let qrTimer;
+let lastOpenedIssuedQr = '';
 let serverSessionVerified = false;
 
 const sidebar = document.getElementById("sidebar");
@@ -222,41 +223,42 @@ function renderStudent(data) {
     resetButton.disabled = saving || !data.canResetToday;
     connected(data, data.student.name);
     const assigned = data.hasAssignment;
+    const placement = data.placementSummary;
     const assignment = data.assignment || {};
     const record = data.record || {};
     const schedule = data.schedule || {};
     const request = data.earlyRequest || {};
-    const required = Number(assignment.requiredHours || 0);
+    const required = Number(assignment.requiredHours || placement?.requiredHours || 0);
     const approved = Number(data.approvedMinutes || 0) / 60;
     document.getElementById("studentName").textContent = data.student.name + (data.student.studentNumber ? " \u00b7 " + data.student.studentNumber : "");
-    document.getElementById("companyName").textContent = assigned ? data.company.name : "No active assignment";
-    document.getElementById("supervisorName").textContent = assigned ? data.supervisor.name : "Not assigned";
-    document.getElementById("requiredHours").textContent = assigned ? required + " h" : "\u2014";
+    document.getElementById("companyName").textContent = assigned ? data.company.name : placement?.companyName || "No confirmed training placement";
+    document.getElementById("supervisorName").textContent = assigned ? data.supervisor.name : placement?.supervisorName || "Not assigned";
+    document.getElementById("requiredHours").textContent = assigned || placement && required > 0 ? required + " h" : "\u2014";
     document.getElementById("approvedHours").textContent = assigned ? approved.toFixed(2) + " h" : "\u2014";
     document.getElementById("remainingHours").textContent = assigned ? Math.max(0, required - approved).toFixed(2) + " h" : "\u2014";
-    document.getElementById("progressText").textContent = assigned ? approved.toFixed(2) + " / " + required + " hours" : "No active training requirement";
+    document.getElementById("progressText").textContent = assigned ? approved.toFixed(2) + " / " + required + " hours" : placement ? "Confirmed training · Attendance setup pending" : "No active training requirement";
     const progress = document.getElementById("trainingProgress");
     progress.max = required || 1;
     progress.value = Math.min(required, approved);
     document.getElementById("scheduleDate").textContent = data.today + " \u00b7 Asia/Amman" +
         (assignment.startDate && assignment.endDate ? " \u00b7 Training: " + assignment.startDate + " \u2013 " + assignment.endDate : "");
-    document.getElementById("scheduledStart").textContent = time(schedule.scheduledStartAt);
-    document.getElementById("scheduledEnd").textContent = time(schedule.scheduledEndAt);
+    document.getElementById("scheduledStart").textContent = data.flexibleAttendance ? "Any time · supervisor-issued QR" : time(schedule.scheduledStartAt);
+    document.getElementById("scheduledEnd").textContent = data.flexibleAttendance ? "Any time · supervisor-issued QR" : time(schedule.scheduledEndAt);
     document.getElementById("actualCheckIn").textContent = time(record.checkInAt);
     document.getElementById("actualCheckOut").textContent = time(record.checkOutAt);
-    document.getElementById("todayStatus").textContent = !assigned ? "Unassigned" : !schedule.assignmentId ? "No schedule"
-        : !schedule.isTrainingDay ? "Day off" : label(record.status || "Not checked in");
+    document.getElementById("todayStatus").textContent = !assigned ? placement ? "Attendance setup pending" : "Unassigned" : !schedule.assignmentId ? "No schedule"
+        : !data.flexibleAttendance && !schedule.isTrainingDay ? "Day off" : label(record.status || "Not checked in");
     document.getElementById("checkInButton").hidden = !!record.checkInAt;
     document.getElementById("checkOutButton").hidden = !record.checkInAt || !!record.checkOutAt;
     document.getElementById("earlyButton").hidden = !data.canRequestEarly;
-    document.getElementById("checkInButton").disabled = saving || !data.canCheckIn;
-    document.getElementById("checkOutButton").disabled = saving || !data.canCheckOut;
+    document.getElementById("checkInButton").disabled = saving || !data.canCheckIn || data.issuedQr?.action !== 'checkIn';
+    document.getElementById("checkOutButton").disabled = saving || !data.canCheckOut || data.issuedQr?.action !== 'checkOut';
     document.getElementById("earlyButton").disabled = saving || !data.canRequestEarly;
     document.getElementById("earlyStatus").textContent = request.status ? "Early departure: " + label(request.status) + "." : "";
-    document.getElementById("scheduleHelp").textContent = !assigned ? "Your account is verified. No approved training assignment is linked yet. Attendance actions are unavailable."
+    document.getElementById("scheduleHelp").textContent = !assigned ? placement?.setupMessage || "Your account is verified. No approved training assignment is linked yet. Attendance actions are unavailable."
         : !data.actionsEnabled ? "Attendance actions are disabled in Firebase settings. Reading history remains available."
         : !schedule.assignmentId ? "No schedule exists for today. Ask your supervisor to configure it."
-        : !schedule.isTrainingDay ? "Scheduled day off. No absence is counted."
+        : !data.flexibleAttendance && !schedule.isTrainingDay ? "Scheduled day off. No absence is counted."
         : record.checkOutAt ? (record.hoursApprovalStatus === "approved"
             ? "Attendance complete. Your approved time is included in Approved hours and deducted from Remaining hours."
             : record.hoursApprovalStatus === "pending" ? (Number(record.workedMinutes) > 0
@@ -264,7 +266,14 @@ function renderStudent(data) {
                 : "Attendance complete, but less than one full minute was recorded. No whole training minute can be approved. Wait at least one minute between check-in and check-out when testing.")
             : "Attendance complete. Hours status: " + label(record.hoursApprovalStatus) + ".")
         : record.checkInAt ? "Your supervisor can issue your check-out QR now. Actual worked time counts after hours approval."
-        : "Flexible attendance today. Generate your check-in QR and ask your supervisor to scan it.";
+        : "Flexible attendance is available at any hour during your training period. Ask your company supervisor to issue a QR; it will open here automatically.";
+    if (data.issuedQr && !document.hidden) {
+        const issuedKey = data.today + ':' + data.issuedQr.action + ':' + data.issuedQr.issuedAt;
+        if (lastOpenedIssuedQr !== issuedKey && !document.getElementById('qrDialog').open) {
+            lastOpenedIssuedQr = issuedKey;
+            setTimeout(() => showQr(data.issuedQr.action), 0);
+        }
+    }
     if (document.getElementById("qrDialog").open && ((qrAction === "checkIn" && record.checkInAt) || (qrAction === "checkOut" && record.checkOutAt))) {
         document.getElementById("qrDialog").close();
         showNotice("Attendance updated.");
@@ -297,7 +306,7 @@ async function loadAttendance() {
     loading = true;
     document.getElementById("connectionStatus").textContent = "Refreshing\u2026";
     const version = dataVersion;
-    ["checkInButton", "checkOutButton", "earlyButton", "resetTodayButton"].forEach(function (id) { document.getElementById(id).disabled = true; });
+    if (!attendance) ["checkInButton", "checkOutButton", "earlyButton", "resetTodayButton"].forEach(function (id) { document.getElementById(id).disabled = true; });
     ["historyRows", "todayStatus", "actualCheckIn", "actualCheckOut"].forEach(function (id) {
         document.getElementById(id).setAttribute("aria-busy", "true");
     });
@@ -330,14 +339,20 @@ async function loadAttendance() {
 }
 
 async function showQr(action, button) {
-    if (loading || saving || !attendance || !(action === "checkIn" ? attendance.canCheckIn : attendance.canCheckOut)) return;
+    if (saving) return;
+    if (!attendance || !(action === "checkIn" ? attendance.canCheckIn : attendance.canCheckOut)) {
+        showNotice('Refresh attendance and ask your supervisor to issue a current QR for this action.', true);
+        return;
+    }
+    button = button || document.getElementById(action === 'checkIn' ? 'checkInButton' : 'checkOutButton');
     saving = true;
-    button.disabled = true;
+    dataVersion++;
+    if (button) button.disabled = true;
     clearInterval(qrTimer);
     const dialog = document.getElementById("qrDialog");
     document.getElementById("qrCode").replaceChildren();
     document.getElementById("qrTitle").textContent = action === "checkIn" ? "Check-in QR" : "Check-out QR";
-    document.getElementById("qrCountdown").textContent = "Generating your secure QR\u2026";
+    document.getElementById("qrCountdown").textContent = "Loading your supervisor-issued QR\u2026";
     document.getElementById("qrDescription").textContent = "Your assigned supervisor must scan this code to record attendance. Each code is valid for 120 seconds.";
     if (!dialog.open) openDialog("qrDialog", button);
     try {
@@ -423,11 +438,16 @@ document.getElementById("attendanceSearch").addEventListener("input", renderHist
 document.getElementById("refreshAttendance").addEventListener("click", function () { loadAttendance(); });
 // \u0646\u062d\u0645\u0651\u0644 \u0627\u0644\u0628\u064a\u0627\u0646\u0627\u062a \u0639\u0646\u062f \u0641\u062a\u062d \u0627\u0644\u0635\u0641\u062d\u0629\u061b \u062a\u062d\u062f\u064a\u062b \u062a\u063a\u064a\u064a\u0631\u0627\u062a \u0627\u0644\u0637\u0631\u0641 \u0627\u0644\u0622\u062e\u0631 \u064a\u0643\u0648\u0646 \u064a\u062f\u0648\u064a\u064b\u0627 \u0645\u0646 \u0632\u0631 Refresh.
 loadAttendance();
+setInterval(() => { if (!document.hidden && !saving && !loading) loadAttendance(); }, 5000);
+document.addEventListener('visibilitychange', () => { if (!document.hidden) loadAttendance(); });
 
 // Local reset still uses the same authenticated/CSRF-protected attendance API.
 let resetPreview = null;
 document.getElementById("resetTodayButton").addEventListener("click", async function () {
-    if (loading || saving || !attendance || !attendance.canResetToday) return;
+    if (saving || !attendance || !attendance.canResetToday) return;
+    // A background read must not silently discard a deliberate reset click.
+    // Invalidate any older load response; the server still rechecks the record and ETag.
+    dataVersion++;
     saving = true; this.disabled = true; resetPreview = null;
     try {
         resetPreview = await api("resetPreview");
@@ -442,13 +462,15 @@ document.getElementById("resetTodayButton").addEventListener("click", async func
     finally { saving = false; this.disabled = !attendance || !attendance.canResetToday; }
 });
 document.getElementById("confirmResetToday").addEventListener("click", async function () {
-    if (loading || saving || !resetPreview) return;
+    if (saving || !resetPreview) return;
+    dataVersion++;
     saving = true; this.disabled = true;
     const modal = document.getElementById("resetTodayDialog");
     // Closing remains safe while a request is in flight; the operation is never silently retried.
     try {
         const data = await api("resetToday", { expectedVersion: resetPreview.expectedVersion, expectedDate: resetPreview.date });
         resetPreview = null;
+        lastOpenedIssuedQr = "";
         if (document.getElementById("qrDialog").open) document.getElementById("qrDialog").close();
         clearInterval(qrTimer); document.getElementById("qrCode").replaceChildren();
         saving = false; renderStudent(data); modal.close();

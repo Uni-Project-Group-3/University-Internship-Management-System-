@@ -787,6 +787,29 @@ a.monitor-button::before {
     }
 
 /* ---------- Modal ---------- */
+.monitor-page #studentsTable .monitor-details-button { display:inline-flex!important; align-items:center; justify-content:center; min-width:96px; height:40px!important; width:auto!important; padding:0 18px!important; border:1px solid #DFE3EB!important; border-radius:10px!important; background:#fff!important; color:#1F3D78!important; font:600 13px var(--font-body)!important; text-decoration:none; cursor:pointer; box-shadow:0 2px 6px #1f3d780a; }
+.monitor-page #studentsTable .monitor-details-button::before,.monitor-page #studentsTable .monitor-details-button::after { content:none!important; display:none!important; }
+.monitor-page #studentsTable .monitor-details-button:hover { background:#EAF2FA!important; border-color:#1F3D78!important; }
+.monitor-page #studentDetails { width:min(960px,calc(100vw - 32px)); max-width:calc(100vw - 32px); max-height:90dvh; padding:0; border:1px solid #DFE3EB; border-radius:20px; overflow:hidden; box-shadow:0 30px 100px #17284955; }
+.monitor-page #studentDetails::backdrop { background:#18213888; backdrop-filter:blur(3px); }
+.monitor-page #studentDetails .modal-header { display:flex; align-items:center; justify-content:space-between; gap:16px; padding:22px 26px; background:#fff; border-bottom:1px solid #DFE3EB; }
+.monitor-page #studentDetails .modal-header h2 { color:#242844; font-size:23px; margin:0 0 5px; }
+.monitor-page #studentDetails .subtitle { color:#66718A; font-size:13px; }
+.monitor-page #studentDetails .modal-avatar { width:46px; height:46px; border-radius:13px; background:#EAF2FA; color:#1F3D78; }
+.monitor-page #studentDetails .close-btn { display:grid; place-items:center; flex:0 0 36px; width:36px!important; height:36px!important; border:1px solid #DFE3EB!important; border-radius:10px!important; background:#F6F7FA!important; color:#242844!important; font-size:23px!important; cursor:pointer; }
+.monitor-page #studentDetails .close-btn::before,.monitor-page #studentDetails .close-btn::after { content:none!important; }
+.monitor-page #studentDetails .modal-body { padding:22px 26px; gap:16px; max-height:calc(90dvh - 108px); background:#F6F7FA; overflow-y:auto; }
+.monitor-page #studentDetails .info-grid { gap:16px; }
+.monitor-page #studentDetails .info-card { padding:20px; border-radius:14px; border:1px solid #DFE3EB; box-shadow:none; min-width:0; }
+.monitor-page #studentDetails .info-card h3 { font-size:16px; gap:10px; margin-bottom:14px; }
+.monitor-page #studentDetails .highlight-text { font-size:14px; line-height:1.8; }
+.monitor-page #studentDetails .highlight-number { font-size:28px; }
+.monitor-page #studentDetails .task-table { width:100%; font-size:13px; }
+.monitor-page #studentDetails .feedback-box { min-height:100px; font-size:14px; border-radius:10px; }
+.monitor-page #studentDetails .monitor-details-loading { display:none; }
+.monitor-page #studentDetails.is-loading .modal-body { display:none; }
+.monitor-page #studentDetails.is-loading .monitor-details-loading { display:block; padding:50px 26px; margin:0; text-align:center; color:#66718A; }
+@media(max-width:640px) { .monitor-page #studentDetails .info-grid { grid-template-columns:minmax(0,1fr); } .monitor-page #studentDetails .modal-header,.monitor-page #studentDetails .modal-body { padding:16px; } .monitor-page #studentDetails .modal-header h2 { font-size:20px; } .monitor-page #studentDetails .info-card { padding:16px; overflow-x:auto; } }
 .modern-modal {
     width: 880px;
     max-width: 95vw;

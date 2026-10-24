@@ -24,7 +24,7 @@ async function run(role, canonical, authenticated, success = false) {
   fixture.records = [{ studentName: 'Other student', studentId: 'OTHER', attendanceDate: fixture.today, status: 'absent' }, { studentName: 'Offline student', studentId: 'S', attendanceDate: fixture.today, status: 'completed', hoursApprovalStatus: 'pending', workedMinutes: 4, checkInAt: 1, checkOutAt: 240001 }];
   ids.get('attendanceBootstrap').textContent = JSON.stringify({ csrf: 'offline-csrf', localDemo: false });
   const context = vm.createContext({ console, URL, URLSearchParams, AbortController, TextDecoder,
-    setTimeout, clearTimeout, setInterval, clearInterval, performance,
+    setTimeout, clearTimeout, setInterval: () => 0, clearInterval, performance,
     location: { hostname: 'localhost' }, sessionStorage: { getItem() { return null; } },
     document: { body: element('body'), getElementById(id) { return ids.get(id) || null; }, createElement: element,
       querySelector(s) { return ({ '.main': main, '.menu-btn': menu, '.legacy-sidebar-close': oldClose })[s] || null; },

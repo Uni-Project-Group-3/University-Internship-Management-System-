@@ -11,17 +11,7 @@
     <link rel="stylesheet" type="text/css" href="../Assets/coordinator/Assign_Supervisors.css?v=2.0" />
     <link runat="server" href="~/Assets/shared/role-sidebars.css?v=20261024-workspace" rel="stylesheet" />
     <link runat="server" href="~/Assets/shared/workspace-navigation.css?v=20261024-hide-search" rel="stylesheet" />
-    <style>
-        .panel-tools { display: flex; align-items: center; gap: 12px; margin-left: auto; }
-        .select-wrap {
-            display: inline-flex; align-items: center; gap: 8px;
-            background: #FFF; border: 1px solid var(--border, #DFE3EB);
-            border-radius: 10px; padding: 6px 12px; font-size: 0.88rem; color: var(--text, #242844);
-        }
-        .select-wrap select {
-            border: none; outline: none; background: transparent; font-family: inherit; font-size: inherit; color: inherit; cursor: pointer;
-        }
-    </style>
+    <link rel="stylesheet" href="../Assets/coordinator/academic-assignment.css?v=20261024-groups" />
 <link href="../Assets/shared/workspace-identity.css?v=20261024-refine" rel="stylesheet" />
 <script src="../Js_project/workspace-navigation-unified.js?v=20261024-refine" defer></script>
 </head>
@@ -61,14 +51,11 @@
                         <div class="hero-text">
                             <span class="hero-badge"><svg class="ic"><use href="#i-users"/></svg>GROUP ASSIGNMENTS</span>
                             <h1>Assign Academic Supervisors</h1>
-                            <p>Organize students into groups and link each group to an academic supervisor from the beginning or modify assignments when needed.</p>
-                        </div>
-                        <div class="hero-action">
-                            <asp:Button ID="btnSaveAll" runat="server" CssClass="btn-primary-hero" Text="Save All Changes" OnClick="btnSaveAll_Click" />
+                            <p>Choose an academic supervisor, assign one university major, and build a group of students to follow their training.</p>
                         </div>
                     </div>
 
-                    <asp:Label ID="lblMessage" runat="server" CssClass="page-message"></asp:Label>
+                    <p id="assignmentNotice" class="assignment-notice" role="status" aria-live="polite">Loading groups...</p>
 
                     <!-- Assignments Panel -->
                     <section class="monitor-panel">
@@ -78,17 +65,12 @@
                                 <p>Manage group allocations and link academic supervisors.</p>
                             </div>
 
-                            <!-- فلتر التخصصات أو الأقسام -->
                             <div class="panel-tools">
-                                <label class="select-wrap">
-                                    <svg class="ic" style="width: 16px; height: 16px;"><use href="#i-filter"/></svg>
-                                    <select id="departmentFilter" aria-label="Filter by department" onchange="filterGroupsTable()">
-                                        <option value="">All Departments</option>
-                                        <option value="Software Engineering">Software Engineering</option>
-                                        <option value="Computer Science">Computer Science</option>
-                                        <option value="Artificial Intelligence">Artificial Intelligence</option>
-                                    </select>
+                                <label class="select-wrap">Major
+                                    <select id="departmentFilter" aria-label="Filter groups by major"><option value="">All majors</option></select>
                                 </label>
+                                <button type="button" class="assignment-secondary" id="refreshAssignments">Refresh</button>
+                                <button type="button" class="assignment-primary" id="newAssignment" disabled="disabled">+ Add group</button>
                             </div>
                         </div>
 
@@ -103,28 +85,7 @@
                                         <th>Actions</th>
                                     </tr>
                                 </thead>
-                                <tbody>
-                                    <asp:Repeater ID="rptGroups" runat="server" OnItemCommand="rptGroups_ItemCommand">
-                                        <ItemTemplate>
-                                            <tr>
-                                                <td>
-                                                    <span class="group-name"><%# Eval("GroupName") %></span>
-                                                    <span class="group-id">ID: <%# Eval("GroupId") %></span>
-                                                    <asp:HiddenField ID="hfGroupId" runat="server" Value='<%# Eval("GroupId") %>' />
-                                                </td>
-                                                <td class="dept-cell"><%# Eval("Major") %></td>
-                                                <td><strong><%# Eval("StudentCount") %></strong> Students</td>
-                                                <td>
-                                                    <asp:DropDownList ID="ddlSupervisors" runat="server" CssClass="form-control-sm" DataSource='<%# GetSupervisorsList() %>' DataTextField="SupervisorName" DataValueField="SupervisorId" SelectedValue='<%# Eval("AssignedSupervisorId") %>'>
-                                                    </asp:DropDownList>
-                                                </td>
-                                                <td>
-                                                    <asp:Button ID="btnUpdateSingle" runat="server" CssClass="btn-action-sm" Text="Update" CommandName="UpdateGroup" CommandArgument='<%# Eval("GroupId") %>' />
-                                                </td>
-                                            </tr>
-                                        </ItemTemplate>
-                                    </asp:Repeater>
-                                </tbody>
+                                <tbody id="assignmentRows"><tr><td colspan="5">Loading groups...</td></tr></tbody>
                             </table>
                         </div>
                     </section>
@@ -133,46 +94,37 @@
         </div>
     </form>
 
-    <script>
-        //@ts-nocheck
-        function filterGroupsTable() {
-            var selectElem = document.getElementById("departmentFilter");
-            var table = document.getElementById("groupsTable");
-            if (!selectElem || !table) return;
-
-            var filterVal = selectElem.value.toLowerCase().trim();
-            var trs = table.getElementsByTagName("tr");
-
-            for (var i = 1; i < trs.length; i++) {
-                var tr = trs[i];
-                var deptTd = tr.querySelector(".dept-cell");
-                
-                if (deptTd) {
-                    var deptText = deptTd.textContent.trim().toLowerCase();
-                    
-                    if (filterVal === "" || deptText.indexOf(filterVal) > -1) {
-                        tr.style.display = "";
-                    } else {
-                        tr.style.display = "none";
-                    }
-                }
-            }
-        }
-
-        document.addEventListener("DOMContentLoaded", function () {
-            const msg = document.getElementById('<%= lblMessage.ClientID %>');
-            if (msg && msg.innerText.trim() !== "") {
-                setTimeout(function () {
-                    msg.style.transition = "all 0.5s ease";
-                    msg.style.opacity = "0";
-                    msg.style.transform = "translateY(-15px)";
-                    setTimeout(function () {
-                        msg.style.display = "none";
-                    }, 500);
-                }, 4000);
-            }
-        });
-    </script>
+    <dialog id="assignmentDialog" aria-labelledby="assignmentTitle">
+        <div class="assignment-dialog-heading">
+            <div><span class="assignment-eyebrow">ACADEMIC SUPERVISION</span><h2 id="assignmentTitle">Add student group</h2></div>
+            <button type="button" id="assignmentClose" class="assignment-close" aria-label="Close group dialog">&times;</button>
+        </div>
+        <p class="assignment-intro">Each supervisor is responsible for one major. Select students from that major to join the group.</p>
+        <div id="assignmentFields">
+            <label class="assignment-field" for="assignmentProfessor"><span>01 &nbsp; Academic supervisor <span aria-hidden="true">*</span></span>
+                <select id="assignmentProfessor" required="required"></select>
+            </label>
+            <label class="assignment-field" for="assignmentDepartment"><span>02 &nbsp; University major <span aria-hidden="true">*</span></span>
+                <select id="assignmentDepartment" required="required" disabled="disabled"></select>
+            </label>
+            <p id="assignmentMajorHint" class="assignment-hint"></p>
+            <label class="assignment-field" for="assignmentName"><span>Group name (optional)</span><input id="assignmentName" maxlength="120" placeholder="For example: Computer Science - Group A" /></label>
+            <section aria-labelledby="assignmentStudentsTitle">
+                <h3 id="assignmentStudentsTitle">03 &nbsp; Students</h3>
+                <p class="assignment-hint">Students already in another group or assigned to another supervisor cannot be selected.</p>
+                <div class="assignment-student-tools">
+                    <input id="studentSearch" type="search" placeholder="Search by name or student ID" aria-label="Search eligible students" disabled="disabled" />
+                    <button type="button" class="assignment-secondary" id="studentSelectAll" disabled="disabled">Select all</button>
+                    <button type="button" class="assignment-secondary" id="studentClear">Clear</button>
+                </div>
+                <div id="assignmentStudents" class="assignment-students"></div>
+                <p id="studentCount" class="assignment-count" aria-live="polite">0 selected</p>
+            </section>
+        </div>
+        <p id="assignmentError" role="alert" class="assignment-error"></p>
+        <div class="assignment-dialog-footer"><button type="button" id="assignmentCancel" class="assignment-secondary">Cancel</button><button type="button" id="assignmentSave" class="assignment-primary">Create group</button></div>
+    </dialog>
+    <script src="../Js_project/Coordinator/Assign_Supervisors.js?v=20261024-groups" defer="defer"></script>
     <script src="<%= ResolveUrl("~/Js_project/Public/workspace-navigation.js?v=20261024") %>" defer="defer"></script>
 </body>
 </html>

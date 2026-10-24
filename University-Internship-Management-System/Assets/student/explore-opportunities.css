@@ -584,6 +584,8 @@ button:focus-visible {
         text-overflow: ellipsis;
     }
 
+.opportunity-card .opportunity-view-button { display:flex; align-items:center; justify-content:center; width:100%; height:auto; min-height:44px; border-radius:12px; font-size:14px; font-weight:700; color:#fff; background:#1F3D78; padding:12px 20px; }
+.opportunity-card .opportunity-view-button:hover { background:#294D91; }
 .details-button {
     display: flex;
     justify-content: center;

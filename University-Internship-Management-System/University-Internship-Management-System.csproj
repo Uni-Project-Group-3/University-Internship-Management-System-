@@ -699,7 +699,7 @@
     <Content Include="Js_project\Company\TaskComposer.js" />
     <Content Include="Js_project\task-dialogs.js" />
     <Content Include="Js_project\weekly-task-context.js" />
-    <Content Include="Assets\task-workspace.css" />
+    <Content Include="Assets\weekly-review.css" /><Content Include="Assets\task-workspace.css" />
     <Content Include="Student\MyTasks.aspx" />
     <Compile Include="Student\MyTasks.aspx.cs">
       <DependentUpon>MyTasks.aspx</DependentUpon>

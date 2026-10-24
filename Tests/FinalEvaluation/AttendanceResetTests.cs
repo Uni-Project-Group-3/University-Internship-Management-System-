@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
@@ -68,6 +68,22 @@ internal static partial class Program
             Actor("resetPreview");
             await Test("reset preview shows actual approved minutes and never writes", async () => {
                 var preview = await service.PreviewTodayReset("S", "uid-S"); Assert((long)preview["approvedMinutesRemoved"] == 2 && db.Writes == 0);
+            });
+            await Test("reset uses the same verified flexible date as QR without requiring fixed shift timestamps", async () => {
+                string schedulePath = "schedules/A/" + day;
+                var priorSchedule = (JObject)db.Rows[schedulePath].DeepClone();
+                db.Rows[schedulePath].Remove("scheduledStartAt"); db.Rows[schedulePath].Remove("scheduledEndAt");
+                db.Rows[schedulePath]["isTrainingDay"] = false;
+                var preview = await service.PreviewTodayReset("S", "uid-S");
+                Assert((long)preview["approvedMinutesRemoved"] == 2 && db.Writes == 0);
+                db.Rows[schedulePath]["version"] = 0;
+                await Reject<InvalidOperationException>(() => service.PreviewTodayReset("S", "uid-S"));
+                db.Rows[schedulePath] = priorSchedule;
+                string endDate = (string)db.Rows["trainingAssignments/A"]["endDate"];
+                db.Rows["trainingAssignments/A"]["endDate"] = "2000-01-01";
+                await Reject<InvalidOperationException>(() => service.PreviewTodayReset("S", "uid-S"));
+                db.Rows["trainingAssignments/A"]["endDate"] = endDate;
+                Assert(db.Writes == 0);
             });
             await Test("reset rejects disabled flag, remote callers, wrong role, foreign UID and foreign student", async () => {
                 settings["AttendanceStudentResetEnabled"] = "false"; await Reject<UIMS.Services.FirebaseException>(() => service.PreviewTodayReset("S", "uid-S")); settings["AttendanceStudentResetEnabled"] = "true";

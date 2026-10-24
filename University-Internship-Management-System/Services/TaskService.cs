@@ -1494,6 +1494,7 @@ namespace UIMS.Tasks
             if (method == "POST" && action == "beginCreation") return await service.BeginCreationAsync(data, cancellation).ConfigureAwait(false);
             if (method == "POST" && action == "checkpointCreation") return await service.CreationOperationAsync((string)data["batchId"], true, cancellation).ConfigureAwait(false);
             if (method == "GET" && action == "trainees") return await service.LoadTraineesAsync(cancellation).ConfigureAwait(false);
+            if (method == "GET" && action == "traineeProgress") return await service.LoadTraineeProgressAsync((string)data["placementId"], cancellation).ConfigureAwait(false);
             if (service == null) throw new ArgumentNullException(nameof(service));
             data = data ?? new JObject();
             if (string.Equals(method, "GET", StringComparison.OrdinalIgnoreCase) && action == "board")
@@ -1537,6 +1538,7 @@ namespace UIMS.Tasks
                     string action = string.IsNullOrEmpty(context.Request.QueryString["action"]) ? null : context.Request.QueryString["action"];
                     JObject data = new JObject();
                     if (method == "GET" && action == "creationOperation") data["batchId"] = context.Request.QueryString["batchId"];
+                    if (method == "GET" && action == "traineeProgress") data["placementId"] = context.Request.QueryString["placementId"];
                     if (string.Equals(method, "GET", StringComparison.OrdinalIgnoreCase) && action == "board")
                         data["placementId"] = context.Request.QueryString["placementId"];
                     if (string.Equals(method, "GET", StringComparison.OrdinalIgnoreCase) && action == "attachments")

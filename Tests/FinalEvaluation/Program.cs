@@ -439,6 +439,10 @@ internal static partial class Program
         var trainees = await OfflineTaskService(db, company, settings).LoadTraineesAsync(CancellationToken.None);
         Assert(trainees["trainees"].Count() == 1 && (int)trainees["statistics"]["total"] == 1 && (int)trainees["statistics"]["assignedTasks"] == 1);
         Assert((string)trainees["trainees"][0]["placementId"] == "place-1" && (int)trainees["trainees"][0]["completedTasks"] == 1);
+        var progress = await UIMS.Tasks.TasksApiHandler.DispatchAsync(OfflineTaskService(db, company, settings), "GET", "traineeProgress", new JObject { ["placementId"] = "place-1" }, CancellationToken.None);
+        Assert(progress["tasks"].Count() == 1 && progress["approvedTrainingMinutes"].Type == JTokenType.Null && ((string)progress["eligibilityBlocker"]).Length > 0);
+        await Reject<UIMS.Services.FirebaseException>(() => OfflineTaskService(db, company, settings).LoadTraineeProgressAsync("other-company", CancellationToken.None));
+        await Reject<UIMS.Services.FirebaseException>(() => OfflineTaskService(db, student, settings).LoadTraineeProgressAsync("place-1", CancellationToken.None));
         var eligible = await OfflineTaskService(db, company, settings).LoadAsync("companySupervisor", CancellationToken.None);
         Assert(eligible["students"].Count() == 1 && (string)eligible["students"][0]["placementId"] == "place-1");
         await Reject<UIMS.Services.FirebaseException>(() => OfflineTaskService(db, student, settings).LoadTraineesAsync(CancellationToken.None));
@@ -496,6 +500,10 @@ internal static partial class Program
 
     private static int Main(string[] args)
     {
+        if(args.Length==2 && (args[0]=="--attendance-setup-plan" || args[0]=="--attendance-setup-apply"))
+        {try{return AttendanceSetupKnownPlacement(args[1],args[0].EndsWith("apply")).GetAwaiter().GetResult();}catch(Exception error){Console.WriteLine("Attendance setup stopped: "+error.GetType().Name+": "+error.Message);return 2;}}
+        if(args.Length==3 && args[0]=="--attendance-link-readonly")
+        {try{return AttendanceLinkReadOnly(args[1],args[2]).GetAwaiter().GetResult();}catch(Exception error){Console.WriteLine("Attendance read blocked: "+error.GetType().Name+". No writes.");return 2;}}
         if(args.Length==3 && args[0]=="--database-export-readonly")
         {try{return ExportDatabaseReadOnly(args[1],args[2]).GetAwaiter().GetResult();}catch(Exception error){Console.WriteLine("Read-only export blocked: "+error.GetType().Name+". No production writes.");return 2;}}
         if (args.Length == 3 && args[0] == "--student-integration-readonly")
@@ -567,7 +575,7 @@ internal static partial class Program
         });
         await Test("authenticated attendance admits linked historical test labels but denies foreign student and supervisor writes and student scans", AuthenticatedAttendanceScopeTests);
         await Test("student and supervisor issue signed QR without recording attendance or altering approved minutes; foreign UID and premature checkout rejected", StudentQrIssuanceTests);
-        await Test("supervisor QR actions allow before/after shift hours while enforcing training days and check-in/out order", () =>
+        await Test("supervisor QR actions allow all days and hours while enforcing training period and check-in/out order", () =>
         {
             string day=UIMS.Attendance.AttendanceService.Today();
             long start=DateTimeOffset.Parse(day+"T09:00:00+03:00").ToUnixTimeMilliseconds(),end=DateTimeOffset.Parse(day+"T16:00:00+03:00").ToUnixTimeMilliseconds();
@@ -578,7 +586,11 @@ internal static partial class Program
             denied("checkOut");denied("invalid");
             context.Record=new JObject{["assignmentId"]="A1",["attendanceDate"]=day,["studentId"]="S1",["companyId"]="C1",["companySupervisorId"]="CS1",["checkInAt"]=UIMS.Attendance.AttendanceService.Now()-60000};
             UIMS.Attendance.AttendanceService.CheckAction(context,"checkOut",UIMS.Attendance.AttendanceService.Now());denied("checkIn");
-            context.Schedule["isTrainingDay"]=false;denied("checkOut");
+            context.Schedule["isTrainingDay"]=false;
+            context.Schedule.Remove("scheduledStartAt"); context.Schedule.Remove("scheduledEndAt");
+            UIMS.Attendance.AttendanceService.CheckAction(context,"checkOut",UIMS.Attendance.AttendanceService.Now());
+            context.Assignment["endDate"] = DateTime.Parse(day).AddDays(-1).ToString("yyyy-MM-dd"); denied("checkOut");
+            context.Assignment["endDate"] = day; context.Schedule["assignmentId"] = "foreign"; denied("checkOut");
             return Task.CompletedTask;
         });
         await Test("attendance onboarding preserves history/calendar, rejects cross-student conflicts, freezes 2023301 and is idempotent", AttendanceOnboardingBoundaryTests);

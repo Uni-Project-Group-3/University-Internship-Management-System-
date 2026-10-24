@@ -43,6 +43,7 @@
         };
         const messageElement = () => by('uimsPageNotice') || document.querySelector('main .preview-note,main .completion-notice,main .companies-notice,main .evaluation-notice,main .monitor-notice,main .workspace-note,#messagesAvailability,#traineesAvailability,#accountAvailability') || by('pageNotice') || by('profileMessage') || by('pnlMessage');
         function notice(message) {
+            window.showApplicationMessage?.(message);
             let element = messageElement();
             if (!element) { element = document.createElement('p'); element.id = 'uimsPageNotice'; element.className = 'uims-feedback'; element.setAttribute('role', 'status'); (document.querySelector('main') || document.querySelector('.content')).prepend(element); }
             element.hidden = false; element.textContent = message;
@@ -230,6 +231,29 @@
     'use strict';
     function start() {
         const $ = id => document.getElementById(id);
+        window.showApplicationMessage = message => {
+            let dialog = $('applicationMessage');
+            if (!dialog) {
+                dialog = document.createElement('dialog'); dialog.id = 'applicationMessage';
+                dialog.className = 'application-message'; dialog.setAttribute('aria-labelledby', 'applicationMessageTitle');
+                dialog.innerHTML = '<h2 id="applicationMessageTitle">Application notice</h2><p></p><button type="button">OK</button>';
+                dialog.querySelector('button').onclick = () => dialog.close(); document.body.append(dialog);
+            }
+            dialog.querySelector('p').textContent = message;
+            if (!dialog.open) dialog.showModal();
+            dialog.querySelector('button').focus();
+        };
+        const cv = $('cvAttachment');
+        if (cv) {
+            const wrapper = cv.closest('.input-icon'); wrapper?.classList.add('cv-file-picker');
+            wrapper?.querySelector('i')?.remove();
+            cv.classList.add('cv-native-input');
+            const choose = document.createElement('button'); choose.type = 'button'; choose.className = 'cv-choose-button';
+            choose.textContent = 'Attach CV file'; choose.onclick = () => cv.click();
+            const name = document.createElement('span'); name.className = 'cv-selected-name'; name.setAttribute('aria-live', 'polite');
+            cv.before(choose); cv.after(name);
+            cv.addEventListener('change', () => { name.textContent = cv.files[0]?.name || ''; choose.textContent = cv.files.length ? 'Change CV file' : 'Attach CV file'; });
+        }
         const ok = id => { const el = $(id); return !!el && el.value.trim() !== '' && el.checkValidity(); };
         const steps = {
             personal: () => ['fullName', 'studentNumber', 'email', 'phone', 'major'].every(ok),
