@@ -9,8 +9,8 @@
     <meta name="robots" content="noindex, nofollow" />
     <title>Sign In | UIMS</title>
     <link runat="server" href="~/Assets/shared/colors.css" rel="stylesheet" />
-    <link runat="server" href="~/Assets/auth/auth.css" rel="stylesheet" /><link href="../Assets/auth/login-card.css?v=20261024-card-login" rel="stylesheet" />
-<link href="../Assets/public/public-campus.css?v=20261024-refine" rel="stylesheet" /></head>
+    <link runat="server" href="~/Assets/auth/auth.css" rel="stylesheet" /><link href="../Assets/auth/login-card.css?v=20261024-reference-pulse" rel="stylesheet" />
+</head>
 <body class="auth-page">
     <svg class="auth-sprite" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
         <symbol id="icon-mail" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="3" /><path d="m4 7 8 6 8-6" /></symbol>
@@ -40,8 +40,8 @@
                 </div>
                 <div class="card-body">
                   <img class="card-watermark" src="../Assets/shared/images/just-logo.png" alt="" aria-hidden="true"/>
-                  <div class="card-section">UNIVERSITY ACCESS</div>
-                  <div class="student-title">University ID</div>
+                  <div class="card-section">CAMPUS ACCESS · INTERNSHIPS · UNIVERSITY SERVICES</div>
+                  <div class="student-title">UNIVERSITY CARD</div><span class="reference-chip" aria-hidden="true"></span>
                   <div class="card-values">
                     <div class="card-detail">
                       <div class="detail-field" id="previewEmailField"><label>UNIVERSITY EMAIL</label><span class="value placeholder" id="previewEmail">student@just.edu.jo</span></div>
@@ -55,9 +55,11 @@
                 </div>
               </article>
               <article class="id-card back" aria-label="University card verification">
-                <div class="back-header"><span>JUST / UNIVERSITY ACCESS</span><span>✦</span></div>
-                <div class="back-center"><img src="../Assets/shared/images/just-logo.png" alt=""/><strong>JUST</strong><small id="cardAuthStatus" role="status" aria-live="polite">Secure sign-in</small></div>
-                <div class="back-foot"><span>INTERNSHIP MANAGEMENT</span><span>SECURE SIGN-IN</span></div>
+                <div class="back-contact">JORDAN UNIVERSITY OF SCIENCE AND TECHNOLOGY · www.just.edu.jo</div>
+                <div class="magnetic-strip" aria-hidden="true"></div>
+                <div class="verification-row"><div><span>AUTHORIZED ACCESS</span><div class="signature-strip" aria-hidden="true"></div></div><div><span>STATUS</span><div class="security-chip" aria-hidden="true"></div></div></div>
+                <div class="back-center"><img src="../Assets/shared/images/just-logo.png" alt="JUST university logo"/><strong>JORDAN UNIVERSITY OF<br/>SCIENCE AND TECHNOLOGY</strong><small id="cardAuthStatus" role="status" aria-live="polite">Secure sign-in</small></div>
+                <div class="back-foot"><span>JUST · INTERNSHIP MANAGEMENT</span><span>CONTACTLESS ACCESS</span></div>
               </article>
             </div>
           </div>
@@ -148,7 +150,7 @@
     </form>
     <footer class="auth-public-footer"><span>&copy; <%= DateTime.Now.Year %> Jordan University of Science and Technology.</span><span>University Internship Management System.</span></footer>
 
-<script src="../Js_project/Auth/login-card.js?v=20261024-merged-link-flow" defer="defer"></script>
+<script src="../Js_project/Auth/login-card.js?v=20261024-reference-pulse" defer="defer"></script>
 <script src="../Js_project/firebase-client.js?v=20261024-merged-link-flow" defer="defer"></script>
 <script src="../Js_project/Auth/auth.js?v=20261024-merged-link-flow" defer="defer"></script>
 <script src="../Js_project/Public/public-workspace.js?v=20261024-refine" defer></script></body>

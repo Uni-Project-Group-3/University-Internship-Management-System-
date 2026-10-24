@@ -10,6 +10,7 @@
     const pause = ms => new Promise(resolve => setTimeout(resolve, reduced.matches ? 0 : ms));
     function preview() {
         const value = email.value.trim(), count = password.value.length;
+        if(phase==='idle')workspace.classList.remove('is-error');
         document.getElementById('previewEmail').textContent = value || 'University email';
         document.getElementById('previewEmail').classList.toggle('placeholder', !value);
         // Only a count is mirrored. The password itself never enters another DOM node.
@@ -41,13 +42,13 @@
             await pause(Math.max(0, 850 - (performance.now() - started)));
             workspace.classList.remove('is-scanning'); workspace.classList.add('is-success');
             status.textContent = 'Signed in'; phase = 'success'; preview();
-            await pause(280);
+            await pause(900);
         },
         async error() {
             await pause(Math.max(0, 400 - (performance.now() - started)));
             workspace.classList.remove('is-scanning'); workspace.classList.add('is-error');
             flipper.classList.remove('flipped'); status.textContent = 'Sign-in unsuccessful';
-            await pause(450); phase = 'idle'; workspace.classList.remove('is-error');
+            await pause(450); phase = 'idle';
         }
     });
     // Native Web Forms posting still works if the enhanced authentication client is unavailable.
