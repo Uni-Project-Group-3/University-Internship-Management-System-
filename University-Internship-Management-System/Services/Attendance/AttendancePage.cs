@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using System.Linq;
 using System.Net.Http;
 using System.Security.Cryptography;
 using System.Threading.Tasks;
@@ -266,21 +267,22 @@ namespace UIMS.Attendance
             }
             else
             {
-                // نقبل توكن الجلسة الذي خزنه Login فقط مع Cookie دخول موثقة؛ لا نقبل UID من المتصفح.
-                token = page.User != null && page.User.Identity.IsAuthenticated
-                    ? Session["Uims.FirebaseIdToken"] as string : null;
+                // ASP.NET Session is shared between tabs. A stored Firebase token
+                // may belong to the other role; use this request's signed Forms
+                // identity, then verify its live Auth account/profile below.
+                token = null;
             }
             if (string.IsNullOrWhiteSpace(token) || token.Length > 8192)
             {
                 if (authorization.Length > 0 || !string.IsNullOrWhiteSpace(token))
                     throw new UIMS.Services.FirebaseException(401, "The Firebase authentication session is invalid. Sign in again.");
-                return ResolveVerifiedIdentity(await ResolveFormsSessionAsync(role), role);
+                return await ResolveVerifiedIdentity(await ResolveFormsSessionAsync(role), role);
             }
             var identity = await new University_Internship_Management_System.Shared.FirebaseSignInService()
                 .VerifySessionAsync(token);
             if (authorization.Length == 0 && !string.Equals(page.User.Identity.Name, identity.Uid, StringComparison.Ordinal))
                 throw new UIMS.Services.FirebaseException(401, "The Firebase session does not match the signed-in account. Sign in again.");
-            return ResolveVerifiedIdentity(identity, role);
+            return await ResolveVerifiedIdentity(identity, role);
         }
 
         private async Task<University_Internship_Management_System.Shared.FirebaseLoginResult> ResolveFormsSessionAsync(string role)
@@ -332,7 +334,7 @@ namespace UIMS.Attendance
             return verified;
         }
 
-        private string ResolveVerifiedIdentity(University_Internship_Management_System.Shared.FirebaseLoginResult identity, string role)
+        private async Task<string> ResolveVerifiedIdentity(University_Internship_Management_System.Shared.FirebaseLoginResult identity, string role)
         {
             if (identity == null || string.IsNullOrWhiteSpace(identity.Uid) || identity.Profile == null)
                 throw new UIMS.Services.FirebaseException(401, "The verified Firebase identity is incomplete. Sign in again.");
@@ -343,8 +345,27 @@ namespace UIMS.Attendance
                 throw new UIMS.Services.FirebaseException(403, "Your Firebase account does not have permission for this attendance page.");
             string businessId = role == "student" ? (string)identity.Profile["studentId"] :
                 (string)identity.Profile["companySupervisorId"] ?? (string)identity.Profile["supervisorId"];
-            if (string.IsNullOrWhiteSpace(businessId))
+            if (string.IsNullOrWhiteSpace(businessId) && role != "company")
                 throw new UIMS.Services.FirebaseException(403, "The Firebase user profile is missing its attendance business ID.");
+            if (!string.IsNullOrWhiteSpace(businessId)) AttendanceFirebase.CheckKey(businessId);
+            if (role == "company")
+            {
+                // Attendance may use a different existing business key from the account
+                // profile. Resolve only a unique active UID/company match, never a name.
+                var gateway = new University_Internship_Management_System.Shared.StudentFirebaseGateway();
+                var supervisors = await gateway.ReadAsync("uimsAttendance/companySupervisors") as JObject ?? new JObject();
+                var direct = string.IsNullOrWhiteSpace(businessId) ? null : supervisors[businessId] as JObject;
+                if (direct != null && (string)direct["companyId"] != (string)identity.Profile["companyId"])
+                    throw new UIMS.Services.FirebaseException(403, "The attendance supervisor record belongs to a different company. The coordinator must review the mapping.");
+                if (direct == null)
+                {
+                    string companyId = (string)identity.Profile["companyId"] ?? "";
+                    var matches = supervisors.Properties().Where(p => p.Value is JObject && (string)p.Value["firebaseUid"] == identity.Uid && (string)p.Value["companyId"] == companyId && (string)p.Value["status"] == "active").ToArray();
+                    if (companyId.Length == 0 || matches.Length != 1)
+                        throw new UIMS.Services.FirebaseException(409, "Your verified company account needs one active attendance supervisor record linked to the same UID and company. The coordinator must complete attendance setup before QR issuance. No account or attendance data was changed.");
+                    businessId = matches[0].Name;
+                }
+            }
             AttendanceFirebase.CheckKey(businessId);
             VerifiedUid = identity.Uid;
             VerifiedProfile = (JObject)identity.Profile.DeepClone();

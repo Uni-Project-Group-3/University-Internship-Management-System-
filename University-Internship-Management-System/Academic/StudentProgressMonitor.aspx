@@ -9,7 +9,7 @@
     <title>Student Progress Monitor | JUST UIMS</title>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <link rel="stylesheet" type="text/css" href="/Assets/shared/colors.css" />
-    <link rel="stylesheet" type="text/css" href="/Assets/academic/progress-monitor.css" />
+    <link rel="stylesheet" type="text/css" href="/Assets/academic/progress-monitor.css?v=20261024-details" />
     <link runat="server" href="~/Assets/shared/role-sidebars.css?v=20261024-workspace" rel="stylesheet" />
     <link runat="server" href="~/Assets/shared/workspace-navigation.css?v=20261024-hide-search" rel="stylesheet" />
 <link href="../Assets/shared/workspace-identity.css?v=20261024-refine" rel="stylesheet" />
@@ -127,7 +127,7 @@
                                                 <div class="bar green"><span style='<%# "width:" + Eval("TaskPercentage") + "%" %>'></span></div>
                                             </td>
                                             <td><%# Convert.ToBoolean(Eval("HasDelays")) ? "<span class='status-behind'><svg class='ic'><use href='#i-alert'/></svg>Behind Schedule</span>" : "<span class='status-track'><svg class='ic'><use href='#i-check'/></svg>On Track</span>" %></td>
-                                            <td><asp:LinkButton runat="server" CommandName="ViewDetails" CommandArgument='<%# Eval("StudentId") %>' Text="View Details" CssClass="monitor-button" /></td>
+                                            <td><asp:LinkButton runat="server" CommandName="ViewDetails" CommandArgument='<%# Eval("StudentId") %>' Text="Details" CssClass="monitor-details-button" OnClientClick="if(showStudentDetailsLoading(this)===false)return false;" /></td>
                                         </tr>
                                     </ItemTemplate>
                                 </asp:Repeater>
@@ -151,7 +151,11 @@
         </div>
 
         <!-- Modal -->
-        <dialog id="studentDetails" class="modern-modal" runat="server" clientidmode="Static">
+        <asp:ScriptManager ID="MonitorScriptManager" runat="server" />
+        <asp:UpdatePanel ID="StudentDetailsPanel" runat="server" UpdateMode="Conditional">
+        <Triggers><asp:AsyncPostBackTrigger ControlID="rptStudents" EventName="ItemCommand" /></Triggers>
+        <ContentTemplate>
+        <dialog id="studentDetails" class="modern-modal" runat="server" clientidmode="Static" aria-label="Student progress details">
             <div class="modal-header">
                 <div class="modal-id">
                     <span class="modal-avatar"><svg class="ic"><use href="#i-user"/></svg></span>
@@ -161,9 +165,10 @@
                         <asp:HiddenField ID="hfCurrentStudentId" runat="server" />
                     </div>
                 </div>
-                <button type="button" class="close-btn" onclick="document.getElementById('studentDetails').close();" title="Close">&#215;</button>
+                <button type="button" class="close-btn" onclick="document.getElementById('studentDetails').close();" aria-label="Close student details" title="Close">&#215;</button>
             </div>
 
+            <p class="monitor-details-loading" role="status">Loading current student records…</p>
             <div class="modal-body">
                 <div class="info-grid">
                     <div class="info-card">
@@ -208,6 +213,8 @@
                 </div>
             </div>
         </dialog>
+        </ContentTemplate>
+        </asp:UpdatePanel>
     </form>
 
     <!-- Search + filter + pagination script -->
@@ -215,6 +222,19 @@
  //@ts-nocheck
         var currentPage = 1;
         var rowsPerPage = 5;
+        function showStudentDetailsLoading(button) {
+            if (window.monitorDetailsPending) return false;
+            window.monitorDetailsPending = true;
+            var dialog = document.getElementById('studentDetails');
+            dialog.classList.add('is-loading'); dialog.setAttribute('aria-busy','true');
+            if (!dialog.open) dialog.showModal();
+        }
+        if (window.Sys && Sys.WebForms) Sys.WebForms.PageRequestManager.getInstance().add_endRequest(function(sender, args) {
+            window.monitorDetailsPending = false;
+            var dialog = document.getElementById('studentDetails');
+            dialog.classList.remove('is-loading'); dialog.removeAttribute('aria-busy');
+            if (args.get_error()) { args.set_errorHandled(true); dialog.querySelector('.monitor-details-loading').textContent = 'Details could not be loaded. Close and retry.'; dialog.classList.add('is-loading'); }
+        });
 
         function getRows() {
             var table = document.getElementById("studentsTable");

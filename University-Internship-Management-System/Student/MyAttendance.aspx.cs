@@ -58,6 +58,13 @@ namespace University_Internship_Management_System.Student
                     default:
                         throw new InvalidOperationException("Unknown student attendance action.");
                 }
+                if (action == "load" && (bool?)data["hasAssignment"] == false && !LocalDemoAllowed)
+                {
+                    var gateway = new Shared.StudentFirebaseGateway();
+                    var placementRead = gateway.ReadAsync("placements"); var usersRead = gateway.ReadAsync("users"); var companiesRead = gateway.ReadAsync("companies");
+                    await Task.WhenAll(placementRead, usersRead, companiesRead);
+                    data["placementSummary"] = PendingPlacementSummary(placementRead.Result as JObject ?? new JObject(), usersRead.Result as JObject ?? new JObject(), companiesRead.Result as JObject ?? new JObject(), uid, studentId);
+                }
                 return attendanceRequest.CompleteData(data, studentId);
             }
         }
@@ -66,12 +73,24 @@ namespace University_Internship_Management_System.Student
         {
             Func<JObject, Task> profileReady = attendanceRequest.IsStreaming
                 ? (Func<JObject, Task>)(profile => attendanceRequest.SendProgress("profile", profile)) : null;
-            return LoadAttendanceData(attendanceService, studentId, student, profileReady);
+            return LoadAttendanceData(attendanceService, studentId, student, profileReady, LocalDemoAllowed);
+        }
+
+        // Read-only training context is separate from permission to record attendance.
+        public static JObject PendingPlacementSummary(JObject placements, JObject users, JObject companies, string uid, string studentId)
+        {
+            var owned = placements.Properties().Where(p => p.Value is JObject && Shared.UimsData.OwnsStudentRecord((JObject)p.Value, uid, studentId) && new[] { "active", "confirmed" }.Contains((string)p.Value["status"])).ToArray();
+            if (owned.Length != 1) return null;
+            var placement = owned[0].Value; string company = (string)placement["companyId"] ?? "", supervisor = (string)placement["companySupervisorId"] ?? "";
+            var profiles = users.Properties().Where(p => Shared.FirebaseSignInService.CanonicalRole((string)p.Value["role"]) == "companySupervisor" && (string)p.Value["companyId"] == company && (bool?)p.Value["isActive"] == true && (p.Name == supervisor || (string)p.Value["companySupervisorId"] == supervisor || (string)p.Value["supervisorId"] == supervisor)).ToArray();
+            return new JObject { ["companyName"] = companies[company]?["name"] ?? placement["companyName"], ["supervisorName"] = profiles.Length == 1 ? profiles[0].Value["fullName"] : null,
+                ["requiredHours"] = placement["requiredHours"], ["startDate"] = placement["startDate"], ["endDate"] = placement["endDate"],
+                ["setupMessage"] = "Your training placement is confirmed. Attendance setup is pending: the coordinator must link the attendance student, company supervisor and approved training schedule before QR check-in is available." };
         }
 
         // تجهيز حقول العرض هنا؛ التحقق والحسابات تبقى داخل خدمة الحضور.
         public static async Task<JObject> LoadAttendanceData(AttendanceService service, string studentId,
-            JObject student = null, Func<JObject, Task> profileReady = null)
+            JObject student = null, Func<JObject, Task> profileReady = null, bool localTest = false)
         {
             var state = await service.LoadStudentAttendance(studentId, student, profileReady);
             if (string.IsNullOrEmpty(state.AssignmentId))
@@ -86,6 +105,7 @@ namespace University_Internship_Management_System.Student
                 ["history"] = new JArray(state.AttendanceHistory.Properties().Where(p => p.Value is JObject)
                     .OrderByDescending(p => p.Name).Select(p => p.Value)),
                 ["approvedMinutes"] = state.ApprovedMinutes, ["canCheckIn"] = state.CanCheckIn,
+                ["flexibleAttendance"] = true, ["issuedQr"] = service.CurrentIssuedQr(state, localTest),
                 ["canCheckOut"] = state.CanCheckOut, ["canRequestEarly"] = state.CanRequestEarly,
                 ["canResetToday"] = service.CanOfferStudentReset && AttendanceService.Number(state.Record, "checkInAt") > 0,
                 ["actionsEnabled"] = AttendanceService.Flag(state.Settings, "enabled")
@@ -94,7 +114,7 @@ namespace University_Internship_Management_System.Student
 
         private Task<JObject> LoadIssuedQr(string studentId)
         {
-            return attendanceService.CreateQr(studentId, Request.Form["attendanceAction"], LocalDemoAllowed, attendanceRequest.VerifiedUid ?? "");
+            return attendanceService.ReadIssuedQr(studentId, Request.Form["attendanceAction"], LocalDemoAllowed);
         }
 
         private async Task RequestEarlyDeparture(string studentId)
