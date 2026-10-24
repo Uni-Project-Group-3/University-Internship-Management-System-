@@ -60,12 +60,6 @@
         });
     }
     async function acceptSignIn(data) {
-        if (data.mustChangePassword) {
-            sessionStorage.removeItem(storageKey);
-            const url = new URL('Auth/Login.aspx?change=required', new URL('./', endpoint));
-            location.assign(url.href);
-            return;
-        }
         save(data);
         const password = document.getElementById('Password'); if (password) password.value = '';
         status('Firebase identity verified: ' + data.role + ' / ' + data.profileId + '.');

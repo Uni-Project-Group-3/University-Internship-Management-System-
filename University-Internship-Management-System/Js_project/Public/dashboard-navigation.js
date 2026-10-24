@@ -1,3 +1,19 @@
+// Real sign-out for coordinator menus using this shared navigation script.
+document.addEventListener('click', async event => {
+    const link = event.target.closest('[data-uims-logout]');
+    if (!link) return;
+    event.preventDefault();
+    if (link.dataset.busy === 'true') return;
+    link.dataset.busy = 'true';
+    try {
+        const url = new URL('../FirebaseApi.ashx', link.href);
+        const response = await fetch(url, {method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'logout'})});
+        const result = await response.json();
+        if (!response.ok || !result.success) throw Error('Sign out failed');
+        sessionStorage.removeItem('uims.firebase.authentication');
+        location.assign(link.href);
+    } catch { window.alert('Could not log out. Please try again.'); link.dataset.busy = 'false'; }
+});
 (() => {
     'use strict';
     const sidebar = document.getElementById('dashboardSidebar');

@@ -133,7 +133,9 @@ namespace UIMS
         private static object Logout(HttpContext context)
         {
             FormsAuthentication.SignOut();
-            context.Session.Remove("Uims.FirebaseIdToken");
+            context.Session.Clear();
+            context.Session.Abandon();
+            context.Response.Cookies.Add(new HttpCookie(".UIMS.FirstLogin", "") { Expires = DateTime.UtcNow.AddDays(-1), HttpOnly = true, Secure = context.Request.IsSecureConnection, SameSite = SameSiteMode.Lax, Path = FormsAuthentication.FormsCookiePath });
             context.Response.Cookies.Add(new HttpCookie(FormsAuthentication.FormsCookieName, "")
             {
                 Expires = DateTime.UtcNow.AddDays(-1), HttpOnly = true,
@@ -173,6 +175,10 @@ namespace UIMS
 
         private static void IssueFormsCookie(HttpContext context, FirebaseLoginResult result)
         {
+            // Successful normal sign-in must invalidate any old first-login ticket.
+            context.Response.Cookies.Add(new HttpCookie(".UIMS.FirstLogin", "") {
+                Expires = DateTime.UtcNow.AddDays(-1), HttpOnly = true, Secure = context.Request.IsSecureConnection,
+                SameSite = SameSiteMode.Lax, Path = FormsAuthentication.FormsCookiePath });
             var now = DateTime.Now;
             var ticket = new FormsAuthenticationTicket(2, result.Uid, now, now.AddMinutes(30), false,
                 result.Role, FormsAuthentication.FormsCookiePath);

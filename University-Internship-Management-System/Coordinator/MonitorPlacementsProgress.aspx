@@ -82,11 +82,11 @@
                                         <path d="M9 8a3 3 0 0 1 6 0c0 2-3 2-3 5m0 3v1"/>
                                     </svg>Help &amp; contact
                                 </a>
-                                <a href="<%= ResolveUrl("~/Auth/Login.aspx") %>">
+                                <a data-uims-logout="true" href="<%= ResolveUrl("~/Auth/Login.aspx") %>">
                                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                                         <circle cx="12" cy="8" r="3"/>
                                         <path d="M5 21v-3a7 7 0 0 1 14 0v3"/>
-                                    </svg>Sign in
+                                    </svg>Log out
                                 </a>
                             </div>
                         </details>

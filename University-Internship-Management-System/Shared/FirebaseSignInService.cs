@@ -31,6 +31,7 @@ namespace University_Internship_Management_System.Shared
     {
         private static readonly HttpClient SharedClient = new HttpClient { Timeout = TimeSpan.FromSeconds(20) };
         private readonly HttpClient client;
+
         private readonly string apiKey;
         private readonly Func<string, Task<string>> verify;
         private readonly Func<string, string, Task<JObject>> profile;
@@ -162,7 +163,16 @@ namespace University_Internship_Management_System.Shared
                 throw new FirebaseLoginException("Your account is pending deletion. Contact your coordinator.", 403);
             string role = CanonicalRole(StudentManagementService.Text(value, "role"));
             if (role == null) throw new FirebaseLoginException("Your account has no supported role. Contact your coordinator.", 403);
-            return new FirebaseLoginResult { Uid = uid, Role = role, MustChangePassword = value.Value<bool?>("mustChangePassword") == true, Profile = (JObject)value.DeepClone() };
+            // Password setup and recovery use the Firebase email link. Legacy profile flags
+            // must not reopen the old first-login dialog after a successful sign-in.
+            return new FirebaseLoginResult { Uid = uid, Role = role, MustChangePassword = false, Profile = LinkOnlyProfile(value) };
+        }
+
+        private static JObject LinkOnlyProfile(JObject value)
+        {
+            var profile = (JObject)value.DeepClone();
+            profile["mustChangePassword"] = false;
+            return profile;
         }
 
         public static string CanonicalRole(string role)
@@ -287,7 +297,20 @@ namespace University_Internship_Management_System.Shared
                     throw new FirebaseLoginException("The Firebase user profile could not be read. Check database connectivity.", 503);
                 string json = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
                 if (string.IsNullOrWhiteSpace(json) || string.Equals(json.Trim(), "null", StringComparison.OrdinalIgnoreCase)) return null;
-                try { return JObject.Parse(json); }
+                try
+                {
+                    var result = JObject.Parse(json);
+                    if (CanonicalRole(StudentManagementService.Text(result, "role")) == "companySupervisor")
+                    {
+                        string companyId = StudentManagementService.Text(result, "companyId");
+                        if (string.IsNullOrWhiteSpace(companyId)) throw new FirebaseLoginException("Your company account is not linked to a company.", 403);
+                        StudentManagementService.Key(companyId);
+                        // Use the existing server gateway; no additional client database Rules are needed.
+                        var company = await new StudentFirebaseGateway().ReadAsync("companies/" + companyId).ConfigureAwait(false) as JObject;
+                        if (!CompanyManagementService.AllowsSignIn(company)) throw new FirebaseLoginException("Your company is inactive or unavailable. Contact your coordinator.", 403);
+                    }
+                    return result;
+                }
                 catch (JsonException) { throw new FirebaseLoginException("The profile at users/" + key + " is not a valid object.", 403); }
             }
         }

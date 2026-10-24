@@ -1,9 +1,11 @@
 using System;
+using System.Text;
 using System.Collections.Generic;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Threading.Tasks;
 using System.Web;
+using System.Web.Security;
 using System.Web.UI;
 using System.Web.UI.HtmlControls;
 using System.Web.UI.WebControls;
@@ -23,6 +25,8 @@ namespace University_Internship_Management_System.Coordinator
         private bool openEditor;
         private bool openDetails;
         private bool emailConfigured;
+        private string directoryJson;
+        private string directorySnapshot = "";
 
         private StudentManagementService Service
         {
@@ -47,6 +51,7 @@ namespace University_Internship_Management_System.Coordinator
             public UniversityStudentRecord Record { get; set; }
             public string Password { get; set; }
             public bool Created { get; set; }
+            public bool EmailSent { get; set; }
             public DateTimeOffset ExpiresUtc { get; set; }
         }
 
@@ -70,6 +75,16 @@ namespace University_Internship_Management_System.Coordinator
             Response.Headers["Referrer-Policy"] = "same-origin";
             try { new StudentCredentialMailer().ValidateConfiguration(); emailConfigured = true; }
             catch (Exception) { emailConfigured = false; }
+            if (Request.QueryString["directory"] == "1")
+            {
+                RegisterAsyncTask(new PageAsyncTask(async () => {
+                    try { await AuthorizeAsync(); directoryJson = JsonConvert.SerializeObject(await Service.ListAsync()); }
+                    catch (UnauthorizedAccessException) { Response.StatusCode = 403; directoryJson = "{}"; }
+                    catch (Exception) { Response.StatusCode = 503; directoryJson = "{}"; }
+                    Response.SuppressFormsAuthenticationRedirect = true;
+                }));
+                return;
+            }
             if (!IsPostBack)
                 RegisterAsyncTask(new PageAsyncTask(() => RunAsync(LoadStudentsAsync)));
         }
@@ -130,40 +145,35 @@ namespace University_Internship_Management_System.Coordinator
             }, true);
         }
 
-        protected async void generateStudentPassword_Click(object sender, EventArgs e)
-        {
-            await RunAsync(() =>
-            {
-                var candidate = Candidate();
-                if (candidate.Created) throw new StudentManagementException("This account has already been created.");
-                candidate.Password = StudentManagementService.GeneratePassword();
-                candidate.ExpiresUtc = DateTimeOffset.UtcNow.AddMinutes(15);
-                StoreCandidate(candidate);
-                studentLookupMessage.Text = "";
-                return Task.CompletedTask;
-            }, true);
-        }
-
         protected async void saveStudentButton_Click(object sender, EventArgs e)
         {
             await RunAsync(async () =>
             {
                 var candidate = Candidate();
-                var fresh = await Service.LookupAsync(candidate.Record.studentId);
-                if (JsonConvert.SerializeObject(fresh) != JsonConvert.SerializeObject(candidate.Record))
-                    throw new StudentManagementException("The university record changed. Find the student again before confirming.");
-                string uid = await AuthorizeAsync();
-                if (candidate.Created) throw new StudentManagementException("This account has already been created.");
-                await Service.CreateAsync(fresh.studentId, "", candidate.Password, uid, emailConfigured);
-                candidate.Created = true;
+                if (candidate.EmailSent) throw new StudentManagementException("Account details have already been sent.");
+                if (!candidate.Created)
+                {
+                    var fresh = await Service.LookupAsync(candidate.Record.studentId);
+                    if (JsonConvert.SerializeObject(fresh) != JsonConvert.SerializeObject(candidate.Record))
+                        throw new StudentManagementException("The university record changed. Find the student again before confirming.");
+                    await Service.CreateAsync(fresh.studentId, "", candidate.Password, await AuthorizeAsync(), false);
+                    candidate.Created = true;
+                    StoreCandidate(candidate);
+                }
+                try
+                {
+                    await new FirebaseAuthService().SendAccountSetupEmailAsync(candidate.Record.email);
+                }
+                catch (StudentManagementException) { throw; }
+                catch (Exception)
+                {
+                    throw new StudentManagementException("Email delivery was not confirmed. The account is saved. Use Retry Send; a retry may send a duplicate.");
+                }
+                candidate.EmailSent = true;
+                candidate.Password = null;
                 StoreCandidate(candidate);
                 await LoadStudentsAsync();
-                string message = emailConfigured
-                    ? "Student account created. The email provider accepted the welcome message."
-                    : "Student account saved. No email was sent. Copy the temporary password below if needed; the student must change it on first sign-in.";
-                studentListMessage.Text = message;
-                studentLookupMessage.Text = message;
-                openEditor = true;
+                studentLookupMessage.Text = HttpUtility.HtmlEncode("Student account saved. Firebase accepted a password setup email for " + candidate.Record.email + ". Check inbox and spam, then sign in using this same email address.");
             }, true);
         }
 
@@ -180,6 +190,7 @@ namespace University_Internship_Management_System.Coordinator
         private async Task LoadStudentsAsync()
         {
             var students = await Service.ListAsync();
+            directorySnapshot = JsonConvert.SerializeObject(students);
             studentsGrid.DataSource = students;
             studentsGrid.DataBind();
             if (studentsGrid.HeaderRow != null) studentsGrid.HeaderRow.TableSection = TableRowSection.TableHeader;
@@ -236,25 +247,31 @@ namespace University_Internship_Management_System.Coordinator
 
         protected void DeleteStudent_Click(object sender, EventArgs e)
         {
-            // The posted UID is untrusted: authorization and the fresh student profile are checked before deletion.
             string uid = studentDeleteUid.Value;
             RegisterAsyncTask(new PageAsyncTask(() => RunAsync(async () =>
             {
-                if (string.IsNullOrWhiteSpace(uid))
-                    throw new StudentManagementException("Select a student from the refreshed list.");
+                if (string.IsNullOrWhiteSpace(uid)) throw new StudentManagementException("Select a student from the directory.");
                 await Service.DeleteAsync(uid, await AuthorizeAsync());
                 Session.Remove(CandidateKey);
                 studentDetailsPanel.Visible = false;
                 studentDetailsContent.Text = "";
                 studentsGrid.SelectedIndex = -1;
                 await LoadStudentsAsync();
-                studentListMessage.Text = "Student account and linked internship history deleted. Official university records were retained; recreating this student starts fresh.";
             })));
         }
+
+        protected override void Render(HtmlTextWriter writer)
+        {
+            if (Request.QueryString["directory"] == "1")
+            { Response.ContentType = "application/json"; writer.Write(directoryJson ?? "{}"); return; }
+            base.Render(writer);
+        }
+
         private StudentCandidate Candidate()
         {
             string json = Session[CandidateKey] as string;
-            var candidate = string.IsNullOrEmpty(json) ? null : JsonConvert.DeserializeObject<StudentCandidate>(json);
+            if (json != null && json.StartsWith("{")) { Session.Remove(CandidateKey); json = null; }
+            var candidate = string.IsNullOrEmpty(json) ? null : JsonConvert.DeserializeObject<StudentCandidate>(Encoding.UTF8.GetString(MachineKey.Unprotect(Convert.FromBase64String(json), CandidateKey, Session.SessionID)));
             if (candidate == null || candidate.Record == null || candidate.ExpiresUtc <= DateTimeOffset.UtcNow ||
                 candidate.Record.studentId != studentUniversityId.Value.Trim())
             {
@@ -266,14 +283,12 @@ namespace University_Internship_Management_System.Coordinator
 
         private void StoreCandidate(StudentCandidate candidate)
         {
-            Session[CandidateKey] = JsonConvert.SerializeObject(candidate);
+            Session[CandidateKey] = Convert.ToBase64String(MachineKey.Protect(Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(candidate)), CandidateKey, Session.SessionID));
         }
 
         protected override void OnPreRenderComplete(EventArgs e)
         {
             // A password must never be persisted in client-readable ViewState.
-            studentTemporaryPassword.EnableViewState = false;
-            studentTemporaryPassword.Value = "";
             studentName.Value = "";
             studentEmail.Value = "";
             studentDepartment.Value = "";
@@ -286,13 +301,12 @@ namespace University_Internship_Management_System.Coordinator
                     studentName.Value = candidate.Record.fullName;
                     studentEmail.Value = candidate.Record.email;
                     studentDepartment.Value = StudentManagementService.DisplayName(candidate.Record.majorId);
-                    studentTemporaryPassword.Value = candidate.Password ?? "";
                 }
             }
             findStudentButton.Enabled = authorized;
-            generateStudentPassword.Enabled = authorized && candidate != null && !candidate.Created;
-            saveStudentButton.Enabled = authorized && candidate != null && !candidate.Created && !string.IsNullOrEmpty(candidate.Password);
-            emailDeliveryNotice.Visible = authorized && !emailConfigured;
+            saveStudentButton.Enabled = authorized && candidate != null && !candidate.EmailSent && !string.IsNullOrEmpty(candidate.Password);
+            saveStudentButton.Text = candidate != null && candidate.Created && !candidate.EmailSent ? "Retry Send" : "Confirm & Send";
+            emailDeliveryNotice.Visible = false;
             if (!authorized)
             {
                 studentsGrid.Visible = false;
@@ -303,8 +317,9 @@ namespace University_Internship_Management_System.Coordinator
             studentCsrf.Value = Session[CsrfKey] as string ?? "";
             studentPageState.Value = JsonConvert.SerializeObject(new
             {
-                canManage = authorized, openEditor, openDetails,
-                canGenerate = authorized && candidate != null, emailConfigured
+                canManage = authorized, openEditor, openDetails, directorySnapshot,
+                unsentDetails = candidate != null && candidate.Created && !candidate.EmailSent,
+                emailConfigured
             });
             base.OnPreRenderComplete(e);
         }

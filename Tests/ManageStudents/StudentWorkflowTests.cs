@@ -29,7 +29,7 @@ internal static class StudentWorkflowTests
         string uid = await service.CreateAsync("9000001", "", password, "coordinator", false);
         Check(auth.Accounts.ContainsKey(uid) && !auth.Accounts[uid].Disabled, "Confirm creates and enables Authentication login");
         var profile = await db.ReadAsync("users/"+uid);
-        Check((string)profile["studentId"]=="9000001" && (string)profile["accountSetupStatus"]=="complete" && (bool)profile["mustChangePassword"], "Confirm saves matching complete platform profile");
+        Check((string)profile["studentId"]=="9000001" && (string)profile["accountSetupStatus"]=="complete" && !(bool)profile["mustChangePassword"], "Confirm saves matching complete platform profile");
         Check((await service.ListAsync()).Count==1, "list refresh includes created student");
         int creates=auth.Creates;
         try { await service.CreateAsync("9000001","",password,"coordinator",false); throw new Exception("duplicate accepted"); } catch(StudentManagementException) { Check(auth.Creates==creates,"duplicate account rejected without another Authentication create"); }

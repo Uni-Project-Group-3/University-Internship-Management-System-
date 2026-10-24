@@ -58,6 +58,7 @@
       <Private>True</Private>
     </Reference>
     <Reference Include="Microsoft.CSharp" />
+    <Reference Include="System.Security" />
     <Reference Include="System.Collections.Immutable, Version=8.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
       <HintPath>..\packages\System.Collections.Immutable.8.0.0\lib\net462\System.Collections.Immutable.dll</HintPath>
     </Reference>
@@ -381,8 +382,12 @@
       <DependentUpon>Default.aspx</DependentUpon>
     </Compile>
     <Compile Include="Services\FinalEvaluation\LiveFirebaseIntegration.cs" />
-    <Compile Include="Shared\LiveDashboardPage.cs" />
-    <Compile Include="Shared\AuthenticatedFirebaseClient.cs" />
+    <Compile Include="Shared\LiveDashboardPage.cs">
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="Shared\AuthenticatedFirebaseClient.cs">
+      <SubType>Component</SubType>
+    </Compile>
     <Compile Include="Global.asax.cs">
       <DependentUpon>Global.asax</DependentUpon>
     </Compile>
@@ -921,5 +926,25 @@
       <SpecificVersion>True</SpecificVersion>
       <Private>True</Private>
     </Reference>
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="Assets\public\images\team-brand.png" />
+    <Content Include="Public\team.aspx" />
+    <Content Include="Assets\public\team.css" />
+    <Content Include="Js_project\Public\team.js" />
+    <Compile Include="Public\team.aspx.cs">
+      <DependentUpon>team.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="Public\team.aspx.designer.cs">
+      <DependentUpon>team.aspx</DependentUpon>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="Assets\public\images\team\yasmeen-talafha.png" />
+    <Content Include="Assets\public\images\team\deyaa-alwardat.png" />
+    <Content Include="Assets\public\images\team\roaa-basil-ajlouni.png" />
+    <Content Include="Assets\public\images\team\anas-ghawanmeh.png" />
+    <Content Include="Assets\public\images\team\mohammad-mustafa.png" />
   </ItemGroup>
 </Project>
