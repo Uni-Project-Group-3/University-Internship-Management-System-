@@ -64,6 +64,18 @@ internal static partial class Program
     private static JObject FApprove(string revision) { var input = FInput("admin-final", revision); input["finalGrade"] = 91.5m; input["fileName"] = "completion-notice.pdf"; input["feedback"] = "Private admin notes"; return input; }
     private static async Task RunFinalReportTests()
     {
+        await Test("final report resolves missing placement academic field from existing student assignment without writes", async () => {
+            var db = FinalSeed(); db.Values["placements/P"].Remove("academicSupervisorId");
+            var result = await FinalService(db).ReadAsync("company", "companySupervisor", "P");
+            Assert((string)result["academicSupervisorId"] == "academic" && db.Writes == 0);
+        });
+        await Test("final report missing or conflicting current academic assignments remain blocked", async () => {
+            var db = FinalSeed(); db.Values["placements/P"].Remove("academicSupervisorId"); db.Values["users/student"].Remove("academicSupervisorId");
+            await Reject<FirebaseException>(() => FinalService(db).ReadAsync("company", "companySupervisor", "P"));
+            db.Values["users/student"]["academicSupervisorId"] = "academic";
+            db.Seed("supervisorAssignments/conflict", new JObject { ["studentId"] = "ST", ["academicSupervisorId"] = "otherAcademic", ["isActive"] = true });
+            await Reject<FirebaseException>(() => FinalService(db).ReadAsync("company", "companySupervisor", "P")); Assert(db.Writes == 0);
+        });
         await Test("final list reuses request reads but observes changes on subsequent requests", async () => {
             var db = FinalSeed(11); var placement=(JObject)await db.ReadAsync("placements/P");db.Seed("placements/P2",placement);db.ReadCounts.Clear();
             var service=FinalService(db);await service.ListAsync("company","companySupervisor");

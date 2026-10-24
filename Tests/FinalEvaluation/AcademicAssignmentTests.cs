@@ -81,6 +81,17 @@ internal static partial class Program
             Assert(AcademicAssignmentService.AssignedStudentIds("prof", users, groups, current, legacy).Length == 0);
             Assert(AcademicAssignmentService.AssignedStudentIds("admin", users, groups, current, new JObject()).Length == 0);
         });
+        await Test("academic monitor includes placement assignments without groups and rejects conflicting or wrong UID placements", async () => {
+            var db = await GroupFixture(); var users = (JObject)db.Root["users"];
+            var placements = new JObject { ["P1"] = JObject.FromObject(new { studentId = "S1", studentUid = "S1", academicSupervisorId = "prof", status = "confirmed" }) };
+            Assert(AcademicAssignmentService.AssignedStudentIds("prof", users, new JObject(), new JObject(), new JObject(), placements).SequenceEqual(new[] { "S1" }));
+            placements["P1"]["studentUid"] = "other-account";
+            Assert(AcademicAssignmentService.AssignedStudentIds("prof", users, new JObject(), new JObject(), new JObject(), placements).Length == 0);
+            placements["P1"]["studentUid"] = "S1";
+            var current = new JObject { ["A"] = JObject.FromObject(new { studentId = "S1", academicSupervisorId = "OTHER", isActive = true }) };
+            Assert(AcademicAssignmentService.AssignedStudentIds("prof", users, new JObject(), current, new JObject(), placements).Length == 0);
+            Assert(AcademicAssignmentService.AssignedStudentIds("admin", users, new JObject(), new JObject(), new JObject(), placements).Length == 0);
+        });
         await Test("assignment reservations prevent competing writes and a non-coordinator cannot save", async () => {
             var db = await GroupFixture(); var service = new AcademicAssignmentService(db, uid => Task.FromResult(true));
             await db.WriteAsync("academicAssignmentOperations/current", new { requestId = "another", actorUid = "admin", digest = "pending" });

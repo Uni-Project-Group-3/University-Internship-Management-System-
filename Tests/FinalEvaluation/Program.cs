@@ -439,6 +439,10 @@ internal static partial class Program
         var trainees = await OfflineTaskService(db, company, settings).LoadTraineesAsync(CancellationToken.None);
         Assert(trainees["trainees"].Count() == 1 && (int)trainees["statistics"]["total"] == 1 && (int)trainees["statistics"]["assignedTasks"] == 1);
         Assert((string)trainees["trainees"][0]["placementId"] == "place-1" && (int)trainees["trainees"][0]["completedTasks"] == 1);
+        var progress = await UIMS.Tasks.TasksApiHandler.DispatchAsync(OfflineTaskService(db, company, settings), "GET", "traineeProgress", new JObject { ["placementId"] = "place-1" }, CancellationToken.None);
+        Assert(progress["tasks"].Count() == 1 && progress["approvedTrainingMinutes"].Type == JTokenType.Null && ((string)progress["eligibilityBlocker"]).Length > 0);
+        await Reject<UIMS.Services.FirebaseException>(() => OfflineTaskService(db, company, settings).LoadTraineeProgressAsync("other-company", CancellationToken.None));
+        await Reject<UIMS.Services.FirebaseException>(() => OfflineTaskService(db, student, settings).LoadTraineeProgressAsync("place-1", CancellationToken.None));
         var eligible = await OfflineTaskService(db, company, settings).LoadAsync("companySupervisor", CancellationToken.None);
         Assert(eligible["students"].Count() == 1 && (string)eligible["students"][0]["placementId"] == "place-1");
         await Reject<UIMS.Services.FirebaseException>(() => OfflineTaskService(db, student, settings).LoadTraineesAsync(CancellationToken.None));

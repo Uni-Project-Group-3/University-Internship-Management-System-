@@ -21,7 +21,7 @@
     </svg>
     <header class="home-header">
     <nav class="home-navbar" aria-label="Public navigation">
-        <a class="home-navbar__brand" href="~/Default.aspx" runat="server">
+        <a class="home-navbar__brand" href="~/Public/home.aspx" runat="server">
             <img class="home-navbar__logo" src="~/Assets/shared/images/just-logo.png" runat="server" width="40" height="40" alt="Official JUST emblem" />
             <span><strong>UIMS</strong><span class="home-navbar__subtitle">JUST Internships</span></span>
         </a>
@@ -29,7 +29,7 @@
             <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16" /></svg>
         </button>
         <div id="publicNavigationLinks" class="home-navbar__links">
-            <a id="HomeLink" ClientIDMode="Static" runat="server" class="home-navbar__link" href="~/Default.aspx">Home</a>
+            <a id="HomeLink" ClientIDMode="Static" runat="server" class="home-navbar__link" href="~/Public/home.aspx">Home</a>
             <a id="AboutLink" ClientIDMode="Static" runat="server" class="home-navbar__link" href="~/About.aspx">About Us</a>
             <a id="ContactLink" ClientIDMode="Static" runat="server" class="home-navbar__link" href="~/Contact.aspx">Contact Us</a>
             <a id="LoginLink" ClientIDMode="Static" runat="server" aria-current="page" class="home-navbar__link home-navbar__sign-in is-active" href="~/Auth/Login.aspx">Sign In</a>
