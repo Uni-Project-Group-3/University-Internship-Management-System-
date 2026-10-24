@@ -57,11 +57,11 @@ internal static partial class Program
         db.Seed("uimsAttendance/attendance/AT", rows); return db;
     }
     private static FinalReportWorkflow FinalService(FinalDb db) { return new FinalReportWorkflow(db, () => FinalNow); }
-    private static JObject FInput(string id, string revision = null) { return new JObject { ["requestId"] = id, ["revisionId"] = revision ?? "", ["expectedDraftVersion"] = "save" }; }
+    private static JObject FInput(string id, string revision = null) { return new JObject { ["academicGrade"] = 87m, ["requestId"] = id, ["revisionId"] = revision ?? "", ["expectedDraftVersion"] = "save" }; }
     private static JObject FDraft(string id = "save") { return new JObject { ["requestId"] = id, ["percentage"] = 88, ["comments"] = "Company report <script>unsafe()</script>", ["fileName"] = "company-final.pdf" }; }
     private static async Task<string> Submitted(FinalReportWorkflow w) { await w.ActAsync("company", "companySupervisor", "P", "save", FDraft()); var v = await w.ActAsync("company", "companySupervisor", "P", "submit", FInput("submit")); return (string)v["record"]["currentRevisionId"]; }
     private static async Task<string> AcademicallyApproved(FinalReportWorkflow w) { string revision = await Submitted(w); var input = FInput("academic-approve", revision); input["feedback"] = "Private academic review"; await w.ActAsync("academic", "academicSupervisor", "P", "academicApprove", input); return revision; }
-    private static JObject FApprove(string revision) { var input = FInput("admin-final", revision); input["finalGrade"] = 91.5m; input["fileName"] = "completion-notice.pdf"; input["feedback"] = "Private admin notes"; return input; }
+    private static JObject FApprove(string revision) { var input = FInput("admin-final", revision); input["finalGrade"] = 91.5m; input["feedback"] = "Private admin notes"; return input; }
     private static async Task RunFinalReportTests()
     {
         await Test("approved attendance calendar preserves weekends and exact Amman 08 to 18 shifts", () => {
@@ -169,7 +169,7 @@ internal static partial class Program
             await w.ActAsync("academic", "academicSupervisor", "P", "academicApprove", FInput("academic-weekly", rev)); await w.ActAsync("admin", "admin", "P", "finalApprove", FApprove(rev)); Assert((bool)(await w.ReadAsync("student", "student", "P"))["completed"]);
         });
         await Test("final reports reject 17,999 minutes, accept exactly 18,000 and preserve minute precision", async () => {
-            foreach (var minutes in new long[] { 17999, 18000, 18001 }) { var db = FinalSeed(minutes); var w = FinalService(db); await w.ActAsync("company", "companySupervisor", "P", "save", FDraft()); if (minutes < 18000) await Reject<FirebaseException>(() => w.ActAsync("company", "companySupervisor", "P", "submit", FInput("submit"))); else { var v = await w.ActAsync("company", "companySupervisor", "P", "submit", FInput("submit")); Assert((long)v["record"]["approvedTrainingMinutes"] == minutes); } }
+            foreach (var minutes in new long[] { 0, 2, 17999, 18000, 18001 }) { var db = FinalSeed(minutes); var w = FinalService(db); await w.ActAsync("company", "companySupervisor", "P", "save", FDraft()); { var v = await w.ActAsync("company", "companySupervisor", "P", "submit", FInput("submit")); Assert((long)v["record"]["approvedTrainingMinutes"] == minutes); } }
         });
         await Test("approved attendance excludes pending, rejected, incomplete, wrong assignment, wrong company and duplicate date keys", () => {
             var db = FinalSeed(18000); var rows = db.Values["uimsAttendance/attendance/AT"]; var first = rows.Properties().First(); var copy = (JObject)first.Value.DeepClone(); rows["duplicate"] = copy;
@@ -186,16 +186,62 @@ internal static partial class Program
             var db = FinalSeed(); var w = FinalService(db); string rev = await Submitted(w);
             for (int i = 0; i < 3; i++) { var request = FInput("return-" + i, rev); await Reject<FirebaseException>(() => w.ActAsync("academic", "academicSupervisor", "P", "companyRevision", request)); request["feedback"] = "Revise report " + i; await w.ActAsync("academic", "academicSupervisor", "P", "companyRevision", request); await Reject<FirebaseException>(() => w.ActAsync("company", "companySupervisor", "P", "submit", FInput("resubmit-" + i))); var draft = FDraft("save-" + i); draft["companyResponse"] = "Addressed feedback " + i; draft["expectedDraftVersion"] = "return-return-" + i; await w.ActAsync("company", "companySupervisor", "P", "save", draft); var v = await w.ActAsync("company", "companySupervisor", "P", "submit", new JObject { ["requestId"] = "resubmit-" + i, ["expectedDraftVersion"] = "save-" + i }); rev = (string)v["record"]["currentRevisionId"]; Assert(((JObject)v["record"]["revisions"]).Count == i + 2); }
         });
-        await Test("admin queue requires academic approval; admin corrections go through academics and company changes need fresh approval", async () => {
-            var db = FinalSeed(); var w = FinalService(db); string rev = await Submitted(w); Assert(((JArray)(await w.ListAsync("admin", "admin"))["items"]).Count == 0);
-            await Reject<FirebaseException>(() => w.ReadAsync("admin", "admin", "P")); await w.ActAsync("academic", "academicSupervisor", "P", "academicApprove", FInput("a", rev));
-            var correction = FInput("correction", rev); correction["feedback"] = "Academic clarification needed"; await w.ActAsync("admin", "admin", "P", "adminCorrection", correction);
-            await Reject<FirebaseException>(() => w.ActAsync("company", "companySupervisor", "P", "save", FDraft("bad")));
-            var approved = FInput("a2", rev); approved["feedback"] = "Clarified"; await w.ActAsync("academic", "academicSupervisor", "P", "academicApprove", approved);
-            correction["requestId"] = "correction2"; await w.ActAsync("admin", "admin", "P", "adminCorrection", correction);
-            var toCompany = FInput("back-company", rev); toCompany["feedback"] = "Company changes needed"; await w.ActAsync("academic", "academicSupervisor", "P", "companyRevision", toCompany);
-            var draft = FDraft("save-new"); draft["companyResponse"] = "Changed"; draft["expectedDraftVersion"] = "return-back-company"; await w.ActAsync("company", "companySupervisor", "P", "save", draft); var newView = await w.ActAsync("company", "companySupervisor", "P", "submit", new JObject { ["requestId"] = "submit-new", ["expectedDraftVersion"] = "save-new" });
-            await Reject<FirebaseException>(() => w.ActAsync("academic", "academicSupervisor", "P", "academicApprove", FInput("stale", rev))); Assert((string)newView["record"]["status"] == "pendingAcademicReview");
+        await Test("admin return goes directly to company and requires a new revision and fresh academic approval", async () => {
+            var db=FinalSeed();var w=FinalService(db);string rev=await AcademicallyApproved(w);
+            var correction=FInput("correction",rev);await Reject<FirebaseException>(()=>w.ActAsync("admin","admin","P","adminCorrection",correction));
+            correction["feedback"]="Company corrections required";var returned=await w.ActAsync("admin","admin","P","adminCorrection",correction);
+            Assert((string)returned["status"]=="companyRevisionRequested" && returned["record"]["academicApprovalId"]==null);
+            Assert((string)(await w.ReadAsync("company","companySupervisor","P"))["record"]["adminReviews"]["correction"]["feedback"]=="Company corrections required");
+            await Reject<FirebaseException>(()=>w.ActAsync("academic","academicSupervisor","P","academicApprove",FInput("skip",rev)));
+            await Reject<FirebaseException>(()=>w.ActAsync("admin","admin","P","finalApprove",FApprove(rev)));
+            var draft=FDraft("save-new");draft["companyResponse"]="Corrected company report";draft["expectedDraftVersion"]="return-correction";
+            await w.ActAsync("company","companySupervisor","P","save",draft);
+            var submitted=await w.ActAsync("company","companySupervisor","P","submit",new JObject{["requestId"]="submit-new",["expectedDraftVersion"]="save-new"});
+            string current=(string)submitted["record"]["currentRevisionId"];Assert(current!=rev);
+            await Reject<FirebaseException>(()=>w.ActAsync("academic","academicSupervisor","P","academicApprove",FInput("stale",rev)));
+            await w.ActAsync("academic","academicSupervisor","P","academicApprove",FInput("fresh",current));
+            await w.ActAsync("admin","admin","P","finalApprove",FApprove(current));Assert((bool)(await w.ReadAsync("student","student","P"))["completed"]);
+        });
+        await Test("academic approval requires a valid independent grade and preserves it on the exact revision", async()=>{
+            var db=FinalSeed();var w=FinalService(db);string rev=await Submitted(w);var input=FInput("academic-grade",rev);input.Remove("academicGrade");
+            await Reject<FirebaseException>(()=>w.ActAsync("academic","academicSupervisor","P","academicApprove",input));input["academicGrade"]=101;
+            await Reject<FirebaseException>(()=>w.ActAsync("academic","academicSupervisor","P","academicApprove",input));input["academicGrade"]=84.5m;
+            var result=await w.ActAsync("academic","academicSupervisor","P","academicApprove",input);Assert((decimal)result["record"]["academicReviews"]["academic-grade"]["academicGrade"]==84.5m);
+        });
+        await Test("completion certificate is separate, authorized, unavailable early and generated as a real PDF",async()=>{
+            var db=FinalSeed();var profile=(JObject)await db.ReadAsync("users/student");profile["fullName"]="طالب اختبار معزول";db.Seed("users/student",profile);var w=FinalService(db);string rev=await AcademicallyApproved(w);
+            await Reject<FirebaseException>(()=>w.DownloadCertificateAsync("student","student","P"));
+            await w.ActAsync("admin","admin","P","finalApprove",FApprove(rev));var file=await w.DownloadCertificateAsync("student","student","P");
+            Assert(file.FileName=="training-certificate-ST.pdf"&&file.ContentType=="application/pdf");
+            using(var memory=new System.IO.MemoryStream(file.Content))using(var pdf=PdfSharp.Pdf.IO.PdfReader.Open(memory,PdfSharp.Pdf.IO.PdfDocumentOpenMode.Import))Assert(pdf.PageCount==1);
+            var output=Environment.GetEnvironmentVariable("UIMS_CERTIFICATE_PREVIEW");if(!string.IsNullOrWhiteSpace(output))System.IO.File.WriteAllBytes(output,file.Content);
+            await Reject<FirebaseException>(()=>w.DownloadCertificateAsync("otherAcademic","academicSupervisor","P"));
+            var student=await w.ReadAsync("student","student","P");Assert((string)student["outcome"]["certificate"]["fileName"]==file.FileName);
+        });
+        await Test("certificate email waits for completion, is admin-only and never repeats an accepted send",async()=>{
+            var db=FinalSeed();var profile=(JObject)await db.ReadAsync("users/student");profile["email"]="student@university.edu";db.Seed("users/student",profile);var w=FinalService(db);int sends=0;
+            w.CertificateSender=(email,bytes,name)=>{sends++;Assert(email=="student@university.edu"&&bytes.Length>100&&name.EndsWith(".pdf"));return Task.CompletedTask;};
+            await Reject<FirebaseException>(()=>w.SendCertificateAsync("admin","admin","P"));string rev=await AcademicallyApproved(w);await w.ActAsync("admin","admin","P","finalApprove",FApprove(rev));
+            await Reject<FirebaseException>(()=>w.SendCertificateAsync("student","student","P"));
+            Assert((string)(await w.SendCertificateAsync("admin","admin","P"))["status"]=="sent");await w.SendCertificateAsync("admin","admin","P");Assert(sends==1);
+            Assert(!(await w.ReadAsync("student","student","P")).ToString().Contains("student@university.edu"));
+        });
+        await Test("certificate setup errors identify missing server settings and invalid saved recipient separately",async()=>{
+            var db=FinalSeed();var profile=(JObject)await db.ReadAsync("users/student");profile["email"]="student@university.edu";db.Seed("users/student",profile);var w=FinalService(db);w.CertificateSettings=key=>null;
+            string rev=await AcademicallyApproved(w);await w.ActAsync("admin","admin","P","finalApprove",FApprove(rev));
+            var blocked=await w.SendCertificateAsync("admin","admin","P");Assert((string)blocked["status"]=="blocked"&&((string)blocked["message"]).Contains("UIMS_SMTP_HOST"));
+            profile["email"]="student@example.invalid";db.Seed("users/student",profile);blocked=await w.SendCertificateAsync("admin","admin","P");Assert(((string)blocked["message"]).Contains("Manage Students"));
+        });
+        await Test("definite SMTP rejection can be retried after correction without treating it as an uncertain send",async()=>{
+            var db=FinalSeed();var profile=(JObject)await db.ReadAsync("users/student");profile["email"]="student@university.edu";db.Seed("users/student",profile);var w=FinalService(db);
+            w.CertificateSender=(email,bytes,name)=>{throw new System.Net.Mail.SmtpException((System.Net.Mail.SmtpStatusCode)535,"PRIVATE_SMTP_DETAILS");};string rev=await AcademicallyApproved(w);await w.ActAsync("admin","admin","P","finalApprove",FApprove(rev));
+            var rejected=await w.SendCertificateAsync("admin","admin","P");Assert((string)rejected["status"]=="rejected"&&!rejected.ToString().Contains("PRIVATE_SMTP_DETAILS"));
+            w.CertificateSender=(email,bytes,name)=>Task.CompletedTask;Assert((string)(await w.SendCertificateAsync("admin","admin","P"))["status"]=="sent");
+        });
+        await Test("uncertain SMTP delivery is persisted without automatically sending twice",async()=>{
+            var db=FinalSeed();var profile=(JObject)await db.ReadAsync("users/student");profile["email"]="student@university.edu";db.Seed("users/student",profile);var w=FinalService(db);int sends=0;
+            w.CertificateSender=(email,bytes,name)=>{sends++;throw new System.IO.IOException("uncertain");};string rev=await AcademicallyApproved(w);await w.ActAsync("admin","admin","P","finalApprove",FApprove(rev));
+            Assert((string)(await w.SendCertificateAsync("admin","admin","P"))["status"]=="deliveryUnconfirmed");await w.SendCertificateAsync("admin","admin","P");Assert(sends==1);
         });
         await Test("duplicate request IDs reconcile lost responses and different content fails without duplicate history", async () => {
             var db = FinalSeed(); var w = FinalService(db); db.LoseResponseAt = "finalEvaluationWorkflows/P"; await w.ActAsync("company", "companySupervisor", "P", "save", FDraft()); await w.ActAsync("company", "companySupervisor", "P", "save", FDraft()); Assert(((JObject)db.Values["finalEvaluationWorkflows/P"]["audit"]).Count == 1); var altered = FDraft(); altered["comments"] = "changed"; await Reject<FirebaseException>(() => w.ActAsync("company", "companySupervisor", "P", "save", altered));
@@ -211,9 +257,11 @@ internal static partial class Program
             await Reject<System.IO.IOException>(() => w.ActAsync("admin", "admin", "P", "finalApprove", FApprove(rev)));
             Assert(!(bool)(await w.ReadAsync("student", "student", "P"))["completed"]); await w.ActAsync("admin", "admin", "P", "finalApprove", FApprove(rev)); Assert((bool)(await w.ReadAsync("student", "student", "P"))["completed"]); Assert(db.Values.Keys.Count(k => k.StartsWith("finalTrainingOutcomes/")) == 1);
         });
-        await Test("hours and relationship changes block academic/final approvals; no fabricated attendance bindings", async () => {
-            var db = FinalSeed(); var w = FinalService(db); string rev = await Submitted(w); db.Seed("uimsAttendance/attendance/AT", new JObject()); await Reject<FirebaseException>(() => w.ActAsync("academic", "academicSupervisor", "P", "academicApprove", FInput("a", rev)));
-            db = FinalSeed(); w = FinalService(db); rev = await AcademicallyApproved(w); db.Seed("uimsAttendance/attendance/AT", new JObject()); await Reject<FirebaseException>(() => w.ActAsync("admin", "admin", "P", "finalApprove", FApprove(rev)));
+        await Test("actual hours are recorded without a completion threshold; relationship and attendance bindings remain required", async () => {
+            var db = FinalSeed(); var w = FinalService(db); string rev = await Submitted(w); db.Seed("uimsAttendance/attendance/AT", new JObject());
+            var academicView = await w.ActAsync("academic", "academicSupervisor", "P", "academicApprove", FInput("a", rev));
+            Assert((string)academicView["status"] == "pendingAdminReview" && (long)academicView["record"]["academicReviews"]["a"]["approvedTrainingMinutes"] == 0);
+            foreach (long actual in new long[] {0, 2, 17999, 18000, 18001}) { db = FinalSeed(actual); w = FinalService(db); rev = await AcademicallyApproved(w); var result = await w.ActAsync("admin", "admin", "P", "finalApprove", FApprove(rev)); Assert((string)result["status"] == "completed" && (long)result["record"]["finalization"]["approvedTrainingMinutes"] == actual); Assert((bool)(await w.ReadAsync("student", "student", "P"))["completed"]); }
             db = FinalSeed(); w = FinalService(db); rev = await AcademicallyApproved(w); db.Values["users/student"]["academicSupervisorId"] = "otherAcademic"; await Reject<FirebaseException>(() => w.ActAsync("admin", "admin", "P", "finalApprove", FApprove(rev)));
             db = FinalSeed(); db.Values["placements/P"].Remove("trainingAssignmentId"); db.Values["uimsAttendance/trainingAssignments/AT"].Remove("placementId"); var blocked = await FinalService(db).ReadAsync("company", "companySupervisor", "P"); Assert(!(bool)blocked["eligible"] && ((string)blocked["eligibilityBlocker"]).Contains("Missing"));
         });

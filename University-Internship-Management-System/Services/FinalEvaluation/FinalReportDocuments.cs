@@ -10,6 +10,95 @@ namespace UIMS.Services
 {
     public sealed partial class FinalReportWorkflow
     {
+        // Injectable delivery boundary for isolated tests. SMTP is used only by the live API.
+        public Func<string, byte[], string, Task> CertificateSender { private get; set; }
+        public Func<string, string> CertificateSettings { private get; set; }
+        private string MailSetting(string name)
+        {
+            if (CertificateSettings != null) return CertificateSettings(name);
+            // Visual Studio/IIS Express can retain the environment from before Windows user settings were saved.
+            string value = Environment.GetEnvironmentVariable(name);
+            return string.IsNullOrWhiteSpace(value) ? Environment.GetEnvironmentVariable(name, EnvironmentVariableTarget.User) : value;
+        }
+        public async Task<UIMS.Tasks.TaskFileDownload> DownloadCertificateAsync(string uid, string role, string placementId)
+        {
+            var access = await Authorize(uid, role, Key(placementId));
+            var view = await ReadAsync(uid, role, placementId);
+            if (T(view, "status") != "completed") throw new FirebaseException(409, "A completion certificate is available only after final administration approval and completed finalization.");
+            var record = O(await db.ReadAsync(Path(placementId))); var outcome = O(record["outcome"]);
+            var certificate = O(outcome["certificate"]);
+            if (!certificate.HasValues) throw new FirebaseException(404, "This historical completion does not contain an issued certificate.");
+            var doc = new Document(); doc.Info.Title = "Field Training Completion Certificate";
+            doc.Info.Author = "JUST Internship Management System";
+            doc.Styles[StyleNames.Normal].Font.Name = "Segoe UI"; doc.Styles[StyleNames.Normal].Font.Size = 12;
+            var section = doc.AddSection(); section.PageSetup.PageFormat = PageFormat.A4;
+            section.PageSetup.TopMargin = Unit.FromCentimeter(2.5); section.PageSetup.LeftMargin = section.PageSetup.RightMargin = Unit.FromCentimeter(2.3);
+            section.PageSetup.BottomMargin = Unit.FromCentimeter(2.5);
+            var logo = System.Web.Hosting.HostingEnvironment.MapPath("~/Assets/shared/images/JUST-Logo-01.png") ?? System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory,"Assets/shared/images/JUST-Logo-01.png");
+            if(File.Exists(logo)){var image=section.AddImage("base64:"+Convert.ToBase64String(File.ReadAllBytes(logo)));image.Width=Unit.FromCentimeter(2);image.LockAspectRatio=true;}
+            void Line(string text, int size = 12, bool bold = false) {
+                // The existing shaper uses a fixed 10.5pt font; scale its canvas to match the requested PDF font size.
+                if(text.Any(c=>c>='\u0590'&&c<='\u109f'||c>='\ufb1d'&&c<='\ufeff')){var image=section.AddImage("base64:"+Convert.ToBase64String(UIMS.Tasks.WeeklyReportService.ShapeReportText(text,.45+16*10.5/size)));image.Width=Unit.FromCentimeter(16);image.LockAspectRatio=true;return;}
+                var paragraph=section.AddParagraph(text);paragraph.Format.Font.Size=size;paragraph.Format.Font.Bold=bold;paragraph.Format.Font.Color=Color.Parse("#1F3D78");paragraph.Format.SpaceAfter=Unit.FromPoint(18);
+            }
+            Line("JORDAN UNIVERSITY OF SCIENCE AND TECHNOLOGY",13,true);
+            Line("FIELD TRAINING",26,true);Line("Completion Certificate",24,true);
+            Line("This certifies that");Line(T(certificate,"studentName").Length>0?T(certificate,"studentName"):string.IsNullOrWhiteSpace(access.StudentName)?access.Student:access.StudentName,21,true);
+            Line("Student ID: "+access.Student);
+            Line("has successfully completed the approved field training requirements.");
+            if(T(certificate,"companyName").Length>0)Line("Training organization: "+T(certificate,"companyName"));
+            Line("Approved training hours: "+((decimal)record["finalization"]["approvedTrainingMinutes"]/60m).ToString("0.00",System.Globalization.CultureInfo.InvariantCulture));
+            Line("Final approved grade: "+T(outcome,"finalGrade")+" / 100");
+            DateTimeOffset date; if(DateTimeOffset.TryParse(T(outcome,"approvedAt"),out date))Line("Issued on: "+date.ToString("yyyy-MM-dd"));
+            Line("Approved through academic review and final administration approval.",10);
+            var footer=section.Footers.Primary.AddParagraph("UIMS verification reference: "+placementId+" / "+T(outcome,"requestId"));footer.Format.Font.Size=8;
+            var renderer=new PdfDocumentRenderer{Document=doc};renderer.RenderDocument();byte[] bytes;
+            using(var stream=new MemoryStream()){renderer.PdfDocument.Save(stream,false);bytes=stream.ToArray();}
+            University_Internship_Management_System.Services.FinalEvaluation.CompletionReportPdfRenderer.ValidatePdf(bytes);
+            await Authorize(uid,role,placementId);
+            return new UIMS.Tasks.TaskFileDownload{FileName=T(certificate,"fileName"),ContentType="application/pdf",Content=bytes};
+        }
+
+        public async Task<JObject> SendCertificateAsync(string uid,string role,string placementId)
+        {
+            var access=await Authorize(uid,role,Key(placementId));
+            if(access.Role!="coordinator")throw new FirebaseException(403,"Only administration may send the completion certificate.");
+            var file=await DownloadCertificateAsync(uid,role,placementId);
+            var node=await db.ReadVersionAsync(Path(placementId));var record=O(node.Value);var previous=O(record["certificateEmail"]);
+            if(new[]{"sent","sending","deliveryUnconfirmed"}.Contains(T(previous,"status")))return previous;
+            string recipient=access.StudentEmail;
+            var missing=new[]{"UIMS_SMTP_HOST","UIMS_SMTP_FROM","UIMS_SMTP_USERNAME","UIMS_SMTP_PASSWORD"}.Where(k=>string.IsNullOrWhiteSpace(MailSetting(k))).ToArray();
+            bool configured=CertificateSender!=null||missing.Length==0;
+            System.Net.Mail.MailAddress address=null;try{address=new System.Net.Mail.MailAddress(recipient);}catch(FormatException){}catch(ArgumentException){}
+            int port;bool validPort=int.TryParse(MailSetting("UIMS_SMTP_PORT")??"587",out port)&&port>0&&port<=65535;
+            bool valid=address!=null&&!address.Host.EndsWith(".invalid",StringComparison.OrdinalIgnoreCase)&&configured&&validPort;
+            string blocker=address==null?"The student's saved profile email is missing or invalid. Update the student's email in Manage Students.":address.Host.EndsWith(".invalid",StringComparison.OrdinalIgnoreCase)?"The student's saved profile still uses an @example.invalid address. Update that student's email in Manage Students; changing the sender address does not change the recipient.":!configured?"The web server cannot read these SMTP settings: "+string.Join(", ",missing)+". Save them under the Windows account running the site.":!validPort?"UIMS_SMTP_PORT must be a valid port number, for example 587.":"";
+            var delivery=new JObject{["status"]=valid?"sending":"blocked",["requestId"]=record["finalization"]?["requestId"],["updatedAt"]=Now(),["actorUid"]=uid,["message"]=valid?"Certificate email delivery started.":blocker};
+            record["certificateEmail"]=delivery;
+            // Claim once before external delivery. Uncertain SMTP responses never cause automatic resend.
+            if(!await db.CompareWriteAsync(Path(placementId),record,node.ETag))throw new FirebaseException(409,"Certificate delivery changed. Reload its persisted status.");
+            if(!valid)return delivery;
+            try {
+                await Authorize(uid,role,placementId);
+                if(CertificateSender!=null)await CertificateSender(recipient,file.Content,file.FileName);
+                else using(var mail=new System.Net.Mail.MailMessage())using(var smtp=new System.Net.Mail.SmtpClient(MailSetting("UIMS_SMTP_HOST").Trim(),port)){
+                    mail.From=new System.Net.Mail.MailAddress(MailSetting("UIMS_SMTP_FROM").Trim(),"JUST Internship Coordination");mail.To.Add(address);
+                    mail.Subject="Your field training completion certificate";mail.Body="Congratulations! You have successfully completed your field training. Your completion certificate is attached and is also available in your UIMS account.";
+                    mail.Attachments.Add(new System.Net.Mail.Attachment(new MemoryStream(file.Content),file.FileName,"application/pdf"));
+                    string password=MailSetting("UIMS_SMTP_PASSWORD");if(MailSetting("UIMS_SMTP_HOST").Trim().Equals("smtp.gmail.com",StringComparison.OrdinalIgnoreCase))password=string.Concat(password.Where(c=>!char.IsWhiteSpace(c)));
+                    smtp.UseDefaultCredentials=false;smtp.EnableSsl=true;smtp.Credentials=new System.Net.NetworkCredential(MailSetting("UIMS_SMTP_USERNAME").Trim(),password);
+                    var sending=smtp.SendMailAsync(mail);if(await Task.WhenAny(sending,Task.Delay(TimeSpan.FromSeconds(30)))!=sending){var observation=sending.ContinueWith(t=>{var ignored=t.Exception;},TaskContinuationOptions.OnlyOnFaulted);throw new TimeoutException();}await sending;
+                }
+                delivery["status"]="sent";delivery["message"]="Certificate email accepted by the mail server. Inbox delivery is not guaranteed.";
+            }catch(System.Net.Mail.SmtpException smtpError) when((int)smtpError.StatusCode>=400&&(int)smtpError.StatusCode<=599){delivery["status"]="rejected";delivery["message"]="The mail server rejected delivery (SMTP "+(int)smtpError.StatusCode+"). Verify the sender account, its current app password and the student's saved recipient email, then retry.";}
+            catch(Exception){delivery["status"]="deliveryUnconfirmed";delivery["message"]="Email delivery could not be confirmed. Check the mail server before resending; no automatic resend was attempted.";}
+            delivery["updatedAt"]=Now();
+            var latest=await db.ReadVersionAsync(Path(placementId));var saved=O(latest.Value);
+            if(T(saved["certificateEmail"],"status")!="sending")throw new FirebaseException(409,"Email delivery status changed; reload before retrying.");
+            saved["certificateEmail"]=delivery;
+            if(!await db.CompareWriteAsync(Path(placementId),saved,latest.ETag))throw new FirebaseException(409,"Email status could not be acknowledged. Check delivery before retrying.");
+            return delivery;
+        }
         public FirebaseFileStorageService ReportStorage { private get; set; }
         private FirebaseFileStorageService DocumentStorage { get { return ReportStorage ?? (ReportStorage = new FirebaseFileStorageService(k => System.Configuration.ConfigurationManager.AppSettings[k])); } }
         private JObject DocumentSource(JObject record, string revisionId)

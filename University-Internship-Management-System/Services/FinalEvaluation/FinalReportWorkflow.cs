@@ -30,7 +30,7 @@ namespace UIMS.Services
             if (string.IsNullOrWhiteSpace(name) || name.Length > 180 || name.IndexOfAny("/\\:\0".ToCharArray()) >= 0 || name.Any(char.IsControl)) throw new FirebaseException(400, "Enter a filename only, without a filesystem path.");
             return new JObject { ["fileName"] = name, ["storageProvider"] = null, ["storagePath"] = null, ["uploadStatus"] = "nameOnly" };
         }
-        private sealed class Access { public string Uid, Role, Student, StudentName, AcademicName, CompanySupervisor, Academic; public JObject Profile, Placement; }
+        private sealed class Access { public string Uid, Role, Student, StudentName, StudentEmail, AcademicName, CompanySupervisor, Academic; public JObject Profile, Placement; }
         private async Task<Access> Authorize(string uid, string ticketRole, string placementId)
         {
             Key(uid); Key(placementId);
@@ -72,7 +72,7 @@ namespace UIMS.Services
             bool allowed = login.Role == "coordinator" || (login.Role == "companySupervisor" && actorSupervisor == supervisor && T(profile, "companyId") == company) ||
                 (login.Role == "academicSupervisor" && (uid == academic || actorAcademic == academic)) || (login.Role == "student" && (uid == studentProfile.Name || T(profile, "studentId") == studentId));
             if (!allowed) throw new FirebaseException(403, "This placement is not assigned to your current account.");
-            return new Access { Uid = uid, Role = login.Role, Placement = p, Profile = profile, Student = studentId, StudentName = T(studentProfile.Value, "fullName").Length > 0 ? T(studentProfile.Value, "fullName") : T(studentProfile.Value, "displayName"), AcademicName = T(academicProfile, "fullName").Length > 0 ? T(academicProfile, "fullName") : T(academicProfile, "displayName"), CompanySupervisor = supervisor, Academic = academic };
+            return new Access { Uid = uid, Role = login.Role, Placement = p, Profile = profile, Student = studentId, StudentEmail = T(studentProfile.Value, "email"), StudentName = T(studentProfile.Value, "fullName").Length > 0 ? T(studentProfile.Value, "fullName") : T(studentProfile.Value, "displayName"), AcademicName = T(academicProfile, "fullName").Length > 0 ? T(academicProfile, "fullName") : T(academicProfile, "displayName"), CompanySupervisor = supervisor, Academic = academic };
         }
         private async Task<long> Minutes(string placementId, Access a)
         {
@@ -93,7 +93,6 @@ namespace UIMS.Services
             var rows = O(await db.ReadAsync("uimsAttendance/attendance/" + assignmentId));
             return UIMS.Attendance.ApprovedTrainingMinutes.Calculate(rows, assignmentId, a.Student, T(a.Placement, "companyId"), clock().ToUnixTimeMilliseconds());
         }
-        private async Task<long> Eligible(string id, Access a) { long minutes = await Minutes(id, a); if (minutes < RequiredMinutes) throw new FirebaseException(409, "At least 18,000 approved minutes (300 hours) are required. Verified: " + minutes + " minutes."); return minutes; }
         private static string Path(string id) { return "finalEvaluationWorkflows/" + Key(id); }
         private static void Revision(JObject record, JObject input) { if (T(record, "currentRevisionId") != T(input, "revisionId")) throw new FirebaseException(409, "This revision is outdated. Reload the persisted report."); }
         private static void State(JObject record, string role, params string[] allowed) { if (!allowed.Contains(T(record, "status"))) throw new FirebaseException(409, "This action is not allowed from the current report state."); }
@@ -198,6 +197,7 @@ namespace UIMS.Services
                 }
                 string previous = T(record, "status");
                 record["companySupervisorId"] = access.CompanySupervisor; record["academicSupervisorId"] = access.Academic;
+                if (T(record,"studentName").Length == 0) record["studentName"] = access.StudentName;
                 if (action == "save" || action == "submit")
                 {
                     if (access.Role != "companySupervisor") throw new FirebaseException(403, "Only the assigned company supervisor prepares this report.");
@@ -221,7 +221,8 @@ namespace UIMS.Services
                     }
                     else
                     {
-                        long minutes = await Eligible(placementId, access); var draft = O(record["draft"]);
+                        long minutes = await Minutes(placementId, access); var draft = O(record["draft"]);
+                        if (draft.HasValues) { draft["studentId"] = access.Student; draft["studentName"] = access.StudentName; }
                         if (!draft.HasValues) throw new FirebaseException(400, "Save the report before submitting.");
                         if (previous == "companyRevisionRequested" && string.IsNullOrWhiteSpace(T(draft, "companyResponse"))) throw new FirebaseException(400, "A company response is required for resubmission.");
                         string revisionId = "revision-" + requestId; var revisions = O(record["revisions"]); var revision = (JObject)draft.DeepClone(); revision["id"] = revisionId; revision["submittedAt"] = Now(); revision["submittedBy"] = uid; revision["approvedTrainingMinutes"] = minutes; revisions[revisionId] = revision;
@@ -233,8 +234,8 @@ namespace UIMS.Services
                     if (access.Role != "academicSupervisor") throw new FirebaseException(403, "Only the currently assigned academic supervisor may review this report.");
                     Revision(record, input); State(record, access.Role, "pendingAcademicReview", "academicRevisionRequested");
                     string feedback = Text(input, "feedback", 4000, action == "companyRevision" || previous == "academicRevisionRequested");
-                    long minutes = action == "academicApprove" ? await Eligible(placementId, access) : 0;
-                    var reviews = O(record["academicReviews"]); reviews[requestId] = new JObject { ["revisionId"] = record["currentRevisionId"], ["actorUid"] = uid, ["academicSupervisorId"] = access.Academic, ["action"] = action, ["feedback"] = feedback, ["at"] = Now(), ["approvedTrainingMinutes"] = minutes }; record["academicReviews"] = reviews;
+                    long minutes = action == "academicApprove" ? await Minutes(placementId, access) : 0;
+                    var reviews = O(record["academicReviews"]); reviews[requestId] = new JObject { ["revisionId"] = record["currentRevisionId"], ["actorUid"] = uid, ["academicSupervisorId"] = access.Academic, ["action"] = action, ["feedback"] = feedback, ["academicGrade"] = action == "academicApprove" ? (JToken)Grade(input, "academicGrade") : null, ["at"] = Now(), ["approvedTrainingMinutes"] = minutes }; record["academicReviews"] = reviews;
                     record["status"] = action == "academicApprove" ? "pendingAdminReview" : "companyRevisionRequested";
                     if (action == "academicApprove") record["academicApprovalId"] = requestId;
                     else { record["draft"] = record["revisions"][T(record, "currentRevisionId")].DeepClone(); record["draft"]["companyResponse"] = ""; record["draftVersion"] = "return-" + requestId; record.Remove("academicApprovalId"); }
@@ -247,11 +248,14 @@ namespace UIMS.Services
                     if (approval == null || T(approval, "revisionId") != T(record, "currentRevisionId") || T(approval, "action") != "academicApprove" || (action == "finalApprove" && T(approval, "academicSupervisorId") != access.Academic)) throw new FirebaseException(409, "Fresh academic approval of the current revision and current academic assignment is required.");
                     string feedback = Text(input, "feedback", 4000, action == "adminCorrection"); var reviews = O(record["adminReviews"]);
                     reviews[requestId] = new JObject { ["revisionId"] = record["currentRevisionId"], ["actorUid"] = uid, ["action"] = action, ["feedback"] = feedback, ["at"] = Now() }; record["adminReviews"] = reviews;
-                    if (action == "adminCorrection") { record["status"] = "academicRevisionRequested"; record.Remove("academicApprovalId"); }
+                    if (action == "adminCorrection") { record["status"] = "companyRevisionRequested"; record["draft"] = record["revisions"][T(record, "currentRevisionId")].DeepClone(); record["draft"]["companyResponse"] = ""; record["draftVersion"] = "return-" + requestId; record.Remove("academicApprovalId"); }
                     else
                     {
-                        long minutes = await Eligible(placementId, access);
-                        record["finalization"] = new JObject { ["requestId"] = requestId, ["actorUid"] = uid, ["revisionId"] = record["currentRevisionId"], ["grade"] = Grade(input, "finalGrade"), ["attachment"] = Attachment(Text(input, "fileName", 180, true)), ["approvedTrainingMinutes"] = minutes, ["preparedAt"] = Now(), ["phase"] = "prepared" };
+                        long minutes = await Minutes(placementId, access);
+                        // Older clients may still supply a notice filename; new clients need no filename input.
+                        string completionFileName = Text(input, "fileName", 180);
+                        if (completionFileName.Length == 0) completionFileName = "training-certificate-" + access.Student + ".pdf";
+                        record["finalization"] = new JObject { ["requestId"] = requestId, ["actorUid"] = uid, ["revisionId"] = record["currentRevisionId"], ["grade"] = Grade(input, "finalGrade"), ["attachment"] = Attachment(completionFileName), ["approvedTrainingMinutes"] = minutes, ["preparedAt"] = Now(), ["phase"] = "prepared", ["certificate"] = new JObject { ["fileName"] = "training-certificate-" + access.Student + ".pdf", ["contentType"] = "application/pdf", ["generationStatus"] = "serverGenerated", ["templateVersion"] = 1, ["studentName"] = access.StudentName, ["companyName"] = T(access.Placement,"companyName"), ["startDate"] = access.Placement["startDate"], ["endDate"] = access.Placement["endDate"] } };
                     }
                 }
                 else throw new FirebaseException(400, "Unsupported final report action.");
@@ -276,11 +280,11 @@ namespace UIMS.Services
             var a = await Authorize(uid, role, placementId); if (a.Role != "coordinator") throw new FirebaseException(403, "Admin reconciliation is required.");
             var n = await db.ReadVersionAsync(Path(placementId)); var r = n.Value; if (r == null || T(r, "status") == "completed") return;
             var f = r["finalization"] as JObject; if (f == null) throw new FirebaseException(409, "There is no pending finalization.");
-            await Eligible(placementId, a);
+            await Minutes(placementId, a);
             var approval = r["academicReviews"]?[T(r, "academicApprovalId")];
             if (T(approval, "academicSupervisorId") != a.Academic || T(approval, "revisionId") != T(r, "currentRevisionId")) throw new FirebaseException(409, "Assignment changed during finalization. Completion remains blocked.");
             string operation = T(f, "requestId"); string notificationId = "final-training-" + placementId;
-            var outcome = new JObject { ["placementId"] = placementId, ["studentId"] = a.Student, ["finalGrade"] = f["grade"], ["gradeMaximum"] = 100, ["revisionId"] = f["revisionId"], ["requestId"] = operation, ["approvedBy"] = f["actorUid"], ["approvedAt"] = f["preparedAt"], ["completionReport"] = f["attachment"].DeepClone() };
+            var outcome = new JObject { ["placementId"] = placementId, ["studentId"] = a.Student, ["finalGrade"] = f["grade"], ["gradeMaximum"] = 100, ["revisionId"] = f["revisionId"], ["requestId"] = operation, ["approvedBy"] = f["actorUid"], ["approvedAt"] = f["preparedAt"], ["completionReport"] = f["attachment"].DeepClone(), ["certificate"] = f["certificate"]?.DeepClone() };
             var notification = new JObject { ["id"] = notificationId, ["studentId"] = a.Student, ["placementId"] = placementId, ["requestId"] = operation, ["type"] = "trainingCompletion", ["message"] = "Congratulations! You have successfully completed your field training.", ["createdAt"] = f["preparedAt"], ["read"] = false };
             await Materialize("finalTrainingOutcomes/" + placementId, outcome, operation);
             await Materialize("notifications/" + Key(a.Student) + "/" + Key(notificationId), notification, operation);
@@ -292,7 +296,7 @@ namespace UIMS.Services
                 p.Value["status"] = "completed"; p.Value["completionStatus"] = "Completed"; p.Value["finalEvaluationRequestId"] = operation; p.Value["finalEvaluationRevisionId"] = r["currentRevisionId"]; p.Value["finalGrade"] = f["grade"]; p.Value["completedAt"] = f["preparedAt"];
                 if (!await db.CompareWriteAsync("placements/" + placementId, p.Value, p.ETag)) throw new FirebaseException(409, "Placement changed; retry finalization with the same request.");
             }
-            a = await Authorize(uid, role, placementId); await Eligible(placementId, a);
+            a = await Authorize(uid, role, placementId); await Minutes(placementId, a);
             n = await db.ReadVersionAsync(Path(placementId)); r = n.Value;
             if (T(r, "status") == "completed") return;
             if (T(r["finalization"], "requestId") != operation) throw new FirebaseException(409, "Finalization conflict.");
@@ -318,7 +322,7 @@ namespace UIMS.Services
         {
             var a = await Authorize(uid, role, placementId); var r = O(await db.ReadAsync(Path(placementId)));
             string status = T(r, "status"); if (status.Length == 0) status = "draft";
-            if (a.Role == "coordinator" && !new[] { "pendingAdminReview", "academicRevisionRequested", "completed" }.Contains(status)) throw new FirebaseException(403, "Administration can only access academically approved reports and their correction history.");
+            if (a.Role == "coordinator" && !new[] { "pendingAdminReview", "academicRevisionRequested", "completed" }.Contains(status) && !O(r["adminReviews"]).HasValues) throw new FirebaseException(403, "Administration can only access academically approved reports and their correction history.");
             if (status == "completed")
             {
                 string operation = T(r["finalization"], "requestId");
@@ -331,7 +335,7 @@ namespace UIMS.Services
             {
                 var published = status == "completed" ? r["outcome"] : null;
                 return new JObject { ["placementId"] = placementId, ["studentId"] = a.Student, ["studentName"] = a.StudentName, ["status"] = status, ["completed"] = status == "completed", ["approvedTrainingMinutes"] = minutes, ["requiredTrainingMinutes"] = RequiredMinutes,
-                    ["outcome"] = published == null ? null : new JObject { ["finalGrade"] = published["finalGrade"], ["gradeMaximum"] = published["gradeMaximum"], ["approvedAt"] = published["approvedAt"], ["completionReport"] = published["completionReport"]?.DeepClone() },
+                    ["outcome"] = published == null ? null : new JObject { ["finalGrade"] = published["finalGrade"], ["gradeMaximum"] = published["gradeMaximum"], ["approvedAt"] = published["approvedAt"], ["completionReport"] = published["completionReport"]?.DeepClone(), ["certificate"] = published["certificate"]?.DeepClone() },
                     ["notification"] = status != "completed" ? null : new JObject { ["id"] = r["studentNotification"]?["id"], ["message"] = r["studentNotification"]?["message"], ["createdAt"] = r["studentNotification"]?["createdAt"] } };
             }
             return new JObject { ["placementId"] = placementId, ["studentId"] = a.Student, ["studentName"] = a.StudentName, ["academicSupervisorId"] = a.Academic, ["academicSupervisorName"] = a.AcademicName, ["role"] = a.Role, ["status"] = status, ["record"] = r, ["approvedTrainingMinutes"] = minutes, ["requiredTrainingMinutes"] = RequiredMinutes, ["eligible"] = minutes >= RequiredMinutes, ["eligibilityBlocker"] = blocker };
@@ -346,6 +350,9 @@ namespace UIMS.Services
             var verified = FirebaseSignInService.ProfileResult(uid, profile);
             if (verified.Role != FirebaseSignInService.CanonicalRole(role)) throw new FirebaseException(403, "The current account role changed.");
             var placements = O(await cache.ReadAsync("placements")); var output = new JArray();
+            var issues = new System.Collections.Concurrent.ConcurrentBag<string>();
+            string canonicalRole = FirebaseSignInService.CanonicalRole(role);
+            string currentCompany = T(profile, "companyId");
             var reader = new FinalReportWorkflow(cache, clock);
             using (var limit = new System.Threading.SemaphoreSlim(4))
             {
@@ -356,16 +363,27 @@ namespace UIMS.Services
                 {
                     var view = await reader.ReadAsync(uid, role, p.Name);
                     var canonical = FirebaseSignInService.CanonicalRole(role); string state = T(view, "status");
-                    if (canonical == "coordinator" && !new[] { "pendingAdminReview", "academicRevisionRequested", "completed" }.Contains(state)) return null;
+                    if (canonical == "coordinator" && !new[] { "pendingAdminReview", "academicRevisionRequested", "completed" }.Contains(state) && !O(view["record"]?["adminReviews"]).HasValues) return null;
                     if (canonical == "academicSupervisor" && state == "draft") return null;
                     return view;
                 }
-                catch (FirebaseException e) when (e.StatusCode == 403 || e.StatusCode == 409) { return null; }
+                catch (FirebaseException e) when (e.StatusCode == 403 || e.StatusCode == 409) {
+                    // Report relationship failures only within this actor's company;
+                    // never disclose another company's student/placement details.
+                    if (e.StatusCode == 409 && canonicalRole == "companySupervisor" && currentCompany.Length > 0 && T(p.Value,"companyId") == currentCompany)
+                        issues.Add("A company training record cannot be reviewed: " + e.Message);
+                    return null;
+                }
                 finally { limit.Release(); }
             }).ToArray();
             foreach (var view in await Task.WhenAll(reads)) if (view != null) output.Add(view);
             }
-            return new JObject { ["items"] = output, ["role"] = FirebaseSignInService.CanonicalRole(role), ["serverNow"] = Now() };
+            if (canonicalRole == "companySupervisor" && currentCompany.Length > 0) {
+                var workflows = O(await cache.ReadAsync("finalEvaluationWorkflows"));
+                if (workflows.Properties().Any(w => T(w.Value,"companyId") == currentCompany && placements[w.Name] == null))
+                    issues.Add("A saved company report has no linked training placement. Restore or reconcile its original placement through the coordinator; the saved report has not been deleted.");
+            }
+            return new JObject { ["items"] = output, ["issues"] = new JArray(issues.Distinct()), ["role"] = FirebaseSignInService.CanonicalRole(role), ["serverNow"] = Now() };
         }
         private sealed class ListReadDatabase : IApplicationDatabase
         {
