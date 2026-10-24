@@ -1,4 +1,4 @@
-﻿using Newtonsoft.Json.Linq;
+using Newtonsoft.Json.Linq;
 using System.Linq;
 using University_Internship_Management_System.Shared;
 
@@ -47,6 +47,11 @@ namespace University_Internship_Management_System.Company
                 string opportunityId = FirebaseDb.Key(S(application["opportunityId"]));
                 var opportunity = Db.GetObject("opportunities/" + opportunityId);
                 if (opportunity == null) throw new AppError("The opportunity no longer exists.");
+
+                var acceptedApplication = (JObject)application.DeepClone();
+                acceptedApplication["decidedAt"] = updates["applications/" + id + "/decidedAt"];
+                foreach (var field in UIMS.Attendance.AttendanceOnboarding.TrainingPeriod(acceptedApplication, opportunity).Properties())
+                    updates["applications/" + id + "/" + field.Name] = field.Value.DeepClone();
 
                 int accepted = Db.List("applications").Count(a => S(a["opportunityId"]) == opportunityId &&
                     (S(a["status"]) == "accepted" || S(a["status"]) == "confirmed"));

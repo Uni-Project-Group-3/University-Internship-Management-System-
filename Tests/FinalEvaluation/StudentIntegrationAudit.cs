@@ -39,7 +39,7 @@ internal static partial class Program
         Assert(root.ToString()==original && JToken.DeepEquals(root["schedules"],next["schedules"]) && JToken.DeepEquals(root["attendance"],next["attendance"]));
         Assert(JToken.DeepEquals(next,build(next)));
         Action<JObject> rejected=r=>{try{build(r);}catch(FirebaseException){return;}throw new Exception("Unsafe onboarding accepted.");};
-        var missing=(JObject)root.DeepClone();missing["schedules"]=new JObject();rejected(missing);
+        var missing=(JObject)root.DeepClone();missing["schedules"]=new JObject();var flexible=build(missing);Assert(((JObject)flexible["schedules"]).Count==0&&JToken.DeepEquals(missing["attendance"],flexible["attendance"])&&flexible["students"]?["S1"]!=null);
         var wrong=(JObject)next.DeepClone();wrong["students"]["S1"]["firebaseUid"]="other";rejected(wrong);
         wrong=(JObject)next.DeepClone();wrong["trainingAssignments"][aid]["academicSupervisorId"]="OTHER";rejected(wrong);
         wrong=(JObject)next.DeepClone();wrong["provisioningClaims"][aid]["studentId"]="OTHER";rejected(wrong);

@@ -153,11 +153,15 @@ namespace UIMS.Services
             if (app.Value == null || (string)app.Value["companyId"] != actor.CompanyId) throw new FirebaseException(404, "Application not found for this company.");
             if (string.Equals((string)app.Value["status"], decision, StringComparison.OrdinalIgnoreCase)) return;
             if (!string.Equals((string)app.Value["status"], "pending", StringComparison.OrdinalIgnoreCase)) throw new FirebaseException(409, "This application has already been reviewed.");
+            JObject acceptancePeriod = null;
             if (decision == "accepted")
             {
                 string opportunityId = Key((string)app.Value["opportunityId"]);
                 var opportunity = await database.ReadVersionAsync("opportunities/" + opportunityId).ConfigureAwait(false);
                 if (opportunity.Value == null || (string)opportunity.Value["companyId"] != actor.CompanyId) throw new FirebaseException(409, "The linked company opportunity could not be verified.");
+                var acceptance = (JObject)app.Value.DeepClone();
+                acceptance["decidedAt"] = DateTimeOffset.UtcNow.ToString("o", CultureInfo.InvariantCulture);
+                acceptancePeriod = UIMS.Attendance.AttendanceOnboarding.TrainingPeriod(acceptance, opportunity.Value);
                 int seats = opportunity.Value.Value<int?>("seats") ?? 0;
                 var reservations = opportunity.Value["acceptedApplications"] as JObject ?? new JObject();
                 var current = await database.ReadEqualAsync("applications", "opportunityId", opportunityId).ConfigureAwait(false) as JObject;
@@ -186,6 +190,11 @@ namespace UIMS.Services
             app.Value["reason"] = (reason ?? "").Trim();
             app.Value["decidedAt"] = DateTime.UtcNow.ToString("o", CultureInfo.InvariantCulture);
             app.Value["companySupervisorId"] = actor.CompanySupervisorId;
+            if (decision == "accepted")
+            {
+                foreach (var field in acceptancePeriod.Properties())
+                    app.Value[field.Name] = field.Value.DeepClone();
+            }
             if (string.IsNullOrWhiteSpace(app.ETag) || !await database.CompareWriteAsync("applications/" + id, app.Value, app.ETag).ConfigureAwait(false))
                 throw new FirebaseException(409, "The application changed during review. Reload before retrying.");
         }
@@ -244,14 +253,12 @@ namespace UIMS.Services
             var placementForAttendance=plannedPlacement.Value;
             if(placementForAttendance==null)
             {
-                string start=(string)acceptedOpportunity["startDate"] ?? (string)acceptedOpportunity["start"] ?? "";
-                string end=(string)acceptedOpportunity["endDate"] ?? "";
-                int duration=acceptedOpportunity.Value<int?>("durationWeeks") ?? acceptedOpportunity.Value<int?>("duration") ?? 0;
-                DateTime startDate;
-                if(end.Length==0 && duration>0 && duration<=104 && DateTime.TryParseExact(start,"yyyy-MM-dd",CultureInfo.InvariantCulture,DateTimeStyles.None,out startDate))end=startDate.AddDays(duration*7-1).ToString("yyyy-MM-dd",CultureInfo.InvariantCulture);
+                var period = UIMS.Attendance.AttendanceOnboarding.TrainingPeriod(app.Value, acceptedOpportunity);
+                string start=(string)period["startDate"], end=(string)period["endDate"];
                 placementForAttendance=new JObject{["id"]=placementId,["studentId"]=actor.StudentId,["studentUid"]=uid,["companyId"]=app.Value["companyId"],
                     ["companySupervisorId"]=app.Value["companySupervisorId"],["academicSupervisorId"]=academicId,["startDate"]=start,["endDate"]=end,
                     ["requiredHours"]=acceptedOpportunity.Value<int?>("requiredHours") ?? 0};
+                foreach (var field in period.Properties()) placementForAttendance[field.Name] = field.Value.DeepClone();
             }
             var onboarding=new UIMS.Attendance.AttendanceOnboarding(database);
             bool attendanceChange=await onboarding.ValidateAsync(uid,actor.StudentId,placementId,placementForAttendance,actor.Profile).ConfigureAwait(false);
@@ -277,12 +284,14 @@ namespace UIMS.Services
                     ["studentId"] = actor.StudentId, ["studentUid"] = uid, ["companyId"] = (string)app.Value["companyId"],
                     ["companySupervisorId"] = (string)app.Value["companySupervisorId"] ?? "",
                     ["academicSupervisorId"] = academicId, ["status"] = "confirmed",
-                    ["startDate"] = (string)opportunity["startDate"] ?? (string)opportunity["start"] ?? "",
-                    ["durationWeeks"] = opportunity.Value<int?>("durationWeeks") ?? opportunity.Value<int?>("duration") ?? 0,
+                    ["startDate"] = placementForAttendance["startDate"],
+                    ["durationWeeks"] = placementForAttendance["durationWeeks"],
+                    ["acceptedAt"] = placementForAttendance["acceptedAt"], ["attendanceMode"] = "flexible",
                     ["requiredHours"] = opportunity.Value<int?>("requiredHours") ?? 0,
                     ["createdAt"] = DateTime.UtcNow.ToString("o", CultureInfo.InvariantCulture)
                 };
                 placement["endDate"]=placementForAttendance["endDate"];
+                UIMS.Attendance.AttendanceOnboarding.ApplyTrainingDefaults(placement);
                 if (string.IsNullOrWhiteSpace(existingPlacement.ETag) || !await database.CompareWriteAsync("placements/" + placementId, placement, existingPlacement.ETag).ConfigureAwait(false))
                     throw new FirebaseException(409, "The placement is being created by another request. Retry to finish confirmation.");
             }

@@ -1,4 +1,4 @@
-﻿<%@ Page Language="C#" AutoEventWireup="true" CodeBehind="ManageOpportunities.aspx.cs" Inherits="UIMS.Company.ManageOpportunities" %>
+<%@ Page Language="C#" AutoEventWireup="true" CodeBehind="ManageOpportunities.aspx.cs" Inherits="UIMS.Company.ManageOpportunities" %>
 
 <!DOCTYPE html>
 <html lang="en">
@@ -280,7 +280,7 @@
                                         </div>
                                         <div class="col-sm-4">
                                             <div class="field mb-0">
-                                                <label for="oppStart">Start date</label>
+                                                <label for="oppStart">Expected start date</label>
                                                 <input type="date" id="oppStart" class="form-control" />
                                                 <div class="field-error" data-error-for="oppStart" hidden></div>
                                             </div>
@@ -300,7 +300,7 @@
 
                                     <div class="date-hint" id="dateHint">
                                         <i class="bi bi-calendar-check"></i>
-                                        <span id="dateHintText">Pick a start date and duration to see when the internship ends.</span>
+                                        <span id="dateHintText">Training weeks begin on company acceptance. Attendance is available at any hour during that period.</span>
                                     </div>
                                 </section>
                             </div>

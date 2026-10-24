@@ -216,6 +216,9 @@ namespace UIMS.Attendance
                 var schedules = await scheduleRead;
                 var records = await recordRead;
                 c.Schedule = loadHistory ? (JObject)(schedules[c.Date] as JObject ?? new JObject()).DeepClone() : schedules;
+                // Flexible supervisor-issued attendance needs no persisted shift calendar.
+                // Derive routing metadata only; never synthesize a check-in, absence or worked hours.
+                if (!c.Schedule.HasValues) c.Schedule = new JObject { ["assignmentId"] = c.AssignmentId, ["attendanceDate"] = c.Date, ["timeZone"] = "Asia/Amman", ["version"] = Math.Max(1, Number(c.Assignment,"version")), ["attendanceMode"] = "flexible", ["isTestData"] = Flag(c.Assignment, "isTestData") };
                 c.Record = loadHistory ? (JObject)(records[c.Date] as JObject ?? new JObject()).DeepClone() : records;
                 if (loadHistory)
                 {
@@ -364,8 +367,23 @@ namespace UIMS.Attendance
                         Text(row.Value, "companySupervisorId") != Text(assignment, "companySupervisorId")))
                     row.Remove();
             }
-            // الغياب يستنتج من يوم تدريب انتهى فعلاً، وليس من كل يوم فارغ.
-            foreach (var entry in schedules.Properties())
+            // Flexible training has no shifts: an empty day becomes absent only after midnight in Amman.
+            if (Text(assignment, "attendanceMode") == "flexible")
+            {
+                DateTime first, last;
+                if (DateTime.TryParseExact(Text(assignment, "startDate"), "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out first) &&
+                    DateTime.TryParseExact(Text(assignment, "endDate"), "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out last) &&
+                    first <= last && (last - first).TotalDays < 364)
+                    for (var day = first; day <= last && string.CompareOrdinal(day.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture), Today()) < 0; day = day.AddDays(1))
+                    {
+                        string date = day.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
+                        if (Number(records[date], "checkInAt") > 0) continue;
+                        records[date] = new JObject { ["assignmentId"] = assignmentId, ["studentId"] = studentId,
+                            ["attendanceDate"] = date, ["status"] = "absent", ["workedMinutes"] = 0,
+                            ["hoursApprovalStatus"] = "notApplicable", ["derivedFromTrainingPeriod"] = true };
+                    }
+            }
+            foreach (var entry in Text(assignment, "attendanceMode") == "flexible" ? new JObject().Properties() : schedules.Properties())
             {
                 var schedule = entry.Value;
                 if (!CanDeriveScheduleHistory(schedule as JObject, assignment, assignmentId, entry.Name, Now())) continue;
@@ -482,7 +500,7 @@ namespace UIMS.Attendance
         // هذا الحاجز يخص التجربة بدون Login؛ لا يسمح باستعمال حسابات أو تكليفات حقيقية.
         private static void CheckLocalTestContext(AttendanceContext context, bool localTest)
         {
-            if ((localTest || Flag(context.Student, "isTestData")) && (!Flag(context.Student, "isTestData") || !Flag(context.Assignment, "isTestData") ||
+            if (localTest && (!Flag(context.Student, "isTestData") || !Flag(context.Assignment, "isTestData") ||
                 !Flag(context.Company, "isTestData") || !Flag(context.Supervisor, "isTestData") ||
                 !Flag(context.Schedule, "isTestData")))
                 throw new InvalidOperationException("Local testing permits isolated test accounts and schedules only.");
@@ -833,7 +851,7 @@ namespace UIMS.Attendance
                         var student = await Get("students/" + Text(entry.Value, "studentId"));
                         if (Text(student, "activeAssignmentId") != entry.Name || Text(student, "status") != "active" || AttendanceConfiguration.IsLocalDevelopment(HttpContext.Current) && !Flag(student, "isTestData"))
                             return new[] { groupStudents, groupRequests, groupRecords };
-                        groupStudents.Add(new JObject { ["id"] = Text(entry.Value, "studentId"), ["name"] = Text(student, "name"), ["assignmentId"] = entry.Name, ["requiredHours"] = Number(entry.Value, "requiredHours") });
+                        groupStudents.Add(new JObject { ["id"] = Text(entry.Value, "studentId"), ["name"] = Text(student, "name"), ["assignmentId"] = entry.Name, ["requiredHours"] = Number(entry.Value, "requiredHours"), ["trainingPeriodReady"] = Flag(entry.Value, "periodVerifiedFromAcceptance") });
                         var historyRead = History(entry.Name, Text(entry.Value, "studentId"), assignment: (JObject)entry.Value);
                         var earlyRead = Get("earlyCheckoutRequests/" + entry.Name);
                         try

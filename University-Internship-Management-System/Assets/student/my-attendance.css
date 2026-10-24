@@ -523,3 +523,49 @@ progress { width: 100%; height: 8px; accent-color: var(--primary); }
 
 .attendance-heading-actions { display: flex; align-items: center; justify-content: flex-end; flex-wrap: wrap; gap: 12px; }
 @media(max-width:575.98px) { .attendance-heading-actions { width: 100%; justify-content: space-between; } }
+
+/* Student attendance workspace and shared dialog treatment. */
+.attendance-content .metric-card { min-height:118px; padding:20px 22px; }
+.attendance-content .metric-card strong { margin:8px 0; font-size:32px; }
+.attendance-content .metric-card small { font-size:11px; line-height:1.5; }
+.attendance-content .schedule-grid { margin:18px 0; }
+.attendance-content .schedule-grid strong { font-size:20px; line-height:1.5; }
+.attendance-content .schedule-grid > div { padding:15px 18px; }
+.attendance-content .timeline { display:flex; gap:10px; padding:14px 16px; border-radius:12px; background:var(--primary-soft); color:var(--primary); font-size:12px; line-height:1.8; }
+.attendance-content .timeline > i { flex-shrink:0; }
+.student-qr-actions { gap:14px; }
+.qr-availability { font-size:12px; color:var(--text-secondary); line-height:1.6; }
+.qr-availability[data-state=ready] { color:var(--success); }
+.attendance-content .assignment-panel h2 { margin-bottom:6px; }
+.attendance-content .assignment-list { margin:12px 0 20px; }
+.attendance-content .assignment-list dt { font-size:11px; }
+.attendance-content .assignment-list dd { font-size:13px; }
+.record-status { display:inline-flex; padding:6px 10px; border-radius:7px; background:var(--surface-alt); color:var(--text-secondary); font-size:11px; font-weight:600; white-space:nowrap; }
+.status-checkedIn { background:var(--primary-soft); color:var(--primary); }
+.status-completed { background:var(--success-light); color:var(--success); }
+.status-absent,.status-missingCheckOut { background:var(--warning-light); color:var(--warning); }
+.attendance-dialog { width:min(520px,calc(100% - 32px)); max-height:calc(100dvh - 40px); margin:auto; outline:none; border:1px solid var(--border); padding:24px; background:var(--surface); color:var(--text); }
+.attendance-dialog[open] { animation:attendanceEntrance .18s ease; }
+.attendance-dialog .dialog-close { border:0; border-radius:10px; background:var(--surface-alt); color:var(--text-secondary); font-size:24px; }
+.attendance-dialog .dialog-footer { justify-content:flex-end; margin-top:18px; padding-top:16px; }
+.attendance-dialog .eyebrow { color:var(--primary); font-size:10px; letter-spacing:.12em; font-weight:700; margin:0 0 6px; }
+#qrDialog { width:min(460px,calc(100% - 32px)); }
+#qrDialog .panel-heading { margin-bottom:12px; }
+#qrDialog #qrDescription { font-size:12px; text-align:left; margin:0 0 14px; line-height:1.7; }
+#qrDialog .qr-placeholder { border:1px solid var(--border-light); background:var(--surface-alt); border-radius:14px; margin:0; padding:14px; gap:10px; }
+#qrDialog #qrCode { border:0; border-radius:10px; margin:0; padding:0; width:min(100%,300px,42dvh); min-height:0; background:white; }
+#qrDialog #qrCode:empty { display:none; }
+#qrDialog #qrCountdown { margin:0; font-size:12px; padding:7px 12px; }
+#qrDialog[data-state=loading] .qr-placeholder,#qrDialog[data-state=error] .qr-placeholder,#qrDialog[data-state=expired] .qr-placeholder { min-height:160px; justify-content:center; }
+#qrDialog[data-state=error] #qrCountdown,#qrDialog[data-state=expired] #qrCountdown { color:var(--warning); background:var(--warning-light); }
+.qr-instruction { display:flex; gap:10px; padding:12px 14px; border-radius:10px; background:var(--primary-soft); color:var(--primary); margin:14px 0 0; font-size:11px !important; line-height:1.7 !important; }
+body:has(.attendance-dialog[open]) { overflow:hidden; }
+@media(max-width:575.98px) { .attendance-dialog { padding:20px; } .student-qr-actions { align-items:flex-start; flex-direction:column; } .attendance-content .metric-card strong { font-size:28px; } .attendance-content .schedule-grid strong { font-size:17px; } }
+
+/* Match the company attendance pair and full-width history layout. */
+.student-attendance-grid { margin-bottom:24px; }
+.student-attendance-grid > div,.student-attendance-grid > aside { display:flex; }
+.student-attendance-grid > div > .attendance-panel,.student-attendance-grid > aside > .attendance-panel { width:100%; height:100%; margin-bottom:0; display:flex; flex-direction:column; }
+.student-attendance-grid .assignment-panel progress { margin-top:auto; }
+.attendance-content .student-history-panel { width:100%; max-width:none; }
+.attendance-content .student-history-panel .attendance-table { width:100%; }

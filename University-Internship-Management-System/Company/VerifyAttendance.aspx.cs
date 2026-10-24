@@ -38,6 +38,18 @@ namespace University_Internship_Management_System.Company
                 JObject data;
                 switch (action)
                 {
+                    case "supervisorResetPreview":
+                        data = await attendanceService.PreviewTodayReset(Request.Form["studentId"], uid);
+                        break;
+                    case "supervisorResetToday":
+                        await attendanceService.ResetToday(Request.Form["studentId"], uid, Request.Form["expectedVersion"], Request.Form["expectedDate"]);
+                        data = await LoadAttendance(supervisorId, supervisor);
+                        break;
+                    case "setupAttendance":
+                        await new AttendanceOnboarding(new UIMS.Services.FirebaseApplicationDatabase(new Shared.StudentFirebaseGateway()))
+                            .SetupForSupervisorAsync(supervisorId, Request.Form["studentId"], new AttendanceFirebase());
+                        data = await LoadAttendance(supervisorId, supervisor);
+                        break;
                     case "issueQr":
                         data = await IssueSelectedQr(supervisorId);
                         break;
@@ -59,11 +71,19 @@ namespace University_Internship_Management_System.Company
             }
         }
 
-        private Task<JObject> LoadAttendance(string supervisorId, JObject supervisor)
+        private async Task<JObject> LoadAttendance(string supervisorId, JObject supervisor)
         {
             Func<JObject, Task> studentReady = attendanceRequest.IsStreaming
                 ? (Func<JObject, Task>)(student => attendanceRequest.SendProgress("student", student)) : null;
-            return LoadAttendanceData(attendanceService, supervisorId, supervisor, studentReady);
+            var data = await LoadAttendanceData(attendanceService, supervisorId, supervisor, studentReady);
+            if (!LocalDemoAllowed)
+            {
+                var gateway = new Shared.StudentFirebaseGateway();
+                var placements = gateway.ReadAsync("placements"); var profiles = gateway.ReadAsync("users");
+                await Task.WhenAll(placements, profiles);
+                AttendanceOnboarding.AppendPendingPlacements((JArray)data["students"], await placements as JObject ?? new JObject(), await profiles as JObject ?? new JObject(), supervisorId, supervisor);
+            }
+            return data;
         }
 
         // الخدمة ترجع بيانات المتدربين المسموحين فقط؛ الصفحة ترتب رد العرض.

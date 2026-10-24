@@ -1,4 +1,4 @@
-(function () {
+﻿(function () {
     'use strict';
     const api = '../TasksApi.ashx';
     let state = { tasks: [], submissions: [] }, boardState = null, selectedId = null, busy = false, viewMode = 'board';
@@ -16,7 +16,7 @@
     const modal = id => window.bootstrap && bootstrap.Modal.getOrCreateInstance(by(id));
     function selectTaskTab() {
         const task=state.tasks.find(t=>t.id===selectedId),isExam=!!(task?.examId||task?.taskType==='exam'||window.StudentTaskExams?.hasTask(task?.id));
-        document.querySelectorAll('[data-student-panel]').forEach(panel=>{panel.hidden=isExam?panel.dataset.studentPanel!=='exam':panel.dataset.studentPanel==='exam';});
+        document.querySelectorAll('[data-student-panel]').forEach(panel=>{const name=panel.dataset.studentPanel;panel.hidden=name==='exam'?!isExam:name==='submission'?isExam||!editing:isExam&&name!=='details';});
         by('confirmSubmitBtn').hidden=isExam||!editing||by('workDesc').readOnly;
         if(isExam){by('studentTaskWorkAction').hidden=true;by('requestTaskExtension').hidden=true;}
         if(isExam)window.StudentTaskExams?.showTask(selectedId);
@@ -208,7 +208,7 @@
         try {
             if (button.dataset.taskAction === 'details') { openSubmit(task, true); return; }
             if (button.dataset.taskAction === 'start') {
-                if (!await workflowConfirm('Start this task?', 'The task will be saved as in progress for your supervisor.', 'Start task')) return;
+                if (!await TaskDialogs.confirm('Start this task?', 'The task will be saved as in progress for your supervisor.', 'Start task')) return;
                 busy = true; button.disabled = true; await request('start', { assignmentId: task.id }); await refresh(); message('Task started and saved to Firebase.', false); return;
             }
             openSubmit(task, false);
@@ -226,7 +226,7 @@
             if (!value && !firstInvalid) firstInvalid = field;
         }
         if (firstInvalid) { firstInvalid.focus(); return; }
-        if (!await workflowConfirm('Submit your work?', 'Send this submission to your company supervisor for review?', 'Submit for review')) return;
+        if (!await TaskDialogs.confirm('Submit your work?', 'Send this submission to your company supervisor for review?', 'Submit for review')) return;
         busy = true; by('confirmSubmitBtn').disabled = true; by('modalError').textContent = '';
         try {
             const file = by('workFile').files[0];

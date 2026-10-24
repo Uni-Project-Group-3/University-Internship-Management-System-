@@ -1,4 +1,4 @@
-"use strict";
+﻿"use strict";
 
 let supervisorData = null;
 let loading = false;
@@ -231,6 +231,7 @@ function renderSupervisor(data) {
     document.getElementById("recordRows").removeAttribute("aria-busy");
     supervisorData = data;
     document.getElementById("issueQrButton").disabled = saving || !data.students.length;
+    document.getElementById("traineeCount").textContent = data.students.length;
     connected(data, data.supervisor.name);
     document.getElementById("recordsDate").textContent = "Today: " + data.today + " · Asia/Amman";
     document.getElementById("assignedStudents").textContent = data.students.length
@@ -285,6 +286,7 @@ function renderRequests() {
     list.replaceChildren();
     const requests = supervisorData ? supervisorData.requests : [];
     document.getElementById("requestStatus").textContent = requests.length + " pending";
+    document.getElementById("legacyRequestsPanel").hidden = !requests.length;
     requests.forEach(function (request) {
         const row = document.createElement("div");
         row.className = "request-row";
@@ -318,6 +320,8 @@ function renderRecords() {
     const records = supervisorData ? supervisorData.records : [];
     const pending = function (record) { return record.hoursApprovalStatus === "pending" && Number(record.checkOutAt) > 0 && Number(record.workedMinutes) > 0; };
     const count = records.filter(pending).length;
+    document.getElementById("approvalCount").textContent = count;
+    document.getElementById("presentCount").textContent = new Set(records.filter(r => r.attendanceDate === supervisorData.today && Number(r.checkInAt) > 0).map(r => r.studentId)).size;
     document.getElementById("pendingApprovalSummary").textContent = count
         ? count + " completed attendance record(s) awaiting hours approval. Search by student name or ID, or select Pending approval."
         : "No completed attendance is waiting for hours approval.";
@@ -329,7 +333,7 @@ function renderRecords() {
         return Number(pending(b)) - Number(pending(a)) || b.attendanceDate.localeCompare(a.attendanceDate);
     }).forEach(function (record) {
         const row = document.createElement("tr");
-        const status = record.status === "checkedIn" && !record.checkOutAt && Number(record.scheduledEndAt) < Date.now()
+        const status = record.status === "checkedIn" && !record.checkOutAt && record.attendanceDate < supervisorData.today
             ? "missingCheckOut" : record.status;
         [record.attendanceDate, record.studentName, time(record.checkInAt), time(record.checkOutAt),
             record.checkOutAt ? (Number(record.workedMinutes) / 60).toFixed(2) + " h" : "—",
@@ -342,6 +346,19 @@ function renderRecords() {
             button.addEventListener("click", function () { review(record, "approveHours"); });
             cell.append(button);
         } else cell.textContent = label(record.hoursApprovalStatus || "Not counted");
+        cell.classList.add("attendance-record-actions");
+        if (record.attendanceDate === supervisorData.today && Number(record.checkInAt) > 0) {
+            const reset = document.createElement("button"); reset.type = "button"; reset.className = "secondary-action reset-record-button";
+            reset.textContent = "Reset attendance"; reset.disabled = saving;
+            reset.addEventListener("click", () => previewSupervisorReset(record, reset)); cell.append(reset);
+        }
+        const studentCell = row.children[1];
+        const studentId = document.createElement("small"); studentId.className = "attendance-student-id";
+        studentId.textContent = record.studentId || ""; studentCell.append(studentId);
+        const statusCell = row.children[5], badge = document.createElement("span");
+        badge.className = "record-status status-" + String(status).replace(/[^a-zA-Z]/g, "");
+        badge.textContent = statusCell.textContent; statusCell.replaceChildren(badge);
+        if (record.assignmentId + "/" + record.attendanceDate === lastSavedRecord) row.classList.add("attendance-saved-row");
         row.append(cell); list.append(row);
     });
     if (!list.children.length) {
@@ -350,13 +367,33 @@ function renderRecords() {
     }
 }
 
-async function review(record, decision) {
+let pendingReview = null;
+let lastSavedRecord = "";
+function review(record, decision) {
+    pendingReview = { record, decision };
+    document.getElementById("reviewAttendanceDescription").textContent = decision === "approveHours"
+        ? "Approve " + (Number(record.workedMinutes) / 60).toFixed(2) + " hours for " + record.studentName + " on " + record.attendanceDate + "?"
+        : "Confirm this early departure decision for " + record.studentName + "?";
+    document.getElementById("reviewAttendanceStatus").hidden = true;
+    openDialog("reviewAttendanceDialog", document.activeElement);
+}
+document.getElementById("confirmAttendanceReview").addEventListener("click", async function () {
+    if (!pendingReview || saving) return;
+    this.disabled = true;
+    try { await saveReview(pendingReview.record, pendingReview.decision); }
+    finally { this.disabled = false; }
+});
+async function saveReview(record, decision) {
     if (saving) return;
     saving = true; dataVersion++; renderRequests(); renderRecords();
     try {
         renderSupervisor(await api("review", { assignmentId: record.assignmentId, date: record.attendanceDate, decision: decision }));
+        document.getElementById("reviewAttendanceDialog").close();
         showNotice(decision === "approveHours" ? "Hours approved." : "Request updated. A check-out scan is still required.");
-    } catch (error) { showNotice(error.message, true); }
+    } catch (error) {
+        const status = document.getElementById("reviewAttendanceStatus");
+        status.textContent = error.message; status.hidden = false; status.dataset.state = "error";
+    }
     finally { saving = false; renderRequests(); renderRecords(); }
 }
 
@@ -422,11 +459,9 @@ async function processToken(token) {
             else supervisorData.records.push(row);
         }
         saved = true;
-        if (result.action === "checkOut") {
-            // Reveal the actual saved student's row, even if a search previously hid it.
-            document.getElementById("attendanceSearch").value = "";
-            document.getElementById("approvalFilter").value = "pending";
-        }
+        lastSavedRecord = result.record.assignmentId + "/" + result.record.attendanceDate;
+        document.getElementById("attendanceSearch").value = "";
+        document.getElementById("approvalFilter").value = "all";
         showNotice(result.action === "checkOut"
             ? "Check-out saved. Review Pending approval below, then select Approve hours."
             : "Check-in saved. Scan a new check-out QR when the student leaves.");
@@ -627,39 +662,115 @@ document.getElementById("refreshAttendance").addEventListener("click", loadSuper
 // نحمّل البيانات عند فتح الصفحة؛ تحديث تغييرات الطرف الآخر يكون يدويًا من زر Refresh.
 loadSupervisor();
 
-// اختيار الطلاب يغيّر رموزهم المؤقتة فقط؛ لا يسجل حضورًا.
-document.getElementById("issueQrButton").addEventListener("click", function () {
-    const list = document.getElementById("qrStudentList");
-    list.replaceChildren();
+function setIssueStatus(message, error) {
+    const status = document.getElementById("issueQrStatus");
+    status.textContent = message; status.hidden = !message;
+    status.dataset.state = error ? "error" : "success";
+}
+function updateQrSelection() {
+    const boxes = Array.from(document.querySelectorAll("#qrStudentList input:not(:disabled)"));
+    const count = boxes.filter(box => box.checked).length;
+    const all = document.getElementById("selectAllQrStudents");
+    all.checked = boxes.length > 0 && count === boxes.length;
+    all.indeterminate = count > 0 && count < boxes.length;
+    all.disabled = saving || !boxes.length;
+    document.getElementById("qrSelectionCount").textContent = count + " selected";
+    document.getElementById("confirmIssueQr").disabled = saving || !count;
+    document.getElementById("issueQrButton").disabled = saving || !(supervisorData && supervisorData.students.length);
+}
+function renderQrStudents(selected) {
+    const list = document.getElementById("qrStudentList"); list.replaceChildren();
     (supervisorData ? supervisorData.students : []).forEach(function (student) {
-        const row = document.createElement("p"), label = document.createElement("label");
-        const checkbox = document.createElement("input");
+        const row = document.createElement("div"); row.className = "qr-student-card";
+        const label = document.createElement("label"), checkbox = document.createElement("input");
         checkbox.type = "checkbox"; checkbox.value = student.id; checkbox.name = "qrStudent";
-        // رقم الطالب يميّز الحساب الصحيح عند تشابه الأسماء أو وجود أكثر من مشرف.
-        label.append(checkbox, " " + student.name + " · Student ID: " + student.id +
-            " · Assignment: " + student.assignmentId);
-        row.append(label); list.append(row);
+        checkbox.disabled = saving || student.qrEligible === false;
+        checkbox.checked = !checkbox.disabled && (selected || []).includes(student.id);
+        checkbox.addEventListener("change", updateQrSelection);
+        const avatar = document.createElement("span"); avatar.className = "qr-student-avatar";
+        avatar.textContent = student.name.split(/\s+/).slice(0, 2).map(n => n[0]).join("");
+        const details = document.createElement("span"); details.className = "qr-student-info";
+        const name = document.createElement("strong"); name.textContent = student.name;
+        const id = document.createElement("small"); id.textContent = "Student ID · " + student.id;
+        details.append(name, id); label.append(checkbox, avatar, details); row.append(label);
+        if (student.attendanceSetupRequired || !student.trainingPeriodReady) {
+            const button = document.createElement("button"); button.type = "button"; button.className = "secondary-action setup-attendance";
+            button.textContent = student.attendanceSetupRequired ? "Enable attendance" : "Sync training"; button.disabled = saving;
+            button.addEventListener("click", async function () {
+                if (saving) return;
+                const previous = Array.from(document.querySelectorAll("#qrStudentList input:checked")).map(box => box.value);
+                saving = true; updateQrSelection(); button.disabled = true; button.textContent = "Setting up…";
+                setIssueStatus("Preparing this student's attendance…");
+                try {
+                    const data = await api("setupAttendance", { studentId: student.id });
+                    dataVersion++; renderSupervisor(data); saving = false;
+                    renderQrStudents(previous.concat(student.id));
+                    setIssueStatus("Attendance is ready. You can now issue this student's QR.");
+                } catch (error) { saving = false; renderQrStudents(previous); setIssueStatus(error.message, true); }
+            });
+            row.append(button);
+        } else {
+            const badge = document.createElement("span"); badge.className = "qr-ready-badge"; badge.textContent = "Ready"; row.append(badge);
+        }
+        list.append(row);
     });
-    document.getElementById("selectAllQrStudents").checked = false;
-    document.getElementById("issueQrStatus").textContent = "";
-    openDialog("issueQrDialog", this);
+    if (!list.children.length) list.textContent = "No active trainees are assigned to you.";
+    updateQrSelection();
+}
+document.getElementById("issueQrButton").addEventListener("click", function () {
+    renderQrStudents(); setIssueStatus(""); openDialog("issueQrDialog", this);
 });
 document.getElementById("selectAllQrStudents").addEventListener("change", function () {
-    const checked = this.checked;
-    document.querySelectorAll("#qrStudentList input").forEach(function (box) { box.checked = checked; });
+    document.querySelectorAll("#qrStudentList input:not(:disabled)").forEach(box => { box.checked = this.checked; });
+    updateQrSelection();
 });
 document.getElementById("confirmIssueQr").addEventListener("click", async function () {
     if (saving) return;
-    const ids = Array.from(document.querySelectorAll("#qrStudentList input:checked")).map(function (box) { return box.value; });
-    const status = document.getElementById("issueQrStatus");
-    if (!ids.length) { status.textContent = "Select at least one student."; return; }
-    saving = true; this.disabled = true;
+    const ids = Array.from(document.querySelectorAll("#qrStudentList input:checked:not(:disabled)")).map(box => box.value);
+    if (!ids.length) { setIssueStatus("Select at least one student.", true); return; }
+    saving = true; updateQrSelection(); this.textContent = "Issuing…";
     try {
         const result = await api("issueQr", { studentIds: JSON.stringify(ids), attendanceAction: document.getElementById("issuedQrAction").value });
-        status.textContent = result.issued.length + " QR codes issued. Each student can now open their own QR.";
-        if (result.failed.length) status.textContent += " Not issued: " + result.failed.map(function (row) {
-            return "Student " + row.studentId + ": " + row.message;
-        }).join("; ");
-    } catch (error) { status.textContent = error.message; }
-    finally { saving = false; this.disabled = false; }
+        let message = result.issued.length ? result.issued.length + " QR codes issued. Students can now open their attendance QR." : "No QR codes issued.";
+        if (result.failed.length) message += " " + result.failed.map(row => "Student " + row.studentId + ": " + row.message).join("; ");
+        setIssueStatus(message, result.failed.length > 0);
+    } catch (error) { setIssueStatus(error.message, true); }
+    finally { saving = false; this.textContent = "Issue QR codes"; updateQrSelection(); }
+});
+
+let supervisorResetPreview = null;
+async function previewSupervisorReset(record, opener) {
+    if (saving) return;
+    saving = true; opener.disabled = true; supervisorResetPreview = null;
+    const status = document.getElementById("supervisorResetStatus"); status.hidden = true;
+    document.getElementById("supervisorResetDescription").textContent = "Loading attendance for " + record.studentName + "…";
+    document.getElementById("confirmSupervisorReset").disabled = true;
+    openDialog("supervisorResetDialog", opener);
+    try {
+        const preview = await api("supervisorResetPreview", { studentId: record.studentId });
+        supervisorResetPreview = Object.assign({}, preview, { studentId: record.studentId });
+        document.getElementById("supervisorResetDescription").textContent = record.studentName + " · " + preview.date + ". " +
+            (Number(preview.approvedMinutesRemoved) > 0 ? "This removes " + (Number(preview.approvedMinutesRemoved) / 60).toFixed(2) + " approved hours from the current total." : "No approved hours will be removed.");
+        document.getElementById("confirmSupervisorReset").disabled = false;
+    } catch (error) { status.textContent = error.message; status.hidden = false; status.dataset.state = "error"; }
+    finally { saving = false; opener.disabled = false; }
+}
+document.getElementById("confirmSupervisorReset").addEventListener("click", async function () {
+    if (saving || !supervisorResetPreview) return;
+    const preview = supervisorResetPreview; supervisorResetPreview = null;
+    saving = true; dataVersion++; this.disabled = true;
+    try {
+        const data = await api("supervisorResetToday", { studentId: preview.studentId, expectedVersion: preview.expectedVersion, expectedDate: preview.date });
+        saving = false;
+        document.getElementById("attendanceSearch").value = ""; document.getElementById("approvalFilter").value = "all";
+        renderSupervisor(data);
+        document.getElementById("supervisorResetDialog").close();
+        document.getElementById("verificationDetails").hidden = true; document.getElementById("verificationEmpty").hidden = false;
+        document.getElementById("scanStatus").textContent = "Waiting for scan";
+        lastToken = ""; lastTokenAt = 0;
+        showNotice("Attendance reset. Issue a new check-in QR for the student to start again.");
+    } catch (error) {
+        const status = document.getElementById("supervisorResetStatus"); status.textContent = error.message + " Close and refresh before retrying.";
+        status.hidden = false; status.dataset.state = "error";
+    } finally { saving = false; renderRecords(); }
 });

@@ -226,6 +226,17 @@ internal static partial class Program
             Assert((string)(await w.SendCertificateAsync("admin","admin","P"))["status"]=="sent");await w.SendCertificateAsync("admin","admin","P");Assert(sends==1);
             Assert(!(await w.ReadAsync("student","student","P")).ToString().Contains("student@university.edu"));
         });
+        await Test("attendance roster shows authorized trainees awaiting setup without granting QR or leaking other companies",()=>{
+            var users=JObject.Parse("{u:{studentId:'ST',role:'student',isActive:true,fullName:'Assigned trainee'}}");
+            var placements=JObject.Parse("{P:{studentId:'ST',studentUid:'u',companyId:'CO',companySupervisorId:'SUP',status:'active',startDate:'2026-10-25'}}");
+            var roster=new JArray();var supervisor=new JObject{["companyId"]="CO"};
+            UIMS.Attendance.AttendanceOnboarding.AppendPendingPlacements(roster,placements,users,"OTHER",supervisor);Assert(roster.Count==0);
+            UIMS.Attendance.AttendanceOnboarding.AppendPendingPlacements(roster,placements,users,"SUP",new JObject{["companyId"]="OTHER"});Assert(roster.Count==0);
+            UIMS.Attendance.AttendanceOnboarding.AppendPendingPlacements(roster,placements,users,"SUP",supervisor);Assert(roster.Count==1&&(bool)roster[0]["attendanceSetupRequired"]&&!(bool)roster[0]["qrEligible"]&&((string)roster[0]["setupMessage"]).Contains("end date"));
+            UIMS.Attendance.AttendanceOnboarding.AppendPendingPlacements(roster,placements,users,"SUP",supervisor);Assert(roster.Count==1);
+            roster.Clear();users["u"]["isActive"]=false;UIMS.Attendance.AttendanceOnboarding.AppendPendingPlacements(roster,placements,users,"SUP",supervisor);Assert(roster.Count==0);
+            return Task.CompletedTask;
+        });
         await Test("certificate setup errors identify missing server settings and invalid saved recipient separately",async()=>{
             var db=FinalSeed();var profile=(JObject)await db.ReadAsync("users/student");profile["email"]="student@university.edu";db.Seed("users/student",profile);var w=FinalService(db);w.CertificateSettings=key=>null;
             string rev=await AcademicallyApproved(w);await w.ActAsync("admin","admin","P","finalApprove",FApprove(rev));

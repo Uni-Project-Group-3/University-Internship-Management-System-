@@ -1,0 +1,75 @@
+
+/* A single task workspace, with in-place steps instead of stacked popups. */
+.task-flow-previous[hidden] { display:none !important; }
+.task-flow-shell { width:min(900px,calc(100vw - 40px)); max-width:none; max-height:calc(100dvh - 40px); padding:0; border:1px solid var(--border,#dfe3eb); border-radius:18px; background:var(--surface,#fff); color:var(--text,#242844); box-shadow:0 24px 70px #15234430; }
+.task-flow-shell::backdrop { background:#17213c66; }
+.task-flow-surface { display:flex; flex-direction:column; gap:18px; min-width:0; max-height:calc(100dvh - 44px); padding:24px 28px; color:var(--text,#242844); background:var(--surface,#fff); overflow:auto; box-sizing:border-box; }
+.task-flow-header { display:flex; flex-direction:column; align-items:flex-start; gap:12px; padding-bottom:16px; border-bottom:1px solid var(--border,#dfe3eb); }
+.task-flow-header h2 { font-family:var(--font-heading,inherit); font-size:22px; margin:0; font-weight:700; color:var(--text,#242844); }
+.task-flow-back { border:0; padding:0; background:none; color:var(--primary,#1f3d78); font-size:12px; font-weight:600; cursor:pointer; }
+.task-flow-surface > .workspace-dialog-body { overflow:visible; max-height:none; padding:0; margin:0; }
+.task-flow-surface .workspace-dialog-actions { display:flex; justify-content:flex-end; align-items:center; gap:10px; flex-wrap:wrap; padding:16px 0 0; margin:0; border-top:1px solid var(--border,#dfe3eb); }
+.task-flow-surface button,.task-flow-surface input,.task-flow-surface textarea,.task-flow-surface select { font-family:inherit; }
+.task-flow-surface button:not(.task-flow-back) { border-radius:9px; padding:10px 16px; font-size:12px; min-height:40px; }
+.task-flow-surface .primary { background:var(--primary,#1f3d78); border:1px solid var(--primary,#1f3d78); color:white; }
+.task-flow-surface .secondary { background:var(--surface,#fff); border:1px solid var(--border,#dfe3eb); color:var(--primary,#1f3d78); }
+.task-flow-surface button:disabled { opacity:.5; cursor:not-allowed; }
+.task-flow-surface label { display:block; font-size:12px; font-weight:600; line-height:1.6; }
+.task-flow-surface input:not([type=radio]):not([type=checkbox]),.task-flow-surface textarea,.task-flow-surface select { display:block; width:100%; box-sizing:border-box; border:1px solid var(--border,#dfe3eb); border-radius:9px; background:var(--surface,#fff); padding:10px 12px; margin:6px 0 14px; font-size:13px; }
+.task-flow-surface .exam-overview-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:14px 20px; padding:16px 0; border-top:1px solid var(--border,#dfe3eb); border-bottom:1px solid var(--border,#dfe3eb); }
+.task-flow-surface .exam-overview-grid > div { border:0; background:none; padding:0; border-radius:0; }
+.task-flow-surface .exam-overview-grid dt { font-size:11px; color:var(--text-secondary,#66718a); margin-bottom:5px; }
+.task-flow-surface .exam-overview-grid dd { font-size:13px; margin:0; font-weight:600; }
+.task-flow-surface .exam-start-gate { padding:14px 16px; background:var(--primary-soft,#eaf2fa); border:0; border-radius:10px; }
+.task-flow-surface .exam-timer { font-size:24px; font-variant-numeric:tabular-nums; color:var(--primary,#1f3d78); }
+.task-flow-surface .exam-card,.task-flow-surface .exam-review-card { padding:18px 0; border:0; border-bottom:1px solid var(--border,#dfe3eb); box-shadow:none; border-radius:0; background:none; }
+.task-flow-surface .exam-review-card h3 { font-size:16px; }
+.task-flow-surface .exam-review-card pre { padding:14px; background:var(--surface-alt,#f6f7fa); border-radius:10px; font:13px/1.8 var(--font-body,Arial); }
+.task-flow-surface .workspace-confirm-icon { display:none; }
+.modal:has(.task-flow-surface) .modal-dialog { width:min(900px,calc(100vw - 40px)); max-width:none; }
+.modal-content:has(>.task-flow-surface) { overflow:hidden; padding:0; }
+.task-flow-fullscreen { width:100vw !important; max-width:none !important; height:100dvh !important; max-height:none !important; margin:0 !important; border:0 !important; border-radius:0 !important; inset:0; }
+.task-flow-fullscreen .task-flow-surface { width:100%; height:100dvh; max-height:100dvh; padding:24px max(24px,calc((100vw - 1100px)/2)); }
+.task-flow-fullscreen .workspace-dialog-actions { position:sticky; bottom:-24px; background:var(--surface,#fff); padding-bottom:18px; margin-top:auto; }
+.task-flow-fullscreen nav { display:flex; flex-wrap:wrap; gap:8px; }
+.task-flow-fullscreen .question { border:0; box-shadow:none; background:none; padding:18px 0; }
+.task-flow-fullscreen .question h3 { font-size:19px; line-height:1.7; }
+.task-flow-fullscreen .option { display:flex; align-items:center; gap:12px; padding:14px 16px; margin:10px 0; border:1px solid var(--border,#dfe3eb); border-radius:10px; font-weight:400; }
+.task-flow-fullscreen .option:has(input:checked) { background:var(--primary-soft,#eaf2fa); border-color:var(--primary,#1f3d78); }
+#createTaskModal .modal-dialog { width:min(920px,calc(100vw - 40px)); max-width:none; }
+#createTaskModal .modal-content,#submitModal .modal-content,#reviewModal .modal-content { border-radius:18px; border:1px solid var(--border,#dfe3eb); box-shadow:0 24px 70px #15234430; }
+#createTaskModal .modal-header,#submitModal .modal-header,#reviewModal .modal-header { background:var(--surface,#fff); padding:22px 26px !important; border-bottom:1px solid var(--border,#dfe3eb) !important; }
+#createTaskModal .modal-title,#submitModal .modal-title,#reviewModal .modal-title { font-size:22px; }
+#createTaskModal .modal-body,#submitModal .modal-body,#reviewModal .modal-body { padding:20px 26px !important; background:var(--surface,#fff); }
+#createTaskModal .modal-footer,#submitModal .modal-footer,#reviewModal .modal-footer { padding:16px 26px !important; border-top:1px solid var(--border,#dfe3eb) !important; background:var(--surface,#fff); gap:10px; }
+#createTaskModal .task-compose-grid { display:block; max-width:none; margin:0; }
+#createTaskModal .task-compose-section { padding:0; border:0; border-radius:0; box-shadow:none; background:none; margin:0 0 22px; }
+#createTaskModal .task-compose-section > h6 { font-size:13px; padding-bottom:12px; border-bottom:1px solid var(--border,#dfe3eb); margin-bottom:16px; }
+#createTaskModal .compose-tabs { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px; margin:0 0 22px; padding:0; position:static; background:none; }
+#createTaskModal .compose-tabs button { padding:12px 8px; border:1px solid var(--border,#dfe3eb); border-radius:9px; font-size:12px; background:var(--surface,#fff); color:var(--text-secondary,#66718a); }
+#createTaskModal .compose-tabs button.active { background:var(--primary-soft,#eaf2fa); color:var(--primary,#1f3d78); border-color:var(--primary,#1f3d78); }
+#createTaskModal .task-compose-intro { font-size:12px; margin:8px 0 0; }
+#createTaskModal .compose-question { padding:16px; margin:12px 0; border:1px solid var(--border,#dfe3eb); background:var(--surface,#fff); border-radius:10px; }
+#createTaskModal .compose-question > summary { display:flex; align-items:center; gap:8px; cursor:pointer; margin:0; }
+#createTaskModal .compose-question > summary strong { margin-right:auto; }
+#createTaskModal .compose-question[open] > summary { padding-bottom:14px; margin-bottom:14px; border-bottom:1px solid var(--border,#dfe3eb); }
+#submitModal .exam-card,#reviewModal .exam-review-card { border:0; border-radius:0; box-shadow:none; padding:14px 0; background:none; }
+#taskExamWorkspace { padding:0; border:0; box-shadow:none; background:none; }
+@media(max-width:600px) { .task-flow-shell,.modal:has(.task-flow-surface) .modal-dialog,#createTaskModal .modal-dialog { width:calc(100vw - 20px); } .task-flow-surface { padding:18px; } .task-flow-surface .exam-overview-grid { grid-template-columns:repeat(2,minmax(0,1fr)); } #createTaskModal .compose-tabs button { font-size:10px; } }
+
+.task-flow-surface .exam-answer-list details { padding:14px 0; border-bottom:1px solid var(--border,#dfe3eb); }
+.task-flow-surface .exam-answer-list summary { cursor:pointer; font-size:13px; font-weight:600; line-height:1.8; }
+.task-flow-surface .exam-answer-list p { font-size:13px; margin:12px 0 0; }
+.task-flow-surface .exam-result-actions { display:flex; flex-wrap:wrap; gap:8px; margin-top:14px; }
+
+.task-flow-surface { width:100%; max-width:none; margin:0; border:0; border-radius:0; box-shadow:none; font-family:var(--font-body,Arial,sans-serif); }
+.task-flow-header h2 { font-family:var(--font-heading,Arial,sans-serif); }
+#createTaskModal .modal-content,#reviewModal .modal-content,#submitModal .modal-content { font-family:var(--font-body,Arial,sans-serif); }
+#createTaskModal .modal-header,#reviewModal .modal-header,#submitModal .modal-header { background:var(--surface,#fff) !important; }
+#reviewModal:has(.task-flow-surface) .modal-dialog,#submitModal:has(.task-flow-surface) .modal-dialog { width:min(900px,calc(100vw - 40px)) !important; max-width:none !important; }
+
+#studentTaskInstructions,#taskFullDetails { padding:0; border:0; border-radius:0; background:none; box-shadow:none; font-size:13px; line-height:1.8; }
+.task-support-details { padding:14px 0; border-top:1px solid var(--border,#dfe3eb); margin-top:14px; }
+.task-support-details > summary { font-size:13px; font-weight:600; cursor:pointer; }
+.task-support-details[open] > summary { margin-bottom:14px; }
+#taskExamNotice { padding:12px 14px; border-radius:9px; font-size:12px; line-height:1.7; }

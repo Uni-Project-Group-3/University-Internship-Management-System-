@@ -159,6 +159,7 @@ namespace UIMS.Attendance
         internal sealed class VerifiedWriteRequest
         {
             internal string Uid, Role, Id, Action;
+            internal Dictionary<string, JObject> ProvisioningRecords;
         }
         internal static readonly AsyncLocal<VerifiedWriteRequest> WriteRequest = new AsyncLocal<VerifiedWriteRequest>();
         private readonly Func<string, string> readSetting;
@@ -272,6 +273,12 @@ namespace UIMS.Attendance
         {
             var context = System.Web.HttpContext.Current;
             var actor = WriteRequest.Value;
+            JObject approved;
+            if (context != null && context.Request.IsLocal && context.Request.HttpMethod == "POST" &&
+                actor != null && actor.Role == "company" && actor.Action == "setupAttendance" &&
+                !string.IsNullOrWhiteSpace(actor.Uid) && !string.IsNullOrWhiteSpace(actor.Id) &&
+                actor.ProvisioningRecords != null && actor.ProvisioningRecords.TryGetValue(path, out approved) &&
+                JToken.DeepEquals(approved, data)) return;
             var parts = (path ?? "").Split('/');
             DateTime date;
             if (context == null || !context.Request.IsLocal || context.Request.HttpMethod != "POST" ||
@@ -285,13 +292,16 @@ namespace UIMS.Attendance
             if (actor.Action == "resetToday" && (!StudentResetEnabled ||
                 !AttendanceService.IsLocalResetRequest(context) || actor.Role != "student" || AttendanceService.Text(data, "status") != "notCheckedIn"))
                 throw new UIMS.Services.FirebaseException(403, "Attendance reset is not enabled for this request.");
+            if (actor.Action == "supervisorResetToday" && (!AttendanceService.IsLocalResetRequest(context) ||
+                actor.Role != "company" || AttendanceService.Text(data, "status") != "notCheckedIn"))
+                throw new UIMS.Services.FirebaseException(403, "Supervisor reset is not authorized for this request.");
             foreach (string field in new[] { "studentId", "companyId", "companySupervisorId", "assignmentId" })
                 AttendanceFirebase.CheckKey(AttendanceService.Text(data, field));
             bool student = actor.Role == "student" && (string)data["studentId"] == actor.Id &&
                 ((actor.Action == "requestEarly" && parts[0] == "earlyCheckoutRequests") ||
                  ((actor.Action == "qr" || actor.Action == "resetToday") && parts[0] == "attendance"));
             bool supervisor = actor.Role == "company" && (string)data["companySupervisorId"] == actor.Id &&
-                ((parts[0] == "attendance" && (actor.Action == "issueQr" || actor.Action == "scan" || actor.Action == "review")) ||
+                ((parts[0] == "attendance" && (actor.Action == "issueQr" || actor.Action == "scan" || actor.Action == "review" || actor.Action == "supervisorResetToday")) ||
                  (parts[0] == "earlyCheckoutRequests" && actor.Action == "review"));
             if ((!student && !supervisor) || (actor.Action != "review" && parts[2] != AttendanceService.Today()))
                 throw new UIMS.Services.FirebaseException(403, "This authenticated role cannot perform the requested attendance write.");

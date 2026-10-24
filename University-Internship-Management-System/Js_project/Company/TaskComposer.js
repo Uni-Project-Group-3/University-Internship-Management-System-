@@ -1,8 +1,9 @@
-(function () {
+﻿(function () {
     'use strict';
     const by = id => document.getElementById(id), modal = by('createTaskModal');
     const sections = [...modal.querySelectorAll('.task-compose-section')];
-    const titles = ['Task details', 'Assign students', 'Exam (optional)', 'Resources', 'Review'];
+    const titles = ['Task details', 'Students & examination', 'Review & create'];
+    const stepTargets = [0, 1, 4];
     const panels = [sections[0], sections[1], sections[3], sections[2]];
     panels[2].querySelector('h6').firstChild.textContent = '03 ';
     panels[3].querySelector('h6').firstChild.textContent = '04 ';
@@ -14,6 +15,7 @@
     back.type = next.type = 'button'; back.className = 'btn btn-light'; next.className = 'btn custom-btn-primary'; back.textContent = 'Back'; next.textContent = 'Next →';
     footer.insertBefore(back, by('publishTaskBtn')); footer.append(next);
     modal.querySelector('.modal-body').prepend(tabs);
+    let expandedQuestion = null;
     let step = 0, questions = [], previewUrls = [], saving = false, recovering = false, recoveredDefinition = null;
     const disabledBeforeSave = new Map();
     function lockControls() {
@@ -26,14 +28,14 @@
     }
     const questionId = () => 'Q-' + crypto.randomUUID();
     function go(index) {
-        step = index; panels.forEach((p, n) => p.hidden = n !== step);
-        [...tabs.children].forEach((b, n) => { b.classList.toggle('active', n === step); b.setAttribute('aria-current', n === step ? 'step' : 'false'); });
+        step = index >= 1 && index <= 3 ? 1 : index; panels.forEach((p, n) => p.hidden = step === 1 ? ![1,2,3].includes(n) : n !== step);
+        [...tabs.children].forEach((b, n) => { b.classList.toggle('active', stepTargets[n] === step); b.setAttribute('aria-current', stepTargets[n] === step ? 'step' : 'false'); });
         back.hidden = !step; next.hidden = step === 4; by('publishTaskBtn').hidden = step !== 4;
         if (step === 4) showReview(); modal.querySelector('.modal-body').scrollTop = 0;
     }
-    titles.forEach((title, index) => { const b = document.createElement('button'); b.type = 'button'; b.textContent = title; b.onclick = () => { if (!saving && !recovering && (index <= step || validateThrough(index - 1))) go(index); }; tabs.append(b); });
-    back.onclick = () => { if (!saving && !recovering) go(step - 1); };
-    next.onclick = () => { if (!saving && !recovering && validateThrough(step)) go(step + 1); };
+    titles.forEach((title, index) => { const b = document.createElement('button'); b.type = 'button'; b.textContent = title; b.onclick = () => { const target = stepTargets[index]; if (!saving && !recovering && (target <= step || validateThrough(target === 4 ? 3 : 0))) go(target); }; tabs.append(b); });
+    back.onclick = () => { if (!saving && !recovering) go(step === 4 ? 1 : 0); };
+    next.onclick = () => { if (!saving && !recovering && validateThrough(step === 1 ? 3 : 0)) go(step === 0 ? 1 : 4); };
     const exam = document.createElement('div'); exam.id = 'composerExamFields'; exam.hidden = true;
     exam.innerHTML = '<div class="compose-exam-settings"><label>Exam title *<input id="composeExamTitle" maxlength="180" class="form-control" /></label><label>Exam instructions<textarea id="composeExamInstructions" maxlength="4000" class="form-control" rows="2"></textarea></label><div class="row"><label class="col-md-6">Opening date &amp; time *<input id="composeExamOpens" type="datetime-local" class="form-control" /></label><label class="col-md-6">Closing date &amp; time *<input id="composeExamCloses" type="datetime-local" class="form-control" /></label></div><small id="composeExamZone"></small><div class="row"><label class="col-md-6">Duration (minutes) *<input id="composeExamDuration" type="number" min="1" max="600" value="30" class="form-control" /></label><label class="col-md-6">Allowed attempts *<input id="composeExamAttempts" type="number" min="1" max="10" value="1" class="form-control" /></label></div></div><div class="compose-question-toolbar"><h6>Questions</h6><button type="button" id="composeAddQuestion" class="btn btn-light">+ Add question</button></div><div id="composeQuestions"></div><p id="composeExamError" class="field-error" role="alert"></p>';
     panels[2].append(exam); by('composeExamZone').textContent = 'Timezone: ' + Intl.DateTimeFormat().resolvedOptions().timeZone;
@@ -47,8 +49,10 @@
         previewUrls.forEach(URL.revokeObjectURL); previewUrls = [];
         const host = by('composeQuestions'); host.replaceChildren();
         questions.forEach((q, index) => {
-            const card = document.createElement('article'); card.className = 'compose-question';
-            const heading = document.createElement('div'); heading.className = 'compose-question-toolbar';
+            const card = document.createElement('details'); card.className = 'compose-question';
+            card.open = q.id === (expandedQuestion || questions[questions.length - 1]?.id);
+            card.addEventListener('toggle', () => { if (card.open && card.isConnected) { expandedQuestion = q.id; host.querySelectorAll('.compose-question').forEach(other => { if (other !== card) other.open = false; }); } });
+            const heading = document.createElement('summary'); heading.className = 'compose-question-toolbar'; heading.addEventListener('click', event => { if (event.target.closest('button')) event.preventDefault(); });
             const name = document.createElement('strong'); name.textContent = 'Question ' + (index + 1); heading.append(name);
             for (const delta of [-1, 1]) { const b = button(delta < 0 ? '↑' : '↓', () => { [questions[index], questions[index + delta]] = [questions[index + delta], questions[index]]; changed(); renderQuestions(); }); b.disabled = index + delta < 0 || index + delta >= questions.length; b.setAttribute('aria-label', delta < 0 ? 'Move question up' : 'Move question down'); heading.append(b); }
             heading.append(button('Remove', async () => { if (await TaskDialogs.confirm('Remove question?', 'Remove this question from the unsaved exam?', 'Remove')) { questions.splice(index, 1); changed(); renderQuestions(); } }, true)); card.append(heading);
@@ -75,7 +79,7 @@
         });
         if (!questions.length) host.textContent = 'Add your first question to start building the examination.';
     }
-    by('composeAddQuestion').onclick = () => { questions.push({ id: questionId(), type: 'multipleChoice', prompt: '', points: 1, options: ['', ''], answer: 0, file: null }); changed(); renderQuestions(); };
+    by('composeAddQuestion').onclick = () => { expandedQuestion = questionId(); questions.push({ id: expandedQuestion, type: 'multipleChoice', prompt: '', points: 1, options: ['', ''], answer: 0, file: null }); changed(); renderQuestions(); };
     function fieldValid(id, message) { const field = by(id), valid = field.value.trim() && field.checkValidity(); field.classList.toggle('is-invalid', !valid); field.setAttribute('aria-invalid', String(!valid)); let error = by(id + 'Error'); if (!error) { error = document.createElement('span'); error.id = id + 'Error'; error.className = 'field-error'; field.after(error); field.setAttribute('aria-describedby', error.id); } error.textContent = valid ? '' : message; if (!valid) field.focus(); return !!valid; }
     function validateExam() {
         if (!by('configureTaskExam').checked) return true;
@@ -84,7 +88,7 @@
         let message = '';
         if (new Date(by('composeExamCloses').value) <= new Date(by('composeExamOpens').value)) { message = 'Closing time must be later than opening time.'; valid = false; }
         if (!questions.length) { message = 'Add at least one question.'; valid = false; }
-        questions.forEach(q => { const options = q.options.map(s => s.trim().toLowerCase()); const error = !q.prompt.trim() ? 'Enter question text.' : !(q.points > 0 && q.points <= 1000) ? 'Points must be from 0.01 to 1000.' : q.type === 'multipleChoice' && (options.length < 2 || options.some(s => !s) || new Set(options).size !== options.length) ? 'Enter at least two distinct, non-empty answer options.' : ''; by('composer-error-' + q.id).textContent = error; valid = !error && valid; });
+        questions.forEach(q => { const options = q.options.map(s => s.trim().toLowerCase()); const error = !q.prompt.trim() ? 'Enter question text.' : !(q.points > 0 && q.points <= 1000) ? 'Points must be from 0.01 to 1000.' : q.type === 'multipleChoice' && (options.length < 2 || options.some(s => !s) || new Set(options).size !== options.length) ? 'Enter at least two distinct, non-empty answer options.' : ''; by('composer-error-' + q.id).textContent = error; if (error) { by('composer-error-' + q.id).closest('details').open = true; } valid = !error && valid; });
         by('composeExamError').textContent = message; return valid;
     }
     function validateThrough(index) {

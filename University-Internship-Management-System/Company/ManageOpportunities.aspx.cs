@@ -60,6 +60,7 @@ namespace UIMS.Company
                 ["updatedAt"] = FirebaseDb.Now
             };
 
+            UIMS.Attendance.AttendanceOnboarding.ApplyTrainingDefaults(fields);
             string id = S(d["id"]);
             if (id == "")
             {

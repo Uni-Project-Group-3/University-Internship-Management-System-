@@ -9,6 +9,34 @@ using University_Internship_Management_System.Shared;
 
 internal static partial class Program
 {
+    private static async Task<int> PrepareCurrentAttendance(string configPath)
+    {
+        var xml=new XmlDocument();xml.Load(configPath);var values=xml.SelectNodes("/configuration/appSettings/add").Cast<XmlElement>().ToDictionary(x=>x.GetAttribute("key"),x=>x.GetAttribute("value"));Func<string,string> setting=k=>values.ContainsKey(k)?values[k]:null;
+        var config=new FirebaseConfiguration(setting("FirebaseEnabled"),setting("FirebaseProjectId"),setting("FirebaseDatabaseUrl"),setting("FirebaseApiKey"),setting("FirebaseLiveWritesEnabled"),setting("FirebaseTaskSchemaValidated"),setting("FirebaseSchemaValidated"),setting("FirebaseAuthenticationEnabled"));
+        var gateway=new StudentFirebaseGateway(config);var placements=await gateway.ReadAsync("placements") as JObject??new JObject();var users=await gateway.ReadAsync("users") as JObject??new JObject();
+        var found=placements.Properties().Where(x=>(string)x.Value["studentId"]=="2023005"&&new[]{"active","confirmed"}.Contains((string)x.Value["status"])).ToArray();
+        if(found.Length!=1)throw new InvalidOperationException("Expected exactly one current placement for the authorized student.");
+        string id=found[0].Name;var placement=(JObject)found[0].Value.DeepClone();string uid=(string)placement["studentUid"];var profile=users[uid] as JObject;
+        if(!await gateway.IsActiveAuthenticationUidAsync(uid))throw new InvalidOperationException("Student Authentication account is not active.");
+        placement["startDate"]="2026-10-25";placement["endDate"]="2026-12-20";
+        var state=await gateway.ReadVersionAsync("uimsAttendance");var original=state.Value??new JObject();var prepared=(JObject)original.DeepClone();
+        if(prepared["schedules"]?[id]!=null)throw new InvalidOperationException("A calendar already exists; no overwrite was prepared.");
+        var calendar=new JObject();var zone=TimeZoneInfo.FindSystemTimeZoneById("Jordan Standard Time");
+        for(var day=new DateTime(2026,10,25);day<=new DateTime(2026,12,20);day=day.AddDays(1)){
+            string date=day.ToString("yyyy-MM-dd");calendar[date]=new JObject{["assignmentId"]=id,["attendanceDate"]=date,["timeZone"]="Asia/Amman",["version"]=1,["isTrainingDay"]=true,["scheduledStartAt"]=new DateTimeOffset(TimeZoneInfo.ConvertTimeToUtc(day,zone)).ToUnixTimeMilliseconds(),["scheduledEndAt"]=new DateTimeOffset(TimeZoneInfo.ConvertTimeToUtc(day.AddDays(1).AddMilliseconds(-1),zone)).ToUnixTimeMilliseconds()};
+        }
+        if(!(prepared["schedules"] is JObject))prepared["schedules"]=new JObject();prepared["schedules"][id]=calendar;
+        prepared=UIMS.Attendance.AttendanceOnboarding.Build(prepared,uid,"2023005",id,placement,profile);
+        var patch=new JObject{["placements/"+id]=placement};
+        foreach(string branch in new[]{"students","trainingAssignments","schedules","provisioningClaims"})foreach(var entry in ((JObject)prepared[branch]).Properties())if(original[branch]?[entry.Name]==null)patch["uimsAttendance/"+branch+"/"+entry.Name]=entry.Value.DeepClone();
+        string folder=Path.GetFullPath("Tests/Reports/Attendance-2023005-20261025");Directory.CreateDirectory(folder);File.WriteAllText(Path.Combine(folder,"before-placement.json"),found[0].Value.ToString());File.WriteAllText(Path.Combine(folder,"before-attendance.json"),original.ToString());
+        var instructions=new System.Text.StringBuilder("Import each numbered JSON only at the exact Firebase child path below. Do not import at the database root. Stop if an absent attendance child was created meanwhile.\n\n");int index=0;
+        foreach(var entry in patch.Properties()){string file=(++index).ToString("00")+"-"+entry.Name.Split('/').Reverse().Skip(1).First()+".json";File.WriteAllText(Path.Combine(folder,file),entry.Value.ToString());instructions.AppendLine(entry.Name+" <- "+file);}
+        File.WriteAllText(Path.Combine(folder,"IMPORT-PATHS.txt"),instructions.ToString());
+        Console.WriteLine("Prepared "+patch.Count+" exact child records. Start 2026-10-25; end 2026-12-20; required hours preserved: "+placement["requiredHours"]+". No attendance/check-ins/hours were generated. Output: "+folder);
+        try{config.EnsureWritesAllowed();Console.WriteLine("Gateway writes available; no apply operation was requested.");}catch(FirebaseException){Console.WriteLine("BLOCKED live apply: configured general write/schema gates remain disabled. Import files prepared; no settings bypassed.");}
+        return 0;
+    }
     private static async Task<int> AttendanceSetupKnownPlacement(string configPath, bool apply)
     {
         var xml=new XmlDocument();xml.Load(configPath);

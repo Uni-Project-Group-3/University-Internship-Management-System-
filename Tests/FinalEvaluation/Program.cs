@@ -43,6 +43,14 @@ internal static partial class Program
             set("Id","S");set("Action","scan");await Reject<UIMS.Services.FirebaseException>(()=>{config.EnsureWriteScope("attendance/A/"+today,row);return Task.CompletedTask;});
             set("Role","company");set("Id","CS");set("Uid","verified-CS");config.EnsureWriteScope("attendance/A/"+today,row);
             set("Id","OTHER");await Reject<UIMS.Services.FirebaseException>(()=>{config.EnsureWriteScope("attendance/A/"+today,row);return Task.CompletedTask;});
+            set("Role","company");set("Id","CS");set("Uid","verified-CS");set("Action","setupAttendance");
+            var expected = new JObject { ["studentId"]="S", ["status"]="active" };
+            actorType.GetField("ProvisioningRecords",flags).SetValue(actor,new Dictionary<string,JObject>{{"students/S",expected}});
+            config.EnsureWriteScope("students/S",(JObject)expected.DeepClone());
+            await Reject<UIMS.Services.FirebaseException>(()=>{config.EnsureWriteScope("students/OTHER",expected);return Task.CompletedTask;});
+            await Reject<UIMS.Services.FirebaseException>(()=>{config.EnsureWriteScope("students/S",new JObject{["status"]="inactive"});return Task.CompletedTask;});
+            set("Role","student");await Reject<UIMS.Services.FirebaseException>(()=>{config.EnsureWriteScope("students/S",expected);return Task.CompletedTask;});
+            actorType.GetField("ProvisioningRecords",flags).SetValue(actor,null);
         } finally {property.SetValue(slot,old);System.Web.HttpContext.Current=previous;}
     }
     private sealed class QrMemoryDatabase : UIMS.Attendance.AttendanceFirebase
@@ -72,6 +80,10 @@ internal static partial class Program
         var service = new UIMS.Attendance.AttendanceService(db, () => Enumerable.Repeat((byte)7,32).ToArray(), new UIMS.Attendance.AttendanceConfiguration(key=>key=="AttendanceProductionWritesEnabled"?"true":null));
         await Reject<UIMS.Services.FirebaseException>(()=>service.CreateQr("S","checkIn",false,"foreign-uid")); Assert(db.Writes==0);
         await Reject<InvalidOperationException>(()=>service.CreateQr("S","checkOut",false,"uid-S")); Assert(db.Writes==0);
+        // A historical label on a verified student must not turn authenticated attendance into demo mode.
+        foreach (string linked in new[] { "trainingAssignments/A", "companies/C", "companySupervisors/CS" }) db.Rows[linked]["isTestData"] = false;
+        db.Rows.Remove("schedules/A/"+day); // Flexible QR must work without a stored day or shift schedule.
+        await Reject<InvalidOperationException>(()=>service.CreateQr("S","checkIn",true,"uid-S")); Assert(db.Writes==0);
         var qr = await service.CreateQr("S","checkIn",false,"uid-S");
         Assert(!string.IsNullOrWhiteSpace((string)qr["token"]) && (long)qr["expiresAt"]-(long)qr["serverNow"]==120000);
         Assert((long)db.Rows[path]["approvedMinutes"]==2405 && (string)db.Rows[path]["historicalNote"]=="preserve" && db.Rows[path]["checkInAt"]==null);
@@ -316,7 +328,7 @@ internal static partial class Program
         db.Seed("assignments/conflict","{\"studentId\":\"ST-101\",\"academicSupervisorId\":\"AS-OTHER\",\"active\":false}");
         string plannedId="PLC-"+id;
         var state=new JObject{["companies"]=new JObject{["CO-9"]=new JObject{["status"]="active"}},["companySupervisors"]=new JObject{["CS-3"]=new JObject{["status"]="active",["companyId"]="CO-9"}},
-            ["schedules"]=new JObject{[plannedId]=new JObject{["2030-02-01"]=new JObject{["assignmentId"]=plannedId,["attendanceDate"]="2030-02-01",["timeZone"]="Asia/Amman",["version"]=1,["isTrainingDay"]=true,["scheduledStartAt"]=DateTimeOffset.Parse("2030-02-01T09:00:00+03:00").ToUnixTimeMilliseconds(),["scheduledEndAt"]=DateTimeOffset.Parse("2030-02-01T16:00:00+03:00").ToUnixTimeMilliseconds()}}},["attendance"]=new JObject{["unchanged"]=new JObject{["minutes"]=2405}}};
+            ["schedules"]=new JObject{[plannedId]=new JObject{[UIMS.Attendance.AttendanceService.Today()]=new JObject{["assignmentId"]=plannedId,["attendanceDate"]=UIMS.Attendance.AttendanceService.Today(),["timeZone"]="Asia/Amman",["version"]=1,["isTrainingDay"]=true,["scheduledStartAt"]=DateTimeOffset.Parse(UIMS.Attendance.AttendanceService.Today()+"T09:00:00+03:00").ToUnixTimeMilliseconds(),["scheduledEndAt"]=DateTimeOffset.Parse(UIMS.Attendance.AttendanceService.Today()+"T16:00:00+03:00").ToUnixTimeMilliseconds()}}},["attendance"]=new JObject{["unchanged"]=new JObject{["minutes"]=2405}}};
         db.Seed("uimsAttendance",state.ToString());
         db.ConflictAttendanceOnce=true;db.LoseAttendanceAcknowledgmentOnce=true;
         await Reject<UIMS.Services.FirebaseException>(()=>service.ConfirmOfferAsync("student-auth",id));
@@ -324,9 +336,16 @@ internal static partial class Program
         string placementId = await service.ConfirmOfferAsync("student-auth", id);
         Assert((string)(await db.ReadAsync("placements/" + placementId) as Newtonsoft.Json.Linq.JObject)?["studentId"] == "ST-101");
         Assert((string)(await db.ReadAsync("applications/" + id) as Newtonsoft.Json.Linq.JObject)?["status"] == "confirmed");
+        var savedPlacement = (JObject)await db.ReadAsync("placements/" + placementId);
+        var acceptedPeriod = UIMS.Attendance.AttendanceOnboarding.TrainingPeriod((JObject)await db.ReadAsync("applications/" + id), new JObject());
+        Assert((string)savedPlacement["startDate"] == (string)acceptedPeriod["startDate"] && (string)savedPlacement["endDate"] == (string)acceptedPeriod["endDate"]);
+        Assert((int)savedPlacement["durationWeeks"] == 12 && (string)savedPlacement["attendanceMode"] == "flexible");
+        Assert((string)savedPlacement["trainingStartBasis"] == "companyAcceptance" && (string)savedPlacement["timeZone"] == "Asia/Amman");
         Assert(await service.ConfirmOfferAsync("student-auth", id) == placementId);
         Assert(await new UIMS.Services.ApplicationWorkflowService(db,()=>false).ConfirmOfferAsync("student-auth",id)==placementId);
         var attendance=await db.ReadAsync("uimsAttendance");Assert((string)attendance["students"]["ST-101"]["firebaseUid"]=="student-auth" && (string)attendance["provisioningClaims"][plannedId]["assignmentId"]==plannedId);
+        Assert((string)attendance["trainingAssignments"][plannedId]["timeZone"] == "Asia/Amman" &&
+            (string)attendance["trainingAssignments"][plannedId]["trainingStartBasis"] == "companyAcceptance");
         Assert(JToken.DeepEquals(state["schedules"],attendance["schedules"]) && JToken.DeepEquals(state["attendance"],attendance["attendance"]));
         ((JObject)attendance["provisioningClaims"]).Remove(plannedId);db.Seed("uimsAttendance",attendance.ToString());
         Assert(await service.ConfirmOfferAsync("student-auth",id)==plannedId && (await db.ReadAsync("uimsAttendance"))["provisioningClaims"][plannedId]!=null);
@@ -500,6 +519,8 @@ internal static partial class Program
 
     private static int Main(string[] args)
     {
+        if(args.Length==2&&args[0]=="--prepare-current-attendance")
+        {try{return PrepareCurrentAttendance(args[1]).GetAwaiter().GetResult();}catch(Exception e){Console.WriteLine("Attendance preparation stopped: "+e.Message);return 2;}}
         if(args.Length==2 && (args[0]=="--attendance-setup-plan" || args[0]=="--attendance-setup-apply"))
         {try{return AttendanceSetupKnownPlacement(args[1],args[0].EndsWith("apply")).GetAwaiter().GetResult();}catch(Exception error){Console.WriteLine("Attendance setup stopped: "+error.GetType().Name+": "+error.Message);return 2;}}
         if(args.Length==3 && args[0]=="--attendance-link-readonly")
@@ -592,6 +613,29 @@ internal static partial class Program
             context.Assignment["endDate"] = DateTime.Parse(day).AddDays(-1).ToString("yyyy-MM-dd"); denied("checkOut");
             context.Assignment["endDate"] = day; context.Schedule["assignmentId"] = "foreign"; denied("checkOut");
             return Task.CompletedTask;
+        });
+        await Test("flexible absence counts only completed training dates, without shifts or database writes", async () => {
+            var today = DateTime.ParseExact(UIMS.Attendance.AttendanceService.Today(), "yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture);
+            var assignment = new JObject { ["attendanceMode"] = "flexible", ["startDate"] = today.AddDays(-2).ToString("yyyy-MM-dd"), ["endDate"] = today.AddDays(4).ToString("yyyy-MM-dd") };
+            var db = new QrMemoryDatabase();
+            var service = new UIMS.Attendance.AttendanceService(db);
+            var method = typeof(UIMS.Attendance.AttendanceService).GetMethod("History", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+            var history = await (Task<JObject>)method.Invoke(service, new object[] { "A", "S", new JObject(), new JObject(), assignment });
+            Assert(history.Count == 2 && history.Properties().All(r => (string)r.Value["status"] == "absent"));
+            Assert(history[today.ToString("yyyy-MM-dd")] == null && db.Writes == 0);
+        });
+        await Test("training weeks start at company acceptance in Amman and preserve the accepted duration", async () => {
+            var offer = new JObject { ["durationWeeks"] = 2, ["startDate"] = "2030-01-01" };
+            var application = new JObject { ["decidedAt"] = "2026-10-24T22:30:00Z" };
+            var period = UIMS.Attendance.AttendanceOnboarding.TrainingPeriod(application, offer);
+            Assert((string)period["startDate"] == "2026-10-25" && (string)period["endDate"] == "2026-11-07");
+            offer["durationWeeks"] = 20;
+            Assert(JToken.DeepEquals(period, UIMS.Attendance.AttendanceOnboarding.TrainingPeriod(period, offer)));
+            Assert(JToken.DeepEquals(period, UIMS.Attendance.AttendanceOnboarding.TrainingPeriod(JObject.Parse(period.ToString()), offer)));
+            application["durationWeeks"] = 53;
+            await Reject<UIMS.Services.FirebaseException>(() => { UIMS.Attendance.AttendanceOnboarding.TrainingPeriod(application, offer); return Task.CompletedTask; });
+            application.Remove("durationWeeks"); application.Remove("decidedAt");
+            await Reject<UIMS.Services.FirebaseException>(() => { UIMS.Attendance.AttendanceOnboarding.TrainingPeriod(application, offer); return Task.CompletedTask; });
         });
         await Test("attendance onboarding preserves history/calendar, rejects cross-student conflicts, freezes 2023301 and is idempotent", AttendanceOnboardingBoundaryTests);
         await Test("Auth audit keeps permission failures unverified and reconciliation does not infer enabled users", () =>

@@ -1,0 +1,515 @@
+{
+  "2026-10-25": {
+    "assignmentId": "PLC-APP-20261024210802-D6319F",
+    "attendanceDate": "2026-10-25",
+    "timeZone": "Asia/Amman",
+    "version": 1,
+    "isTrainingDay": true,
+    "scheduledStartAt": 1792875600000,
+    "scheduledEndAt": 1792961999999
+  },
+  "2026-10-26": {
+    "assignmentId": "PLC-APP-20261024210802-D6319F",
+    "attendanceDate": "2026-10-26",
+    "timeZone": "Asia/Amman",
+    "version": 1,
+    "isTrainingDay": true,
+    "scheduledStartAt": 1792962000000,
+    "scheduledEndAt": 1793048399999
+  },
+  "2026-10-27": {
+    "assignmentId": "PLC-APP-20261024210802-D6319F",
+    "attendanceDate": "2026-10-27",
+    "timeZone": "Asia/Amman",
+    "version": 1,
+    "isTrainingDay": true,
+    "scheduledStartAt": 1793048400000,
+    "scheduledEndAt": 1793134799999
+  },
+  "2026-10-28": {
+    "assignmentId": "PLC-APP-20261024210802-D6319F",
+    "attendanceDate": "2026-10-28",
+    "timeZone": "Asia/Amman",
+    "version": 1,
+    "isTrainingDay": true,
+    "scheduledStartAt": 1793134800000,
+    "scheduledEndAt": 1793221199999
+  },
+  "2026-10-29": {
+    "assignmentId": "PLC-APP-20261024210802-D6319F",
+    "attendanceDate": "2026-10-29",
+    "timeZone": "Asia/Amman",
+    "version": 1,
+    "isTrainingDay": true,
+    "scheduledStartAt": 1793221200000,
+    "scheduledEndAt": 1793307599999
+  },
+  "2026-10-30": {
+    "assignmentId": "PLC-APP-20261024210802-D6319F",
+    "attendanceDate": "2026-10-30",
+    "timeZone": "Asia/Amman",
+    "version": 1,
+    "isTrainingDay": true,
+    "scheduledStartAt": 1793307600000,
+    "scheduledEndAt": 1793393999999
+  },
+  "2026-10-31": {
+    "assignmentId": "PLC-APP-20261024210802-D6319F",
+    "attendanceDate": "2026-10-31",
+    "timeZone": "Asia/Amman",
+    "version": 1,
+    "isTrainingDay": true,
+    "scheduledStartAt": 1793394000000,
+    "scheduledEndAt": 1793480399999
+  },
+  "2026-11-01": {
+    "assignmentId": "PLC-APP-20261024210802-D6319F",
+    "attendanceDate": "2026-11-01",
+    "timeZone": "Asia/Amman",
+    "version": 1,
+    "isTrainingDay": true,
+    "scheduledStartAt": 1793480400000,
+    "scheduledEndAt": 1793566799999
+  },
+  "2026-11-02": {
+    "assignmentId": "PLC-APP-20261024210802-D6319F",
+    "attendanceDate": "2026-11-02",
+    "timeZone": "Asia/Amman",
+    "version": 1,
+    "isTrainingDay": true,
+    "scheduledStartAt": 1793566800000,
+    "scheduledEndAt": 1793653199999
+  },
+  "2026-11-03": {
+    "assignmentId": "PLC-APP-20261024210802-D6319F",
+    "attendanceDate": "2026-11-03",
+    "timeZone": "Asia/Amman",
+    "version": 1,
+    "isTrainingDay": true,
+    "scheduledStartAt": 1793653200000,
+    "scheduledEndAt": 1793739599999
+  },
+  "2026-11-04": {
+    "assignmentId": "PLC-APP-20261024210802-D6319F",
+    "attendanceDate": "2026-11-04",
+    "timeZone": "Asia/Amman",
+    "version": 1,
+    "isTrainingDay": true,
+    "scheduledStartAt": 1793739600000,
+    "scheduledEndAt": 1793825999999
+  },
+  "2026-11-05": {
+    "assignmentId": "PLC-APP-20261024210802-D6319F",
+    "attendanceDate": "2026-11-05",
+    "timeZone": "Asia/Amman",
+    "version": 1,
+    "isTrainingDay": true,
+    "scheduledStartAt": 1793826000000,
+    "scheduledEndAt": 1793912399999
+  },
+  "2026-11-06": {
+    "assignmentId": "PLC-APP-20261024210802-D6319F",
+    "attendanceDate": "2026-11-06",
+    "timeZone": "Asia/Amman",
+    "version": 1,
+    "isTrainingDay": true,
+    "scheduledStartAt": 1793912400000,
+    "scheduledEndAt": 1793998799999
+  },
+  "2026-11-07": {
+    "assignmentId": "PLC-APP-20261024210802-D6319F",
+    "attendanceDate": "2026-11-07",
+    "timeZone": "Asia/Amman",
+    "version": 1,
+    "isTrainingDay": true,
+    "scheduledStartAt": 1793998800000,
+    "scheduledEndAt": 1794085199999
+  },
+  "2026-11-08": {
+    "assignmentId": "PLC-APP-20261024210802-D6319F",
+    "attendanceDate": "2026-11-08",
+    "timeZone": "Asia/Amman",
+    "version": 1,
+    "isTrainingDay": true,
+    "scheduledStartAt": 1794085200000,
+    "scheduledEndAt": 1794171599999
+  },
+  "2026-11-09": {
+    "assignmentId": "PLC-APP-20261024210802-D6319F",
+    "attendanceDate": "2026-11-09",
+    "timeZone": "Asia/Amman",
+    "version": 1,
+    "isTrainingDay": true,
+    "scheduledStartAt": 1794171600000,
+    "scheduledEndAt": 1794257999999
+  },
+  "2026-11-10": {
+    "assignmentId": "PLC-APP-20261024210802-D6319F",
+    "attendanceDate": "2026-11-10",
+    "timeZone": "Asia/Amman",
+    "version": 1,
+    "isTrainingDay": true,
+    "scheduledStartAt": 1794258000000,
+    "scheduledEndAt": 1794344399999
+  },
+  "2026-11-11": {
+    "assignmentId": "PLC-APP-20261024210802-D6319F",
+    "attendanceDate": "2026-11-11",
+    "timeZone": "Asia/Amman",
+    "version": 1,
+    "isTrainingDay": true,
+    "scheduledStartAt": 1794344400000,
+    "scheduledEndAt": 1794430799999
+  },
+  "2026-11-12": {
+    "assignmentId": "PLC-APP-20261024210802-D6319F",
+    "attendanceDate": "2026-11-12",
+    "timeZone": "Asia/Amman",
+    "version": 1,
+    "isTrainingDay": true,
+    "scheduledStartAt": 1794430800000,
+    "scheduledEndAt": 1794517199999
+  },
+  "2026-11-13": {
+    "assignmentId": "PLC-APP-20261024210802-D6319F",
+    "attendanceDate": "2026-11-13",
+    "timeZone": "Asia/Amman",
+    "version": 1,
+    "isTrainingDay": true,
+    "scheduledStartAt": 1794517200000,
+    "scheduledEndAt": 1794603599999
+  },
+  "2026-11-14": {
+    "assignmentId": "PLC-APP-20261024210802-D6319F",
+    "attendanceDate": "2026-11-14",
+    "timeZone": "Asia/Amman",
+    "version": 1,
+    "isTrainingDay": true,
+    "scheduledStartAt": 1794603600000,
+    "scheduledEndAt": 1794689999999
+  },
+  "2026-11-15": {
+    "assignmentId": "PLC-APP-20261024210802-D6319F",
+    "attendanceDate": "2026-11-15",
+    "timeZone": "Asia/Amman",
+    "version": 1,
+    "isTrainingDay": true,
+    "scheduledStartAt": 1794690000000,
+    "scheduledEndAt": 1794776399999
+  },
+  "2026-11-16": {
+    "assignmentId": "PLC-APP-20261024210802-D6319F",
+    "attendanceDate": "2026-11-16",
+    "timeZone": "Asia/Amman",
+    "version": 1,
+    "isTrainingDay": true,
+    "scheduledStartAt": 1794776400000,
+    "scheduledEndAt": 1794862799999
+  },
+  "2026-11-17": {
+    "assignmentId": "PLC-APP-20261024210802-D6319F",
+    "attendanceDate": "2026-11-17",
+    "timeZone": "Asia/Amman",
+    "version": 1,
+    "isTrainingDay": true,
+    "scheduledStartAt": 1794862800000,
+    "scheduledEndAt": 1794949199999
+  },
+  "2026-11-18": {
+    "assignmentId": "PLC-APP-20261024210802-D6319F",
+    "attendanceDate": "2026-11-18",
+    "timeZone": "Asia/Amman",
+    "version": 1,
+    "isTrainingDay": true,
+    "scheduledStartAt": 1794949200000,
+    "scheduledEndAt": 1795035599999
+  },
+  "2026-11-19": {
+    "assignmentId": "PLC-APP-20261024210802-D6319F",
+    "attendanceDate": "2026-11-19",
+    "timeZone": "Asia/Amman",
+    "version": 1,
+    "isTrainingDay": true,
+    "scheduledStartAt": 1795035600000,
+    "scheduledEndAt": 1795121999999
+  },
+  "2026-11-20": {
+    "assignmentId": "PLC-APP-20261024210802-D6319F",
+    "attendanceDate": "2026-11-20",
+    "timeZone": "Asia/Amman",
+    "version": 1,
+    "isTrainingDay": true,
+    "scheduledStartAt": 1795122000000,
+    "scheduledEndAt": 1795208399999
+  },
+  "2026-11-21": {
+    "assignmentId": "PLC-APP-20261024210802-D6319F",
+    "attendanceDate": "2026-11-21",
+    "timeZone": "Asia/Amman",
+    "version": 1,
+    "isTrainingDay": true,
+    "scheduledStartAt": 1795208400000,
+    "scheduledEndAt": 1795294799999
+  },
+  "2026-11-22": {
+    "assignmentId": "PLC-APP-20261024210802-D6319F",
+    "attendanceDate": "2026-11-22",
+    "timeZone": "Asia/Amman",
+    "version": 1,
+    "isTrainingDay": true,
+    "scheduledStartAt": 1795294800000,
+    "scheduledEndAt": 1795381199999
+  },
+  "2026-11-23": {
+    "assignmentId": "PLC-APP-20261024210802-D6319F",
+    "attendanceDate": "2026-11-23",
+    "timeZone": "Asia/Amman",
+    "version": 1,
+    "isTrainingDay": true,
+    "scheduledStartAt": 1795381200000,
+    "scheduledEndAt": 1795467599999
+  },
+  "2026-11-24": {
+    "assignmentId": "PLC-APP-20261024210802-D6319F",
+    "attendanceDate": "2026-11-24",
+    "timeZone": "Asia/Amman",
+    "version": 1,
+    "isTrainingDay": true,
+    "scheduledStartAt": 1795467600000,
+    "scheduledEndAt": 1795553999999
+  },
+  "2026-11-25": {
+    "assignmentId": "PLC-APP-20261024210802-D6319F",
+    "attendanceDate": "2026-11-25",
+    "timeZone": "Asia/Amman",
+    "version": 1,
+    "isTrainingDay": true,
+    "scheduledStartAt": 1795554000000,
+    "scheduledEndAt": 1795640399999
+  },
+  "2026-11-26": {
+    "assignmentId": "PLC-APP-20261024210802-D6319F",
+    "attendanceDate": "2026-11-26",
+    "timeZone": "Asia/Amman",
+    "version": 1,
+    "isTrainingDay": true,
+    "scheduledStartAt": 1795640400000,
+    "scheduledEndAt": 1795726799999
+  },
+  "2026-11-27": {
+    "assignmentId": "PLC-APP-20261024210802-D6319F",
+    "attendanceDate": "2026-11-27",
+    "timeZone": "Asia/Amman",
+    "version": 1,
+    "isTrainingDay": true,
+    "scheduledStartAt": 1795726800000,
+    "scheduledEndAt": 1795813199999
+  },
+  "2026-11-28": {
+    "assignmentId": "PLC-APP-20261024210802-D6319F",
+    "attendanceDate": "2026-11-28",
+    "timeZone": "Asia/Amman",
+    "version": 1,
+    "isTrainingDay": true,
+    "scheduledStartAt": 1795813200000,
+    "scheduledEndAt": 1795899599999
+  },
+  "2026-11-29": {
+    "assignmentId": "PLC-APP-20261024210802-D6319F",
+    "attendanceDate": "2026-11-29",
+    "timeZone": "Asia/Amman",
+    "version": 1,
+    "isTrainingDay": true,
+    "scheduledStartAt": 1795899600000,
+    "scheduledEndAt": 1795985999999
+  },
+  "2026-11-30": {
+    "assignmentId": "PLC-APP-20261024210802-D6319F",
+    "attendanceDate": "2026-11-30",
+    "timeZone": "Asia/Amman",
+    "version": 1,
+    "isTrainingDay": true,
+    "scheduledStartAt": 1795986000000,
+    "scheduledEndAt": 1796072399999
+  },
+  "2026-12-01": {
+    "assignmentId": "PLC-APP-20261024210802-D6319F",
+    "attendanceDate": "2026-12-01",
+    "timeZone": "Asia/Amman",
+    "version": 1,
+    "isTrainingDay": true,
+    "scheduledStartAt": 1796072400000,
+    "scheduledEndAt": 1796158799999
+  },
+  "2026-12-02": {
+    "assignmentId": "PLC-APP-20261024210802-D6319F",
+    "attendanceDate": "2026-12-02",
+    "timeZone": "Asia/Amman",
+    "version": 1,
+    "isTrainingDay": true,
+    "scheduledStartAt": 1796158800000,
+    "scheduledEndAt": 1796245199999
+  },
+  "2026-12-03": {
+    "assignmentId": "PLC-APP-20261024210802-D6319F",
+    "attendanceDate": "2026-12-03",
+    "timeZone": "Asia/Amman",
+    "version": 1,
+    "isTrainingDay": true,
+    "scheduledStartAt": 1796245200000,
+    "scheduledEndAt": 1796331599999
+  },
+  "2026-12-04": {
+    "assignmentId": "PLC-APP-20261024210802-D6319F",
+    "attendanceDate": "2026-12-04",
+    "timeZone": "Asia/Amman",
+    "version": 1,
+    "isTrainingDay": true,
+    "scheduledStartAt": 1796331600000,
+    "scheduledEndAt": 1796417999999
+  },
+  "2026-12-05": {
+    "assignmentId": "PLC-APP-20261024210802-D6319F",
+    "attendanceDate": "2026-12-05",
+    "timeZone": "Asia/Amman",
+    "version": 1,
+    "isTrainingDay": true,
+    "scheduledStartAt": 1796418000000,
+    "scheduledEndAt": 1796504399999
+  },
+  "2026-12-06": {
+    "assignmentId": "PLC-APP-20261024210802-D6319F",
+    "attendanceDate": "2026-12-06",
+    "timeZone": "Asia/Amman",
+    "version": 1,
+    "isTrainingDay": true,
+    "scheduledStartAt": 1796504400000,
+    "scheduledEndAt": 1796590799999
+  },
+  "2026-12-07": {
+    "assignmentId": "PLC-APP-20261024210802-D6319F",
+    "attendanceDate": "2026-12-07",
+    "timeZone": "Asia/Amman",
+    "version": 1,
+    "isTrainingDay": true,
+    "scheduledStartAt": 1796590800000,
+    "scheduledEndAt": 1796677199999
+  },
+  "2026-12-08": {
+    "assignmentId": "PLC-APP-20261024210802-D6319F",
+    "attendanceDate": "2026-12-08",
+    "timeZone": "Asia/Amman",
+    "version": 1,
+    "isTrainingDay": true,
+    "scheduledStartAt": 1796677200000,
+    "scheduledEndAt": 1796763599999
+  },
+  "2026-12-09": {
+    "assignmentId": "PLC-APP-20261024210802-D6319F",
+    "attendanceDate": "2026-12-09",
+    "timeZone": "Asia/Amman",
+    "version": 1,
+    "isTrainingDay": true,
+    "scheduledStartAt": 1796763600000,
+    "scheduledEndAt": 1796849999999
+  },
+  "2026-12-10": {
+    "assignmentId": "PLC-APP-20261024210802-D6319F",
+    "attendanceDate": "2026-12-10",
+    "timeZone": "Asia/Amman",
+    "version": 1,
+    "isTrainingDay": true,
+    "scheduledStartAt": 1796850000000,
+    "scheduledEndAt": 1796936399999
+  },
+  "2026-12-11": {
+    "assignmentId": "PLC-APP-20261024210802-D6319F",
+    "attendanceDate": "2026-12-11",
+    "timeZone": "Asia/Amman",
+    "version": 1,
+    "isTrainingDay": true,
+    "scheduledStartAt": 1796936400000,
+    "scheduledEndAt": 1797022799999
+  },
+  "2026-12-12": {
+    "assignmentId": "PLC-APP-20261024210802-D6319F",
+    "attendanceDate": "2026-12-12",
+    "timeZone": "Asia/Amman",
+    "version": 1,
+    "isTrainingDay": true,
+    "scheduledStartAt": 1797022800000,
+    "scheduledEndAt": 1797109199999
+  },
+  "2026-12-13": {
+    "assignmentId": "PLC-APP-20261024210802-D6319F",
+    "attendanceDate": "2026-12-13",
+    "timeZone": "Asia/Amman",
+    "version": 1,
+    "isTrainingDay": true,
+    "scheduledStartAt": 1797109200000,
+    "scheduledEndAt": 1797195599999
+  },
+  "2026-12-14": {
+    "assignmentId": "PLC-APP-20261024210802-D6319F",
+    "attendanceDate": "2026-12-14",
+    "timeZone": "Asia/Amman",
+    "version": 1,
+    "isTrainingDay": true,
+    "scheduledStartAt": 1797195600000,
+    "scheduledEndAt": 1797281999999
+  },
+  "2026-12-15": {
+    "assignmentId": "PLC-APP-20261024210802-D6319F",
+    "attendanceDate": "2026-12-15",
+    "timeZone": "Asia/Amman",
+    "version": 1,
+    "isTrainingDay": true,
+    "scheduledStartAt": 1797282000000,
+    "scheduledEndAt": 1797368399999
+  },
+  "2026-12-16": {
+    "assignmentId": "PLC-APP-20261024210802-D6319F",
+    "attendanceDate": "2026-12-16",
+    "timeZone": "Asia/Amman",
+    "version": 1,
+    "isTrainingDay": true,
+    "scheduledStartAt": 1797368400000,
+    "scheduledEndAt": 1797454799999
+  },
+  "2026-12-17": {
+    "assignmentId": "PLC-APP-20261024210802-D6319F",
+    "attendanceDate": "2026-12-17",
+    "timeZone": "Asia/Amman",
+    "version": 1,
+    "isTrainingDay": true,
+    "scheduledStartAt": 1797454800000,
+    "scheduledEndAt": 1797541199999
+  },
+  "2026-12-18": {
+    "assignmentId": "PLC-APP-20261024210802-D6319F",
+    "attendanceDate": "2026-12-18",
+    "timeZone": "Asia/Amman",
+    "version": 1,
+    "isTrainingDay": true,
+    "scheduledStartAt": 1797541200000,
+    "scheduledEndAt": 1797627599999
+  },
+  "2026-12-19": {
+    "assignmentId": "PLC-APP-20261024210802-D6319F",
+    "attendanceDate": "2026-12-19",
+    "timeZone": "Asia/Amman",
+    "version": 1,
+    "isTrainingDay": true,
+    "scheduledStartAt": 1797627600000,
+    "scheduledEndAt": 1797713999999
+  },
+  "2026-12-20": {
+    "assignmentId": "PLC-APP-20261024210802-D6319F",
+    "attendanceDate": "2026-12-20",
+    "timeZone": "Asia/Amman",
+    "version": 1,
+    "isTrainingDay": true,
+    "scheduledStartAt": 1797714000000,
+    "scheduledEndAt": 1797800399999
+  }
+}

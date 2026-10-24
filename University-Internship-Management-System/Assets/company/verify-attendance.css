@@ -547,3 +547,67 @@ progress { width: 100%; height: 8px; accent-color: var(--primary); }
 .attendance-heading-actions { display: flex; align-items: center; justify-content: flex-end; flex-wrap: wrap; gap: 12px; }
 @media(max-width:575.98px) { .attendance-heading-actions { width: 100%; justify-content: space-between; } }
 @media(min-width:1200px) { .attendance-content .scanner-details .assignment-list { grid-template-columns: 1fr; } }
+
+/* Trainee selection and attendance workspace. */
+.attendance-overview { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:16px; margin:0 0 24px; }
+.attendance-overview > div { display:flex; align-items:center; gap:14px; padding:20px; background:var(--surface); border:1px solid var(--border); border-radius:16px; }
+.attendance-overview .overview-icon { display:grid; place-items:center; width:44px; height:44px; border-radius:13px; color:var(--primary); background:var(--primary-soft); font-size:21px; }
+.attendance-overview > div > div { display:flex; flex-direction:column; gap:4px; }
+.attendance-overview span:not(.overview-icon) { color:var(--text-secondary); font-size:12px; }
+.attendance-overview strong { font-size:25px; line-height:1.2; font-family:var(--font-heading); }
+.attendance-scan-grid { margin-bottom:24px; }
+.attendance-scan-grid .attendance-panel { margin-bottom:0; }
+.attendance-records-panel { scroll-margin-top:90px; }
+.attendance-student-id { display:block; color:var(--text-secondary); font-size:11px; margin-top:5px; }
+.record-status { display:inline-flex; padding:6px 10px; border-radius:7px; background:var(--surface-alt); color:var(--text-secondary); font-size:11px; font-weight:600; white-space:nowrap; }
+.status-checkedIn { background:var(--primary-soft); color:var(--primary); }
+.status-completed { background:var(--success-light); color:var(--success); }
+.status-absent,.status-missingCheckOut { background:var(--warning-light); color:var(--warning); }
+.attendance-saved-row > td { background:var(--success-light); }
+.attendance-dialog { border:1px solid var(--border); outline:none; color:var(--text); background:var(--surface); max-height:calc(100dvh - 48px); overflow:auto; margin:auto; }
+.attendance-dialog[open] { animation:attendanceEntrance .18s ease; }
+.attendance-dialog .dialog-footer { justify-content:flex-end; margin-top:20px; }
+.attendance-dialog .dialog-close { border:0; border-radius:10px; background:var(--surface-alt); color:var(--text-secondary); font-size:24px; }
+.attendance-dialog .dialog-intro { max-width:490px; margin-bottom:22px; font-size:13px; }
+#issueQrDialog { width:min(620px,calc(100% - 32px)); padding:26px; }
+.qr-action-field { padding:16px; background:var(--surface-alt); border-radius:12px; border:1px solid var(--border-light); margin-bottom:22px; }
+.qr-action-field label { font-size:12px; font-weight:600; }
+.qr-list-heading { display:flex; align-items:center; justify-content:space-between; gap:12px; font-size:12px; }
+.qr-list-heading label { display:flex; align-items:center; gap:8px; cursor:pointer; }
+#qrSelectionCount { color:var(--text-secondary); }
+#issueQrDialog #qrStudentList { display:grid; gap:10px; padding:2px; margin:14px 0 18px; max-height:32dvh; overflow:auto; }
+.qr-student-card { display:flex; align-items:center; gap:12px; border:1px solid var(--border); border-radius:12px; padding:14px; background:var(--surface); }
+.qr-student-card:has(input:checked) { border-color:var(--primary); background:var(--primary-soft); }
+#issueQrDialog #qrStudentList .qr-student-card label { flex:1; display:flex; align-items:center; gap:12px; border:0; background:none; padding:0; min-width:0; }
+#issueQrDialog input[type=checkbox] { width:18px; height:18px; margin:0; accent-color:var(--primary); }
+.qr-student-avatar { display:grid; place-items:center; width:38px; height:38px; border-radius:50%; background:var(--primary-light); color:var(--primary); font-size:12px; font-weight:700; flex-shrink:0; }
+.qr-student-info { display:flex; flex-direction:column; min-width:0; gap:3px; }
+.qr-student-info strong { font-size:14px; font-weight:600; overflow-wrap:anywhere; }
+.qr-student-info small { font-size:11px; color:var(--text-secondary); }
+.qr-ready-badge { color:var(--success); background:var(--success-light); border-radius:6px; padding:5px 9px; font-size:11px; }
+#issueQrDialog .setup-attendance { font-size:11px; min-height:34px; padding:7px 10px; white-space:nowrap; }
+.qr-help { display:flex; gap:10px; padding:13px 14px; background:var(--primary-soft); color:var(--primary); border-radius:10px; font-size:12px; line-height:1.7; }
+.dialog-status { border-radius:10px; padding:12px 14px; margin:14px 0 0; font-size:12px; line-height:1.7; overflow-wrap:anywhere; background:var(--success-light); color:var(--success); }
+.dialog-status[data-state=error] { background:var(--danger-light); color:var(--danger); }
+body:has(.attendance-dialog[open]) { overflow:hidden; }
+@media(max-width:650px) {
+ .attendance-overview { gap:8px; }
+ .attendance-overview > div { padding:14px 10px; gap:8px; }
+ .attendance-overview .overview-icon { display:none; }
+ .attendance-overview span:not(.overview-icon) { font-size:10px; }
+ .attendance-overview strong { font-size:22px; }
+ #issueQrDialog { padding:20px; }
+ .qr-student-card { flex-wrap:wrap; padding:12px; }
+ .qr-student-card .setup-attendance { margin-left:30px; }
+ .attendance-dialog .dialog-footer { flex-wrap:nowrap; }
+}
+
+/* Keep the scanning pair aligned; history spans the workspace. */
+.attendance-scan-grid > div { display:flex; }
+.attendance-scan-grid > div > .attendance-panel { width:100%; height:100%; display:flex; flex-direction:column; }
+.attendance-scan-grid .scanner-frame { flex:1; min-height:300px; }
+.attendance-content .attendance-records-panel { width:100%; max-width:none; }
+.attendance-content .attendance-records-panel .attendance-table { width:100%; }
+.attendance-record-actions { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+.attendance-content .reset-record-button { padding:8px 11px; min-height:36px; font-size:11px; }
+@media(min-width:1200px) { .attendance-content .scanner-details .assignment-list { grid-template-columns:repeat(2,minmax(0,1fr)); } }

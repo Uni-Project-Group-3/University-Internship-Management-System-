@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
@@ -123,6 +123,22 @@ internal static partial class Program
                 int writes = db.Writes;
                 await Reject<InvalidOperationException>(() => service.Scan("CS", (string)qr["token"], false));
                 Assert(db.Writes == writes);
+            });
+            await Test("assigned supervisor reset clears today's attempt, archives it, rejects foreign supervision and allows a new check-in", async () => {
+                db.Rows[path] = (JObject)original.DeepClone();
+                db.Rows["companySupervisors/CS"]["firebaseUid"] = "uid-CS";
+                db.Rows["companySupervisors/OTHER"] = new JObject { ["status"]="active", ["companyId"]="C", ["firebaseUid"]="uid-OTHER" };
+                Actor("supervisorResetPreview", "uid-OTHER", "OTHER", "company");
+                int before = db.Writes;
+                await Reject<InvalidOperationException>(() => service.PreviewTodayReset("S", "uid-OTHER")); Assert(db.Writes == before);
+                Actor("supervisorResetPreview", "uid-CS", "CS", "company");
+                var preview = await service.PreviewTodayReset("S", "uid-CS"); Assert((long)preview["approvedMinutesRemoved"] == 2);
+                Actor("supervisorResetToday", "uid-CS", "CS", "company");
+                await service.ResetToday("S", "uid-CS", (string)preview["expectedVersion"], day);
+                Assert(db.Rows[path]["checkInAt"] == null && db.Rows[path]["checkOutAt"] == null && db.Rows[path]["qrState"] == null);
+                Assert((string)db.Rows[path]["lastResetByUid"] == "uid-CS" && ((JObject)db.Rows[path]["resetAttempts"]).Count == 1);
+                var qr = await service.CreateQr("S", "checkIn", false, "uid-S"); await service.Scan("CS", (string)qr["token"], false);
+                Assert(AttendanceService.Number(db.Rows[path], "checkInAt") > 0);
             });
         }
         finally { property.SetValue(slot, priorActor); HttpContext.Current = previous; }
