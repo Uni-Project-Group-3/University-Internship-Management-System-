@@ -12,6 +12,7 @@
     const professor = () => data.professors.find(p => p.id === by('assignmentProfessor').value);
     const professorName = id => data.professors.find(p => p.id === id)?.name || id || 'Unassigned';
     const notice = text => { by('assignmentNotice').textContent = text; };
+    const memberIds = g => Object.keys(g?.students || {}).filter(id => g.students[id] === true);
     function options(control, rows, placeholder) {
         control.replaceChildren(new Option(placeholder, ''));
         rows.forEach(r => control.append(new Option(r.name || r.id, r.id)));
@@ -55,8 +56,27 @@
         group = g; selected = new Set(); retry = null;
         by('assignmentError').textContent = ''; by('assignmentName').value = g?.name || '';
         by('assignmentName').readOnly = !!g; by('studentSearch').value = '';
-        by('assignmentTitle').textContent = g ? 'Group students' : 'Add student group';
+        by('assignmentTitle').textContent = g ? (g.name || 'Group students') : 'Add student group';
         by('assignmentSave').textContent = g ? 'Add selected students' : 'Create group';
+        by('assignmentIntro').textContent = g ? 'Review the students in this group and add more from the same major.' : 'Each supervisor is responsible for one major. Select students from that major to join the group.';
+        by('assignmentSetup').hidden = !!g; by('assignmentSummary').hidden = !g; by('assignmentCurrent').hidden = !g;
+        by('assignmentStudentsTitle').textContent = g ? 'Add students' : '03 \u00a0 Students';
+        by('assignmentStudentsHint').textContent = g ? 'Only students from this major who are not in another group or assigned to another supervisor are listed.' : 'Students already in another group or assigned to another supervisor cannot be selected.';
+        if (g) {
+            const members = memberIds(g);
+            by('summaryProfessor').textContent = professorName(g.supervisorId);
+            by('summaryMajor').textContent = majorName(g.department);
+            by('summaryCount').textContent = members.length;
+            by('assignmentCurrentTitle').textContent = 'Current students (' + members.length + ')';
+            const list = by('assignmentCurrentList');
+            list.replaceChildren();
+            for (const id of members) {
+                const s = data.students.find(x => x.id === id), row = node('div', null, 'assignment-student assignment-member'), info = node('span');
+                info.append(node('strong', s?.name || id), node('small', 'Student ID: ' + id));
+                row.append(info); list.append(row);
+            }
+            if (!members.length) list.append(node('p', 'No students in this group yet.', 'assignment-empty'));
+        }
         options(by('assignmentProfessor'), data.professors.filter(p => !p.conflict || p.id === g?.supervisorId).map(p => ({ id: p.id, name: p.name + (p.conflict ? ' - review assignments required' : '') })), 'Select academic supervisor');
         by('assignmentProfessor').value = g?.supervisorId || '';
         by('assignmentProfessor').disabled = !!g;
@@ -85,7 +105,8 @@
         by('studentSearch').disabled = !enabled; by('studentSelectAll').disabled = !enabled;
         host.replaceChildren();
         if (enabled) {
-            for (const s of data.students.filter(s => s.department === major && [s.name, s.id].join(' ').toLowerCase().includes(query))) {
+            // An existing group lists only the students that can still join it.
+            for (const s of data.students.filter(s => s.department === major && (!group || !blocked(s)) && [s.name, s.id].join(' ').toLowerCase().includes(query))) {
                 const label = node('label', null, 'assignment-student'), check = document.createElement('input');
                 check.type = 'checkbox'; check.disabled = blocked(s); check.checked = selected.has(s.id);
                 check.onchange = () => { by('assignmentError').textContent = ''; if (check.checked) selected.add(s.id); else selected.delete(s.id); students(); };
@@ -96,8 +117,9 @@
                 label.append(check, info); host.append(label);
             }
         }
-        if (!host.children.length) host.append(node('p', enabled ? 'No students match this major and search.' : 'Choose a supervisor and major to see students.', 'assignment-empty'));
-        by('studentCount').textContent = selected.size + ' selected' + (group ? ' · ' + Object.values(group.students || {}).filter(v => v === true).length + ' already in group' : '');
+        if (!host.children.length) host.append(node('p', !enabled ? 'Choose a supervisor and major to see students.' : group && !query ? 'No more available students in this major.' : 'No students match this major and search.', 'assignment-empty'));
+        by('studentCount').textContent = selected.size + ' selected';
+        by('assignmentSave').disabled = busy || (!!group && !selected.size);
     }
     async function close() {
         if (busy) return;

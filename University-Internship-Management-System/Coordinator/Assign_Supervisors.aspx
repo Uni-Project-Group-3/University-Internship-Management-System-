@@ -11,7 +11,7 @@
     <link rel="stylesheet" type="text/css" href="../Assets/coordinator/Assign_Supervisors.css?v=2.0" />
     <link runat="server" href="~/Assets/shared/role-sidebars.css?v=20261024-workspace" rel="stylesheet" />
     <link runat="server" href="~/Assets/shared/workspace-navigation.css?v=20261024-hide-search" rel="stylesheet" />
-    <link rel="stylesheet" href="../Assets/coordinator/academic-assignment.css?v=20261024-groups" />
+    <link rel="stylesheet" href="../Assets/coordinator/academic-assignment.css?v=20261024-group-view" />
 <link href="../Assets/shared/workspace-identity.css?v=20261024-coordinator-banner-2" rel="stylesheet" />
 <script src="../Js_project/workspace-navigation-unified.js?v=20261024-refine" defer></script>
 </head>
@@ -99,19 +99,30 @@
             <div><span class="assignment-eyebrow">ACADEMIC SUPERVISION</span><h2 id="assignmentTitle">Add student group</h2></div>
             <button type="button" id="assignmentClose" class="assignment-close" aria-label="Close group dialog">&times;</button>
         </div>
-        <p class="assignment-intro">Each supervisor is responsible for one major. Select students from that major to join the group.</p>
+        <p id="assignmentIntro" class="assignment-intro">Each supervisor is responsible for one major. Select students from that major to join the group.</p>
         <div id="assignmentFields">
-            <label class="assignment-field" for="assignmentProfessor"><span>01 &nbsp; Academic supervisor <span aria-hidden="true">*</span></span>
+            <dl id="assignmentSummary" class="assignment-summary" hidden="hidden">
+                <div><dt>Academic supervisor</dt><dd id="summaryProfessor"></dd></div>
+                <div><dt>University major</dt><dd id="summaryMajor"></dd></div>
+                <div><dt>Students in group</dt><dd id="summaryCount"></dd></div>
+            </dl>
+            <section id="assignmentCurrent" class="assignment-current" aria-labelledby="assignmentCurrentTitle" hidden="hidden">
+                <h3 id="assignmentCurrentTitle">Current students</h3>
+                <div id="assignmentCurrentList" class="assignment-students"></div>
+            </section>
+            <div id="assignmentSetup">
+                <label class="assignment-field" for="assignmentProfessor"><span>01 &nbsp; Academic supervisor <span aria-hidden="true">*</span></span>
                 <select id="assignmentProfessor" required="required"></select>
-            </label>
-            <label class="assignment-field" for="assignmentDepartment"><span>02 &nbsp; University major <span aria-hidden="true">*</span></span>
+                </label>
+                <label class="assignment-field" for="assignmentDepartment"><span>02 &nbsp; University major <span aria-hidden="true">*</span></span>
                 <select id="assignmentDepartment" required="required" disabled="disabled"></select>
-            </label>
-            <p id="assignmentMajorHint" class="assignment-hint"></p>
-            <label class="assignment-field" for="assignmentName"><span>Group name (optional)</span><input id="assignmentName" maxlength="120" placeholder="For example: Computer Science - Group A" /></label>
+                </label>
+                <p id="assignmentMajorHint" class="assignment-hint"></p>
+                <label class="assignment-field" for="assignmentName"><span>Group name (optional)</span><input id="assignmentName" maxlength="120" placeholder="For example: Computer Science - Group A" /></label>
+            </div>
             <section aria-labelledby="assignmentStudentsTitle">
                 <h3 id="assignmentStudentsTitle">03 &nbsp; Students</h3>
-                <p class="assignment-hint">Students already in another group or assigned to another supervisor cannot be selected.</p>
+                <p id="assignmentStudentsHint" class="assignment-hint">Students already in another group or assigned to another supervisor cannot be selected.</p>
                 <div class="assignment-student-tools">
                     <input id="studentSearch" type="search" placeholder="Search by name or student ID" aria-label="Search eligible students" disabled="disabled" />
                     <button type="button" class="assignment-secondary" id="studentSelectAll" disabled="disabled">Select all</button>
@@ -124,7 +135,7 @@
         <p id="assignmentError" role="alert" class="assignment-error"></p>
         <div class="assignment-dialog-footer"><button type="button" id="assignmentCancel" class="assignment-secondary">Cancel</button><button type="button" id="assignmentSave" class="assignment-primary">Create group</button></div>
     </dialog>
-    <script src="../Js_project/Coordinator/Assign_Supervisors.js?v=20261024-groups" defer="defer"></script>
+    <script src="../Js_project/Coordinator/Assign_Supervisors.js?v=20261024-group-view" defer="defer"></script>
     <script src="<%= ResolveUrl("~/Js_project/Public/workspace-navigation.js?v=20261024") %>" defer="defer"></script>
 </body>
 </html>
