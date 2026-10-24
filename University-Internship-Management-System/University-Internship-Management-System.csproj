@@ -165,7 +165,9 @@
     <Content Include="Js_project\Public\dashboard-navigation.js" />
     <Content Include="Auth\Login.aspx" />
     <Content Include="Assets\auth\auth.css" />
+    <Content Include="Assets\media\just-internships.mp4" />
     <Content Include="Assets\auth\login-card.css" />
+    <Content Include="Assets\auth\login-immersive.css" />
     <Content Include="Js_project\Auth\login-card.js" />
     <Content Include="Js_project\Auth\auth.js" />
     <Content Include="Assets\auth\just-campus.jpg" />

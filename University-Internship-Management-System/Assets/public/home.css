@@ -252,3 +252,26 @@
 .ffoot .btn{background:var(--navy);color:#fff;border:1px solid var(--navy)}.stamp{color:#8a1520;font-weight:700}
 @media(max-height:760px) and (min-width:701px){#pP .card,#pC .card{padding:20px 26px;top:52%}#pP h2,#pC h2{margin:6px 0 10px;font-size:25px}.fac button{padding:6px 2px;font-size:13px}.spec{margin-top:10px;padding-top:10px}.spec ul{line-height:1.5}.note{margin-top:8px}.steps button{padding:8px 2px}}
 @media(max-width:700px){.nav ul li:last-child{position:sticky;right:0;background:linear-gradient(90deg,transparent,#0a244c 14px);padding-left:16px}}
+
+/* Dedicated campus map card. */
+#campus-footer .footer-main{grid-template-columns:1.35fr 1fr .9fr 1.5fr;gap:28px;align-items:start}
+#campus-footer .footer-main>nav:last-child{grid-column:1/-1;flex-direction:row;align-items:center;flex-wrap:wrap;gap:18px;padding-top:20px;border-top:1px solid #7a7c5f25}
+#campus-footer .footer-main>nav:last-child h2{margin:0;width:auto}
+#campus-footer .footer-main>nav:last-child>a:last-child{margin-left:auto}
+#campus-footer .footer-location{min-width:0;overflow:hidden;border:1px solid #b9bdac80;border-radius:12px;background:#fffdf5;box-shadow:0 5px 18px #394e4210}
+#campus-footer .footer-location-heading{display:flex;align-items:center;gap:10px;padding:14px}
+#campus-footer .footer-map-pin{display:grid;place-items:center;flex-shrink:0;width:32px;height:32px;border-radius:50%;background:#e9eddf;color:#465f50;font-size:22px}
+#campus-footer .footer-location h2{font-family:var(--body);font-size:12px;font-weight:600;letter-spacing:0;line-height:1.4;margin:0;color:#3b4d44}
+#campus-footer .footer-location p{font-size:9px;line-height:1.5;margin:4px 0 0;color:#737c6c}
+#campus-footer .footer-location iframe{display:block;width:100%;height:175px;border:0;border-top:1px solid #b9bdac50;border-bottom:1px solid #b9bdac50}
+#campus-footer .footer-location>a{display:flex;justify-content:space-between;align-items:center;gap:15px;padding:12px 15px;color:#405747;font-size:11px;font-weight:600;text-decoration:none}
+#campus-footer .footer-location>a:hover{background:#e9eddf}
+#campus-footer .footer-location>a:focus-visible{outline:2px solid #405747;outline-offset:-4px}
+#campus-footer .footer-legal{margin-top:22px}
+@media(max-width:1000px){#campus-footer .footer-main{grid-template-columns:1fr 1fr;gap:24px}#campus-footer .footer-brand{grid-column:auto}#campus-footer .footer-main>nav:last-child{grid-column:1/-1}#campus-footer .footer-location iframe{height:160px}}
+@media(max-width:700px){#campus-footer .footer-brand,#campus-footer .footer-location{grid-column:1/-1}#campus-footer .footer-main>nav:last-child{gap:12px}#campus-footer .footer-main>nav:last-child>a:last-child{margin-left:0}#campus-footer{overflow-y:auto}#campus-footer .footer-content{margin:auto 0}}
+#vph[hidden],.campus-video-play[hidden]{display:none!important}
+.campus-video-play{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;border:0;background:radial-gradient(ellipse at center,#244a72,#102b48);color:#f8f1e2;cursor:pointer;font:600 clamp(12px,1.7vw,22px) Manrope,sans-serif}
+.campus-video-play-icon{display:grid;place-items:center;width:clamp(48px,7vw,90px);height:clamp(48px,7vw,90px);border:2px solid #e8d9ba;border-radius:50%;font-size:clamp(20px,3vw,34px);padding-left:5px;transition:background .2s,transform .2s}
+.campus-video-play:hover .campus-video-play-icon{background:#ffffff18;transform:scale(1.06)}
+.campus-video-play:focus-visible{outline:3px solid #e8d9ba;outline-offset:-6px}

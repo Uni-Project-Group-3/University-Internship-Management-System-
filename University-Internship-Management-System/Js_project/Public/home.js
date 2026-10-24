@@ -604,7 +604,7 @@ function showFallback(msg){document.getElementById('fallback').hidden=false;if(m
 /* =====================  UI LAYER (content, nav, overlays)  =====================
    Edit CONFIG to connect real data.  Nothing here is fetched from a server. */
 const CONFIG={
-  videoSrc:'',            // <- put your video URL here, e.g. 'media/just-internships.mp4'
+  videoSrc:'../Assets/media/just-internships.mp4',            // <- put your video URL here, e.g. 'media/just-internships.mp4'
   videoPoster:'',
   videoCaptions:'',      // <- WebVTT captions file for the process video (TO BE SUPPLIED)
   process:[              // Platform workflow from the UIMS project brief (not JUST's rules)
@@ -663,7 +663,18 @@ const CONFIG={
  /* video */
  const vid=$('#vid'),vph=$('#vph');
  function setVideo(src){vph.hidden=true;let v=vid.querySelector('video');if(!v){v=document.createElement('video');v.controls=true;v.playsInline=true;v.preload='metadata';v.setAttribute('aria-label','Campus video');vid.appendChild(v)}v.src=src;if(CONFIG.videoPoster)v.poster=CONFIG.videoPoster;if(CONFIG.videoCaptions&&!v.querySelector('track')){const k=document.createElement('track');Object.assign(k,{kind:'captions',src:CONFIG.videoCaptions,srclang:'en',label:'English',default:true});v.appendChild(k)}}
- if(CONFIG.videoSrc)setVideo(CONFIG.videoSrc);
+ if(CONFIG.videoSrc){
+  setVideo(CONFIG.videoSrc);
+  const video=vid.querySelector('video');
+  const play=document.createElement('button');
+  play.type='button';play.className='campus-video-play';
+  play.setAttribute('aria-label','Play internship process video');
+  play.innerHTML='<span class="campus-video-play-icon" aria-hidden="true">&#9654;</span><span>Watch the internship process</span>';
+  vid.appendChild(play);
+  play.addEventListener('click',()=>{video.play().then(()=>{play.hidden=true;}).catch(()=>{play.hidden=false;toast('Video could not start. Please try again.');});});
+  video.addEventListener('play',()=>{play.hidden=true;});
+  video.addEventListener('ended',()=>{play.hidden=false;});
+}
  $('#vfile').addEventListener('change',e=>{const f=e.target.files[0];if(f)setVideo(URL.createObjectURL(f))});
  window.campusVideo={set:setVideo};
  /* per-frame update */
