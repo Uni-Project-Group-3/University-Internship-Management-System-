@@ -8,7 +8,7 @@
     <link href="../Content/bootstrap.min.css" rel="stylesheet" />
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet" />
     <link href="../Assets/shared/colors.css" rel="stylesheet" />
-    <link href="../Assets/student/my-attendance.css?v=20261024-reset" rel="stylesheet" />
+    <link href="../Assets/student/my-attendance.css?v=20261024-attendance-layout" rel="stylesheet" />
 <link href="../Assets/shared/workspace-identity.css?v=20261024-refine" rel="stylesheet" />
 <script src="../Js_project/workspace-navigation-unified.js?v=20261024-refine" defer></script>
 </head>
@@ -49,9 +49,8 @@
 
 
 <main class="content attendance-content">
-    <div class="page-heading"><div><p class="eyebrow">TRAINING ATTENDANCE</p><h1>My Attendance</h1><p>Your training, attendance and hours.</p></div><span class="date-chip" id="connectionStatus">Connecting&#8230;</span></div>
+    <div class="page-heading"><div><p class="eyebrow">TRAINING ATTENDANCE</p><h1>My Attendance</h1><p>Your training, attendance and hours.</p></div><div class="attendance-heading-actions"><span class="date-chip" id="connectionStatus">Connecting&#8230;</span><button type="button" id="refreshAttendance" class="secondary-action">Refresh attendance</button></div></div>
     <span id="modeMessage" class="visually-hidden"></span>
-    <button type="button" id="refreshAttendance" class="text-action">Refresh attendance</button>
     <div id="pageNotice" class="page-notice" role="status" hidden></div>
     <section class="row g-3 metric-row" aria-label="Training hours">
         <div class="col-sm-4"><div class="metric-card blue"><span>Approved hours</span><strong id="approvedHours">&#8212;</strong><small>Verified and approved only</small></div></div>

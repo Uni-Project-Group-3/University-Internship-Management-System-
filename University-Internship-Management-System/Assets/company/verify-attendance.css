@@ -490,3 +490,60 @@ progress { width: 100%; height: 8px; accent-color: var(--primary); }
 @keyframes scannerRed { 0%,100% { box-shadow: 0 0 0 0 #b4232b00; } 25%,65% { box-shadow: 0 0 0 5px #b4232b33, 0 0 22px #b4232b44; } }
 @media(max-width:575.98px) { .scanner-details .assignment-list { grid-template-columns: 1fr; } .scan-feedback { padding: 12px; } }
 @media(prefers-reduced-motion:reduce) { .scanner-sweep, .scan-feedback-icon svg, .feedback-spinner, #attendanceScannerFrame { animation: none !important; transition: none !important; } .scanner-sweep { top: 50%; } }
+
+/* Attendance presentation refresh: page-local styles only. */
+.attendance-content { max-width: 1540px; margin-inline: auto; }
+.attendance-content .page-heading { gap: 20px; margin-bottom: 28px; align-items: center; }
+.attendance-content .page-heading h1 { font-size: clamp(28px, 3vw, 38px); letter-spacing: -.035em; margin-bottom: 8px; }
+.attendance-content .eyebrow { font-size: 10px; letter-spacing: .14em; font-weight: 800; }
+.attendance-content .page-heading p:not(.eyebrow) { font-size: 14px; line-height: 1.7; }
+.attendance-content .attendance-panel { border-color: var(--border); border-radius: 20px; padding: 24px; box-shadow: 0 5px 20px #24284404; }
+.attendance-content .panel-heading { gap: 12px; align-items: center; flex-wrap: wrap; }
+.attendance-content .panel-heading h2, .attendance-content .assignment-panel h2 { font-size: 18px; letter-spacing: -.02em; margin-bottom: 0; }
+.attendance-content .attendance-badge, .attendance-content .date-chip { font-size: 11px; padding: 8px 12px; border-radius: 30px; line-height: 1.5; }
+.attendance-content .primary-action, .attendance-content .secondary-action, .attendance-dialog .primary-action, .attendance-dialog .secondary-action { min-height: 44px; padding: 11px 18px; border-radius: 11px; line-height: 1.5; }
+.attendance-content .text-action { min-height: 40px; margin-top: 0; padding: 8px 0; }
+.attendance-content .table-responsive { border: 1px solid var(--border-light); border-radius: 13px; }
+.attendance-content .attendance-table th { padding: 13px 16px; background: var(--surface-alt); font-size: 11px; font-weight: 700; }
+.attendance-content .attendance-table td { padding: 16px; font-size: 12px; }
+.attendance-content .attendance-table tbody tr:hover { --bs-table-bg: var(--primary-soft); }
+.attendance-content .form-select, .attendance-dialog .form-select, .attendance-dialog textarea { border-color: var(--border); border-radius: 10px; min-height: 42px; color: var(--text); }
+.attendance-content .page-notice { margin-top: 12px; border-radius: 12px; }
+.attendance-dialog { width: min(560px, calc(100% - 24px)); padding: 26px; border-radius: 22px; box-shadow: 0 24px 90px #24284433; scrollbar-width: thin; }
+.attendance-dialog::backdrop { background: #24284480; backdrop-filter: blur(4px); }
+.attendance-dialog .panel-heading { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 16px; }
+.attendance-dialog h2 { font-size: 21px; letter-spacing: -.025em; margin: 0; }
+.attendance-dialog .dialog-close { display: grid; place-items: center; flex-shrink: 0; width: 36px; height: 36px; padding: 0; line-height: 1; }
+.attendance-dialog .attendance-actions { gap: 10px; padding-top: 18px; border-top: 1px solid var(--border-light); }
+.attendance-dialog .section-note { line-height: 1.7; }
+@media(max-width:575.98px) {
+ .attendance-content .attendance-panel { padding: 18px; border-radius: 16px; margin-bottom: 18px; }
+ .attendance-content .page-heading { align-items: flex-start; flex-direction: column; gap: 12px; }
+ .attendance-content .attendance-actions { gap: 8px; }
+ .attendance-content .attendance-actions > button { flex: 1 1 auto; }
+ .attendance-dialog { padding: 20px; max-height: 88dvh; }
+ .attendance-dialog .attendance-actions > button { flex: 1; }
+ .attendance-content .filter-label { width: 100%; justify-content: space-between; }
+}
+
+.attendance-content > .panel-heading { padding: 16px 18px; border: 1px solid var(--border); border-radius: 15px; background: var(--surface); margin-bottom: 20px; }
+.attendance-content #assignedStudents { max-width: 100%; flex: 1 1 240px; margin: 0; }
+.attendance-content #cameraMessage { margin: 14px 0 8px; }
+.attendance-content .scanner-frame { border-radius: 16px; min-height: 300px; }
+.attendance-content .scanner-details .identity-heading { padding-bottom: 18px; border-bottom: 1px solid var(--border-light); }
+.attendance-content .scanner-details .identity-heading h3 { font-size: 18px; }
+.attendance-content .scanner-details .assignment-list dd { font-size: 13px; }
+.attendance-content #pendingApprovalSummary { margin: 0; }
+.attendance-content .request-row { gap: 14px; }
+#issueQrDialog { width: min(640px, calc(100% - 24px)); }
+#issueQrDialog > .section-note { font-size: 12px; }
+#issueQrDialog #qrStudentList { max-height: min(36dvh, 320px); overflow-y: auto; padding: 4px 10px 4px 0; margin: 14px 0; scrollbar-width: thin; }
+#issueQrDialog #qrStudentList label { display: flex; align-items: flex-start; gap: 10px; width: 100%; padding: 12px; margin: 0; border: 1px solid var(--border-light); background: var(--surface-alt); border-radius: 10px; font-size: 13px; line-height: 1.7; cursor: pointer; }
+#issueQrDialog #qrStudentList label:has(input:checked) { background: var(--primary-soft); border-color: var(--primary-light); }
+#issueQrDialog input[type=checkbox] { width: 17px; height: 17px; flex-shrink: 0; margin-top: 4px; accent-color: var(--primary); }
+#issueQrDialog #issueQrMessage { overflow-wrap: anywhere; }
+@media(max-width:575.98px) { .attendance-content .scanner-frame { min-height: 250px; } .attendance-content > .panel-heading { padding: 14px; } #issueQrDialog #qrStudentList { max-height: 32dvh; } }
+
+.attendance-heading-actions { display: flex; align-items: center; justify-content: flex-end; flex-wrap: wrap; gap: 12px; }
+@media(max-width:575.98px) { .attendance-heading-actions { width: 100%; justify-content: space-between; } }
+@media(min-width:1200px) { .attendance-content .scanner-details .assignment-list { grid-template-columns: 1fr; } }
