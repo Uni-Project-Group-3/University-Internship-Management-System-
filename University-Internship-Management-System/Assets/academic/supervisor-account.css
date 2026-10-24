@@ -90,11 +90,6 @@
 .account-avatar svg { width: 44px; height: 44px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; }
 .account-summary h2 { font-size: 22px; margin: 12px 0; }
 .account-summary > p { font-size: 12px; line-height: 1.9; color: var(--text-secondary); margin: 0; }
-.account-summary-status { display: inline-flex; align-items: center; gap: 7px; margin-top: 20px; padding: 7px 10px; border-radius: 6px; background: var(--surface); font-size: 10px; color: var(--text-secondary); }
-.account-summary-status > span { width: 6px; height: 6px; border-radius: 50%; background: var(--muted); }
-.account-summary-note { padding: 20px 0; margin-top: 22px; border-top: 1px solid var(--border); color: var(--text-secondary); font-size: 12px; line-height: 1.9; }
-.account-monitor-link { display: flex; align-items: center; justify-content: space-between; gap: 10px; text-align: left; border: 1px solid var(--border); padding: 13px 12px; background: var(--surface); color: var(--primary); border-radius: 9px; font-size: 11px; font-weight: 600; text-decoration: none; }
-.account-monitor-link:hover { background: var(--primary-light); }
 .account-sections { display: grid; gap: 22px; min-width: 0; }
 .account-card { padding: 26px; border: 1px solid var(--border); border-radius: 18px; background: var(--surface); min-width: 0; }
 .account-section-heading { display: flex; align-items: start; justify-content: space-between; gap: 14px; margin-bottom: 24px; }
@@ -113,18 +108,15 @@
 .account-field input { width: 100%; min-width: 0; max-width: 100%; border: 1px solid var(--border); padding: 13px; border-radius: 9px; background: var(--surface); color: var(--text); font-family: var(--font-body); font-size: 12px; line-height: 1.7; }
 .account-field input::placeholder { color: var(--text-secondary); opacity: 1; }
 .account-help { font-size: 10px; line-height: 1.8; color: var(--text-secondary); }
-.account-access { display: flex; align-items: start; gap: 16px; }
-.account-access-icon { display: grid; place-items: center; flex: 0 0 40px; height: 40px; border-radius: 10px; color: var(--primary); background: var(--primary-soft); }
-.account-access-icon svg { width: 23px; height: 23px; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
-.account-access a { display: inline-flex; gap: 12px; margin-top: 12px; color: var(--primary); font-size: 12px; font-weight: 600; text-decoration: none; }
-.account-actions { display: flex; align-items: center; justify-content: space-between; gap: 20px; }
-.account-actions p { max-width: 370px; font-size: 11px; color: var(--text-secondary); line-height: 1.9; margin: 0; }
-.account-actions button { flex-shrink: 0; background: var(--border); color: var(--text-secondary); border: 0; padding: 13px 21px; border-radius: 9px; font-family: var(--font-body); font-size: 12px; font-weight: 600; cursor: not-allowed; }
+.account-actions { display: flex; align-items: center; justify-content: flex-end; gap: 20px; }
+.account-actions button, .account-actions input[type="submit"], .account-actions input[type="button"], .account-actions #saveAcademicProfile { appearance: none; -webkit-appearance: none; flex-shrink: 0; background: var(--primary); color: var(--text-inverse); border: 1px solid var(--primary); padding: 13px 21px; border-radius: 9px; font-family: var(--font-body); font-size: 12px; font-weight: 600; cursor: pointer; transition: background .18s ease, border-color .18s ease, transform .18s ease; }
+.account-actions button:hover:not(:disabled), .account-actions input[type="submit"]:hover:not(:disabled), .account-actions input[type="button"]:hover:not(:disabled) { background: color-mix(in srgb, var(--primary) 88%, #000); border-color: color-mix(in srgb, var(--primary) 88%, #000); transform: translateY(-1px); }
+.account-actions button:focus-visible, .account-actions input[type="submit"]:focus-visible, .account-actions input[type="button"]:focus-visible { outline: 2px solid var(--primary); outline-offset: 3px; }
 .account-footer { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 12px; border-top: 1px solid var(--border); margin-top: 30px; padding-top: 22px; font-size: 10px; color: var(--text-secondary); }
 .account-shell a:focus-visible, .account-field input:focus-visible { outline: 2px solid var(--primary); outline-offset: 3px; border-radius: 5px; }
 .account-field input:user-invalid { border-color: var(--danger); }
-@media (max-width: 1100px) { .account-layout { grid-template-columns: minmax(0, 1fr); } .account-heading { align-items: start; flex-wrap: wrap; } .account-summary { padding: 24px; } .account-monitor-link { max-width: 380px; margin: auto; } }
-@media (max-width: 540px) { .account-info, .account-form-grid { grid-template-columns: minmax(0, 1fr); } .account-card { padding: 21px 17px; } .account-section-heading { flex-wrap: wrap; } .account-actions { align-items: stretch; flex-direction: column; } .account-access { gap: 12px; } }
+@media (max-width: 1100px) { .account-layout { grid-template-columns: minmax(0, 1fr); } .account-heading { align-items: start; flex-wrap: wrap; } .account-summary { padding: 24px; } }
+@media (max-width: 540px) { .account-info, .account-form-grid { grid-template-columns: minmax(0, 1fr); } .account-card { padding: 21px 17px; } .account-section-heading { flex-wrap: wrap; } .account-actions { align-items: flex-end; flex-direction: row; } }
 
 
 /* Sidebar and navbar adapted from the supplied Academic Supervisor dashboard. */
@@ -478,3 +470,62 @@ body.role-shell { margin: 0; background: var(--background); color: var(--text); 
 .uims-feedback{color:var(--primary);font-size:.875rem}.uims-error{color:var(--danger);padding:8px 0}.uims-discard{padding:12px;border:1px solid var(--border);background:var(--surface-alt);border-radius:8px}.uims-discard button{padding:7px 12px;margin-right:8px;border:1px solid var(--border);border-radius:6px;background:var(--surface);color:var(--text)}[data-uims-profile]{color:inherit}#studentFields label{display:grid;gap:6px;margin-bottom:12px}#studentFields input,#studentFields select{padding:10px;border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--text)}#messageDialog{width:min(920px,calc(100% - 24px));max-height:90dvh;overflow:auto;border:1px solid var(--border);border-radius:14px;background:var(--surface);color:var(--text)}#messageDialog::backdrop{background:color-mix(in srgb,var(--text) 45%,transparent)}
 
 .uims-notifications,.uims-completion-dialog{width:min(560px,calc(100% - 24px));max-height:88dvh;overflow:auto;padding:22px;border:1px solid var(--border);border-radius:14px;background:var(--surface);color:var(--text)}.uims-notifications::backdrop,.uims-completion-dialog::backdrop{background:color-mix(in srgb,var(--text) 45%,transparent)}.uims-notifications h2,.uims-completion-dialog h2{font-size:1.2rem}.uims-notifications button,.uims-completion-dialog button{padding:9px 14px;margin:5px;border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--primary)}.uims-completion-dialog header{display:flex;justify-content:space-between;align-items:center}.uims-notifications input{padding:8px;border:1px solid var(--border);border-radius:6px;max-width:100%}#companyTraineeDialog{width:min(780px,calc(100% - 24px));max-height:88dvh;overflow:auto;border:1px solid var(--border);border-radius:14px;background:var(--surface);color:var(--text);padding:20px}#companyTraineeDialog::backdrop{background:color-mix(in srgb,var(--text) 45%,transparent)}#companyTraineeDialog input{padding:8px;border:1px solid var(--border);border-radius:6px;max-width:100%}
+
+
+/* Academic account header: presentation only. */
+.supervisor-account-page .account-heading {
+    position: relative;
+    isolation: isolate;
+    overflow: hidden;
+    min-height: 220px;
+    gap: 24px;
+    margin-bottom: 26px;
+    padding: 34px;
+    border-radius: 26px;
+    background: linear-gradient(110deg, var(--hero-gradient-start) 0%, var(--hero-gradient-mid) 60%, var(--hero-gradient-end) 100%);
+    color: #fff;
+    box-shadow: 0 18px 34px rgba(30, 40, 76, .14);
+}
+.supervisor-account-page .account-heading::after {
+    content: "";
+    position: absolute;
+    z-index: -1;
+    width: 370px;
+    height: 370px;
+    top: -225px;
+    right: -70px;
+    border: 1px solid rgba(255, 255, 255, .15);
+    border-radius: 50%;
+    box-shadow: 0 0 0 58px rgba(255, 255, 255, .06), 0 0 0 116px rgba(255, 255, 255, .035);
+    pointer-events: none;
+}
+.supervisor-account-page .account-heading > div { max-width: 760px; }
+.supervisor-account-page .account-eyebrow {
+    display: inline-block;
+    max-width: 100%;
+    margin: 0 0 18px;
+    padding: 8px 12px;
+    border: 1px solid rgba(255, 255, 255, .2);
+    border-radius: 999px;
+    background: rgba(255, 255, 255, .12);
+    color: #fff;
+    font-size: 11px;
+    letter-spacing: .7px;
+    line-height: 1.5;
+}
+.supervisor-account-page .account-heading h1 { margin: 0 0 10px; color: #fff; font-size: clamp(30px, 3.2vw, 42px); line-height: 1.2; }
+.supervisor-account-page .account-heading > div > p:last-child { margin: 0; color: #dce3f2; font-size: 15px; line-height: 1.65; }
+.supervisor-account-page .account-heading .account-role {
+    flex-shrink: 0;
+    padding: 10px 18px;
+    border: 1px solid rgba(255, 255, 255, .2);
+    border-radius: 999px;
+    background: rgba(255, 255, 255, .12);
+    color: #fff;
+}
+@media (max-width: 640px) {
+    .supervisor-account-page .account-heading { min-height: 0; padding: 26px 22px; border-radius: 22px; flex-direction: column; align-items: flex-start; gap: 20px; }
+    .supervisor-account-page .account-eyebrow { font-size: 9px; letter-spacing: .4px; }
+    .supervisor-account-page .account-heading > div > p:last-child { font-size: 13px; }
+    .supervisor-account-page .account-heading .account-role { padding: 8px 14px; font-size: 11px; }
+}

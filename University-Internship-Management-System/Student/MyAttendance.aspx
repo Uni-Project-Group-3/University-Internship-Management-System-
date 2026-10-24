@@ -1,4 +1,4 @@
-﻿<%@ Page Language="C#" AutoEventWireup="true" Async="true" AsyncTimeout="120" CodeBehind="MyAttendance.aspx.cs" Inherits="University_Internship_Management_System.Student.MyAttendance" %>
+<%@ Page Language="C#" AutoEventWireup="true" Async="true" AsyncTimeout="120" CodeBehind="MyAttendance.aspx.cs" Inherits="University_Internship_Management_System.Student.MyAttendance" %>
 <!DOCTYPE html>
 <html lang="en">
 <head runat="server">
@@ -41,11 +41,6 @@
                 <ul class="side-nav"><li><a href="../Contact.aspx"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="m8 12 3 3 5-6"/></svg><span>Help &amp; contact</span></a></li>
 </ul>
 
-                <div class="side-promo">
-                    <i class="bi bi-mortarboard-fill"></i>
-                    <p>Build your future<br />with real experience.</p>
-                    <a href="ExploreOpportunities.aspx">Explore opportunities &rarr;</a>
-                </div>
             </aside>
             <div class="sidebar-backdrop" onclick="toggleSidebar()"></div>
 
@@ -69,7 +64,7 @@
                                 <li><a class="dropdown-item" href="Profile.aspx"><i class="bi bi-person me-2"></i>My Profile</a></li>
                                 <li><a class="dropdown-item" aria-disabled="true" title="This page is not available yet"><i class="bi bi-key me-2"></i>Change Password</a></li>
                                 <li><hr class="dropdown-divider" /></li>
-                                <li><button type="button" class="dropdown-item" disabled title="Authentication is not connected on this preview page">Log out (not connected)</button></li>
+                                <li><a id="attendanceLogout" class="dropdown-item" href="../Auth/Login.aspx">Log out</a></li>
                             </ul>
                         </div>
                     </div>
@@ -104,7 +99,7 @@
             <details class="attendance-panel quick-help"><summary>How attendance works</summary><ol class="steps-list"><li>Display your temporary QR when the action is available.</li><li>Your assigned company supervisor checks your identity and scans it.</li><li>A valid scan records attendance automatically. Hours are approved separately.</li></ol><p class="section-note">A missing check-out does not receive full-day hours. Day-off records are not absences.</p></details>
         </aside>
     </div>
-    <dialog id="qrDialog" class="attendance-dialog" aria-labelledby="qrTitle"><div class="panel-heading"><h2 id="qrTitle">Attendance QR</h2><button type="button" class="dialog-close" data-close-dialog="qrDialog" aria-label="Close QR">&times;</button></div><div class="qr-placeholder"><div id="qrCode" aria-label="Temporary attendance QR code"></div><strong id="qrCountdown" role="status"></strong></div><p id="qrDescription"></p><p class="section-note">Valid for 120 seconds. Your supervisor issues this QR and scans it when you arrive.</p><button type="button" class="secondary-action" data-close-dialog="qrDialog">Close</button></dialog>
+    <dialog id="qrDialog" class="attendance-dialog" aria-labelledby="qrTitle"><div class="panel-heading"><h2 id="qrTitle">Attendance QR</h2><button type="button" class="dialog-close" data-close-dialog="qrDialog" aria-label="Close QR">&times;</button></div><div class="qr-placeholder"><div id="qrCode" aria-label="Temporary attendance QR code"></div><strong id="qrCountdown" role="status"></strong></div><p id="qrDescription"></p><p class="section-note">Valid for 120 seconds. You or your supervisor can issue this QR. Only your assigned supervisor can scan it to record attendance.</p><button type="button" class="secondary-action" data-close-dialog="qrDialog">Close</button></dialog>
     <dialog id="earlyDialog" class="attendance-dialog" aria-labelledby="earlyTitle"><div class="panel-heading"><h2 id="earlyTitle">Request early check-out</h2><button type="button" class="dialog-close" data-close-dialog="earlyDialog" aria-label="Close early check-out request">&times;</button></div><p class="section-note">Your supervisor must approve the request before an early check-out QR becomes available.</p><label for="earlyReason" class="form-label">Reason *</label><textarea id="earlyReason" class="form-control" rows="4" maxlength="500" placeholder="Explain why you need to leave early."></textarea><p id="reasonError" class="error-message" role="alert" hidden>Please enter a reason.</p><div class="attendance-actions"><button type="button" class="secondary-action" data-close-dialog="earlyDialog">Cancel</button><button type="button" class="primary-action" id="sendEarlyRequest">Send request</button></div></dialog>
     <noscript><p>Enable JavaScript to load attendance and display QR codes.</p></noscript>
 </main>
@@ -114,7 +109,7 @@
     </form>
     <script src="../Js_project/firebase-client.js"></script>
     <script src="../Scripts/bootstrap.bundle.min.js"></script>
-    <script src="../Js_project/Student/attendance-qrcode.min.js"></script>
-    <script src="../Js_project/Student/my-attendance.js?v=ui-simple2"></script>
+    <script src="../Js_project/Student/attendance-qrcodegen.js?v=nayuki-local-20261024"></script>
+    <script src="../Js_project/Student/my-attendance.js?v=20261024-nayuki-qr"></script>
 </body>
 </html>

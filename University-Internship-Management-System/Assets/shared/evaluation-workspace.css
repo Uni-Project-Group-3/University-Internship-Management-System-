@@ -1,0 +1,190 @@
+/* Shared visual layer for the four evaluation workspaces only. */
+.uims-page-hero {
+    position: relative;
+    isolation: isolate;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: clamp(22px, 3vw, 42px);
+    min-width: 0;
+    overflow: hidden;
+    margin: 6px 0 22px;
+    padding: clamp(24px, 3.2vw, 42px);
+    border: 1px solid color-mix(in srgb, var(--text-inverse) 12%, transparent);
+    border-radius: 24px;
+    color: var(--text-inverse);
+    background: linear-gradient(112deg, var(--hero-gradient-start) 0%, var(--hero-gradient-mid) 52%, var(--hero-gradient-end) 100%);
+    box-shadow: 0 16px 34px color-mix(in srgb, var(--dark) 12%, transparent);
+}
+.uims-page-hero::before,
+.uims-page-hero::after {
+    position: absolute;
+    z-index: -1;
+    content: "";
+    border: 1px solid color-mix(in srgb, var(--text-inverse) 12%, transparent);
+    border-radius: 50%;
+    pointer-events: none;
+}
+.uims-page-hero::before { width: 390px; height: 390px; top: -245px; right: 7%; }
+.uims-page-hero::after { width: 560px; height: 560px; top: -365px; right: -12%; }
+.uims-hero-copy { position: relative; z-index: 1; flex: 1 1 360px; min-width: 0; }
+.uims-hero-eyebrow {
+    display: inline-flex;
+    align-items: center;
+    min-height: 31px;
+    margin: 0 0 18px;
+    padding: 6px 14px;
+    border: 1px solid color-mix(in srgb, var(--text-inverse) 28%, transparent);
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--text-inverse) 9%, transparent);
+    color: var(--text-inverse);
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: .055em;
+    text-transform: uppercase;
+}
+.uims-hero-copy h1 {
+    margin: 0 0 8px;
+    color: var(--text-inverse);
+    font: 800 clamp(28px, 3vw, 42px)/1.12 var(--font-heading);
+    letter-spacing: -.035em;
+}
+.uims-hero-copy h1 i { color: inherit !important; }
+.uims-hero-copy > p:last-child {
+    max-width: 700px;
+    margin: 0;
+    color: color-mix(in srgb, var(--text-inverse) 85%, transparent);
+    font-size: clamp(13px, 1.2vw, 16px);
+    line-height: 1.65;
+}
+.uims-page-hero .uims-hero-stats {
+    position: relative;
+    z-index: 1;
+    display: grid !important;
+    flex: 0 1 490px;
+    grid-template-columns: repeat(2, minmax(115px, 1fr));
+    gap: 13px 20px;
+    min-width: min(44%, 380px);
+    margin: 0 !important;
+    padding: 19px 22px;
+    border: 1px solid color-mix(in srgb, var(--text-inverse) 24%, transparent);
+    border-radius: 20px;
+    background: color-mix(in srgb, var(--text-inverse) 13%, transparent);
+    box-shadow: inset 0 1px 0 color-mix(in srgb, var(--text-inverse) 8%, transparent);
+    backdrop-filter: blur(8px);
+}
+.uims-page-hero .uims-hero-stat {
+    display: block;
+    min-width: 0;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    color: var(--text-inverse);
+    box-shadow: none;
+}
+.uims-page-hero .uims-hero-stat h2,
+.uims-page-hero .uims-hero-stat dt {
+    display: block;
+    margin: 3px 0 0;
+    color: color-mix(in srgb, var(--text-inverse) 86%, transparent);
+    font: 600 11px/1.4 var(--font-body);
+}
+.uims-page-hero .uims-hero-stat strong,
+.uims-page-hero .uims-hero-stat dd {
+    display: block;
+    margin: 0;
+    color: var(--text-inverse);
+    font: 800 clamp(22px, 2vw, 30px)/1.1 var(--font-heading);
+}
+.uims-page-hero .uims-hero-stat small,
+.uims-page-hero .uims-hero-stat p {
+    display: block;
+    margin: 4px 0 0;
+    color: color-mix(in srgb, var(--text-inverse) 72%, transparent);
+    font: 500 10px/1.4 var(--font-body);
+}
+.uims-page-hero .completion-stat.uims-hero-stat { display: flex; align-items: center; gap: 10px; }
+.uims-page-hero .completion-stat.uims-hero-stat > i {
+    display: grid;
+    place-items: center;
+    width: 36px;
+    height: 36px;
+    flex: 0 0 36px;
+    border-radius: 50%;
+    background: color-mix(in srgb, var(--text-inverse) 16%, transparent);
+    color: var(--text-inverse);
+    font-size: 17px;
+}
+.uims-page-hero .completion-stat.uims-hero-stat > div { min-width: 0; }
+.uims-page-hero .completion-stat.uims-hero-stat h2 { margin-top: 4px; font-size: 10px; }
+.uims-page-hero .completion-stat.uims-hero-stat p { font-size: 9px; }
+
+/* The role-specific UserControls share one navigation treatment, scoped to these pages. */
+.uims-fixed-sidebar {
+    box-sizing: border-box;
+    width: 252px;
+    flex: 0 0 252px;
+    min-width: 0;
+    padding: 22px 14px;
+    border-right: 1px solid var(--border);
+    background: var(--sidebar-bg);
+    color: var(--text);
+}
+.uims-side-brand { display: flex; align-items: center; gap: 10px; min-height: 54px; margin: 0 4px 24px; color: var(--dark); text-decoration: none; }
+.uims-side-logo { display: block; width: 43px; height: 43px; flex: 0 0 43px; object-fit: contain; }
+.uims-side-brandtext { min-width: 0; line-height: 1.2; }
+.uims-side-brandtext strong { display: block; color: var(--dark); font: 800 19px/1.15 var(--font-heading); }
+.uims-side-brandtext small { display: block; margin-top: 3px; color: var(--text-secondary); font: 500 12px/1.35 var(--font-body); }
+.uims-side-role { margin: 0 8px 8px; color: var(--muted); font: 700 10px/1.5 var(--font-body); letter-spacing: .07em; text-transform: uppercase; }
+.uims-side-navigation { display: flex; flex: 1 1 auto; flex-direction: column; min-height: 0; }
+.uims-side-links { display: grid; gap: 3px; margin: 0; padding: 0; list-style: none; }
+.uims-side-link {
+    display: flex;
+    align-items: center;
+    gap: 11px;
+    min-height: 42px;
+    padding: 9px 10px;
+    border: 1px solid transparent;
+    border-radius: 10px;
+    color: var(--text-secondary);
+    font: 600 11px/1.4 var(--font-body);
+    text-decoration: none;
+    transition: color .15s ease, background-color .15s ease, border-color .15s ease;
+}
+.uims-side-link:hover,
+.uims-side-link.is-active,
+.uims-side-link.active { border-color: var(--border); background: var(--surface); color: var(--primary); }
+.uims-side-link.is-active,
+.uims-side-link.active { font-weight: 700; box-shadow: 0 2px 8px color-mix(in srgb, var(--text) 6%, transparent); }
+.uims-side-icon { display: block; width: 19px; height: 19px; flex: 0 0 19px; }
+.uims-side-footer { display: grid; gap: 3px; margin-top: auto; padding-top: 18px; }
+.uims-side-footer > a + a { border-top-color: color-mix(in srgb, var(--border) 70%, transparent); }
+.uims-side-logout { color: var(--danger); }
+.uims-sidebar-close { display: none; }
+.uims-side-brand:focus-visible,
+.uims-side-link:focus-visible,
+.uims-sidebar-close:focus-visible { outline: 2px solid var(--primary); outline-offset: 3px; }
+@media (max-width: 991.98px) {
+    .uims-page-hero { align-items: stretch; flex-direction: column; gap: 22px; padding: 26px 24px; }
+    .uims-page-hero .uims-hero-stats { width: 100%; min-width: 0; flex-basis: auto; }
+    .uims-fixed-sidebar { position: fixed; left: 0; top: 0; z-index: 1040; width: min(252px, 85vw); height: 100dvh; max-height: 100dvh; overflow-y: auto; transform: translateX(-100%); visibility: hidden; transition: transform .2s ease, visibility .2s ease; box-shadow: 0 0 35px color-mix(in srgb, var(--dark) 15%, transparent); }
+    .sidebar-open .uims-fixed-sidebar,
+    .dashboard-direct.dash-sidebar-open .uims-fixed-sidebar { transform: translateX(0); visibility: visible; }
+    .uims-sidebar-close { display: grid; position: absolute; top: 14px; right: 12px; width: 34px; height: 34px; place-items: center; padding: 0; border: 1px solid var(--border); border-radius: 9px; background: var(--surface); color: var(--primary); font-size: 22px; line-height: 1; cursor: pointer; }
+    .uims-side-brand { padding-right: 36px; }
+}
+@media (max-width: 575.98px) {
+    .uims-page-hero { margin-top: 2px; padding: 23px 18px; border-radius: 18px; }
+    .uims-hero-eyebrow { margin-bottom: 13px; font-size: 9px; }
+    .uims-hero-copy h1 { font-size: clamp(25px, 7vw, 32px); }
+    .uims-page-hero .uims-hero-stats { gap: 12px; padding: 15px; border-radius: 15px; }
+    .uims-page-hero .uims-hero-stat strong,
+    .uims-page-hero .uims-hero-stat dd { font-size: 23px; }
+}
+@media (max-width: 360px) {
+    .uims-page-hero .uims-hero-stats { grid-template-columns: 1fr; }
+}
+@media (prefers-reduced-motion: reduce) {
+    .uims-side-link, .uims-fixed-sidebar, .uims-page-hero { transition: none; }
+}

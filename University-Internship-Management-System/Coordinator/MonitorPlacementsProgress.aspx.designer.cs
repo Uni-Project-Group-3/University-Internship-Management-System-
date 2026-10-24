@@ -24,13 +24,22 @@ namespace University_Internship_Management_System.Coordinator
         protected global::System.Web.UI.HtmlControls.HtmlForm form1;
 
         /// <summary>
-        /// lblMessage control.
+        /// RoleNavigation control.
         /// </summary>
         /// <remarks>
         /// Auto-generated field.
         /// To modify move field declaration from designer file to code-behind file.
         /// </remarks>
-        protected global::System.Web.UI.WebControls.Label lblMessage;
+        protected global::University_Internship_Management_System.Shared.RoleSidebarBase RoleNavigation;
+
+        /// <summary>
+        /// WorkspaceNavigation control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.UserControl WorkspaceNavigation;
 
         /// <summary>
         /// lblTotalStudents control.
@@ -60,13 +69,13 @@ namespace University_Internship_Management_System.Coordinator
         protected global::System.Web.UI.WebControls.Literal lblCompletedTasks;
 
         /// <summary>
-        /// lblRiskInternships control.
+        /// lblMessage control.
         /// </summary>
         /// <remarks>
         /// Auto-generated field.
         /// To modify move field declaration from designer file to code-behind file.
         /// </remarks>
-        protected global::System.Web.UI.WebControls.Literal lblRiskInternships;
+        protected global::System.Web.UI.WebControls.Label lblMessage;
 
         /// <summary>
         /// rptPlacements control.

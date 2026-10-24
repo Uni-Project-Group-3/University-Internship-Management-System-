@@ -46,6 +46,7 @@ namespace UIMS.Attendance
         private TraceContext Trace { get { return page.Trace; } }
         public string AttendanceCsrfToken { get; private set; }
         public string VerifiedUid { get; private set; }
+        public JObject VerifiedProfile { get; private set; }
         public bool LocalDemoAllowed { get; private set; }
         public bool IsApiRequest { get { return isApi; } }
         public string Action { get { return Request.Form["action"] ?? ""; } }
@@ -346,6 +347,7 @@ namespace UIMS.Attendance
                 throw new UIMS.Services.FirebaseException(403, "The Firebase user profile is missing its attendance business ID.");
             AttendanceFirebase.CheckKey(businessId);
             VerifiedUid = identity.Uid;
+            VerifiedProfile = (JObject)identity.Profile.DeepClone();
             var writeRequest = AttendanceConfiguration.WriteRequest.Value;
             if (writeRequest != null)
             {

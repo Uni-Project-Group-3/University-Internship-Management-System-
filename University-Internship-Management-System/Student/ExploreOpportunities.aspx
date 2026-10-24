@@ -37,7 +37,6 @@
 <li><a href="StudentDashboard.aspx"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m3 10 9-7 9 7v10h-6v-7H9v7H3V10Z"/></svg><span>Dashboard</span></a></li>
 <li><a href="ExploreOpportunities.aspx" class="active" aria-current="page"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="m8 12 3 3 5-6"/></svg><span>Explore Opportunities</span></a></li>
 <li><a href="MyApplications.aspx"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="m8 12 3 3 5-6"/></svg><span>My Applications</span></a></li>
-<li><a href="ApplicationForm.aspx"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="m8 12 3 3 5-6"/></svg><span>Application Form</span></a></li>
 <li><a href="Profile.aspx"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="7" r="3"/><path d="M5 21v-3a7 7 0 0 1 14 0v3"/></svg><span>My Profile</span></a></li>
 
 <li><a href="MyTasks.aspx"><svg class="nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M4 5h16v14H4zM8 9h8M8 13h6" /></svg><span>My Tasks</span></a></li>
@@ -60,10 +59,7 @@
             <div class="main" id="studentMain">
                 <header class="topbar">
                     <button type="button" class="menu-btn" id="openSidebar" aria-label="Open navigation" aria-controls="studentSidebar" aria-expanded="false"><i class="bi bi-list"></i></button>
-                    <div class="search">
-                        <i class="bi bi-search"></i>
-                        <input id="navbarSearch" type="search" aria-label="Workspace search" placeholder="Search for internships, companies, or skills..." />
-                    </div>
+     
                     <div class="topbar-actions">
                         <button type="button" class="icon-btn" id="navbarNotifications" aria-label="Notifications preview"><i class="bi bi-bell"></i><span class="dot"></span></button>
                         <div class="dropdown">
@@ -115,30 +111,8 @@
                             <input type="search" id="searchInput" class="form-control" placeholder="Opportunity title or company name" />
                         </div>
                     </div>
-                    <div class="filter-field">
-                        <label for="majorFilter" class="form-label">Specialization</label>
-                        <div class="input-icon">
-                            <i class="bi bi-mortarboard"></i>
-                            <select id="majorFilter" class="form-select">
-                                <option value="">All specializations</option>
-                                <option>Computer Science</option>
-                                <option>Software Engineering</option>
-                                <option>Cybersecurity</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div class="filter-field">
-                        <label for="locationFilter" class="form-label">Location</label>
-                        <div class="input-icon">
-                            <i class="bi bi-geo-alt"></i>
-                            <select id="locationFilter" class="form-select">
-                                <option value="">All locations</option>
-                                <option>Amman</option>
-                                <option>Irbid</option>
-                                <option>Remote</option>
-                            </select>
-                        </div>
-                    </div>
+
+
                     <div class="filter-field">
                         <label for="sortBy" class="form-label">Sort by</label>
                         <div class="input-icon">

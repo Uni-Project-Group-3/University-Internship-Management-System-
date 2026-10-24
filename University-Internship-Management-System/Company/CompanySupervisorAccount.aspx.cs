@@ -5,6 +5,9 @@ using System.Threading.Tasks;
 using System.Web;
 using System.Web.Security;
 using System.Web.UI;
+using FirebaseAdmin;
+using FirebaseAdmin.Auth;
+using Google.Apis.Auth.OAuth2;
 using Newtonsoft.Json.Linq;
 using University_Internship_Management_System.Shared;
 
@@ -12,6 +15,23 @@ namespace University_Internship_Management_System.Company
 {
     public partial class CompanySupervisorAccount : Page
     {
+        private static readonly Lazy<Task<FirebaseAuth>> AccountAuthentication =
+            new Lazy<Task<FirebaseAuth>>(CreateAccountAuthenticationAsync);
+
+        private static async Task<FirebaseAuth> CreateAccountAuthenticationAsync()
+        {
+            var configuration = new UIMS.Services.FirebaseConfiguration();
+            configuration.EnsureAuthenticationEnabled();
+            var credential = (await GoogleCredential.GetApplicationDefaultAsync().ConfigureAwait(false))
+                .CreateWithQuotaProject(configuration.ProjectId);
+            var app = FirebaseApp.Create(new AppOptions
+            {
+                ProjectId = configuration.ProjectId,
+                Credential = credential
+            }, "uims-company-account-profile");
+            return FirebaseAuth.GetAuth(app);
+        }
+
         protected void Page_Load(object sender, EventArgs e)
         {
             Response.Cache.SetNoStore();
@@ -63,12 +83,23 @@ namespace University_Internship_Management_System.Company
             {
                 var profile = await GetVerifiedProfileAsync();
                 string companyName = string.Empty;
+                string companyWarning = string.Empty;
                 string companyId = Text(profile, "companyId");
                 if (companyId.Length > 0)
                 {
-                    string token = Session["Uims.FirebaseIdToken"] as string;
-                    var company = await FirebaseSignInService.ReadDatabasePathAsync("companies/" + StudentManagementService.Key(companyId), token) as JObject;
-                    companyName = Text(company, "name");
+                    try
+                    {
+                        var company = await new StudentFirebaseGateway()
+                            .ReadAsync("companies/" + StudentManagementService.Key(companyId)) as JObject;
+                        companyName = Text(company, "name");
+                        if (string.IsNullOrWhiteSpace(companyName))
+                            companyWarning = "Your account was loaded, but its linked company record is missing or has no name. Contact your coordinator.";
+                    }
+                    catch (Exception error)
+                    {
+                        Trace.Warn("CompanyAccountCompanyRead", error.GetType().Name);
+                        companyWarning = "Your account was loaded, but company details could not be retrieved. Refresh the page or contact your coordinator.";
+                    }
                 }
 
                 ViewState["DisplayedProfile"] = new[]
@@ -81,12 +112,14 @@ namespace University_Internship_Management_System.Company
                 NavName.Text = Text(profile, "fullName");
                 CompanySummary.Text = string.IsNullOrWhiteSpace(companyName) ? "Company not linked" : companyName;
                 AccountConnection.Text = "Your information is loaded from Firebase Realtime Database.";
+                ProfileMessage.Text = companyWarning;
                 BindDisplayedProfile();
             }
             catch (FirebaseLoginException error)
             {
                 ViewState["ProfileLoaded"] = false;
                 AccountConnection.Text = error.Message;
+                ProfileMessage.Text = error.Message;
                 EditProfile.Enabled = false;
                 BindDisplayedProfile();
             }
@@ -94,6 +127,7 @@ namespace University_Internship_Management_System.Company
             {
                 ViewState["ProfileLoaded"] = false;
                 AccountConnection.Text = "Your Firebase profile could not be loaded. Sign in again or contact your coordinator.";
+                ProfileMessage.Text = AccountConnection.Text;
                 EditProfile.Enabled = false;
                 BindDisplayedProfile();
             }
@@ -105,12 +139,11 @@ namespace University_Internship_Management_System.Company
             {
                 await GetVerifiedProfileAsync();
                 string uid = Context.User.Identity.Name;
-                string token = Session["Uims.FirebaseIdToken"] as string;
-                await FirebaseSignInService.PatchDatabasePathAsync("users/" + StudentManagementService.Key(uid), new
+                await new StudentFirebaseGateway().PatchAsync("users/" + StudentManagementService.Key(uid), new
                 {
                     fullName = name,
                     phone = phone
-                }, token);
+                });
 
                 var displayed = ViewState["DisplayedProfile"] as string[] ?? new string[4];
                 if (displayed.Length < 4) Array.Resize(ref displayed, 4);
@@ -143,29 +176,28 @@ namespace University_Internship_Management_System.Company
             BindDisplayedProfile();
         }
 
-        protected void btnLogout_Click(object sender, EventArgs e)
-        {
-            FormsAuthentication.SignOut();
-            Session.Clear();
-            Session.Abandon();
-            Response.Redirect("~/Auth/Login.aspx", false);
-            Context.ApplicationInstance.CompleteRequest();
-        }
+        protected void btnLogout_Click(object sender, EventArgs e) { University_Internship_Management_System.Shared.LoginSession.End(Context); Session.Clear(); Session.Abandon(); Response.Redirect(ResolveUrl("~/Auth/Login.aspx?account=new"), false); Context.ApplicationInstance.CompleteRequest(); }
 
         private async Task<JObject> GetVerifiedProfileAsync()
         {
-            string uid = Context.User.Identity.Name;
-            string token = Session["Uims.FirebaseIdToken"] as string;
-            if (string.IsNullOrWhiteSpace(uid) || string.IsNullOrWhiteSpace(token))
-            {
-                FormsAuthentication.SignOut();
-                Response.Redirect("../Auth/Login.aspx", true);
-                return null;
-            }
+            var identity = Context.User.Identity as FormsIdentity;
+            if (identity == null || !identity.IsAuthenticated || identity.Ticket.Expired ||
+                FirebaseSignInService.CanonicalRole(identity.Ticket.UserData) != "companySupervisor")
+                throw new FirebaseLoginException("Sign in again with a company supervisor account.", 403);
 
-            var verified = await new FirebaseSignInService().VerifySessionAsync(token);
-            if (!string.Equals(verified.Uid, uid, StringComparison.Ordinal) || verified.Role != "companySupervisor")
-                throw new HttpException(403, "A verified company supervisor account is required.");
+            string uid = identity.Name;
+            var gateway = new StudentFirebaseGateway();
+            var authentication = await AccountAuthentication.Value;
+            UserRecord account;
+            try { account = await authentication.GetUserAsync(uid); }
+            catch (FirebaseAuthException error) when (error.AuthErrorCode == AuthErrorCode.UserNotFound)
+            { throw new FirebaseLoginException("Your company supervisor account was not found. Contact your coordinator.", 403); }
+            if (account.Disabled)
+                throw new FirebaseLoginException("Your company supervisor account is unavailable. Sign in again or contact your coordinator.", 403);
+            var verified = FirebaseSignInService.ProfileResult(uid,
+                await gateway.ReadAsync("users/" + StudentManagementService.Key(uid)) as JObject);
+            if (verified.Role != "companySupervisor" || verified.MustChangePassword)
+                throw new FirebaseLoginException("A fully configured company supervisor account is required.", 403);
             return verified.Profile;
         }
 
@@ -191,24 +223,19 @@ namespace University_Internship_Management_System.Company
             EditEmail.Text = Fallback(profile[2]);
             CompanyName.Text = Fallback(profile[3]);
             CompanySummary.Text = string.IsNullOrWhiteSpace(profile[3]) ? "Company not linked" : profile[3];
-            EditingHint.Text = EditProfileFields.Visible
-                ? "Update your name and contact phone. Your account email and company association are protected."
-                : "Your account details are loaded from Firebase Realtime Database.";
-            EditingStatus.Text = EditProfileFields.Visible
-                ? "Editing"
-                : (ViewState["ProfileLoaded"] as bool? == true ? "Connected" : "Unavailable");
+            EditingHint.Text = "Update your name and contact phone. Your account email and company association are protected.";
+            EditingStatus.Text = ViewState["ProfileLoaded"] as bool? == true ? "Connected" : "Unavailable";
         }
 
         private void SetEditing(bool editing)
         {
-            ReadProfile.Visible = true;
-            EditProfileFields.Visible = editing;
-            FullName.ReadOnly = !editing;
-            Phone.ReadOnly = !editing;
-            EditProfile.Visible = !editing;
-            SaveProfile.Visible = editing;
-            CancelEdit.Visible = editing;
-            if (editing) FullName.Focus();
+            ReadProfile.Visible = false;
+            EditProfileFields.Visible = true;
+            FullName.ReadOnly = false;
+            Phone.ReadOnly = false;
+            EditProfile.Visible = false;
+            SaveProfile.Visible = true;
+            CancelEdit.Visible = false;
         }
 
         private void ShowValidationError(System.Web.UI.WebControls.TextBox field, string message)

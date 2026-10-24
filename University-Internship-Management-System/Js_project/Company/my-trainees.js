@@ -1,203 +1,95 @@
-
-/* Original-page demo bindings. Layout and server controls remain in the ASPX. */
 (function () {
     'use strict';
-    // Demo-only behavior is opt-in. A missing demo session must not hijack normal page navigation.
-    if (!window.UimsDemo?.enabled()) return;
-    let binding;
-    function initialize() {
-        binding?.abort();
-        binding = new AbortController();
-        const signal = binding.signal, demo = window.UimsDemo;
-        let view = demo.view(), selected = null, render = () => {};
-        if (!view || view.user.mustChangePassword || view.user.role !== document.body.dataset.demoRole) {
-            location.href = '../Auth/Login.aspx?demo=1';
-            return;
-        }
-        const by = id => document.getElementById(id) || document.querySelector('[id$="_' + id + '"]');
-        const all = selector => [...document.querySelectorAll(selector)];
-        const escape = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-        const text = (id, value) => { const element = by(id); if (element) element.textContent = value ?? '—'; };
-        const value = id => by(id)?.value?.trim() || '';
-        const set = (id, value) => { if (by(id)) by(id).value = value ?? ''; };
-        const options = (id, records, placeholder = 'All') => {
-            const element = by(id); if (!element) return;
-            const previous = element.value;
-            element.innerHTML = '<option value="">' + escape(placeholder) + '</option>' + records.map(record => '<option value="' + escape(record.id) + '">' + escape(record.name) + '</option>').join('');
-            if (records.some(record => record.id === previous)) element.value = previous;
-        };
-        const on = (id, type, handler) => by(id)?.addEventListener(type, handler, {signal});
-        const click = (id, handler) => on(id, 'click', event => { event.preventDefault(); try { handler(event); } catch(exception) { error(exception,event.currentTarget.closest('dialog,.modal,.offcanvas')); } });
-        const button = (label, action, id, className = 'row-action') => {
-            const paths={edit:'M4 16v4h4L20 8l-4-4L4 16Z',delete:'M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13',reset:'M13 7a5 5 0 1 0 0 10 5 5 0 0 0 0-10ZM8 12H2m2 0v4',status:'M12 2v10M6 5a9 9 0 1 0 12 0',assign:'M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 3a4 4 0 1 0 0 8 4 4 0 0 0 0-8M20 8v6m-3-3h6'};
-            const icon=className.includes('action-btn')&&paths[action];
-            const content=icon?'<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="'+paths[action]+'"/></svg>':escape(label);
-            return '<button type="button" title="'+escape(label)+'" aria-label="'+escape(label)+'" class="' + className + '" data-uims="' + action + '" data-record="' + escape(id) + '">' + content + '</button>';
-        };
-        const cells = values => '<tr>' + values.map(cell => '<td>' + cell + '</td>').join('') + '</tr>';
-        const fill = (selector, records, row) => {
-            const element = document.querySelector(selector);
-            if(!element)return;
-            const emptyState=element.id==='taskList'?element.querySelector('#noTasksMsg'):null;
-            element.innerHTML=records.map(row).join('');
-            if(emptyState)element.append(emptyState);
-        };
-        const messageElement = () => by('uimsPageNotice') || document.querySelector('main .preview-note,main .completion-notice,main .companies-notice,main .evaluation-notice,main .monitor-notice,main .workspace-note,#messagesAvailability,#traineesAvailability,#accountAvailability') || by('pageNotice') || by('profileMessage') || by('pnlMessage');
-        function notice(message) {
-            let element = messageElement();
-            if (!element) { element = document.createElement('p'); element.id='uimsPageNotice'; element.className = 'uims-feedback'; element.setAttribute('role','status'); (document.querySelector('main') || document.querySelector('.content')).prepend(element); }
-            element.hidden = false; element.textContent = message;
-        }
-        function error(error, scope) {
-            let element = scope?.querySelector('[data-uims-error]');
-            if (scope && !element) { element = document.createElement('p'); element.dataset.uimsError = ''; element.className = 'uims-error'; element.setAttribute('role','alert'); (scope.querySelector('.modal-body') || scope).append(element); }
-            if (element) element.textContent = error.message; else notice(error.message);
-        }
-        const dirty = new WeakSet(), openers = new WeakMap();
-        let beforeClose=null;
-        function open(id) {
-            const dialog = by(id); if (!dialog) throw Error('Missing original popup: ' + id);
-            const alreadyOpen=dialog.tagName==='DIALOG'?dialog.open:dialog.classList.contains('show');
-            if(!alreadyOpen){openers.set(dialog, document.activeElement);dirty.delete(dialog);}
-            dialog.querySelectorAll('[data-uims-error],.uims-discard').forEach(el => el.remove());
-            if (dialog.tagName === 'DIALOG') { if (!dialog.open) dialog.showModal(); }
-            else if (dialog.classList.contains('offcanvas')) bootstrap.Offcanvas.getOrCreateInstance(dialog).show();
-            else bootstrap.Modal.getOrCreateInstance(dialog).show();
-            dialog.querySelector('input:not([readonly]):not([disabled]),textarea:not([disabled]),select:not([disabled])')?.focus();
-        }
-        function close(id, force = false) {
-            const dialog = by(id); if (!dialog) return;
-            if(!force&&beforeClose?.(id)===false)return;
-            if (dirty.has(dialog) && !force) {
-                if (dialog.querySelector('.uims-discard')) return;
-                const prompt = document.createElement('div'); prompt.className = 'uims-discard'; prompt.setAttribute('role','alert');
-                prompt.innerHTML = '<p>Discard unsaved changes?</p><button type="button" data-keep>Keep editing</button><button type="button" data-discard>Discard changes</button>';
-                (dialog.querySelector('.modal-footer') || dialog).append(prompt);
-                prompt.querySelector('[data-keep]').onclick = () => prompt.remove();
-                prompt.querySelector('[data-discard]').onclick = () => { prompt.remove(); close(id, true); };
-                prompt.querySelector('button').focus(); return;
-            }
-            dirty.delete(dialog);
-            if (dialog.tagName === 'DIALOG') dialog.close();
-            else if (dialog.classList.contains('offcanvas')) bootstrap.Offcanvas.getInstance(dialog)?.hide();
-            else bootstrap.Modal.getInstance(dialog)?.hide();
-            openers.get(dialog)?.focus();
-        }
-        function transact(action, payload, popup) {
-            try {
-                const result = demo.transaction(action, payload); view = demo.view();
-                if (popup) close(popup, true);
-                render(); notice('Saved in local demo storage. No Firebase operation or email was sent.');
-                return {ok:true, result};
-            } catch (exception) { error(exception, popup ? by(popup) : null); return {ok:false}; }
-        }
-        function valid(ids, popup) {
-            const invalid = ids.map(by).find(field => field && (!field.checkValidity() || field.required && !field.value.trim()));
-            if (!invalid) return true;
-            invalid.reportValidity(); error(Error('Check the highlighted field.'), by(popup)); return false;
-        }
-        const actions = {};
-        document.addEventListener('click', event => {
-            const control = event.target.closest('[data-uims]'); if (!control) return;
-            event.preventDefault();
-            try { actions[control.dataset.uims]?.(control.dataset.record, control); } catch (exception) { error(exception); }
-        }, {signal});
-        all('dialog,.modal,.offcanvas').forEach(dialog => {
-            const changed = () => dirty.add(dialog);
-            dialog.addEventListener('input', changed, {signal}); dialog.addEventListener('change', changed, {signal});
-            dialog.addEventListener('cancel', event => { event.preventDefault(); close(dialog.id); }, {signal});
-            dialog.addEventListener('hide.bs.modal', event => { if (dirty.has(dialog)) { event.preventDefault(); close(dialog.id); } }, {signal});
-            dialog.addEventListener('hidden.bs.modal', () => openers.get(dialog)?.focus(), {signal});
-            dialog.addEventListener('click', event => {
-                if(event.defaultPrevented)return;
-                if (event.target.closest('[data-bs-dismiss], [data-close], [data-completion-close], [data-profile-cancel], .popup-close, .monitor-close, .evaluation-close, .companies-close, .placements-close, [data-close-exam]')) {
-                    event.preventDefault(); event.stopPropagation(); close(dialog.id);
-                } else if (event.target === dialog && dialog.tagName === 'DIALOG') {
-                    const rect = dialog.getBoundingClientRect();
-                    if (event.clientX < rect.left || event.clientX > rect.right || event.clientY < rect.top || event.clientY > rect.bottom) close(dialog.id);
-                }
-            }, {signal});
-        });
-        function detail(student, id, selector) {
-            const progress = view.progress.find(item => item.id === student); if (!progress) throw Error('This student is not available to this demo identity.');
-            const target = document.querySelector(selector);
-            if (target) target.innerHTML = '<h3>' + escape(progress.name) + '</h3><dl>' + [['University ID',progress.universityId],['Department',progress.department],['Company',progress.company?.name],['Company Supervisor',progress.companySupervisor?.name],['Academic Supervisor',progress.supervisor?.name],['Training status',progress.placement?.completionStatus || 'Not placed'],['Approved / Required hours',progress.approvedHours + ' / ' + progress.requiredHours],['Tasks completed',progress.completedTasks + ' / ' + progress.tasks.length],['Risk indicators',progress.risks.join(', ') || 'None'],['Confirmed at UTC',progress.placement?.studentConfirmedAt],['Disable deadline UTC',progress.placement?.accountDisableAt],['Certificate',progress.placement?.certificateId]].map(([label,content]) => '<dt>' + escape(label) + '</dt><dd>' + escape(content || '—') + '</dd>').join('') + '</dl>' + progress.tasks.map(task => '<article><h4>' + escape(task.title) + '</h4><p>' + escape(task.description) + '</p><p>' + escape(task.deadline) + ' · ' + escape(task.status) + '</p><p>' + escape(task.feedback) + '</p>' + view.submissions.filter(sub => sub.taskId === task.id).map(sub => '<p>Submitted ' + escape(sub.createdAt) + ': ' + escape(sub.description) + ' · ' + escape(sub.fileName) + '</p>').join('') + '</article>').join('') + progress.evaluations.map(evaluation => '<article><h4>' + escape(evaluation.kind) + ' evaluation · ' + escape(evaluation.status) + '</h4><p>' + escape(evaluation.comments) + '</p></article>').join('');
-            selected = student; open(id);
-        }
-        function shell() {
-            all('[id$="lblUserName"],[id$="NavName"]').forEach(el => el.textContent = view.user.name);
-            document.addEventListener('click', event => {
-                const element = event.target.closest('a,button,input');
-                if (element && (/log\s*out/i.test(element.textContent) || /logout/i.test(element.id))) {
-                    event.preventDefault(); event.stopImmediatePropagation(); demo.logout(); location.href = '../Auth/Login.aspx?demo=1';
-                }
-            }, {signal,capture:true});
-            all('[id*=Logout],[id*=logout]').forEach(el => el.disabled = false);
-            if (!document.querySelector('script[src*="dashboard-navigation.js"]')) {
-                const sidebar = document.querySelector('aside.sidebar,aside.dash-sidebar,aside[id$="Sidebar"]');
-                const toggle = document.querySelector('.menu-btn,.dash-menu-btn');
-                const main = document.querySelector('.main,.dash-main');
-                const media = matchMedia('(max-width:991.98px)');
-                const setOpen = show => {
-                    const active = media.matches && show;
-                    document.body.classList.toggle('sidebar-open',active); toggle?.setAttribute('aria-expanded',String(active));
-                    if (sidebar) sidebar.inert = media.matches && !active;
-                    if (main) main.inert = active;
-                    document.querySelector('.sidebar-backdrop,.dash-sidebar-backdrop')?.toggleAttribute('hidden',!active);
-                    if (active) sidebar?.querySelector('button,a[href]')?.focus();
-                };
-                window.toggleSidebar = () => setOpen(!document.body.classList.contains('sidebar-open'));
-                if (toggle) { toggle.onclick = null; toggle.addEventListener('click',window.toggleSidebar,{signal}); }
-                all('.sidebar-close,.dash-sidebar-close,.legacy-sidebar-close,.sidebar-backdrop,.dash-sidebar-backdrop').forEach(el => el.addEventListener('click',()=>{setOpen(false);toggle?.focus();},{signal}));
-                document.addEventListener('keydown',event=>{if(event.key==='Escape'&&document.body.classList.contains('sidebar-open')){setOpen(false);toggle?.focus();}},{signal});
-                media.addEventListener('change',()=>setOpen(false),{signal}); setOpen(false);
-            }
-            const topSearch = document.querySelector('.topbar input,.dash-topbar input');
-            const search = document.querySelector('main input[type="search"],.content input[type="search"],#taskSearch,#searchInput');
-            if(topSearch&&!search){topSearch.disabled=false;topSearch.addEventListener('keydown',event=>{if(event.key!=='Enter')return;event.preventDefault();const route={admin:'MonitorPlacementsProgress.aspx',student:'ExploreOpportunities.aspx',company:'MyTrainees.aspx',academic:'StudentProgressMonitor.aspx'}[view.user.role];location.href=route+'?search='+encodeURIComponent(topSearch.value.trim());},{signal});}
-            if (topSearch && search && topSearch !== search) { topSearch.disabled=false;topSearch.addEventListener('input',()=>{search.value=topSearch.value;search.dispatchEvent(new Event('input'));},{signal}); }
-        }
-
-        function notifications() {
-            const items=[];
-            if(view.user.role==='student'){view.applications.forEach(a=>items.push('Application: '+a.status));view.placements.filter(p=>p.completionStatus==='PendingStudentConfirmation').forEach(()=>items.push('Coordinator approval received. Confirm completion in the Student Dashboard.'));}
-            if(view.user.role==='company')items.push(view.applications.filter(a=>a.status==='pending').length+' pending applications',view.tasks.filter(t=>t.status==='submitted').length+' task submissions awaiting review');
-            if(view.user.role==='academic')items.push(view.progress.filter(s=>s.evaluations.some(e=>e.kind==='company'&&e.status==='submitted')&&!s.evaluations.some(e=>e.kind==='academic'&&e.status==='submitted')).length+' assigned students awaiting academic evaluation');
-            if(view.user.role==='admin')items.push(view.messages.filter(m=>m.status==='unread').length+' unread contact messages',view.progress.filter(s=>s.placement?.completionStatus==='PendingStudentConfirmation').length+' pending student confirmations');
-            let dialog=by('originalNotifications');
-            if(!dialog){dialog=document.createElement('dialog');dialog.id='originalNotifications';dialog.className='uims-notifications';dialog.setAttribute('aria-label','Demo notifications');document.forms[0].append(dialog);}
-            dialog.innerHTML='<h2>Notifications · local demo</h2>'+items.map(item=>'<p>'+escape(item)+'</p>').join('')+(items.length?'':'<p>No notifications.</p>')+'<button type="button" data-notification-close>Close</button>';
-            dialog.querySelector('button').onclick=()=>dialog.close();dialog.showModal();
-        }
-        all('.topbar button,.dash-topbar button').forEach(el=>{if(!/notification/i.test(el.getAttribute('aria-label')||'')&&!el.querySelector('.bi-bell'))return;el.disabled=false;el.title='Local demo notifications';el.addEventListener('click',event=>{event.preventDefault();event.stopImmediatePropagation();view=demo.view();if(view)notifications();},{signal,capture:true});});
-        shell();
-        
-        let page=0;
-        document.querySelector('.trainees-filters').disabled=false;
-        options('internshipFilter',view.opportunities.map(o=>({id:o.id,name:o.title})));
-        options('statusFilter',['InTraining','PendingStudentConfirmation','Completed'].map(id=>({id,name:id})));
-        render=()=>{
-            const records=view.progress.filter(student=>(!value('traineeSearch')||[student.name,student.universityId].join(' ').toLowerCase().includes(value('traineeSearch').toLowerCase()))&&(!value('internshipFilter')||student.placement?.opportunityId===value('internshipFilter'))&&(!value('statusFilter')||student.placement?.completionStatus===value('statusFilter')));
-            const pages=Math.max(1,Math.ceil(records.length/10));page=Math.min(page,pages-1);
-            fill('.trainees-table tbody',records.slice(page*10,page*10+10),student=>cells([escape(student.name)+'<small>'+escape(student.universityId)+'</small>',escape(view.opportunities.find(o=>o.id===student.placement.opportunityId)?.title),'Dates not configured',student.approvedHours+' / '+student.requiredHours+' h · '+student.completedTasks+' / '+student.tasks.length+' tasks',escape(student.placement.completionStatus),button('View details','details',student.id)]));
-            all('.trainees-stat strong').forEach((el,index)=>el.textContent=[view.students.length,view.placements.filter(p=>p.completionStatus==='InTraining').length,view.placements.filter(p=>p.completionStatus==='Completed').length,view.progress.filter(p=>!p.evaluations.some(e=>e.kind==='company'&&e.status==='submitted')).length][index]);
-            const buttons=document.querySelectorAll('.trainees-pagination button');buttons[0].disabled=page===0;buttons[1].disabled=page===pages-1;document.querySelector('.trainees-list-footer > span').textContent=records.length+' trainees · Page '+(page+1)+' / '+pages;
-        };
-        actions.details=id=>{selected=id;const student=view.progress.find(p=>p.id===id);all('.trainees-info dd').forEach((el,index)=>el.textContent=[student.name,student.universityId,student.department,view.opportunities.find(o=>o.id===student.placement.opportunityId)?.title,view.user.name,student.placement.completionStatus][index]);text('traineeProgressSummary',student.approvedHours+' / '+student.requiredHours+' approved hours; '+student.completedTasks+' / '+student.tasks.length+' completed tasks.');set('approvedHoursDate','');set('approvedHoursValue','');open('companyTraineeDialog');};
-        click('saveApprovedHours',()=>{const student=view.progress.find(p=>p.id===selected);if(valid(['approvedHoursDate','approvedHoursValue'],'companyTraineeDialog'))transact('hours',{placementId:student.placement.id,date:value('approvedHoursDate'),hours:value('approvedHoursValue')},'companyTraineeDialog');});
-        click('openTraineeEvaluation',()=>location.href='ReportsFinalEvaluation.aspx?student='+encodeURIComponent(selected));
-        click('viewTraineeProgress',()=>text('traineeProgressSummary',view.progress.find(p=>p.id===selected).tasks.map(t=>t.title+': '+t.status).join(' · ')||'No tasks assigned yet.'));
-        for(const id of ['traineeSearch','internshipFilter','statusFilter'])on(id,id==='traineeSearch'?'input':'change',()=>{page=0;render();});
-        all('.trainees-pagination button').forEach((el,index)=>el.addEventListener('click',()=>{page+=index?1:-1;render();},{signal}));
-
-        set('traineeSearch',new URLSearchParams(location.search).get('search')||'');
-
-        render();
-        notice('DEMO — original interface connected to local browser storage. No Firebase or real authentication.');
-        window.addEventListener('storage', event => { if (event.key === 'uims.demo.v1') { view=demo.view(); if(view&&!view.user.mustChangePassword&&view.user.role===document.body.dataset.demoRole)render();else location.href='../Auth/Login.aspx?demo=1'; } }, {signal});
-        window.addEventListener('focus',()=>{const current=demo.current();if(!current||current.mustChangePassword)location.href='../Auth/Login.aspx?demo=1';},{signal});
-        window.addEventListener('pageshow',()=>{const current=demo.current();if(!current||current.mustChangePassword)location.href='../Auth/Login.aspx?demo=1';},{signal});
+    const by = id => document.getElementById(id), notice = by('traineesAvailability');
+    const escape = value => String(value ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    let records = [], page = 0, loading = false, selected = null;
+    document.querySelector('.trainees-table').style.minWidth = '780px';
+    document.querySelector('.trainees-table-wrap').style.overflowX = 'auto';
+    const labels = { training: 'Currently training', completed: 'Completed training' };
+    function render() {
+        const query = by('traineeSearch').value.trim().toLowerCase();
+        const filtered = records.filter(r => (!query || (r.name + ' ' + r.studentId).toLowerCase().includes(query)) && (!by('internshipFilter').value || r.opportunityId === by('internshipFilter').value) && (!by('statusFilter').value || r.status === by('statusFilter').value));
+        const pages = Math.max(1, Math.ceil(filtered.length / 10)); page = Math.min(page, pages - 1);
+        document.querySelector('.trainees-table tbody').innerHTML = filtered.slice(page * 10, page * 10 + 10).map(r => '<tr><td><div class="trainee-person"><span class="trainee-avatar" aria-hidden="true">' + escape(r.name.split(/\s+/).filter(Boolean).slice(0,2).map(n=>n[0]).join('')) + '</span><div><strong>' + escape(r.name) + '</strong><small>' + escape(r.studentId) + '</small></div></div></td><td>' + escape(r.internship || 'Internship') + '</td><td>' + escape([r.startDate, r.endDate].filter(Boolean).join(' – ') || 'Dates not recorded') + '</td><td>' + r.completedTasks + ' / ' + r.taskCount + ' tasks<div class="trainee-task-progress"><span style="width:' + Math.min(100,Math.max(0,r.taskCount?100*r.completedTasks/r.taskCount:0)) + '%"></span></div></td><td><span class="trainee-state ' + (r.status==='completed'?'completed':'') + '">' + escape(labels[r.status]) + '</span></td><td><button type="button" data-trainee="' + escape(r.id) + '">View details</button></td></tr>').join('') || '<tr><td colspan="6"><div class="trainees-empty"><h3>No matching trainees</h3><p>Students appear after company acceptance and student confirmation.</p></div></td></tr>';
+        document.querySelector('.trainees-list-footer > span').textContent = filtered.length + ' placements · Page ' + (page + 1) + ' / ' + pages;
+        const buttons = document.querySelectorAll('.trainees-pagination button'); buttons[0].disabled = page === 0; buttons[1].disabled = page >= pages - 1;
+        document.querySelector('.trainees-pagination span').textContent = String(page + 1);
     }
-    if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',initialize,{once:true});else initialize();
-    if(window.Sys?.WebForms?.PageRequestManager)Sys.WebForms.PageRequestManager.getInstance().add_endRequest(initialize);
-})();
+    function details(id) {
+        selected = records.find(r => r.id === id); if (!selected) return;
+        const r = selected;
+        document.querySelectorAll('.trainees-info dd').forEach((el, i) => el.textContent = [r.name, r.studentId, r.department || 'Not recorded', r.internship || 'Internship', 'Your company workspace', [r.startDate, r.endDate].filter(Boolean).join(' – ') || 'Dates not recorded'][i]);
+        by('traineeProgressSummary').textContent = r.completedTasks + ' / ' + r.taskCount + ' completed tasks. ' + (r.requiredHours ? r.requiredHours + ' required training hours.' : 'Required hours not recorded.');
+        by('companyTraineeDialog').showModal();
+    }
+    async function refresh() {
+        if (loading || document.hidden) return; loading = true;
+        try {
+            const response = await fetch('../TasksApi.ashx?action=trainees', { credentials: 'same-origin', cache: 'no-store', signal: AbortSignal.timeout(30000) });
+            const data = await response.json(); if (!response.ok) throw Error(data.message || 'Unable to load company trainees.');
+            records = data.trainees; const chosen = by('internshipFilter').value;
+            const internships = new Map(records.map(r => [r.opportunityId, r.internship || 'Internship']));
+            by('internshipFilter').innerHTML = '<option value="">All internships</option>' + [...internships].map(([id, title]) => '<option value="' + escape(id) + '">' + escape(title) + '</option>').join('');
+            if (internships.has(chosen)) by('internshipFilter').value = chosen;
+            document.querySelectorAll('.trainees-stat strong').forEach((el, i) => { el.textContent = [data.statistics.total, data.statistics.training, data.statistics.completed, data.statistics.assignedTasks][i]; el.removeAttribute('aria-label'); });
+            document.querySelector('.trainees-filters').disabled = false; document.querySelector('.trainees-data-badge').textContent = 'Live Firebase records';
+            notice.textContent = ''; notice.style.display = 'none'; render();
+            if (by('companyTraineeDialog').open && selected) { const id = selected.id; const latest = records.find(r => r.id === id); if (!latest) by('companyTraineeDialog').close(); }
+        } catch (error) {
+            notice.style.removeProperty('display');
+            notice.textContent = error.message + ' Retrying automatically.';
+            document.querySelector('.trainees-data-badge').textContent = 'Connection interrupted';
+            document.querySelectorAll('.trainees-stat strong').forEach(el => el.textContent = '—');
+            document.querySelector('.trainees-table tbody').innerHTML = '<tr><td colspan="6">Trainee records are temporarily unavailable. Retrying the authorized Firebase service…</td></tr>';
+            document.querySelector('.trainees-filters').disabled = true;
+        } finally { loading = false; }
+    }
+    by('statusFilter').innerHTML = '<option value="">All statuses</option><option value="training">Currently training</option><option value="completed">Completed training</option>';
+    ['traineeSearch', 'internshipFilter', 'statusFilter'].forEach(id => by(id).addEventListener(id === 'traineeSearch' ? 'input' : 'change', () => { page = 0; render(); }));
+    document.querySelector('.trainees-table tbody').addEventListener('click', event => { const button = event.target.closest('[data-trainee]'); if (button) details(button.dataset.trainee); });
+    document.querySelectorAll('[data-close]').forEach(button => button.addEventListener('click', () => by('companyTraineeDialog').close()));
+    document.querySelectorAll('.trainees-pagination button').forEach((button, i) => button.addEventListener('click', () => { page += i ? 1 : -1; render(); }));
+    // Hours are not derived from task completion. Use the existing authorized attendance workflow.
+    by('saveApprovedHours').parentElement.querySelectorAll('label,p,button').forEach(el => { if (el.id !== 'traineeProgressSummary') el.hidden = true; });
+    function node(tag, text, cls) { const el = document.createElement(tag); if (text != null) el.textContent = String(text); if (cls) el.className = cls; return el; }
+    function workspace(title) {
+        const dialog = node('dialog', null, 'trainee-workflow-dialog'), heading = node('header'), h = node('h2', title), close = node('button', 'Back to trainee', 'trainee-workflow-back'), body = node('section'); close.type = 'button';
+        heading.append(h, close); dialog.append(heading, body); document.body.append(dialog);
+        async function leave() {
+            const frame = body.querySelector('iframe');
+            if (frame?.dataset.dirty === 'true') {
+                if (dialog.querySelector('.trainee-leave-confirm')) return;
+                const confirm = node('dialog', null, 'trainee-leave-confirm'), title = node('h3', 'Close this evaluation?'), text = node('p', 'Unsaved entries will be discarded. Saved revisions remain in Firebase.'), cancel = node('button', 'Continue editing'), accept = node('button', 'Discard and close'); cancel.type = accept.type = 'button'; confirm.append(title, text, cancel, accept); document.body.append(confirm); cancel.onclick = () => confirm.close(); accept.onclick = () => { confirm.close(); dialog.close(); }; confirm.addEventListener('close', () => confirm.remove(), { once: true }); confirm.showModal(); cancel.focus(); return;
+            }
+            dialog.close();
+        }
+        close.onclick = leave; dialog.addEventListener('cancel', event => { event.preventDefault(); leave(); }); dialog.addEventListener('close', () => { dialog.remove(); by('companyTraineeDialog').querySelector('[data-close]')?.focus(); }, { once: true }); dialog.showModal(); return { dialog, body };
+    }
+    by('viewTraineeProgress').onclick = async () => {
+        if (!selected) return; const trainee = { ...selected }, view = workspace('Training progress · ' + trainee.name), status = node('p', 'Loading authorized placement records…'); view.body.append(status);
+        try {
+            const [tasksResponse, evaluationResponse] = await Promise.all([
+                fetch('../TasksApi.ashx', { credentials: 'same-origin', cache: 'no-store', signal: AbortSignal.timeout(60000) }),
+                fetch('../FinalReportsApi.ashx?action=detail&placementId=' + encodeURIComponent(trainee.placementId), { credentials: 'same-origin', cache: 'no-store', signal: AbortSignal.timeout(60000) })
+            ]);
+            const data = await tasksResponse.json(); if (!tasksResponse.ok) throw Error(data.message || 'Task progress unavailable.');
+            const evaluation = await evaluationResponse.json(); if (!view.dialog.open) return;
+            const tasks = (data.tasks || []).filter(task => task.placementId === trainee.placementId && task.studentId === trainee.studentId);
+            status.textContent = trainee.studentId + ' · ' + trainee.internship;
+            const stats = node('div', null, 'trainee-progress-stats');
+            for (const [label, value] of [['Assigned tasks', tasks.length], ['Completed tasks', tasks.filter(task => String(task.status).toLowerCase() === 'completed').length], ['Approved training', evaluationResponse.ok && evaluation.approvedTrainingMinutes != null ? (evaluation.approvedTrainingMinutes / 60).toFixed(2) + ' / 300 hours' : 'Unavailable']]) { const card = node('article'); card.append(node('strong', value), node('span', label)); stats.append(card); } view.body.append(stats);
+            if (!evaluationResponse.ok) view.body.append(node('p', evaluation.message || 'Attendance verification is unavailable.', 'trainee-workflow-error'));
+            else view.body.append(node('p', evaluation.eligibilityBlocker || (evaluation.eligible ? 'Eligible for company final report submission.' : '300 approved hours are required before final report submission.')));
+            for (const task of tasks) { const card = node('article', null, 'trainee-progress-task'); card.append(node('h3', task.title), node('span', task.status, 'trainee-state'), node('p', task.description || ''), node('p', 'Deadline: ' + (task.dueDate || 'Not recorded'))); if (task.grade != null) card.append(node('p', 'Company grade: ' + task.grade + ' / ' + (task.maximumScore ?? 'Not recorded'))); view.body.append(card); }
+            if (!tasks.length) view.body.append(node('p', 'No tasks are linked to this student and placement.'));
+        } catch (error) { if (view.dialog.open) status.textContent = error.message; }
+    };
+    by('openTraineeEvaluation').onclick = () => {
+        if (!selected) return; const trainee = { ...selected }, view = workspace('Evaluate trainee · ' + trainee.name), frame = document.createElement('iframe');
+        frame.title = 'Final evaluation for student ' + trainee.studentId; frame.className = 'trainee-evaluation-frame'; frame.src = '../FinalReports.aspx?embedded=1&placementId=' + encodeURIComponent(trainee.placementId);
+        const onMessage = event => { if (event.origin !== location.origin || event.source !== frame.contentWindow || event.data?.placementId !== trainee.placementId) return; if (event.data.type === 'uims-evaluation-dirty') frame.dataset.dirty = 'true'; if (event.data.type === 'uims-evaluation-saved') { frame.dataset.dirty = 'false'; refresh(); } };
+        window.addEventListener('message', onMessage); view.dialog.addEventListener('close', () => window.removeEventListener('message', onMessage), { once: true }); view.body.append(frame);
+    };
+    window.addEventListener('focus', refresh); document.addEventListener('visibilitychange', () => { if (!document.hidden) refresh(); });
+    refresh(); setInterval(refresh, 5000);
+}());

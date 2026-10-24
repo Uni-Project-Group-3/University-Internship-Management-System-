@@ -1,5 +1,5 @@
 /* Original-page demo bindings. Layout and server controls remain in the ASPX. */
-(function () {
+(function() {
     'use strict';
     // Demo-only behavior is opt-in. A missing demo session must not hijack normal page navigation.
     if (!window.UimsDemo?.enabled()) return;
@@ -268,7 +268,6 @@
         on('statusFilter', 'change', render);
 
         render();
-        notice('DEMO — original interface connected to local browser storage. No Firebase or real authentication.');
         window.addEventListener('storage', event => { if (event.key === 'uims.demo.v1') { view = demo.view(); if (view && !view.user.mustChangePassword && view.user.role === document.body.dataset.demoRole) render(); else location.href = '../Auth/Login.aspx?demo=1'; } }, { signal });
         window.addEventListener('focus', () => { const current = demo.current(); if (!current || current.mustChangePassword) location.href = '../Auth/Login.aspx?demo=1'; }, { signal });
         window.addEventListener('pageshow', () => { const current = demo.current(); if (!current || current.mustChangePassword) location.href = '../Auth/Login.aspx?demo=1'; }, { signal });
@@ -279,7 +278,7 @@
 
 /* Sample-card behaviour when the demo store is not active: the status filter, the details popup and
    a confirmation preview work on the cards already in the page. Nothing is saved or sent; a refresh resets it. */
-(function () {
+(function() {
     'use strict';
     if (window.UimsDemo?.enabled()) return;
     function start() {

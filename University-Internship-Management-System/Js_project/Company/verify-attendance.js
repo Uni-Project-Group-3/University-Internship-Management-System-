@@ -12,6 +12,7 @@ let cameraVersion = 0;
 let frameId = 0;
 let lastFrameAt = 0;
 let scanScaleIndex = 0;
+let nativeQrDetector = null;
 let lastToken = "";
 let lastTokenAt = 0;
 const video = document.getElementById("cameraVideo");
@@ -259,6 +260,9 @@ async function loadSupervisor() {
             disconnected(error);
             document.getElementById("recordRows").removeAttribute("aria-busy");
             if (!supervisorData) {
+                // انتهى الطلب بالفشل؛ لا نترك الواجهة توحي بأن التحميل ما زال جاريًا.
+                document.getElementById("assignedStudents").textContent = "Assigned trainees could not be loaded.";
+                document.getElementById("requestStatus").textContent = "Unavailable";
                 document.getElementById("requestList").textContent = "Requests could not be loaded.";
                 const row = document.createElement("tr"), cell = document.createElement("td");
                 cell.colSpan = 7; cell.textContent = "Attendance could not be loaded."; row.append(cell);
@@ -438,20 +442,42 @@ function stopCamera() {
     document.getElementById("cameraMessage").textContent = "Camera stopped.";
 }
 
-function scanFrame(timestamp) {
+async function scanFrame(timestamp) {
     if (!cameraStream) return;
-    if (!saving && timestamp - lastFrameAt > 250 && video.readyState >= 2) {
+    const version = cameraVersion;
+    try {
+    if (!saving && timestamp - lastFrameAt > 120 && video.readyState >= 2 && video.videoWidth > 0 && video.videoHeight > 0) {
         lastFrameAt = timestamp;
+        // Use the browser's accelerated decoder when available; jsQR remains the offline fallback.
+        if (nativeQrDetector) {
+            try {
+                const detected = await nativeQrDetector.detect(video);
+                if (version !== cameraVersion || !cameraStream) return;
+                const match = detected.find(item => typeof item.rawValue === "string" && item.rawValue.trim().startsWith("UIMSATT1:"));
+                if (match) {
+                    processToken(match.rawValue);
+                    if (cameraStream) frameId = requestAnimationFrame(scanFrame);
+                    return;
+                }
+            } catch (_) { nativeQrDetector = null; }
+        }
+        if (version !== cameraVersion || !cameraStream) return;
+        if (saving) { frameId = requestAnimationFrame(scanFrame); return; }
         const started = scannerDiagnosticsEnabled ? performance.now() : 0;
-        // نحتفظ بتفاصيل الرمز الطويل؛ تصغير الإطار كان يضيّع المربعات الصغيرة.
-        // نبدّل المقياس بين الإطارات لأن بعض الأحجام تفشل معها قراءة المربعات.
-        const targetWidth = [1280, 960, 1600][scanScaleIndex++ % 3];
-        const scale = targetWidth / video.videoWidth;
-        scanCanvas.width = Math.round(video.videoWidth * scale);
-        scanCanvas.height = Math.round(video.videoHeight * scale);
-        scanContext.drawImage(video, 0, 0, scanCanvas.width, scanCanvas.height);
+        // Alternate the full frame with an unscaled central crop. Upscaling a low-resolution
+        // camera adds work, not detail, and can stall the UI before the next useful frame.
+        const pass = scanScaleIndex++ % 3;
+        const crop = pass !== 0;
+        const sourceWidth = crop ? Math.min(video.videoWidth, video.videoHeight) * 0.8 : video.videoWidth;
+        const sourceHeight = crop ? sourceWidth : video.videoHeight;
+        const scale = Math.min(1, (pass === 2 ? 1280 : 960) / sourceWidth);
+        scanCanvas.width = Math.round(sourceWidth * scale);
+        scanCanvas.height = Math.round(sourceHeight * scale);
+        scanContext.imageSmoothingEnabled = false;
+        scanContext.drawImage(video, (video.videoWidth-sourceWidth)/2, (video.videoHeight-sourceHeight)/2,
+            sourceWidth, sourceHeight, 0, 0, scanCanvas.width, scanCanvas.height);
         const pixels = scanContext.getImageData(0, 0, scanCanvas.width, scanCanvas.height);
-        const code = jsQR(pixels.data, pixels.width, pixels.height, { inversionAttempts: "attemptBoth" });
+        const code = jsQR(pixels.data, pixels.width, pixels.height, { inversionAttempts: pass === 2 ? "attemptBoth" : "dontInvert" });
         if (scannerDiagnosticsEnabled) {
             diagnosticFrames++;
             // تقرير دوري مختصر بدل طباعة سجل لكل إطار.
@@ -474,7 +500,14 @@ function scanFrame(timestamp) {
             if (decoded.startsWith("UIMSATT1:")) processToken(decoded);
         }
     }
-    frameId = requestAnimationFrame(scanFrame);
+    } catch (error) {
+        // خطأ قراءة الإطار يجب أن يحرر الكاميرا ويتيح إعادة المحاولة، لا أن يوقف المسح بصمت.
+        scannerDiagnostic("frame.failed", { errorType: error.name });
+        stopCamera();
+        showNotice("The camera frame could not be processed. Open the camera again to retry. No attendance confirmation was received.", true);
+        return;
+    }
+    if (cameraStream && version === cameraVersion) frameId = requestAnimationFrame(scanFrame);
 }
 
 document.getElementById("openCamera").addEventListener("click", async function () {
@@ -484,6 +517,9 @@ document.getElementById("openCamera").addEventListener("click", async function (
         showNotice("Camera access needs HTTPS or localhost and a supported browser. Allow camera access to scan attendance.", true); return;
     }
     cameraOpening = true;
+    nativeQrDetector = null;
+    try { if (typeof window.BarcodeDetector === "function") nativeQrDetector = new window.BarcodeDetector({ formats: ["qr_code"] }); } catch (_) { /* Use jsQR. */ }
+    lastFrameAt = 0; scanScaleIndex = 0;
     scannerDiagnostic("camera.requested", { decoder: typeof jsQR, secureContext: window.isSecureContext });
     diagnosticFrames = 0;
     lastFrameDiagnosticAt = 0;
@@ -500,7 +536,13 @@ document.getElementById("openCamera").addEventListener("click", async function (
         await video.play();
         if (version === cameraVersion) {
             scannerDiagnostic("camera.opened", { width: video.videoWidth, height: video.videoHeight, readyState: video.readyState });
-            document.getElementById("cameraMessage").textContent = "Scanning…";
+            const track = stream.getVideoTracks()[0];
+            try {
+                const capabilities = track.getCapabilities?.();
+                if (capabilities?.focusMode?.includes("continuous")) await track.applyConstraints({ advanced: [{ focusMode: "continuous" }] });
+            } catch (_) { /* Focus controls vary by camera; scanning remains available. */ }
+            if (version !== cameraVersion) return;
+            document.getElementById("cameraMessage").textContent = "Scanning… Center the QR in the camera and keep it steady.";
             frameId = requestAnimationFrame(scanFrame);
         }
     } catch (error) {
@@ -528,7 +570,10 @@ document.getElementById("issueQrButton").addEventListener("click", function () {
         const row = document.createElement("p"), label = document.createElement("label");
         const checkbox = document.createElement("input");
         checkbox.type = "checkbox"; checkbox.value = student.id; checkbox.name = "qrStudent";
-        label.append(checkbox, " " + student.name); row.append(label); list.append(row);
+        // رقم الطالب يميّز الحساب الصحيح عند تشابه الأسماء أو وجود أكثر من مشرف.
+        label.append(checkbox, " " + student.name + " · Student ID: " + student.id +
+            " · Assignment: " + student.assignmentId);
+        row.append(label); list.append(row);
     });
     document.getElementById("selectAllQrStudents").checked = false;
     document.getElementById("issueQrStatus").textContent = "";
@@ -547,7 +592,9 @@ document.getElementById("confirmIssueQr").addEventListener("click", async functi
     try {
         const result = await api("issueQr", { studentIds: JSON.stringify(ids), attendanceAction: document.getElementById("issuedQrAction").value });
         status.textContent = result.issued.length + " QR codes issued. Each student can now open their own QR.";
-        if (result.failed.length) status.textContent += " Not issued: " + result.failed.map(function (row) { return row.message; }).join("; ");
+        if (result.failed.length) status.textContent += " Not issued: " + result.failed.map(function (row) {
+            return "Student " + row.studentId + ": " + row.message;
+        }).join("; ");
     } catch (error) { status.textContent = error.message; }
     finally { saving = false; this.disabled = false; }
 });

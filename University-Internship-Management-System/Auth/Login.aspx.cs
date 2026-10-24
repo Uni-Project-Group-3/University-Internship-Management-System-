@@ -39,6 +39,17 @@ namespace University_Internship_Management_System.Auth
 
             ClearFirstLoginCookie();
             PasswordChangeRequired = IsEmailPasswordReset;
+            // Reuse an existing authenticated cookie instead of requesting the password again.
+            var signedIn = Context.User?.Identity as FormsIdentity;
+            var role = signedIn != null && signedIn.IsAuthenticated && !signedIn.Ticket.Expired
+                ? FirebaseSignInService.CanonicalRole(signedIn.Ticket.UserData) : null;
+            if (!IsPostBack && !IsEmailPasswordReset && role != null && Request.QueryString["change"] != "required" && Request.QueryString["account"] != "new")
+            {
+                RedirectTo(FirebaseSignInService.Destination(role));
+                return;
+            }
+
+
             form1.Attributes["data-password-required"] = PasswordChangeRequired ? "true" : "false";
             form1.DefaultButton = PasswordChangeRequired ? SaveChanges.ID : SignIn.ID;
 
@@ -80,19 +91,21 @@ namespace University_Internship_Management_System.Auth
                 EnsureSecureTransport();
                 var blockedUntil = Session["Uims.LoginBlockedUntil"] as DateTime?;
                 if (blockedUntil.HasValue && blockedUntil.Value > DateTime.UtcNow)
-                    throw new FirebaseLoginException("Wait a minute before trying to sign in again.");
+                    throw new FirebaseLoginException("Please wait before trying to sign in again.", 429, Math.Max(1, (int)Math.Ceiling((blockedUntil.Value - DateTime.UtcNow).TotalSeconds)));
                 var result = await new FirebaseSignInService().SignInAsync(Email.Text, Password.Text);
                 FormsAuthentication.SignOut();
                 CompleteSignIn(result);
             }
             catch (Exception error)
             {
-                int attempts = (Session["Uims.LoginAttempts"] as int? ?? 0) + 1;
-                Session["Uims.LoginAttempts"] = attempts;
-                if (attempts >= 5)
+                var loginError = error as FirebaseLoginException;
+                if (loginError?.StatusCode == 429)
+                    Session["Uims.LoginBlockedUntil"] = DateTime.UtcNow.AddSeconds(Math.Max(1, loginError.RetryAfterSeconds));
+                else if (loginError?.StatusCode == 401)
                 {
-                    Session["Uims.LoginBlockedUntil"] = DateTime.UtcNow.AddMinutes(1);
-                    Session["Uims.LoginAttempts"] = 0;
+                    int attempts = (Session["Uims.LoginAttempts"] as int? ?? 0) + 1;
+                    Session["Uims.LoginAttempts"] = attempts >= 5 ? 0 : attempts;
+                    if (attempts >= 5) Session["Uims.LoginBlockedUntil"] = DateTime.UtcNow.AddMinutes(1);
                 }
                 AuthMessage.Text = error is FirebaseLoginException ? error.Message :
                     "Sign-in could not be completed. Check the connection and Firebase server configuration.";

@@ -166,7 +166,7 @@ namespace University_Internship_Management_System.Services.FinalEvaluation
         { if (current != null && (current.Status == CompletionStatus.Approved || current.Status == CompletionStatus.Rejected)) throw new ConflictException(); }
         internal static void Rule(EvaluationPolicy policy, string policyId, string version, CompletionDecisionKind kind, string reason, string notes)
         {
-            if (policy == null || !policy.IsApproved || policy.PolicyId != policyId || policy.Version != version || policy.CompletionDecisions == null)
+            if (policy == null || !policy.IsProductionApproved || policy.PolicyId != policyId || policy.Version != version || policy.CompletionDecisions == null)
                 throw new ArgumentException("An applicable approved completion decision policy is required.");
             if (!Enum.IsDefined(typeof(CompletionDecisionKind), kind)) throw new ArgumentException("Unsupported completion decision.");
             var rule = kind == CompletionDecisionKind.Approve ? policy.CompletionDecisions.Approve : kind == CompletionDecisionKind.RequestChanges ? policy.CompletionDecisions.RequestChanges : policy.CompletionDecisions.Reject;

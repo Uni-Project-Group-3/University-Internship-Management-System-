@@ -1,4 +1,4 @@
-﻿"use strict";
+"use strict";
 
 let attendance = null;
 let loading = false;
@@ -246,14 +246,13 @@ function renderStudent(data) {
     document.getElementById("checkOutButton").disabled = saving || !data.canCheckOut;
     document.getElementById("earlyButton").disabled = saving || !data.canRequestEarly;
     document.getElementById("earlyStatus").textContent = request.status ? "Early departure: " + label(request.status) + "." : "";
-    const start = schedule.scheduledStartAt ? time(Number(schedule.scheduledStartAt) - 300000) : "—";
-    document.getElementById("scheduleHelp").textContent = !assigned ? "No active assignment. Attendance actions are unavailable."
+    document.getElementById("scheduleHelp").textContent = !assigned ? "Your account is verified. No approved training assignment is linked yet. Attendance actions are unavailable."
         : !data.actionsEnabled ? "Attendance actions are disabled in Firebase settings. Reading history remains available."
         : !schedule.assignmentId ? "No schedule exists for today. Ask your supervisor to configure it."
         : !schedule.isTrainingDay ? "Scheduled day off. No absence is counted."
         : record.checkOutAt ? "Attendance complete."
-        : record.checkInAt ? "Normal check-out from " + time(schedule.scheduledEndAt) + "."
-        : "Check-in from " + start + ".";
+        : record.checkInAt ? "Your supervisor can issue your check-out QR now. Actual worked time counts after hours approval."
+        : "Flexible attendance today. Generate your check-in QR and ask your supervisor to scan it.";
     if (document.getElementById("qrDialog").open && ((qrAction === "checkIn" && record.checkInAt) || (qrAction === "checkOut" && record.checkOutAt))) {
         document.getElementById("qrDialog").close();
         showNotice("Attendance updated.");
@@ -322,62 +321,54 @@ async function showQr(action, button) {
     if (loading || saving || !attendance || !(action === "checkIn" ? attendance.canCheckIn : attendance.canCheckOut)) return;
     saving = true;
     button.disabled = true;
+    clearInterval(qrTimer);
+    const dialog = document.getElementById("qrDialog");
+    document.getElementById("qrCode").replaceChildren();
+    document.getElementById("qrTitle").textContent = action === "checkIn" ? "Check-in QR" : "Check-out QR";
+    document.getElementById("qrCountdown").textContent = "Generating your secure QR…";
+    document.getElementById("qrDescription").textContent = "Your assigned supervisor must scan this code to record attendance. Each code is valid for 120 seconds.";
+    if (!dialog.open) openDialog("qrDialog", button);
     try {
-        if (typeof QRCode !== "function") throw new Error("The local QR generation library could not be loaded.");
+        if (typeof qrcodegen === "undefined" || typeof qrcodegen.QrCode?.encodeText !== "function") throw new Error("The local QR generation library could not be loaded.");
         const requestedAt = performance.now();
         const qr = await api("qr", { attendanceAction: action });
+        if (!dialog.open) return;
+        if (typeof qr.token !== "string" || !qr.token.length || !Number.isFinite(Number(qr.expiresAt)) || !Number.isFinite(Number(qr.serverNow))) throw new Error("The server returned an invalid QR response. Refresh attendance and retry.");
         // نخصم مدة الطلب احتياطًا حتى لا نعرض الرمز مدة أطول من صلاحيته على السيرفر.
         qrDeadline = requestedAt + qr.expiresAt - qr.serverNow;
         if (performance.now() >= qrDeadline) throw new Error("QR expired while loading. Generate a new QR.");
         const container = document.getElementById("qrCode");
         container.replaceChildren();
-        // التوكن المحمي طويل؛ دقة أعلى تمنع ضياع مربعات QR عند حفظ الصورة وقراءتها.
-        const generatedQr = new QRCode(container, { text: qr.token, width: 640, height: 640, correctLevel: QRCode.CorrectLevel.L });
-        // هامش أبيض وأبعاد بمضاعفات صحيحة تمنع تشويش مربعات الرمز أمام الكاميرا.
-        const qrCanvas = container.querySelector("canvas");
-        if (qrCanvas && generatedQr._oQRCode) {
-            const matrix = generatedQr._oQRCode;
-            const count = matrix.getModuleCount();
-            const moduleSize = Math.max(4, Math.floor(640 / (count + 8)));
-            qrCanvas.width = qrCanvas.height = (count + 8) * moduleSize;
-            const context = qrCanvas.getContext("2d");
-            context.fillStyle = "#ffffff";
-            context.fillRect(0, 0, qrCanvas.width, qrCanvas.height);
-            context.fillStyle = "#000000";
-            for (let row = 0; row < count; row++) {
-                for (let column = 0; column < count; column++) {
-                    if (matrix.isDark(row, column)) context.fillRect((column + 4) * moduleSize, (row + 4) * moduleSize, moduleSize, moduleSize);
-                }
-            }
-            const image = container.querySelector("img");
-            if (image) image.remove();
-            // SVG يحافظ على حدة المربعات مهما تغيّر حجم الشاشة.
-            const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-            svg.setAttribute("viewBox", "0 0 " + (count + 8) + " " + (count + 8));
-            svg.setAttribute("role", "img");
-            svg.setAttribute("aria-label", "Attendance QR");
-            svg.style.cssText = "width:480px;max-width:100%;height:auto;background:white;shape-rendering:crispEdges";
-            const path = document.createElementNS(svg.namespaceURI, "path");
-            let squares = "";
-            for (let row = 0; row < count; row++) {
-                for (let column = 0; column < count; column++) {
-                    if (matrix.isDark(row, column)) squares += "M" + (column + 4) + " " + (row + 4) + "h1v1h-1z";
-                }
-            }
-            path.setAttribute("d", squares);
-            path.setAttribute("fill", "black");
-            svg.append(path);
-            qrCanvas.style.display = "none";
-            container.append(svg);
-        }
+        const matrix = qrcodegen.QrCode.encodeText(qr.token, qrcodegen.QrCode.Ecc.MEDIUM);
+        const size = matrix.size + 8;
+        const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+        svg.setAttribute("viewBox", "0 0 " + size + " " + size);
+        svg.setAttribute("width", "480");
+        svg.setAttribute("height", "480");
+        svg.setAttribute("role", "img");
+        svg.setAttribute("aria-label", "Attendance QR");
+        svg.style.cssText = "display:block;width:100%;max-width:480px;height:auto;background:#fff;shape-rendering:crispEdges";
+        const background = document.createElementNS(svg.namespaceURI, "rect");
+        background.setAttribute("width", String(size)); background.setAttribute("height", String(size)); background.setAttribute("fill", "#fff");
+        const path = document.createElementNS(svg.namespaceURI, "path");
+        let squares = "";
+        for (let y = 0; y < matrix.size; y++)
+            for (let x = 0; x < matrix.size; x++)
+                if (matrix.getModule(x, y)) squares += "M" + (x + 4) + " " + (y + 4) + "h1v1h-1z";
+        path.setAttribute("d", squares); path.setAttribute("fill", "#000");
+        svg.append(background, path); container.append(svg);
         document.getElementById("qrTitle").textContent = action === "checkIn" ? "Check-in QR" : "Check-out QR";
         document.getElementById("qrDescription").textContent = attendance.student.name + " · " + attendance.company.name + ". Show this QR to your assigned supervisor.";
         qrAction = action;
         clearInterval(qrTimer);
         qrTimer = setInterval(updateCountdown, 250);
         updateCountdown();
-        openDialog("qrDialog", button);
-    } catch (error) { showNotice(error.message, true); }
+    } catch (error) {
+        document.getElementById("qrCode").replaceChildren();
+        document.getElementById("qrCountdown").textContent = "QR unavailable";
+        document.getElementById("qrDescription").textContent = error.message;
+        showNotice(error.message, true);
+    }
     finally { saving = false; if (attendance) renderStudent(attendance); }
 }
 

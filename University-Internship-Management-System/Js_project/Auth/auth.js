@@ -21,7 +21,6 @@
         saveChanges.value = 'Set Password';
     }
     const requiresPasswordChange = form.dataset.passwordRequired === "true";
-    const isPasswordPreview = false;
     let resetBusy = false;
     let submitting = false;
     document.querySelectorAll("[data-loading]").forEach(button => { button.dataset.label = button.value; });
@@ -69,7 +68,7 @@
     confirmation.addEventListener("input", updatePasswordFeedback);
     dialog.addEventListener("cancel", event => event.preventDefault());
 
-    if (requiresPasswordChange || isPasswordPreview) {
+    if (requiresPasswordChange) {
         if (typeof dialog.showModal === "function") {
             dialog.showModal();
         } else {
@@ -77,13 +76,11 @@
             document.getElementById("loginContent").setAttribute("inert", "");
         }
         newPassword.focus();
-        document.getElementById("firstLoginPreviewNotice").hidden = !isPasswordPreview;
-        document.getElementById("exitPasswordPreview").hidden = !isPasswordPreview;
     }
     updatePasswordFeedback();
 
     resetOpener.addEventListener("click", () => {
-        if (requiresPasswordChange || isPasswordPreview) return;
+        if (requiresPasswordChange) return;
         document.getElementById("resetFields").hidden = false;
         document.getElementById("resetConfirmation").hidden = true;
         document.getElementById("resetEmailError").textContent = "";
@@ -200,25 +197,6 @@
                 (!Object.values(passwordRules()).every(Boolean) ? newPassword : confirmation).focus();
                 return;
             }
-        }
-        if (action === "change" && isPasswordPreview) {
-            event.preventDefault();
-            submitting = true;
-            saveChanges.disabled = true;
-            saveChanges.value = "Previewing...";
-            dialog.setAttribute("aria-busy", "true");
-            window.setTimeout(() => {
-                const status = document.getElementById("firstChangeStatus");
-                status.textContent = "Preview complete. No password was changed.";
-                status.classList.add("is-success");
-                status.hidden = false;
-                dialog.removeAttribute("aria-busy");
-                saveChanges.value = "Preview Again";
-                submitting = false;
-                updatePasswordFeedback();
-                status.focus();
-            }, 450);
-            return;
         }
         submitting = true;
         form.setAttribute("aria-busy", "true");

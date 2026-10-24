@@ -47,10 +47,7 @@
                 <!-- ============ NAVBAR ============ -->
                 <header class="topbar">
                     <button type="button" class="menu-btn" data-action="toggle-sidebar" aria-label="Open menu"><i class="bi bi-list"></i></button>
-                    <div class="search">
-                        <i class="bi bi-search"></i>
-                        <input type="search" id="searchBox" placeholder="Search by student name, ID, or major..." autocomplete="off" />
-                    </div>
+
                     <div class="topbar-actions">
                         <button type="button" class="icon-btn" aria-label="Notifications"><i class="bi bi-bell"></i><span class="dot"></span></button>
                         <div class="dropdown">

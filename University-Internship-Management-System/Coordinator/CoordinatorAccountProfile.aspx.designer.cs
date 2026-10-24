@@ -1,4 +1,4 @@
-﻿namespace University_Internship_Management_System.Coordinator
+namespace University_Internship_Management_System.Coordinator
 {
     public partial class CoordinatorAccountProfile
     {
@@ -7,6 +7,7 @@
         protected global::System.Web.UI.WebControls.Literal AccountConnection;
         protected global::System.Web.UI.WebControls.Literal UniversitySummary;
         protected global::System.Web.UI.HtmlControls.HtmlForm form1;
+        protected global::University_Internship_Management_System.Shared.RoleSidebarBase RoleNavigation;
         protected global::System.Web.UI.WebControls.Literal ProfileInitials;
         protected global::System.Web.UI.WebControls.Literal ProfileName;
         protected global::System.Web.UI.WebControls.Literal OverviewEmail;

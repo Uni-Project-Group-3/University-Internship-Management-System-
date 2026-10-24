@@ -2,6 +2,7 @@ using System;
 using System.Linq;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using University_Internship_Management_System.Models.FinalEvaluation;
 using University_Internship_Management_System.Services.FinalEvaluation;
 
@@ -32,6 +33,29 @@ internal static partial class Program
     { return new StudentCompletionWorkflow(f.Repo, new User { UserId = uid }, f.Access, source, source, source, source, source, source, f.Service(uid)); }
     private static async Task RunStudentCompletionTests()
     {
+        await Test("Student task service projection scopes placement, maps real statuses, and withholds unpublished results", () => {
+            var payload = JObject.Parse(@"{ 'role':'student', 'identity':'S-1', 'tasks':[
+                { 'id':'assigned', 'studentId':'S-1', 'placementId':'P-1', 'title':'Assigned task', 'status':'assigned' },
+                { 'id':'working', 'studentId':'S-1', 'placementId':'P-1', 'title':'Work in progress', 'status':'inprogress' },
+                { 'id':'submitted', 'studentId':'S-1', 'placementId':'P-1', 'title':'Awaiting review', 'status':'submitted', 'score':99, 'feedback':'PRIVATE_UNPUBLISHED_FEEDBACK' },
+                { 'id':'evaluated', 'studentId':'S-1', 'placementId':'P-1', 'title':'Evaluated task', 'status':'completed', 'score':8, 'maximum':100, 'feedback':'Published feedback' },
+                { 'id':'revision', 'studentId':'S-1', 'placementId':'P-1', 'title':'Revision task', 'status':'revision', 'score':7, 'feedback':'Please revise this work' },
+                { 'id':'other-placement', 'studentId':'S-1', 'placementId':'P-2', 'title':'Other placement', 'status':'completed', 'score':100 }
+            ] }");
+            var rows = StudentTaskServiceProjection.Map(payload, new CompletionPlacement { StudentId = "S-1" }, "P-1");
+            Assert(rows.Length == 5 && rows.Count(x => x.Status == StudentTaskStatus.Submitted) == 1 &&
+                rows.Count(x => x.Status == StudentTaskStatus.Evaluated) == 1 && rows.Count(x => x.Status == StudentTaskStatus.Revision) == 1 &&
+                rows.Count(x => x.Status == StudentTaskStatus.InProgress) == 1);
+            var submitted = rows.Single(x => x.Id == "submitted"); var evaluated = rows.Single(x => x.Id == "evaluated"); var revision = rows.Single(x => x.Id == "revision");
+            Assert(!submitted.IsResultPublished && submitted.Grade == null && submitted.StudentVisibleFeedback == null);
+            Assert(evaluated.IsResultPublished && evaluated.Grade == 8 && evaluated.MaximumGrade == null && evaluated.StudentVisibleFeedback == "Published feedback");
+            Assert(revision.IsResultPublished && revision.Grade == null && revision.StudentVisibleFeedback == "Please revise this work");
+            return Task.CompletedTask;
+        });
+        await Test("Student task service projection rejects identity mismatch", async () => {
+            var payload = JObject.Parse(@"{ 'role':'student', 'identity':'S-2', 'tasks':[] }");
+            await Reject<UnauthorizedAccessException>(() => Task.FromResult(StudentTaskServiceProjection.Map(payload, new CompletionPlacement { StudentId = "S-1" }, "P-1")));
+        });
         await Test("Student grade card distinguishes unavailable source from a verified empty source", async () => {
             var f = await ReportSetup();
             var empty = await StudentFlow(f, new StudentSources { Tasks = new StudentTaskRecord[0] }).LoadAsync("fictional-internship");

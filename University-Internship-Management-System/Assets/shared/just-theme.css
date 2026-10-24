@@ -1,0 +1,18 @@
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap');
+body.uims-tasks-theme {
+ --font-heading:'Manrope',sans-serif; --font-body:'Inter',sans-serif;
+ --primary:#1F3D78; --primary-hover:#294D91; --primary-light:#DCE9F7; --primary-soft:#EAF2FA;
+ --background:#F4F3EF; --surface:#FFFFFF; --surface-alt:#F6F7FA; --sidebar-bg:#E8EDF2;
+ --card-blue:#DCE9F7; --card-ice:#EAF2FA; --card-lavender:#E8E8F1;
+ --dark:#242844; --dark-hover:#303657; --text:#242844; --text-secondary:#66718A; --muted:#718096; --text-inverse:#FFFFFF;
+ --border:#DFE3EB; --border-light:#EBEDF2; --success:#28734D; --success-light:#E6F3EB;
+ --warning:#895A18; --warning-light:#FFF1D8; --danger:#B4232B; --danger-light:#F9E4EC; --info:#1F3D78; --info-light:#DCE9F7;
+ --hero-gradient-start:#1E284C; --hero-gradient-mid:#1F294D; --hero-gradient-end:#6689BB;
+ --uims-sidebar-width:272px;
+}
+body.uims-tasks-theme {font-family:var(--font-body.uims-tasks-theme);background:var(--background);color:var(--text)}
+body.uims-tasks-theme h1,body.uims-tasks-theme h2,body.uims-tasks-theme h3,body.uims-tasks-theme h4,body.uims-tasks-theme h5,body.uims-tasks-theme h6 {font-family:var(--font-heading)}
+body.uims-tasks-theme button,body.uims-tasks-theme input,body.uims-tasks-theme select,body.uims-tasks-theme textarea {font-family:var(--font-body.uims-tasks-theme)}
+body.uims-tasks-theme .panel,body.uims-tasks-theme .stat-card,body.uims-tasks-theme .task-card,body.uims-tasks-theme .wr-card {background:var(--surface);border-color:var(--border);border-radius:16px;box-shadow:0 4px 18px rgb(36 40 68 / 5%)}
+body.uims-tasks-theme .hero,body.uims-tasks-theme .task-hero,body.uims-tasks-theme .workspace-hero {background:linear-gradient(115deg,var(--hero-gradient-start),var(--hero-gradient-mid) 45%,var(--hero-gradient-end));color:var(--text-inverse)}
+body.uims-tasks-theme dialog{max-height:92dvh}body.uims-tasks-theme dialog::backdrop{background:rgb(24 32 58 / 48%)}

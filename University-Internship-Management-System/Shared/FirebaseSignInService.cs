@@ -23,8 +23,9 @@ namespace University_Internship_Management_System.Shared
     public sealed class FirebaseLoginException : Exception
     {
         public int StatusCode { get; private set; }
+        public int RetryAfterSeconds { get; private set; }
         public FirebaseLoginException(string message) : this(message, 401) { }
-        public FirebaseLoginException(string message, int statusCode) : base(message) { StatusCode = statusCode; }
+        public FirebaseLoginException(string message, int statusCode, int retryAfterSeconds = 0) : base(message) { StatusCode = statusCode; RetryAfterSeconds = retryAfterSeconds; }
     }
 
     public sealed class FirebaseSignInService
@@ -68,7 +69,7 @@ namespace University_Internship_Management_System.Shared
             try { firebaseConfiguration.EnsureAuthenticationEnabled(); }
             catch (UIMS.Services.FirebaseException error) { throw new FirebaseLoginException(error.Message, 503); }
             if (string.IsNullOrWhiteSpace(apiKey))
-                throw new FirebaseLoginException("Login needs the Firebase Web API key configured on the server.");
+                throw new FirebaseLoginException("Login needs the Firebase Web API key configured on the server.", 503);
             using (var content = new StringContent(JsonConvert.SerializeObject(new
             {
                 email = email.Trim(), password, returnSecureToken = true
@@ -81,15 +82,15 @@ namespace University_Internship_Management_System.Shared
                 {
                     string code = (string)body["error"]?["message"] ?? "";
                     if (code.StartsWith("API_KEY_INVALID") || code.StartsWith("CONFIGURATION_NOT_FOUND") || code.StartsWith("OPERATION_NOT_ALLOWED"))
-                        throw new FirebaseLoginException("Check the Firebase Web API key and enable Email/Password sign-in for this project.");
-                    if (code.StartsWith("TOO_MANY_ATTEMPTS") || (int)response.StatusCode == 429)
-                        throw new FirebaseLoginException("Too many sign-in attempts. Wait a minute and try again.");
+                        throw new FirebaseLoginException("Check the Firebase Web API key and enable Email/Password sign-in for this project.", 503);
+                    var transient = ProviderTransientFailure(response, code);
+                    if (transient != null) throw transient;
                     throw new FirebaseLoginException("Sign-in failed. Check the email and password, or contact your coordinator if the account is disabled.");
                 }
                 string idToken = (string)body["idToken"];
                 string localId = (string)body["localId"];
                 if (string.IsNullOrWhiteSpace(idToken) || string.IsNullOrWhiteSpace(localId))
-                    throw new FirebaseLoginException("Firebase returned an incomplete sign-in response.");
+                    throw new FirebaseLoginException("Firebase returned an incomplete sign-in response.", 503);
                 // The HTTPS Identity Toolkit sign-in response is the trusted source of this UID.
                 // Avoid a redundant accounts:lookup round trip during login; VerifySessionAsync
                 // still verifies bearer tokens before protected API operations.
@@ -99,7 +100,7 @@ namespace University_Internship_Management_System.Shared
                 result.RefreshToken = (string)body["refreshToken"];
                 int expires;
                 if (!int.TryParse((string)body["expiresIn"], out expires) || expires < 1 || string.IsNullOrWhiteSpace(result.RefreshToken))
-                    throw new FirebaseLoginException("Firebase returned an incomplete authentication session.");
+                    throw new FirebaseLoginException("Firebase returned an incomplete authentication session.", 503);
                 result.ExpiresIn = expires;
                 return result;
             }
@@ -109,7 +110,8 @@ namespace University_Internship_Management_System.Shared
         {
             try { firebaseConfiguration.EnsureAuthenticationEnabled(); }
             catch (UIMS.Services.FirebaseException error) { throw new FirebaseLoginException(error.Message, 503); }
-            if (string.IsNullOrWhiteSpace(apiKey) || string.IsNullOrWhiteSpace(refreshToken) || refreshToken.Length > 8192)
+            if (string.IsNullOrWhiteSpace(apiKey)) throw new FirebaseLoginException("Firebase Authentication is missing its Web API key.", 503);
+            if (string.IsNullOrWhiteSpace(refreshToken) || refreshToken.Length > 8192)
                 throw new FirebaseLoginException("The authentication session is incomplete. Sign in again.");
             var form = new System.Collections.Generic.Dictionary<string, string>
             {
@@ -120,7 +122,7 @@ namespace University_Internship_Management_System.Shared
             {
                 var body = JObject.Parse(await response.Content.ReadAsStringAsync().ConfigureAwait(false));
                 if (!response.IsSuccessStatusCode)
-                    throw new FirebaseLoginException("The authentication session expired or was revoked. Sign in again.");
+                    throw ProviderTransientFailure(response, ErrorCode(body)) ?? new FirebaseLoginException("The authentication session expired or was revoked. Sign in again.");
                 string idToken = (string)body["id_token"];
                 string uid = (string)body["user_id"];
                 string nextRefresh = (string)body["refresh_token"];
@@ -211,7 +213,7 @@ namespace University_Internship_Management_System.Shared
                 try { body = JObject.Parse(json); }
                 catch (JsonException) { throw new FirebaseLoginException("Firebase Authentication returned an invalid verification response.", 503); }
                 if (!response.IsSuccessStatusCode)
-                    throw new FirebaseLoginException("The Firebase sign-in token is expired, invalid, or revoked. Sign in again.", 401);
+                    throw ProviderTransientFailure(response, ErrorCode(body)) ?? new FirebaseLoginException("The Firebase sign-in token is expired, invalid, or revoked. Sign in again.", 401);
                 var users = body["users"] as JArray;
                 var user = users != null && users.Count > 0 ? users[0] as JObject : null;
                 string uid = (string)user?["localId"];
@@ -226,6 +228,23 @@ namespace University_Internship_Management_System.Shared
             var context = HttpContext.Current;
             string idToken = context?.Session?["Uims.FirebaseIdToken"] as string;
             return await ReadProfileAsync(uid, idToken).ConfigureAwait(false);
+        }
+
+        private static string ErrorCode(JObject body)
+        { return body["error"] is JObject ? (string)body["error"]["message"] ?? "" : (string)body["error"] ?? ""; }
+
+        private static FirebaseLoginException ProviderTransientFailure(HttpResponseMessage response, string code)
+        {
+            if ((int)response.StatusCode == 429 || code.StartsWith("TOO_MANY_ATTEMPTS", StringComparison.Ordinal))
+            {
+                var retry = response.Headers.RetryAfter;
+                double seconds = retry?.Delta?.TotalSeconds ?? (retry?.Date.HasValue == true ? (retry.Date.Value - DateTimeOffset.UtcNow).TotalSeconds : 60);
+                int delay = (int)Math.Max(1, Math.Min(3600, Math.Ceiling(seconds)));
+                return new FirebaseLoginException("Firebase temporarily limited authentication requests. Your current session has not been revoked. Wait before trying again; Firebase may require a longer cooldown.", 429, delay);
+            }
+            if ((int)response.StatusCode >= 500)
+                return new FirebaseLoginException("Firebase Authentication is temporarily unavailable. Your current session has not been revoked. Try again shortly.", 503);
+            return null;
         }
 
         public static async Task<JToken> ReadDatabasePathAsync(string collection, string idToken)

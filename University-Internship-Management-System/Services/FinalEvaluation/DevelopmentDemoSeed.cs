@@ -22,9 +22,9 @@ namespace University_Internship_Management_System.Services.FinalEvaluation
         public static CompletionPlacement[] Placements()
         {
             return new[] {
-                new CompletionPlacement { InternshipId = "dev-company-internship", StudentId = "local-lina", DisplayName = "Lina Haddad (fictional)", PolicyId = "local-fictional-policy", PolicyVersion = "test-v2" },
-                new CompletionPlacement { InternshipId = "demo-omar", StudentId = "local-omar", DisplayName = "Omar Khalil (fictional)", PolicyId = "local-fictional-policy", PolicyVersion = "test-v2" },
-                new CompletionPlacement { InternshipId = "demo-noor", StudentId = "local-noor", DisplayName = "Noor Saleh (fictional)", PolicyId = "local-fictional-policy", PolicyVersion = "test-v2" } };
+                new CompletionPlacement { InternshipId = "dev-company-internship", StudentId = "local-lina", DisplayName = "Lina Haddad (fictional)", CompanyName = "DEMO Northstar Training", PolicyId = "local-fictional-policy", PolicyVersion = "test-v2" },
+                new CompletionPlacement { InternshipId = "demo-omar", StudentId = "local-omar", DisplayName = "Omar Khalil (fictional)", CompanyName = "DEMO Northstar Training", PolicyId = "local-fictional-policy", PolicyVersion = "test-v2" },
+                new CompletionPlacement { InternshipId = "demo-noor", StudentId = "local-noor", DisplayName = "Noor Saleh (fictional)", CompanyName = "DEMO Northstar Training", PolicyId = "local-fictional-policy", PolicyVersion = "test-v2" } };
         }
         public static TrainingHourEntry[] Hours(string id) { return new[] { new TrainingHourEntry { EntryId = id + "-approved", Hours = 10, IsApproved = true }, new TrainingHourEntry { EntryId = id + "-pending", Hours = 50, IsApproved = false } }; }
         public static StudentTaskRecord[] Tasks(string id)

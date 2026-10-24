@@ -6,9 +6,14 @@ namespace University_Internship_Management_System.Student
         protected global::System.Web.UI.WebControls.DropDownList DemoStudentChoice;
 
         protected global::System.Web.UI.WebControls.Literal StudentAccessMessage;
+        protected global::System.Web.UI.WebControls.Panel StudentAccessErrorPanel;
         protected global::System.Web.UI.WebControls.Button RefreshProgress;
         protected global::System.Web.UI.WebControls.Literal PendingHoursNotice;
+        protected global::System.Web.UI.WebControls.Literal ApprovedHoursNotice;
+        protected global::System.Web.UI.WebControls.Literal RequiredHoursNotice;
+        protected global::System.Web.UI.WebControls.Literal OverallProgressNotice;
         protected global::System.Web.UI.WebControls.Literal CompletionStatusText;
+        protected global::System.Web.UI.HtmlControls.HtmlGenericControl CompletionStatusBadge;
         protected global::System.Web.UI.WebControls.Literal CompletionStatusMessage;
         protected global::System.Web.UI.WebControls.Literal CompletionApprovalDate;
         protected global::System.Web.UI.WebControls.Literal OverallCompletionProgress;
@@ -16,11 +21,11 @@ namespace University_Internship_Management_System.Student
         protected global::System.Web.UI.WebControls.Literal ReportAvailabilityText;
         protected global::System.Web.UI.WebControls.Button DownloadCompletionReport;
         protected global::System.Web.UI.HtmlControls.HtmlGenericControl taskFilterStatus;
-        protected global::System.Web.UI.WebControls.LinkButton btnLogout;
         protected global::System.Web.UI.WebControls.Literal NavName;
         protected global::System.Web.UI.HtmlControls.HtmlForm form1;
         protected global::System.Web.UI.WebControls.Literal ApprovedHours;
         protected global::System.Web.UI.WebControls.Literal RequiredHours;
+        protected global::System.Web.UI.WebControls.Literal RequiredHoursInline;
         protected global::System.Web.UI.WebControls.Literal RemainingHours;
         protected global::System.Web.UI.WebControls.Literal EvaluatedExams;
         protected global::System.Web.UI.WebControls.Literal HoursPercent;
@@ -47,5 +52,7 @@ namespace University_Internship_Management_System.Student
         protected global::System.Web.UI.WebControls.Literal EvaluatedTasks;
         protected global::System.Web.UI.WebControls.Literal RevisionTasks;
         protected global::System.Web.UI.WebControls.Repeater Tasks;
+        protected global::System.Web.UI.WebControls.Panel TaskEmptyState;
+        protected global::System.Web.UI.WebControls.Panel TasksTablePanel;
     }
 }

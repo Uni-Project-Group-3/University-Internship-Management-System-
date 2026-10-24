@@ -132,3 +132,64 @@ progress::-moz-progress-bar { background: var(--primary); }
 .uims-feedback{color:var(--primary);font-size:.875rem}.uims-error{color:var(--danger);padding:8px 0}.uims-discard{padding:12px;border:1px solid var(--border);background:var(--surface-alt);border-radius:8px}.uims-discard button{padding:7px 12px;margin-right:8px;border:1px solid var(--border);border-radius:6px;background:var(--surface);color:var(--text)}[data-uims-profile]{color:inherit}#studentFields label{display:grid;gap:6px;margin-bottom:12px}#studentFields input,#studentFields select{padding:10px;border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--text)}#messageDialog{width:min(920px,calc(100% - 24px));max-height:90dvh;overflow:auto;border:1px solid var(--border);border-radius:14px;background:var(--surface);color:var(--text)}#messageDialog::backdrop{background:color-mix(in srgb,var(--text) 45%,transparent)}
 
 .uims-notifications,.uims-completion-dialog{width:min(560px,calc(100% - 24px));max-height:88dvh;overflow:auto;padding:22px;border:1px solid var(--border);border-radius:14px;background:var(--surface);color:var(--text)}.uims-notifications::backdrop,.uims-completion-dialog::backdrop{background:color-mix(in srgb,var(--text) 45%,transparent)}.uims-notifications h2,.uims-completion-dialog h2{font-size:1.2rem}.uims-notifications button,.uims-completion-dialog button{padding:9px 14px;margin:5px;border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--primary)}.uims-completion-dialog header{display:flex;justify-content:space-between;align-items:center}.uims-notifications input{padding:8px;border:1px solid var(--border);border-radius:6px;max-width:100%}#companyTraineeDialog{width:min(780px,calc(100% - 24px));max-height:88dvh;overflow:auto;border:1px solid var(--border);border-radius:14px;background:var(--surface);color:var(--text);padding:20px}#companyTraineeDialog::backdrop{background:color-mix(in srgb,var(--text) 45%,transparent)}#companyTraineeDialog input{padding:8px;border:1px solid var(--border);border-radius:6px;max-width:100%}
+
+/* Student Progress & Evaluation page refresh. All selectors are page scoped. */
+.student-progress .student-access-error { margin:0 0 14px; padding:0; border:0; background:transparent; color:var(--danger); font-size:13px; line-height:1.65; }
+.student-progress .student-refresh-actions { display:flex; align-items:center; justify-content:flex-end; gap:12px; min-width:0; }
+.student-progress #progressLoading { color:var(--primary); font-size:12px; font-weight:600; white-space:nowrap; }
+.student-progress #progressLoading i { display:inline-block; margin-right:5px; animation:student-refresh-spin 1.2s linear infinite; }
+@keyframes student-refresh-spin { to { transform:rotate(360deg); } }
+.student-progress .student-progress-card { padding:24px; }
+.student-progress .student-section-heading { align-items:center; margin-bottom:20px; }
+.student-progress .student-section-title { display:flex; align-items:center; gap:13px; min-width:0; }
+.student-progress .student-section-title h2 { margin:0; }
+.student-progress .student-section-title p { margin:5px 0 0; color:var(--text-secondary); font-size:12px; line-height:1.6; }
+.student-progress .student-section-icon { display:grid; place-items:center; flex:0 0 42px; width:42px; height:42px; border-radius:13px; background:var(--primary-light); color:var(--primary); font-size:19px; }
+.student-progress .student-section-icon.completion { color:var(--success); background:var(--success-light); }
+.student-progress .student-section-icon.tasks { color:#5447A8; background:#EEEDFA; }
+.student-progress .student-section-icon.report { color:#A64D3B; background:#FCEEEA; }
+.student-progress .student-refresh-button { flex:0 0 auto; }
+.student-progress .student-progress-summary { display:flex; align-items:center; justify-content:space-between; gap:16px; margin:2px 0 11px; color:var(--text-secondary); font-size:12px; }
+.student-progress .student-progress-summary strong { color:var(--primary); font:800 19px/1.2 var(--font-heading); }
+.student-progress #HoursProgress { display:block; height:11px; margin:0 0 18px; }
+.student-progress .student-hour-cards { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:11px; }
+.student-progress .student-hour-card { display:flex; flex-direction:column; gap:10px; min-width:0; padding:14px; border:1px solid var(--border); border-radius:12px; background:var(--surface-alt); }
+.student-progress .student-hour-card > span { color:var(--text-secondary); font-size:11px; font-weight:600; }
+.student-progress .student-hour-card > span i { margin-right:5px; color:var(--primary); }
+.student-progress .student-hour-card strong { color:var(--text); font:700 20px/1.2 var(--font-heading); overflow-wrap:anywhere; }
+.student-progress .student-hour-card small { color:var(--muted); font-size:10px; line-height:1.5; }
+.student-progress .student-hour-card.approved { border-color:#D7EBDD; background:#F4FAF6; }
+.student-progress .student-hour-card.approved > span i { color:var(--success); }
+.student-progress .student-hour-card.pending { border-color:#F1E5C9; background:#FFFBF2; }
+.student-progress .student-hour-card.pending > span i { color:var(--warning); }
+.student-progress .student-hours-note { display:flex; align-items:flex-start; gap:7px; margin:14px 0 0; }
+.student-progress .student-hours-note i { flex:0 0 auto; margin-top:2px; color:var(--primary); }
+.student-progress .student-completion-badge { flex:0 0 auto; }
+.student-progress .student-completion-message { min-height:42px; margin:0 0 16px; color:var(--text); line-height:1.7; }
+.student-progress .student-completion-facts { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; margin:0 0 15px; }
+.student-progress .student-completion-facts > div { display:flex; flex-direction:column; gap:7px; min-width:0; padding:13px; border:1px solid var(--border); border-radius:11px; background:var(--surface-alt); }
+.student-progress .student-completion-facts span { color:var(--text-secondary); font-size:11px; }
+.student-progress .student-completion-facts strong { color:var(--text); font-size:12px; line-height:1.5; overflow-wrap:anywhere; }
+.student-progress .student-completion-facts small { color:var(--muted); font-size:10px; line-height:1.5; }
+.student-progress .student-dashboard-link { gap:8px; }
+.student-progress .task-filter { min-height:40px; padding-right:34px; border-radius:9px; background-color:var(--surface); }
+.student-progress .task-stats { margin-top:4px; }
+.student-progress .task-stats .workspace-stat { background:linear-gradient(145deg,var(--surface),var(--surface-alt)); }
+.student-progress .task-stats .workspace-stat dd { font-size:24px; }
+.student-progress .student-task-empty { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:8px; min-height:150px; padding:24px; border:1px dashed var(--border); border-radius:12px; background:var(--surface-alt); color:var(--text-secondary); text-align:center; }
+.student-progress .student-task-empty > i { color:var(--primary); font-size:25px; }
+.student-progress .student-task-empty strong { color:var(--text); font:700 14px var(--font-heading); }
+.student-progress .student-task-empty span { max-width:500px; font-size:12px; line-height:1.65; }
+.student-progress .workspace-table { min-width:620px; }
+.student-progress .workspace-table th { padding-top:13px; padding-bottom:13px; letter-spacing:.02em; }
+.student-progress .workspace-table td { line-height:1.65; }
+.student-progress .workspace-table tr:hover td { background:#FAFBFD; }
+.student-progress .workspace-table details summary { width:max-content; max-width:100%; padding:4px 0; }
+.student-progress .report-status { padding:15px; border:1px solid var(--border); border-radius:11px; background:var(--surface-alt); }
+.student-progress .report-status strong { margin-bottom:5px; color:var(--text); }
+.student-progress .student-download-button { gap:8px; }
+.student-progress .student-progress-card .workspace-hint { margin-bottom:0; }
+@media(max-width:1100px) { .student-progress .uims-page-hero { align-items:stretch; flex-direction:column; } .student-progress .uims-page-hero .uims-hero-stats { width:100%; min-width:0; flex-basis:auto; } }
+@media(max-width:767.98px) { .student-progress .student-refresh-actions { align-items:flex-start; flex-direction:column; } .student-progress #progressLoading { white-space:normal; } .student-progress .student-progress-card { padding:19px; } .student-progress .student-hour-cards { grid-template-columns:1fr; } .student-progress .student-hour-card { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:7px 12px; } .student-progress .student-hour-card strong { text-align:right; } .student-progress .student-hour-card small { grid-column:1/-1; } }
+@media(max-width:480px) { .student-progress .student-section-heading { align-items:flex-start; } .student-progress .student-section-title { align-items:flex-start; } .student-progress .student-section-icon { flex-basis:36px; width:36px; height:36px; font-size:17px; } .student-progress .student-completion-facts { grid-template-columns:1fr; } .student-progress .student-refresh-button { width:100%; } .student-progress .student-progress-card .workspace-heading { flex-direction:column; align-items:stretch; } .student-progress .workspace-button { min-height:42px; } }
+@media(prefers-reduced-motion:reduce) { .student-progress #progressLoading i { animation:none; } }

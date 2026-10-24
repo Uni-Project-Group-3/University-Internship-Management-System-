@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -19,6 +19,7 @@ namespace University_Internship_Management_System.Services.FinalEvaluation
         public bool IsDevelopment { get; internal set; }
         public string DevelopmentDatasetPath { get; internal set; }
         public Func<string, Task<CompletionDocument>> GenerateReportAsync { get; set; }
+        public Func<string, Task<CompletionReview>> ReadCompletionAsync { get; set; }
         public CoordinatorReviewPageContext(CoordinatorReadinessWorkflow workflow, IAuthenticatedUser user,
             ICoordinatorEvaluationAccess access, IEnumerable<CompletionPlacement> placements, CompletionDecisionWorkflow decisions = null)
         { Workflow = workflow ?? throw new ArgumentNullException("workflow"); this.user = user; this.access = access; this.placements = placements.ToArray(); Decisions = decisions; }
@@ -33,8 +34,15 @@ namespace University_Internship_Management_System.Services.FinalEvaluation
     }
     public static class CoordinatorReviewPageIntegration
     {
-        // Only trusted server composition may register this. No production adapter is registered.
+        // Only trusted server composition may replace this. The built-in Firebase scope is
+        // registered separately and remains disabled until CoordinatorAssignmentScopeEnabled.
         public static Func<HttpContext, CoordinatorReviewPageContext> Factory { get; set; }
+        public static Func<HttpContext, Task<CoordinatorReviewPageContext>> AsyncFactory { get; set; }
+        public static Task<CoordinatorReviewPageContext> ResolveAsync(HttpContext context)
+        {
+            if (Factory == null && AsyncFactory == null) FinalEvaluationFirebaseIntegration.Register();
+            return Factory != null ? Task.FromResult(Factory(context)) : AsyncFactory != null ? AsyncFactory(context) : Task.FromResult<CoordinatorReviewPageContext>(null);
+        }
         public static CoordinatorReviewPageContext Resolve(HttpContext context)
         {
             // No runtime demo users or in-memory business records.

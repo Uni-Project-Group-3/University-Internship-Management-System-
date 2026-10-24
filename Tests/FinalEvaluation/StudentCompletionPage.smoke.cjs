@@ -4,6 +4,7 @@ const crypto = require('node:crypto');
 let target = new URL('/Student/MyProgressEvaluation.aspx', process.argv[2] || 'http://localhost:61873');
 assert(['localhost', '127.0.0.1'].includes(target.hostname));
 const disabled = process.argv.includes('--disabled');
+const httpProbe = process.argv.includes('--http-probe');
 let cookie = '', count = 0;
 const decode = v => v.replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&amp;/g, '&');
 const attrs = tag => Object.fromEntries([...tag.matchAll(/([\w:-]+)="([^"]*)"/g)].map(m => [m[1], decode(m[2])]));
@@ -31,6 +32,26 @@ async function download(html, id, expected = 200) {
 }
 const pass = message => { count++; console.log('PASS ' + message); };
 (async () => {
+    if (httpProbe) {
+        const r = await response(); const html = await r.text();
+        assert.equal(r.status, 403, 'Unauthenticated Student page should deny access.');
+        assert(!html.includes('student-progress-toolbar') && !html.includes('student-access-status') && html.includes('student-hour-cards') && html.includes('student-completion-facts') && html.includes('Task data unavailable'));
+        assert(!html.includes('Authorized read-only student completion information. Overall completion progress is not supplied by a trusted source. Student-visible task results are unavailable.'));
+        assert(!html.includes('id="DownloadCompletionReport"'), 'Unauthorized view must not expose a report download.');
+        assert(html.includes('id="RefreshProgress"') && html.includes('id="taskFilter"') && html.includes('StudentDashboard.aspx') && html.includes('MyTasks.aspx') && html.includes('disabled="disabled"'));
+        const asset = html.match(/href="([^"]*my-progress-evaluation\.css\?v=20261024-student-task-data-v2)"/);
+        assert(asset, 'Versioned page stylesheet must be referenced by rendered HTML.');
+        const cssResponse = await fetch(new URL(asset[1], target)); const css = await cssResponse.text();
+        assert.equal(cssResponse.status, 200); assert(cssResponse.headers.get('content-type').includes('text/css'));
+        assert(css.includes('.student-task-empty') && css.includes('.student-hour-cards') && css.includes('.student-completion-facts') && css.includes('.student-access-error'));
+        const script = html.match(/src="([^"]*my-progress-evaluation\.js\?v=20261024-student-progress-ui)"/);
+        assert(script, 'Versioned Student interaction script must be present.');
+        const jsResponse = await fetch(new URL(script[1], target)); const js = await jsResponse.text();
+        assert.equal(jsResponse.status, 200); assert(js.includes("by('taskFilter')?.addEventListener('change', filter)") && js.includes("addEventListener('submit'"));
+        pass('IIS unauthenticated page denies access while rendering the updated fail-closed UI');
+        pass('rendered page loads versioned Student CSS and JavaScript from IIS with the expected selectors and handlers');
+        console.log(count + ' read-only Student IIS probes passed. No Firebase operations.'); return;
+    }
     let html = await page();
     if (disabled) {
         assert(html.includes('Official Firebase student access is disabled') && !button(html) && metric(html, 'ApprovedHours') === 'Unknown'); pass('default Student page fails closed with no demo identity or invented hours');
@@ -68,6 +89,8 @@ const pass = message => { count++; console.log('PASS ' + message); };
     html = await page(undefined, 'another-student-internship', 403); assert(!html.includes('Fictional published task') && !button(html)); pass('another student internship is denied before protected page data renders');
     await download(html, undefined, 403); pass('unauthorized download returns forbidden without PDF or HTML page');
     html = await page(undefined, 'dev-student-ready'); for (const value of form(html).values()) { let decoded = ''; try { decoded = Buffer.from(value, 'base64').toString(); } catch {} assert(!decoded.includes('PRIVATE_') && !decoded.includes('completion-reports/')); } pass('HTML and hidden postback state contain no confidential evaluations or storage references');
-    assert(html.includes('id="sidebar"') && html.includes('id="form1"') && html.includes('my-progress-evaluation.css?v=20261021-original-ui') && html.includes('my-progress-evaluation.js?v=')); pass('existing Sidebar form CSS and UI script integration remain present');
+    assert(html.includes('id="sidebar"') && html.includes('id="form1"') && html.includes('my-progress-evaluation.css?v=20261024-student-task-data-v2') && html.includes('my-progress-evaluation.js?v=20261024-student-progress-ui')); pass('existing Sidebar form and versioned page assets remain present');
+    assert(!html.includes('Authorized read-only student completion information. Overall completion progress is not supplied by a trusted source. Student-visible task results are unavailable.')); pass('old blue information banner copy is absent');
+    assert(html.includes('class="student-hour-cards"') && html.includes('student-completion-facts') && html.includes('id="taskFilter"') && html.includes('id="TaskEmptyState"')); pass('progress, completion and task empty-state UI renders in the page');
     console.log(count + ' isolated Student Web Forms/download checks passed. No real Firebase writes.');
 })().catch(error => { console.error(error); process.exitCode = 1; });

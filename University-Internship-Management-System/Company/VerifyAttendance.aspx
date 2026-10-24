@@ -8,7 +8,7 @@
     <link href="../Content/bootstrap.min.css" rel="stylesheet" />
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet" />
     <link href="../Assets/shared/colors.css" rel="stylesheet" />
-    <link href="../Assets/company/verify-attendance.css?v=ui-simple1" rel="stylesheet" />
+    <link href="../Assets/company/verify-attendance.css?v=20261024-fast-qr-scanner" rel="stylesheet" />
 </head>
 <body>
     <form id="attendanceForm" runat="server">
@@ -69,7 +69,7 @@
                             <ul class="dropdown-menu dropdown-menu-end">
                                 <li><a href="CompanySupervisorAccount.aspx" class="dropdown-item"><i class="bi bi-person me-2"></i>Account</a></li>
                                 <li><hr class="dropdown-divider" /></li>
-                                <li><button type="button" class="dropdown-item" disabled title="Authentication is not connected on this preview page">Log out (not connected)</button></li>
+                                <li><a id="attendanceLogout" class="dropdown-item" href="../Auth/Login.aspx">Log out</a></li>
                             </ul>
                         </div>
                     </div>
@@ -98,6 +98,7 @@
     <dialog id="issueQrDialog" class="attendance-dialog" aria-labelledby="issueQrHeading">
         <div class="panel-heading"><h2 id="issueQrHeading">Issue student QR codes</h2><button type="button" class="dialog-close" data-close-dialog="issueQrDialog" aria-label="Close">&times;</button></div>
         <p class="section-note">Each selected student receives a different QR. Students use Refresh attendance, then Show QR. Valid for 120 seconds.</p>
+        <p class="section-note">Choose check-in or check-out whenever needed on an authorized training day, including outside the scheduled shift hours. Check-out requires an existing check-in. Issuing a QR does not record attendance; the supervisor must scan it.</p>
         <label for="issuedQrAction" class="form-label">Attendance action</label>
         <select id="issuedQrAction" class="form-select"><option value="checkIn">Check-in</option><option value="checkOut">Check-out</option></select>
         <p><label><input id="selectAllQrStudents" type="checkbox" /> Select all students</label></p>
@@ -114,6 +115,6 @@
     <script src="../Js_project/firebase-client.js"></script>
     <script src="../Scripts/bootstrap.bundle.min.js"></script>
     <script src="../Js_project/Company/attendance-jsqr.js"></script>
-    <script src="../Js_project/Company/verify-attendance.js?v=ui-simple2"></script>
+    <script src="../Js_project/Company/verify-attendance.js?v=20261024-fast-qr-scanner"></script>
 </body>
 </html>

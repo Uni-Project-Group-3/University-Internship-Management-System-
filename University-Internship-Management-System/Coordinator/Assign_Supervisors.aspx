@@ -1,111 +1,104 @@
-<%@ Page Language="C#" AutoEventWireup="true" CodeBehind="Assign_Supervisors.aspx.cs" Inherits="University_Internship_Management_System.Coordinator.Assign_Supervisors" %>
-
+<%@ Page Async="true" Language="C#" AutoEventWireup="true" CodeBehind="Assign_Supervisors.aspx.cs" Inherits="University_Internship_Management_System.Coordinator.Assign_Supervisors" %>
+<%@ Register Src="~/Shared/CoordinatorSidebar.ascx" TagPrefix="shared" TagName="RoleSidebar" %>
+<%@ Register Src="~/Shared/WorkspaceNavbar.ascx" TagPrefix="shared" TagName="WorkspaceNavbar" %>
 <!DOCTYPE html>
-<html lang="en">
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en">
 <head runat="server">
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Assign Academic Supervisors | JUST Internships</title>
-
-    <!-- ملفات CSS -->
-    <link href="../Content/bootstrap.min.css" rel="stylesheet" />
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet" />
-    <link href="../Assets/shared/colors.css" rel="stylesheet" />
-    <link href="../Assets/coordinator/Assign_Supervisors.css?v=20261021-original-ui" rel="stylesheet" />
-
-    <!-- ملف JS الخاص ببوتستراب وضعناه هنا ليقرأه المتصفح أولاً -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <title>Assign Academic Supervisors | JUST UIMS</title>
+    <link runat="server" href="~/Assets/shared/colors.css" rel="stylesheet" />
+    <link rel="stylesheet" type="text/css" href="../Assets/coordinator/Assign_Supervisors.css?v=2.0" />
+    <link runat="server" href="~/Assets/shared/role-sidebars.css?v=20261024-workspace" rel="stylesheet" />
+    <link runat="server" href="~/Assets/shared/workspace-navigation.css?v=20261024-hide-search" rel="stylesheet" />
+    <style>
+        .panel-tools { display: flex; align-items: center; gap: 12px; margin-left: auto; }
+        .select-wrap {
+            display: inline-flex; align-items: center; gap: 8px;
+            background: #FFF; border: 1px solid var(--border, #DFE3EB);
+            border-radius: 10px; padding: 6px 12px; font-size: 0.88rem; color: var(--text, #242844);
+        }
+        .select-wrap select {
+            border: none; outline: none; background: transparent; font-family: inherit; font-size: inherit; color: inherit; cursor: pointer;
+        }
+    </style>
 </head>
-<body data-demo-role="admin">
+<body class="dashboard-direct app-page assign-supervisors-page shared-workspace-shell">
+
+    <!-- Icon sprite -->
+    <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+        <defs>
+            <symbol id="i-home" viewBox="0 0 24 24"><path d="M3 10 12 3l9 7v10h-6v-7H9v7H3V10Z"/></symbol>
+            <symbol id="i-chart" viewBox="0 0 24 24"><path d="M4 20V5m0 15h16M8 16v-5m5 5V7m5 9v-8"/></symbol>
+            <symbol id="i-report" viewBox="0 0 24 24"><path d="M7 3h8l4 4v14H7zM15 3v5h4M10 13h6m-6 4h6"/></symbol>
+            <symbol id="i-evaluate" viewBox="0 0 24 24"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="m8 12 3 3 5-6"/></symbol>
+            <symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></symbol>
+            <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></symbol>
+            <symbol id="i-bell" viewBox="0 0 24 24"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9M10 21a2 2 0 0 0 4 0"/></symbol>
+            <symbol id="i-users" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0M16 4.6a3.5 3.5 0 0 1 0 6.8M18 14.2a6.5 6.5 0 0 1 3.5 5.8"/></symbol>
+            <symbol id="i-building" viewBox="0 0 24 24"><path d="M3 21h18M5 21V8l7-4 7 4v13M9 12h2m2 0h2M9 16h2m2 0h2"/></symbol>
+            <symbol id="i-inbox" viewBox="0 0 24 24"><path d="M3 13h5l1.5 3h5L16 13h5M5 5h14l2 8v6H3v-6l2-8Z"/></symbol>
+            <symbol id="i-check" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m8 12 3 3 5-6"/></symbol>
+            <symbol id="i-filter" viewBox="0 0 24 24"><path d="M3 5h18l-7 8v6l-4-2v-4L3 5Z"/></symbol>
+        </defs>
+    </svg>
+
     <form id="form1" runat="server">
-        <asp:ScriptManager ID="ScriptManager1" runat="server"></asp:ScriptManager>
-        <div class="app">
+        <div class="app-layout">
+            
+            <!-- Sidebar -->
+            <shared:RoleSidebar ID="RoleNavigation" runat="server" SidebarId="workspaceSidebar" />
 
-            <!-- ============ SIDEBAR ============ -->
-            <aside class="sidebar" id="sidebar" aria-label="Coordinator navigation">
-                <a href="CoordinatorDashboard.aspx" class="brand">
-                    <img class="brand-logo" src="../Assets/shared/images/JUST-Logo-01.png" alt="JUST logo" width="48" height="48" />
-                    <div class="brand-text"><strong>JUST</strong><span>Internships</span></div>
-                </a>
-                <ul class="side-nav">
-                    <li><a href="CoordinatorDashboard.aspx"><i class="bi bi-house-door"></i><span>Dashboard</span></a></li>
-                    <li><a href="ManageStudents.aspx"><i class="bi bi-mortarboard"></i><span>Manage Students</span></a></li>
-                    <li><a href="ManageCompanies.aspx"><i class="bi bi-building"></i><span>Manage Companies</span></a></li>
-                    <li><a href='<%= ResolveUrl("~/Coordinator/Manage_Academic_Supervisor.aspx") %>'><i class="bi bi-person-badge"></i><span>Manage Academic Supervisors</span></a></li>
-                    <li><a href="Assign_Supervisors.aspx" class="active"><i class="bi bi-diagram-3"></i><span>Assign Academic Supervisors</span></a></li>
-                    <li><a href="MonitorPlacementsProgress.aspx"><i class="bi bi-activity"></i><span>Monitor Placements &amp; Progress</span></a></li>
-                    <li><a href="FinalCompletionReview.aspx"><i class="bi bi-patch-check"></i><span>Final Completion Review</span></a></li>
-                    <li><a href="ContactMessages.aspx"><i class="bi bi-envelope"></i><span>Contact Messages</span></a></li>
-                </ul>
-                <div class="side-divider"></div>
-                <ul class="side-nav">
-                    <li><asp:LinkButton ID="btnLogout" runat="server" OnClick="btnLogout_Click" CssClass="text-danger"><i class="bi bi-box-arrow-right"></i>Logout</asp:LinkButton></li>
-                </ul>
-            </aside>
+            <!-- Main Content -->
+            <div class="dash-main">
+                <shared:WorkspaceNavbar ID="WorkspaceNavigation" runat="server" SearchInputId="searchGroups" SearchInputType="search" SearchPlaceholder="Search student groups or supervisors..." AccountLabel="Coordinator" AccountRole="Internship Coordinator" AccountInitials="CO" AccountUrl="~/Coordinator/CoordinatorAccountProfile.aspx" SidebarId="workspaceSidebar" />
 
-            <div class="main">
-                <!-- ============ TOPBAR ============ -->
-                <header class="topbar">
-                    <div class="search">
-                        <i class="bi bi-search"></i>
-                        <input type="text" id="searchInput" placeholder="Search groups or supervisors..." />
-                    </div>
-                    <div class="topbar-actions ms-auto">
-                        <div class="user-chip">
-                            <span class="avatar">CO</span>
-                            <span class="name">Coordinator Portal<span class="role">Live System</span></span>
+                <main class="app-content">
+                    <!-- Hero Banner -->
+                    <div class="hero-banner">
+                        <div class="hero-text">
+                            <span class="hero-badge"><svg class="ic"><use href="#i-users"/></svg>GROUP ASSIGNMENTS</span>
+                            <h1>Assign Academic Supervisors</h1>
+                            <p>Organize students into groups and link each group to an academic supervisor from the beginning or modify assignments when needed.</p>
+                        </div>
+                        <div class="hero-action">
+                            <asp:Button ID="btnSaveAll" runat="server" CssClass="btn-primary-hero" Text="Save All Changes" OnClick="btnSaveAll_Click" />
                         </div>
                     </div>
-                </header>
 
-                <!-- ============ CONTENT ============ -->
-                <div class="content">
-                    <div class="page-header d-flex justify-content-between align-items-center mb-4">
-                        <div>
-                            <h1 class="greeting">Assign Supervisors</h1>
-                            <p class="subtitle mb-0">Manage student groups and link them to academic supervisors.</p>
-                        </div>
-                        <button type="button" class="btn custom-btn-primary" data-bs-toggle="modal" data-bs-target="#addGroupModal">
-                            <i class="bi bi-plus-lg me-2"></i> Create New Group
-                        </button>
-                    </div>
+                    <asp:Label ID="lblMessage" runat="server" CssClass="page-message"></asp:Label>
 
-                    <asp:Label ID="lblFirebaseStatus" runat="server" CssClass="alert d-block" EnableViewState="false"></asp:Label>
+                    <!-- Assignments Panel -->
+                    <section class="monitor-panel">
+                        <div class="monitor-panel-heading" style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;">
+                            <div>
+                                <h2>Student Groups &amp; Supervisors</h2>
+                                <p>Manage group allocations and link academic supervisors.</p>
+                            </div>
 
-                    <!-- STATS CARDS -->
-                    <div class="stats-grid mb-4">
-                        <div class="stat-card">
-                            <div class="stat-details">
-                                <h3><asp:Label ID="lblTotalGroups" runat="server" Text="0" /></h3>
-                                <span>Total Groups</span>
+                            <!-- فلتر التخصصات أو الأقسام -->
+                            <div class="panel-tools">
+                                <label class="select-wrap">
+                                    <svg class="ic" style="width: 16px; height: 16px;"><use href="#i-filter"/></svg>
+                                    <select id="departmentFilter" aria-label="Filter by department" onchange="filterGroupsTable()">
+                                        <option value="">All Departments</option>
+                                        <option value="Software Engineering">Software Engineering</option>
+                                        <option value="Computer Science">Computer Science</option>
+                                        <option value="Artificial Intelligence">Artificial Intelligence</option>
+                                    </select>
+                                </label>
                             </div>
                         </div>
-                        <div class="stat-card">
-                            <div class="stat-details">
-                                <h3><asp:Label ID="lblAssignedGroups" runat="server" Text="0" /></h3>
-                                <span>Assigned Groups</span>
-                            </div>
-                        </div>
-                        <div class="stat-card border-danger-left">
-                            <div class="stat-details">
-                                <h3 class="text-danger"><asp:Label ID="lblUnassignedGroups" runat="server" Text="0" /></h3>
-                                <span class="text-danger fw-semibold">Action Required (Unassigned)</span>
-                            </div>
-                        </div>
-                    </div>
 
-                    <!-- MAIN TABLE PANEL -->
-                    <div class="panel">
-                        <h3 class="panel-title mb-3">Student Groups</h3>
-                        <div class="table-responsive">
-                            <table class="table custom-table align-middle">
+                        <div class="monitor-table-scroll">
+                            <table class="monitor-table" id="groupsTable">
                                 <thead>
                                     <tr>
-                                        <th>Group Details</th>
-                                        <th>Department</th>
-                                        <th>Students</th>
-                                        <th>Assigned Supervisor</th>
-                                        <th class="text-end">Manage</th>
+                                        <th>Group ID / Name</th>
+                                        <th>Department / Major</th>
+                                        <th>Students Count</th>
+                                        <th>Assigned Academic Supervisor</th>
+                                        <th>Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -113,140 +106,71 @@
                                         <ItemTemplate>
                                             <tr>
                                                 <td>
-                                                    <div class="fw-bold"><%#: Eval("GroupId") %></div>
-                                                    <div class="text-muted small">Students: <%#: Eval("StudentCount") %></div>
+                                                    <span class="group-name"><%# Eval("GroupName") %></span>
+                                                    <span class="group-id">ID: <%# Eval("GroupId") %></span>
+                                                    <asp:HiddenField ID="hfGroupId" runat="server" Value='<%# Eval("GroupId") %>' />
                                                 </td>
-                                                <td><span class="badge bg-secondary"><%#: Eval("Department") %></span></td>
+                                                <td class="dept-cell"><%# Eval("Major") %></td>
+                                                <td><strong><%# Eval("StudentCount") %></strong> Students</td>
                                                 <td>
-                                                    <asp:LinkButton ID="btnViewStudents" runat="server" CssClass="btn btn-sm btn-outline-primary" CommandName="ViewStudents" CommandArgument='<%# Eval("GroupId") %>'>
-                                                        <i class="bi bi-people"></i> Manage Students
-                                                    </asp:LinkButton>
-                                                    <div class="small text-muted mt-1"><%#: Eval("StudentNames") %></div>
+                                                    <asp:DropDownList ID="ddlSupervisors" runat="server" CssClass="form-control-sm" DataSource='<%# GetSupervisorsList() %>' DataTextField="SupervisorName" DataValueField="SupervisorId" SelectedValue='<%# Eval("AssignedSupervisorId") %>'>
+                                                    </asp:DropDownList>
                                                 </td>
                                                 <td>
-                                                    <div class="fw-bold"><%#: Eval("SupervisorName") %></div>
-                                                </td>
-                                                <td class="text-end">
-                                                    <asp:LinkButton ID="btnAssign" runat="server" CssClass="btn btn-sm btn-primary me-2" CommandName="AssignSupervisor" CommandArgument='<%# Eval("GroupId") %>'>
-                                                        <i class="bi bi-link-45deg"></i> Assign
-                                                    </asp:LinkButton>
-                                                    <asp:LinkButton ID="btnDelete" runat="server" CssClass="btn btn-sm btn-danger" CommandName="DeleteGroup" CommandArgument='<%# Eval("GroupId") %>'>
-                                                        <i class="bi bi-trash"></i>
-                                                    </asp:LinkButton>
+                                                    <asp:Button ID="btnUpdateSingle" runat="server" CssClass="btn-action-sm" Text="Update" CommandName="UpdateGroup" CommandArgument='<%# Eval("GroupId") %>' />
                                                 </td>
                                             </tr>
                                         </ItemTemplate>
-                                        <FooterTemplate>
-                                            <tr runat="server" visible="<%# rptGroups.Items.Count == 0 %>">
-                                                <td colspan="5" class="text-center py-4">No groups found in Firebase.</td>
-                                            </tr>
-                                        </FooterTemplate>
                                     </asp:Repeater>
                                 </tbody>
                             </table>
                         </div>
-                    </div>
-                </div>
+                    </section>
+                </main>
             </div>
-
-            <!-- ============ 1. ADD NEW GROUP MODAL ============ -->
-            <div class="modal fade" id="addGroupModal" tabindex="-1">
-                <div class="modal-dialog modal-dialog-centered">
-                    <div class="modal-content custom-modal">
-                        <div class="modal-header border-0 pb-0 pt-4 px-4">
-                            <h5 class="modal-title fw-bold">Create New Student Group</h5>
-                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                        </div>
-                        <div class="modal-body p-4">
-                            <div class="mb-4">
-                                <label class="form-label">Group Name <span class="text-danger">*</span></label>
-                                <asp:TextBox ID="newGroupName" runat="server" CssClass="form-control"></asp:TextBox>
-                            </div>
-                            <div class="mb-2">
-                                <label class="form-label">Department <span class="text-danger">*</span></label>
-                                <asp:DropDownList ID="newGroupDept" runat="server" CssClass="form-select">
-                                    <asp:ListItem Text="Select Department..." Value=""></asp:ListItem>
-                                    <asp:ListItem Text="Information Technology" Value="Information Technology"></asp:ListItem>
-                                    <asp:ListItem Text="Computer Science" Value="Computer Science"></asp:ListItem>
-                                    <asp:ListItem Text="Software Engineering" Value="Software Engineering"></asp:ListItem>
-                                </asp:DropDownList>
-                            </div>
-                        </div>
-                        <div class="modal-footer border-0">
-                            <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
-                            <asp:Button ID="btnCreateGroup" runat="server" CssClass="btn btn-primary" Text="Create Group" OnClick="btnCreateGroup_Click" />
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- ============ 2. ASSIGN SUPERVISOR MODAL ============ -->
-            <div class="modal fade" id="assignModal" tabindex="-1">
-                <div class="modal-dialog modal-dialog-centered">
-                    <div class="modal-content custom-modal">
-                        <div class="modal-header border-0 pb-0 pt-4 px-4">
-                            <h5 class="modal-title fw-bold">Assign Academic Supervisor</h5>
-                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                        </div>
-                        <div class="modal-body p-4">
-                            <asp:HiddenField ID="hfAssignGroupId" runat="server" />
-                            <div class="mb-4">
-                                <label class="form-label text-muted">Selected Group</label>
-                                <asp:TextBox ID="txtAssignGroupName" runat="server" CssClass="form-control bg-light" ReadOnly="true"></asp:TextBox>
-                            </div>
-                            <div class="mb-2">
-                                <label class="form-label">Select Supervisor <span class="text-danger">*</span></label>
-                                <asp:DropDownList ID="ddlSupervisors" runat="server" CssClass="form-select"></asp:DropDownList>
-                            </div>
-                        </div>
-                        <div class="modal-footer border-0">
-                            <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
-                            <asp:Button ID="btnConfirmAssign" runat="server" CssClass="btn btn-primary" Text="Save Assignment" OnClick="btnConfirmAssign_Click" />
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- ============ 3. VIEW/ADD STUDENTS MODAL ============ -->
-            <div class="modal fade" id="viewStudentsModal" tabindex="-1">
-                <div class="modal-dialog modal-dialog-centered">
-                    <div class="modal-content custom-modal">
-                        <div class="modal-header border-0 pb-3 pt-4 px-4 border-bottom">
-                            <h5 class="modal-title fw-bold">Manage Group Students</h5>
-                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                        </div>
-                        <asp:HiddenField ID="hfSelectedGroupId" runat="server" />
-                        <div class="modal-body p-4">
-                            <h6 class="fw-bold text-primary mb-3">Group: <asp:Label ID="lblModalGroupName" runat="server"></asp:Label></h6>
-                            <label class="form-label fw-semibold">Add Unassigned Student</label>
-                            <asp:DropDownList ID="ddlUnassignedStudents" runat="server" CssClass="form-select mb-3"></asp:DropDownList>
-                            <asp:Button ID="btnAddStudentToGroup" runat="server" CssClass="btn btn-outline-primary w-100 fw-bold" Text="Add Student to Group" OnClick="btnAddStudentToGroup_Click" />
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- ============ 4. DELETE GROUP MODAL ============ -->
-            <div class="modal fade" id="deleteGroupModal" tabindex="-1">
-                <div class="modal-dialog modal-dialog-centered">
-                    <div class="modal-content custom-modal text-center">
-                        <div class="modal-body p-4">
-                            <asp:HiddenField ID="hfDeleteGroupId" runat="server" />
-                            <i class="bi bi-exclamation-circle text-danger fs-1 mb-3 d-block"></i>
-                            <h4 class="fw-bold mb-2">Delete this Group?</h4>
-                            <p class="text-muted mb-4">Are you sure you want to delete <asp:Label ID="lblDeleteGroupName" runat="server" CssClass="fw-bold"></asp:Label>? All assigned students will become unassigned.</p>
-                            <div class="d-flex justify-content-center gap-3">
-                                <button type="button" class="btn btn-light px-4" data-bs-dismiss="modal">Cancel</button>
-                                <asp:Button ID="btnDeleteGroupConfirm" runat="server" CssClass="btn btn-danger px-4" Text="Yes, Delete" OnClick="btnDeleteGroupConfirm_Click" />
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
         </div>
     </form>
 
-    
+    <script>
+        //@ts-nocheck
+        function filterGroupsTable() {
+            var selectElem = document.getElementById("departmentFilter");
+            var table = document.getElementById("groupsTable");
+            if (!selectElem || !table) return;
+
+            var filterVal = selectElem.value.toLowerCase().trim();
+            var trs = table.getElementsByTagName("tr");
+
+            for (var i = 1; i < trs.length; i++) {
+                var tr = trs[i];
+                var deptTd = tr.querySelector(".dept-cell");
+                
+                if (deptTd) {
+                    var deptText = deptTd.textContent.trim().toLowerCase();
+                    
+                    if (filterVal === "" || deptText.indexOf(filterVal) > -1) {
+                        tr.style.display = "";
+                    } else {
+                        tr.style.display = "none";
+                    }
+                }
+            }
+        }
+
+        document.addEventListener("DOMContentLoaded", function () {
+            const msg = document.getElementById('<%= lblMessage.ClientID %>');
+            if (msg && msg.innerText.trim() !== "") {
+                setTimeout(function () {
+                    msg.style.transition = "all 0.5s ease";
+                    msg.style.opacity = "0";
+                    msg.style.transform = "translateY(-15px)";
+                    setTimeout(function () {
+                        msg.style.display = "none";
+                    }, 500);
+                }, 4000);
+            }
+        });
+    </script>
+    <script src="<%= ResolveUrl("~/Js_project/Public/workspace-navigation.js?v=20261024") %>" defer="defer"></script>
 </body>
 </html>

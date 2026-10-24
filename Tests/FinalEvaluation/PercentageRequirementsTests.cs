@@ -110,8 +110,55 @@ internal static partial class Program
         foreach (bool academic in new[] { false, true })
             await Test("percentage denies wrong role and scope before protected data " + academic, async () => { var repo = ModernSeed(DecisionPolicy()); repo.SimulateFailure = true; await Reject<UnauthorizedAccessException>(() => PercentageFlow(repo, academic, uid:"unrelated-user").LoadAsync("fictional-internship", academic)); await Reject<UnauthorizedAccessException>(() => PercentageFlow(repo, academic).LoadAsync("another-internship", academic)); });
         await Test("percentage missing trusted guard prevents Draft writes", async () => { var repo = new InMemoryFinalEvaluationRepository(new[] { DecisionPolicy() }); var flow = new PercentageEvaluationWorkflow(repo, new User(), new PercentageAccess(), new ReadinessSources()); await Reject<UnauthorizedAccessException>(() => SavePercentage(flow, "null_etag")); });
+        await Test("Company editability follows Not Started Draft Revision Requested Submitted Approved and finalized states", async () => {
+            var policy = DecisionPolicy();
+            var notStarted = new InMemoryFinalEvaluationRepository(new[] { policy });
+            var state = await PercentageFlow(notStarted).GetCompanyWriteStateAsync("fictional-internship");
+            Assert(state.EvaluationStatus == "Not Started" && state.CanEditDraft && !state.CanSubmit);
+
+            var draft = ModernSeed(policy, draft: true);
+            state = await PercentageFlow(draft).GetCompanyWriteStateAsync("fictional-internship");
+            Assert(state.EvaluationStatus == "Draft" && state.CanEditDraft && state.CanSubmit);
+
+            var revision = ModernSeed(policy, missingAcademic: true);
+            await ReviewPercentage(revision, AcademicReviewKind.RequestRevision, "Fictional revision reason");
+            state = await PercentageFlow(revision).GetCompanyWriteStateAsync("fictional-internship", true);
+            Assert(state.EvaluationStatus == "Revision Requested" && state.CanEditDraft && !state.CanSubmit);
+            state = await PercentageFlow(revision).GetCompanyWriteStateAsync("fictional-internship", false);
+            Assert(!state.CanEditDraft && !state.CanSubmit);
+
+            var submitted = ModernSeed(policy, missingAcademic: true);
+            state = await PercentageFlow(submitted).GetCompanyWriteStateAsync("fictional-internship");
+            Assert(state.EvaluationStatus == "Submitted" && !state.CanEditDraft && !state.CanSubmit);
+
+            var approved = ModernSeed(policy);
+            state = await PercentageFlow(approved).GetCompanyWriteStateAsync("fictional-internship");
+            Assert(state.EvaluationStatus == "Approved" && !state.CanEditDraft && !state.CanSubmit);
+
+            foreach (var finalStatus in new[] { CompletionStatus.Approved, CompletionStatus.Rejected })
+            {
+                var completed = new InMemoryFinalEvaluationRepository(new[] { policy }, reviews: new[] {
+                    new CompletionReview { InternshipId = "fictional-internship", StudentId = "fictional-student", PolicyId = "fictional-policy", PolicyVersion = "test-v1", Status = finalStatus }
+                });
+                state = await PercentageFlow(completed).GetCompanyWriteStateAsync("fictional-internship");
+                Assert(state.CompletionFinalized && !state.CanEditDraft && !state.CanSubmit);
+                await Reject<ConflictException>(() => SavePercentage(PercentageFlow(completed), "null_etag"));
+            }
+        });
+        await Test("Company editability denies unassigned users and test policy cannot authorize official submission", async () => {
+            var repo = new InMemoryFinalEvaluationRepository(new[] { DecisionPolicy() });
+            await Reject<UnauthorizedAccessException>(() => PercentageFlow(repo, uid: "other-company-supervisor").GetCompanyWriteStateAsync("fictional-internship"));
+            var testPolicy = DecisionPolicy(); testPolicy.IsTestPolicy = true;
+            repo = new InMemoryFinalEvaluationRepository(new[] { testPolicy });
+            var state = await PercentageFlow(repo).GetCompanyWriteStateAsync("fictional-internship");
+            Assert(state.CanEditDraft && !state.CanSubmit);
+            await SavePercentage(PercentageFlow(repo), "null_etag", 80, "Fictional test draft");
+            var saved = await repo.GetPercentageAsync("fictional-internship");
+            Assert(saved.Value.Current.Percentage == 80 && !saved.Value.Current.SubmittedAtUtc.HasValue);
+            await Reject<ArgumentException>(() => PercentageFlow(repo).SubmitAsync("fictional-internship", saved.Version, true));
+        });
         await Test("percentage ineligible internship cannot submit or be academically approved", async () => { var repo = ModernSeed(DecisionPolicy(), draft:true); var s = await repo.GetPercentageAsync("fictional-internship"); await Reject<UnauthorizedAccessException>(() => PercentageFlow(repo, access:new PercentageAccess { Eligible=false }).SubmitAsync("fictional-internship", s.Version, true)); });
-        await Test("percentage missing or unapproved policy prevents writes", async () => { foreach (var repo in new[] { new InMemoryFinalEvaluationRepository(), new InMemoryFinalEvaluationRepository(new[] { Policy() }) }) await Reject<ArgumentException>(() => SavePercentage(PercentageFlow(repo), "null_etag")); });
+        await Test("percentage missing policy blocks Draft persistence", async () => { var repo = new InMemoryFinalEvaluationRepository(); await Reject<ArgumentException>(() => SavePercentage(PercentageFlow(repo), "null_etag")); });
         await Test("legacy records cannot be silently migrated or treated as academic approval", async () => { var repo = new InMemoryFinalEvaluationRepository(new[] { DecisionPolicy() }, new[] { SubmittedCompanyFixture() }, new[] { CompleteAcademicDraft() }); await Reject<ArgumentException>(() => PercentageFlow(repo).LoadAsync("fictional-internship")); Assert(!(await ReadinessFlow(repo).ReviewAsync("fictional-internship")).IsReady); });
         await Test("all old repository score write APIs are retired and old reads remain unchanged", async () => {
             var old = CompleteAcademicDraft(); var repo = new InMemoryFinalEvaluationRepository(academics:new[] { old });

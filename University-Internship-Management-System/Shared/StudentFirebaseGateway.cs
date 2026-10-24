@@ -1,27 +1,48 @@
 using System;
 using System.Configuration;
+using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using FirebaseAdmin;
 using FirebaseAdmin.Auth;
 using Google.Apis.Auth.OAuth2;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using University_Internship_Management_System.Services.FinalEvaluation;
 
 namespace University_Internship_Management_System.Shared
 {
     public sealed class StudentFirebaseGateway : IStudentDatabase, ICompanyAuthentication
     {
-        private static readonly HttpClient Client = new HttpClient { Timeout = TimeSpan.FromSeconds(25) };
+        private static readonly HttpClient Client = new HttpClient(new HttpClientHandler { MaxConnectionsPerServer = 12 }) { Timeout = TimeSpan.FromSeconds(8) };
+        private static readonly TimeSpan OperationTimeout = TimeSpan.FromSeconds(8);
+        private static readonly TimeSpan AuthenticationLookupTimeout = TimeSpan.FromSeconds(15);
         private static readonly object Initialization = new object();
         private readonly UIMS.Services.FirebaseConfiguration firebaseConfiguration;
-        public StudentFirebaseGateway() : this(new UIMS.Services.FirebaseConfiguration()) { }
+        private readonly IAccessTokenProvider tokens;
+        private readonly CancellationToken requestCancellation;
+        public StudentFirebaseGateway() : this(new UIMS.Services.FirebaseConfiguration(), null, CancellationToken.None) { }
         public StudentFirebaseGateway(UIMS.Services.FirebaseConfiguration configuration)
+            : this(configuration, null, CancellationToken.None) { }
+        public StudentFirebaseGateway(UIMS.Services.FirebaseConfiguration configuration, IAccessTokenProvider tokenProvider)
+            : this(configuration, tokenProvider, CancellationToken.None) { }
+        public StudentFirebaseGateway(UIMS.Services.FirebaseConfiguration configuration, IAccessTokenProvider tokenProvider, CancellationToken cancellationToken)
         {
             firebaseConfiguration = configuration ?? throw new ArgumentNullException(nameof(configuration));
+            // Default callers retain the main-branch shared credential cache. The page
+            // integration can inject its bounded provider so request cancellation applies.
+            tokens = tokenProvider;
+            requestCancellation = cancellationToken;
+        }
+        private CancellationTokenSource CreateOperationCancellation()
+        {
+            var timeout = CancellationTokenSource.CreateLinkedTokenSource(requestCancellation);
+            timeout.CancelAfter(OperationTimeout);
+            return timeout;
         }
 
         private FirebaseAuth Authentication
@@ -41,11 +62,54 @@ namespace University_Internship_Management_System.Shared
                             });
                     }
                 }
+                if (!string.Equals(FirebaseApp.DefaultInstance.Options.ProjectId, firebaseConfiguration.ProjectId, StringComparison.Ordinal))
+                    throw new UIMS.Services.FirebaseException(503, "The existing Firebase Admin instance targets another project. Restart with the current approved project configuration; no accounts were queried or changed.");
                 return FirebaseAuth.DefaultInstance;
             }
         }
 
-        private async Task<HttpRequestMessage> RequestAsync(HttpMethod method, string path, object value = null)
+        private async Task<FirebaseAuth> AuthenticationAsync(CancellationToken cancellationToken)
+        {
+            firebaseConfiguration.EnsureAuthenticationEnabled();
+            var app = FirebaseApp.DefaultInstance;
+            if (app != null) return FirebaseAuth.GetAuth(app);
+
+            // Load ADC asynchronously so an IIS request can cancel local credential discovery
+            // or metadata-server access instead of blocking before FirebaseAuth receives a token.
+            var timer = FirebaseReadDiagnostics.Start();
+            GoogleCredential credential;
+            try
+            {
+                credential = await GoogleCredential.GetApplicationDefaultAsync(cancellationToken).ConfigureAwait(false);
+                FirebaseReadDiagnostics.Finish("firebase.auth.credentials", timer, "success");
+            }
+            catch (OperationCanceledException)
+            {
+                FirebaseReadDiagnostics.Finish("firebase.auth.credentials", timer, "timeout_or_cancelled");
+                throw;
+            }
+            catch
+            {
+                FirebaseReadDiagnostics.Finish("firebase.auth.credentials", timer, "credentials_or_network_error");
+                throw;
+            }
+
+            lock (Initialization)
+            {
+                app = FirebaseApp.DefaultInstance;
+                if (app == null)
+                {
+                    app = FirebaseApp.Create(new AppOptions
+                    {
+                        Credential = credential,
+                        ProjectId = firebaseConfiguration.ProjectId
+                    });
+                }
+                return FirebaseAuth.GetAuth(app);
+            }
+        }
+
+        private async Task<HttpRequestMessage> RequestAsync(HttpMethod method, string path, object value, CancellationToken cancellationToken)
         {
             var firebase = firebaseConfiguration;
             firebase.EnsureEnabled();
@@ -55,40 +119,89 @@ namespace University_Internship_Management_System.Shared
             if (!Uri.TryCreate(configured, UriKind.Absolute, out baseUri) || baseUri.Scheme != "https" ||
                 !string.IsNullOrEmpty(baseUri.Query) || !string.IsNullOrEmpty(baseUri.UserInfo))
                 throw new InvalidOperationException("Configure a valid HTTPS FirebaseDatabaseUrl.");
-            var credential = (await GoogleCredential.GetApplicationDefaultAsync().ConfigureAwait(false)).CreateScoped(
-                "https://www.googleapis.com/auth/firebase.database", "https://www.googleapis.com/auth/userinfo.email");
-            string token = await credential.UnderlyingCredential.GetAccessTokenForRequestAsync().ConfigureAwait(false);
+            string token;
+            if (tokens == null)
+                token = await FirebaseServerCredential.AccessTokenAsync(cancellationToken).ConfigureAwait(false);
+            else
+            {
+                var cancellable = tokens as ICancellableAccessTokenProvider;
+                token = cancellable == null
+                    ? await tokens.GetAccessTokenAsync().ConfigureAwait(false)
+                    : await cancellable.GetAccessTokenAsync(cancellationToken).ConfigureAwait(false);
+            }
             var request = new HttpRequestMessage(method, configured.TrimEnd('/') + "/" + path + ".json");
             request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
             if (value != null) request.Content = new StringContent(JsonConvert.SerializeObject(value), Encoding.UTF8, "application/json");
             return request;
         }
+        private Task<HttpRequestMessage> RequestAsync(HttpMethod method, string path, object value = null)
+        { return RequestAsync(method, path, value, CancellationToken.None); }
 
-        private static async Task<JToken> ReadBodyAsync(HttpResponseMessage response)
+        private static async Task<JToken> ReadBodyAsync(HttpResponseMessage response, bool indexedQuery = false)
         {
             // Never include remote response bodies or bearer tokens in user-visible errors.
-            response.EnsureSuccessStatusCode();
+            if (!response.IsSuccessStatusCode)
+            {
+                int status = (int)response.StatusCode;
+                if (indexedQuery && status == 400)
+                {
+                    string errorBody = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+                    if (errorBody.IndexOf("Index not defined", StringComparison.OrdinalIgnoreCase) >= 0)
+                        throw new FirebaseQueryIndexException();
+                }
+                if (status == 401 || status == 403) throw new RepositoryException("Firebase denied the authenticated read (HTTP " + status + "). Verify the service account's database permission scope.");
+                throw new RepositoryException("Firebase read failed (HTTP " + status + ").");
+            }
             string json = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
             return string.IsNullOrWhiteSpace(json) ? JValue.CreateNull() : JToken.Parse(json);
         }
 
         public async Task<JToken> ReadAsync(string path)
         {
-            using (var request = await RequestAsync(HttpMethod.Get, path).ConfigureAwait(false))
-            using (var response = await Client.SendAsync(request).ConfigureAwait(false))
-                return await ReadBodyAsync(response).ConfigureAwait(false);
+            var timer = FirebaseReadDiagnostics.Start();
+            using (var timeout = CreateOperationCancellation())
+            {
+                try
+                {
+                    using (var request = await RequestAsync(HttpMethod.Get, path, null, timeout.Token).ConfigureAwait(false))
+                    using (var response = await Client.SendAsync(request, timeout.Token).ConfigureAwait(false))
+                    {
+                        var body = await ReadBodyAsync(response).ConfigureAwait(false);
+                        FirebaseReadDiagnostics.Finish("firebase.database.read", timer, "http_" + (int)response.StatusCode);
+                        return body;
+                    }
+                }
+                catch (OperationCanceledException error) { FirebaseReadDiagnostics.Finish("firebase.database.read", timer, "timeout_or_cancelled"); throw new RepositoryException("Firebase read timed out or was canceled.", error); }
+                catch (RepositoryException error) { FirebaseReadDiagnostics.Finish("firebase.database.read", timer, error.Message.Contains("denied") ? "permission_denied" : "request_failed"); throw; }
+                catch (HttpRequestException error) { FirebaseReadDiagnostics.Finish("firebase.database.read", timer, "network_or_permission_error"); throw new RepositoryException("Firebase read failed. Check connectivity and database permissions.", error); }
+            }
         }
 
         public async Task<JToken> ReadEqualAsync(string path, string field, string value)
         {
             if (string.IsNullOrWhiteSpace(field)) throw new ArgumentException("A query field is required.", nameof(field));
-            using (var request = await RequestAsync(HttpMethod.Get, path).ConfigureAwait(false))
+            var timer = FirebaseReadDiagnostics.Start();
+            using (var timeout = CreateOperationCancellation())
             {
-                string query = "?orderBy=" + Uri.EscapeDataString(JsonConvert.SerializeObject(field)) +
-                    "&equalTo=" + Uri.EscapeDataString(JsonConvert.SerializeObject(value ?? ""));
-                request.RequestUri = new Uri(request.RequestUri.AbsoluteUri + query, UriKind.Absolute);
-                using (var response = await Client.SendAsync(request).ConfigureAwait(false))
-                    return await ReadBodyAsync(response).ConfigureAwait(false);
+                try
+                {
+                    using (var request = await RequestAsync(HttpMethod.Get, path, null, timeout.Token).ConfigureAwait(false))
+                    {
+                        string query = "?orderBy=" + Uri.EscapeDataString(JsonConvert.SerializeObject(field)) +
+                            "&equalTo=" + Uri.EscapeDataString(JsonConvert.SerializeObject(value ?? ""));
+                        request.RequestUri = new Uri(request.RequestUri.AbsoluteUri + query, UriKind.Absolute);
+                        using (var response = await Client.SendAsync(request, timeout.Token).ConfigureAwait(false))
+                        {
+                            var body = await ReadBodyAsync(response, true).ConfigureAwait(false);
+                            FirebaseReadDiagnostics.Finish("firebase.database.query", timer, "http_" + (int)response.StatusCode);
+                            return body;
+                        }
+                    }
+                }
+                catch (OperationCanceledException error) { FirebaseReadDiagnostics.Finish("firebase.database.query", timer, "timeout_or_cancelled"); throw new RepositoryException("Firebase query timed out or was canceled.", error); }
+                catch (FirebaseQueryIndexException) { FirebaseReadDiagnostics.Finish("firebase.database.query", timer, "index_required"); throw; }
+                catch (RepositoryException error) { FirebaseReadDiagnostics.Finish("firebase.database.query", timer, error.Message.Contains("denied") ? "permission_denied" : "request_failed"); throw; }
+                catch (HttpRequestException error) { FirebaseReadDiagnostics.Finish("firebase.database.query", timer, "network_or_permission_error"); throw new RepositoryException("Firebase query failed. Check connectivity and database permissions.", error); }
             }
         }
 
@@ -96,8 +209,51 @@ namespace University_Internship_Management_System.Shared
         public async Task<bool> IsActiveAuthenticationUidAsync(string uid)
         {
             if (string.IsNullOrWhiteSpace(uid)) return false;
-            try { return !(await Authentication.GetUserAsync(uid).ConfigureAwait(false)).Disabled; }
-            catch (FirebaseAuthException error) when (error.AuthErrorCode == AuthErrorCode.UserNotFound) { return false; }
+            var timer = FirebaseReadDiagnostics.Start();
+            using (var timeout = CreateOperationCancellation())
+            try
+            {
+                timeout.CancelAfter(AuthenticationLookupTimeout);
+                var auth = await AuthenticationAsync(timeout.Token).ConfigureAwait(false);
+                var user = await auth.GetUserAsync(uid, timeout.Token).ConfigureAwait(false);
+                FirebaseReadDiagnostics.Finish("firebase.auth.get_user", timer, "success");
+                return !user.Disabled;
+            }
+            catch (FirebaseAuthException error) when (error.AuthErrorCode == AuthErrorCode.UserNotFound) { FirebaseReadDiagnostics.Finish("firebase.auth.get_user", timer, "user_not_found"); return false; }
+            catch (OperationCanceledException error) { FirebaseReadDiagnostics.Finish("firebase.auth.get_user", timer, "timeout_or_cancelled"); throw new RepositoryException("Firebase Authentication lookup timed out or was canceled.", error); }
+            catch (UIMS.Services.FirebaseException) { FirebaseReadDiagnostics.Finish("firebase.auth.get_user", timer, "configuration_or_policy_error"); throw; }
+            catch (FirebaseAuthException error) { FirebaseReadDiagnostics.Finish("firebase.auth.get_user", timer, "firebase_auth_error"); throw new RepositoryException("Firebase Authentication lookup failed. Verify Admin SDK access and network configuration.", error); }
+            catch (Exception error) { FirebaseReadDiagnostics.Finish("firebase.auth.get_user", timer, "network_or_credentials_error"); throw new RepositoryException("Firebase Authentication lookup failed. Verify server credentials and network connectivity.", error); }
+        }
+
+        // Explicit administrative READ-ONLY metadata audit. No password hashes or tokens
+        // are returned. Permission failures are not treated as disabled/missing accounts.
+        public async Task<JObject> ReadAuthenticationMetadataAsync(string uid)
+        {
+            StudentManagementService.Key(uid);
+            try
+            {
+                var record = await Authentication.GetUserAsync(uid).ConfigureAwait(false);
+                return new JObject { ["state"] = record.Disabled ? "disabled" : "enabled", ["uid"] = record.Uid, ["email"] = record.Email, ["verified"] = true };
+            }
+            catch (FirebaseAuthException error) when (error.AuthErrorCode == AuthErrorCode.UserNotFound)
+            { return new JObject { ["state"] = "missing", ["verified"] = true }; }
+            catch (FirebaseAuthException error)
+            {
+                int status = error.HttpResponse == null ? 0 : (int)error.HttpResponse.StatusCode;
+                string reason = "";
+                if (error.HttpResponse?.Content != null)
+                {
+                    try { var body = JObject.Parse(await error.HttpResponse.Content.ReadAsStringAsync().ConfigureAwait(false));
+                        foreach (var item in body.SelectTokens("error.details[*].reason"))
+                            if (new[] {"ACCESS_TOKEN_SCOPE_INSUFFICIENT","SERVICE_DISABLED","API_KEY_SERVICE_BLOCKED","API_KEY_HTTP_REFERRER_BLOCKED","IAM_PERMISSION_DENIED","CONSUMER_INVALID"}.Contains(item.ToString())) reason = item.ToString();
+                    } catch (JsonException) { }
+                }
+                return UIMS.Services.StudentAuthAuditFailure.Describe(status,reason,firebaseConfiguration.ProjectId,error.ErrorCode.ToString());
+            }
+            catch (UIMS.Services.FirebaseException) { throw; }
+            catch (Exception error) when (error is InvalidOperationException || error is System.IO.IOException || error is System.Security.SecurityException || error is Google.Apis.Auth.OAuth2.Responses.TokenResponseException)
+            { return UIMS.Services.StudentAuthAuditFailure.Describe(0,"CREDENTIAL_INITIALIZATION",firebaseConfiguration.ProjectId,error.GetType().Name); }
         }
 
         public async Task WriteAsync(string path, object value)
@@ -141,6 +297,7 @@ namespace University_Internship_Management_System.Shared
         {
             using (var request = await RequestAsync(HttpMethod.Put, path, value).ConfigureAwait(false))
             {
+                if (value == null) request.Content = new StringContent("null", Encoding.UTF8, "application/json");
                 request.Headers.TryAddWithoutValidation("if-match", etag);
                     using (var response = await Client.SendAsync(request).ConfigureAwait(false))
                 {

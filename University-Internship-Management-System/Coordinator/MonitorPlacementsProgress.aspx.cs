@@ -1,9 +1,11 @@
+using University_Internship_Management_System.Shared;
 using System;
 using System.Collections.Generic;
 using System.Net;
 using System.Web.Script.Serialization;
 using System.Web.Security;
 using System.Web.UI;
+using System.Threading.Tasks;
 
 namespace University_Internship_Management_System.Coordinator
 {
@@ -13,28 +15,34 @@ namespace University_Internship_Management_System.Coordinator
 
         protected void Page_Load(object sender, EventArgs e)
         {
-            if (!Request.IsAuthenticated) { Response.Redirect("~/Auth/Login.aspx", false); Context.ApplicationInstance.CompleteRequest(); return; }
-            try { System.Threading.Tasks.Task.Run(() => new University_Internship_Management_System.Shared.StudentManagementService(gateway, gateway, new University_Internship_Management_System.Shared.StudentCredentialMailer()).RequireCoordinatorAsync(User.Identity.Name)).GetAwaiter().GetResult(); }
-            catch (UnauthorizedAccessException) { Response.StatusCode = 403; Response.TrySkipIisCustomErrors = true; lblMessage.Text = "An active coordinator account is required."; return; }
+            var identity = Context.User?.Identity as FormsIdentity;
+            if (identity == null || !identity.IsAuthenticated)
+            {
+                Response.Redirect("~/Auth/Login.aspx");
+                return;
+            }
+
             if (!IsPostBack)
             {
-                LoadDashboardData();
+                RegisterAsyncTask(new PageAsyncTask(LoadDashboardData));
             }
         }
 
-        private void LoadDashboardData()
+        private async Task LoadDashboardData()
         {
             try
             {
                 using (WebClient client = new WebClient { Encoding = System.Text.Encoding.UTF8 })
                 {
+                    var gateway = new StudentFirebaseGateway();
+                    var identity = Context.User.Identity as FormsIdentity;
                     JavaScriptSerializer serializer = new JavaScriptSerializer();
 
-                    string usersJson = DownloadSafe(client, "users.json");
-                    string placementsJson = DownloadSafe(client, "placements.json");
-                    string companiesJson = DownloadSafe(client, "companies.json");
-                    string tasksJson = DownloadSafe(client, "tasks.json");
-                    string attendanceJson = DownloadSafe(client, "uimsAttendance/attendance.json");
+                    string usersJson = (await gateway.ReadAsync("users")).ToString(Newtonsoft.Json.Formatting.None);
+                    string placementsJson = (await gateway.ReadAsync("placements")).ToString(Newtonsoft.Json.Formatting.None);
+                    string companiesJson = (await gateway.ReadAsync("companies")).ToString(Newtonsoft.Json.Formatting.None);
+                    string tasksJson = (await gateway.ReadAsync("tasks")).ToString(Newtonsoft.Json.Formatting.None);
+                    string attendanceJson = (await gateway.ReadAsync("uimsAttendance/attendance")).ToString(Newtonsoft.Json.Formatting.None);
 
                     var users = ParseJson<Dictionary<string, UserData>>(serializer, usersJson) ?? new Dictionary<string, UserData>();
                     var placements = ParseJson<Dictionary<string, PlacementData>>(serializer, placementsJson) ?? new Dictionary<string, PlacementData>();
@@ -99,7 +107,7 @@ namespace University_Internship_Management_System.Coordinator
                             {
                                 row.CompanySupervisor = u.Value.fullName;
                             }
-                            else if (u.Value.role == "academicSupervisor" && u.Key == pData.academicSupervisorId)
+                            else if (u.Value.role == "academicSupervisor" && (u.Key == pData.academicSupervisorId || u.Value.academicSupervisorId == pData.academicSupervisorId))
                             {
                                 row.AcademicSupervisor = u.Value.fullName;
                             }
@@ -148,7 +156,7 @@ namespace University_Internship_Management_System.Coordinator
                     lblTotalStudents.Text = totalStudentsCount.ToString();
                     lblActiveInternships.Text = activeInternshipsCount.ToString();
                     lblCompletedTasks.Text = globalCompletedTasks.ToString();
-                    lblRiskInternships.Text = atRiskCount.ToString();
+                   
 
                     lblMessage.Text = "";
                 }
@@ -159,16 +167,11 @@ namespace University_Internship_Management_System.Coordinator
             }
         }
 
-        protected void btnLogout_Click(object sender, EventArgs e)
-        {
-            FormsAuthentication.SignOut();
-            Session.Clear();
-            Response.Redirect("~/Auth/Login.aspx", false);
-        }
+        protected void btnLogout_Click(object sender, EventArgs e) { University_Internship_Management_System.Shared.LoginSession.End(Context); Session.Clear(); Session.Abandon(); Response.Redirect(ResolveUrl("~/Auth/Login.aspx?account=new"), false); Context.ApplicationInstance.CompleteRequest(); }
 
         private string DownloadSafe(WebClient client, string path)
         {
-            return System.Threading.Tasks.Task.Run(() => gateway.ReadAsync(path.EndsWith(".json", StringComparison.Ordinal) ? path.Substring(0, path.Length - 5) : path)).GetAwaiter().GetResult().ToString(Newtonsoft.Json.Formatting.None);
+            return Task.Run(() => gateway.ReadAsync(path.EndsWith(".json", StringComparison.Ordinal) ? path.Substring(0, path.Length - 5) : path)).GetAwaiter().GetResult().ToString(Newtonsoft.Json.Formatting.None);
         }
 
         private T ParseJson<T>(JavaScriptSerializer serializer, string json)
@@ -177,7 +180,7 @@ namespace University_Internship_Management_System.Coordinator
             return serializer.Deserialize<T>(json);
         }
 
-        public class UserData { public string fullName { get; set; } public string role { get; set; } public string studentId { get; set; } public string majorId { get; set; } public string department { get; set; } }
+        public class UserData { public string fullName { get; set; } public string role { get; set; } public string studentId { get; set; } public string academicSupervisorId { get; set; } public string majorId { get; set; } public string department { get; set; } }
         public class PlacementData { public string studentId { get; set; } public string companyId { get; set; } public string companySupervisorId { get; set; } public string academicSupervisorId { get; set; } public string status { get; set; } public int requiredHours { get; set; } }
         public class CompanyData { public string name { get; set; } }
         public class TaskData { public string studentId { get; set; } public string placementId { get; set; } public string status { get; set; } }
