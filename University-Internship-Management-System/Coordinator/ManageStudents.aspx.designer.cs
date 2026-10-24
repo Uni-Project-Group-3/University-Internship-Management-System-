@@ -219,7 +219,7 @@ namespace University_Internship_Management_System.Coordinator
         /// Auto-generated field.
         /// To modify move field declaration from designer file to code-behind file.
         /// </remarks>
-        protected global::System.Web.UI.WebControls.Button generateStudentPassword;
+
 
         /// <summary>
         /// saveStudentButton control.

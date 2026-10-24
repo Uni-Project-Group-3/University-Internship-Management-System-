@@ -20,6 +20,8 @@ namespace University_Internship_Management_System.Auth
 
         private bool IsResetRequest => Request.QueryString["action"] == "reset";
 
+        private bool IsEmailPasswordReset => Request.QueryString["mode"] == "resetPassword";
+
         protected bool PasswordChangeRequired { get; private set; }
 
         protected void Page_Load(object sender, EventArgs e)
@@ -28,24 +30,26 @@ namespace University_Internship_Management_System.Auth
             Response.Cache.SetNoStore();
             Response.Headers["X-Frame-Options"] = "DENY";
             Response.Headers["X-Content-Type-Options"] = "nosniff";
-            Response.Headers["Referrer-Policy"] = "same-origin";
+            Response.Headers["Referrer-Policy"] = "no-referrer";
             if (IsResetRequest)
             {
                 RegisterAsyncTask(new PageAsyncTask(SendResetLinkAsync));
                 return;
             }
 
+            ClearFirstLoginCookie();
+            PasswordChangeRequired = IsEmailPasswordReset;
             // Reuse an existing authenticated cookie instead of requesting the password again.
             var signedIn = Context.User?.Identity as FormsIdentity;
             var role = signedIn != null && signedIn.IsAuthenticated && !signedIn.Ticket.Expired
                 ? FirebaseSignInService.CanonicalRole(signedIn.Ticket.UserData) : null;
-            if (!IsPostBack && role != null && PendingTicket() == null && Request.QueryString["change"] != "required" && Request.QueryString["account"] != "new")
+            if (!IsPostBack && !IsEmailPasswordReset && role != null && Request.QueryString["change"] != "required" && Request.QueryString["account"] != "new")
             {
                 RedirectTo(FirebaseSignInService.Destination(role));
                 return;
             }
 
-            PasswordChangeRequired = PendingTicket() != null;
+
             form1.Attributes["data-password-required"] = PasswordChangeRequired ? "true" : "false";
             form1.DefaultButton = PasswordChangeRequired ? SaveChanges.ID : SignIn.ID;
 
@@ -65,6 +69,7 @@ namespace University_Internship_Management_System.Auth
             }
 
             CsrfToken.Value = (string)Session["Uims.CsrfToken"];
+            if (Request.QueryString["passwordReset"] == "success") AuthMessage.Text = "Password saved. Sign in with your new password.";
         }
 
         protected override void OnInit(EventArgs e)
@@ -89,14 +94,6 @@ namespace University_Internship_Management_System.Auth
                     throw new FirebaseLoginException("Please wait before trying to sign in again.", 429, Math.Max(1, (int)Math.Ceiling((blockedUntil.Value - DateTime.UtcNow).TotalSeconds)));
                 var result = await new FirebaseSignInService().SignInAsync(Email.Text, Password.Text);
                 FormsAuthentication.SignOut();
-                if (result.MustChangePassword)
-                {
-                    WriteCookie(".UIMS.FirstLogin", result.Uid, "password-change", 10);
-                    Session.Clear();
-                    Session.Abandon();
-                    RedirectTo("~/Auth/Login.aspx?change=required");
-                    return;
-                }
                 CompleteSignIn(result);
             }
             catch (Exception error)
@@ -121,16 +118,15 @@ namespace University_Internship_Management_System.Auth
         {
             if (!ValidateRequest()) return;
             var pending = PendingTicket();
-            if (pending == null)
+            if (pending == null && !IsEmailPasswordReset)
             {
                 ChangeError.Text = "Please sign in again before changing your password.";
                 return;
             }
             string password = NewPassword.Text;
-            if (password.Length < 12 || !password.Any(char.IsUpper) || !password.Any(char.IsLower) ||
-                !password.Any(char.IsDigit) || !password.Any(c => !char.IsLetterOrDigit(c) && !char.IsWhiteSpace(c)))
+            if (password.Length < 6 || password.Length > 4096)
             {
-                ChangeError.Text = "Use at least 12 characters, uppercase and lowercase letters, a number, and a symbol.";
+                ChangeError.Text = "Use between 6 and 4096 characters. Firebase checks the configured password policy.";
                 return;
             }
             if (password != ConfirmPassword.Text)
@@ -141,26 +137,46 @@ namespace University_Internship_Management_System.Auth
             try
             {
                 EnsureSecureTransport();
-                var profile = await FirebaseSignInService.ReadProfileAsync(pending.Name);
-                var result = FirebaseSignInService.ProfileResult(pending.Name, profile);
-                var account = await FirebaseAuth.DefaultInstance.GetUserAsync(pending.Name);
-                if (account.Disabled) throw new FirebaseLoginException("This account is disabled. Contact your coordinator.");
+                if (IsEmailPasswordReset)
+                {
+                    await new FirebaseAuthService().CompletePasswordResetAsync(Request.QueryString["oobCode"], password);
+                    RedirectTo("~/Auth/Login.aspx?passwordReset=success");
+                    return;
+                }
+                string token = Session["Uims.FirebaseIdToken"] as string;
+                if (string.IsNullOrEmpty(token))
+                {
+                    ClearFirstLoginCookie();
+                    RedirectTo("~/Auth/Login.aspx");
+                    return;
+                }
+                var gateway = new StudentFirebaseGateway();
+                var result = await new FirebaseSignInService().VerifySessionAsync(token);
+                if (result.Uid != pending.Name) throw new FirebaseLoginException("Sign in again to change your password.");
+                var account = await gateway.FindAsync(pending.Name);
+                if (account == null || account.Disabled) throw new FirebaseLoginException("This account is unavailable. Contact your coordinator.");
                 if (result.MustChangePassword)
                 {
-                    await FirebaseAuth.DefaultInstance.UpdateUserAsync(new UserRecordArgs { Uid = pending.Name, Password = password });
-                    await new StudentFirebaseGateway().PatchAsync("users/" + StudentManagementService.Key(pending.Name),
-                        new { mustChangePassword = false });
+                    await gateway.UpdateAsync(pending.Name, false, password);
+                    await gateway.PatchAsync("users/" + StudentManagementService.Key(pending.Name), new { mustChangePassword = false });
+                    result = await new FirebaseSignInService().SignInAsync(account.Email, password);
                 }
                 result.MustChangePassword = false;
                 CompleteSignIn(result);
             }
             catch (Exception error)
             {
-                ChangeError.Text = error is FirebaseLoginException ? error.Message :
+                ChangeError.Text = error is StudentManagementException || error is FirebaseLoginException ? error.Message :
                     "The password change could not be completed. Retry before leaving this page.";
                 Trace.Warn("FirstLogin", error.GetType().Name);
             }
             finally { NewPassword.Text = ""; ConfirmPassword.Text = ""; }
+        }
+
+        private void ClearFirstLoginCookie()
+        {
+            Response.Cookies.Add(new HttpCookie(".UIMS.FirstLogin", "") { Expires = DateTime.UtcNow.AddDays(-1),
+                HttpOnly = true, Secure = Request.IsSecureConnection, SameSite = SameSiteMode.Lax, Path = FormsAuthentication.FormsCookiePath });
         }
 
         private FormsAuthenticationTicket PendingTicket()
@@ -195,7 +211,7 @@ namespace University_Internship_Management_System.Auth
                 SameSite = SameSiteMode.Lax, Path = FormsAuthentication.FormsCookiePath
             });
             Session.Clear();
-            Session.Abandon();
+            Session["Uims.FirebaseIdToken"] = result.IdToken;
             string destination = LoginRedirectPolicy.CoordinatorPage(result.Role, Request.QueryString["ReturnUrl"]) ?? FirebaseSignInService.Destination(result.Role);
             RedirectTo(destination);
         }

@@ -95,7 +95,7 @@ namespace University_Internship_Management_System.Shared
                 RemoveRows(root, branch, p => related(p.Value));
             foreach (string branch in new[] { "taskBoards", "companyFinalEvaluations", "academicFinalEvaluations", "finalEvaluationReviewsV2", "completionReviews", "completionDocuments", "finalEvaluations", "certificates", "completionConfirmations" })
                 RemoveRows(root, branch, p => placements.Contains(p.Name) || students.Contains(p.Name) || uids.Contains(p.Name) || related(p.Value));
-            foreach (string branch in new[] { "taskExamAttempts", "taskExamAnswerKeys", "submissions", "taskSubmissions", "files", "taskFiles", "examFiles", "weeklyReportReviews", "academicFeedback", "academicHistory", "notifications", "placementClaims", "assignments", "supervisorAssignments" })
+            foreach (string branch in new[] { "taskExamAttempts", "taskExamAnswerKeys", "submissions", "taskSubmissions", "files", "fileAttachments", "taskFiles", "examFiles", "weeklyReportReviews", "uimsAttendance/provisioningClaims", "academicFeedback", "academicHistory", "notifications", "placementClaims", "assignments", "supervisorAssignments" })
             {
                 RemoveRows(root, branch, p => students.Contains(p.Name) || uids.Contains(p.Name) || placements.Contains(p.Name) || tasks.Contains(p.Name) || exams.Contains(p.Name) || reports.Contains(p.Name) || related(p.Value));
                 RemoveDescendants(At(root, branch), related, students, uids);

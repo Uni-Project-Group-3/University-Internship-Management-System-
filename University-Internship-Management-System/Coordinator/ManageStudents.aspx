@@ -1,5 +1,5 @@
 <%@ Page Language="C#" AutoEventWireup="true" async="true" CodeBehind="ManageStudents.aspx.cs" Inherits="University_Internship_Management_System.Coordinator.ManageStudents" %>
-<!DOCTYPE html><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head runat="server"><meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" /><title>Manage Students | UIMS</title><link runat="server" href="~/Assets/shared/colors.css" rel="stylesheet" />    <link runat="server" href="~/Assets/coordinator/manage-students.css?v=20261023-unified" rel="stylesheet" />
+<!DOCTYPE html><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head runat="server"><meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" /><title>Manage Students | UIMS</title><link runat="server" href="~/Assets/shared/colors.css" rel="stylesheet" />    <link runat="server" href="~/Assets/coordinator/manage-students.css?v=20261024-link-cleanup" rel="stylesheet" />
 </head>
 <body class="dashboard-direct app-page completion-page management-page" data-page="manage-students"><form id="form1" runat="server"><div class="app-layout">            <aside class="dash-sidebar" id="dashboardSidebar" aria-label="Coordinator navigation">
                 <a href="<%= ResolveUrl("~/Coordinator/CoordinatorDashboard.aspx") %>" class="dash-brand">
@@ -80,11 +80,11 @@
                                     <circle cx="12" cy="12" r="9"/>
                                     <path d="M9 8a3 3 0 0 1 6 0c0 2-3 2-3 5m0 3v1"/>
                                 </svg>Help &amp; contact</a>
-                                <a href="<%= ResolveUrl("~/Auth/Login.aspx") %>">
+                                <a data-uims-logout="true" href="<%= ResolveUrl("~/Auth/Login.aspx") %>">
                                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                                         <circle cx="12" cy="8" r="3"/>
                                         <path d="M5 21v-3a7 7 0 0 1 14 0v3"/>
-                                    </svg>Sign in</a>
+                                    </svg>Log out</a>
                                 </div>
                             </details>
                         </div>
@@ -97,10 +97,9 @@
         Email delivery is unavailable. Students can still be saved; no welcome email will be sent.
     </asp:Panel>
     <section class="completion-panel" aria-labelledby="studentListTitle">
-        <header><div><h2 id="studentListTitle">Student accounts</h2><p>Deleting an account clears its linked history. Official university records are retained.</p></div>
+        <header><div><h2 id="studentListTitle">Student accounts</h2><p>Manage student accounts and academic information.</p></div>
             <div class="student-list-actions">
-                <asp:Button ID="refreshStudentsButton" runat="server" Text="Refresh" CausesValidation="false"
-                    CssClass="completion-button completion-button--secondary" OnClick="RefreshStudents_Click" />
+                <asp:Button ID="refreshStudentsButton" runat="server" Visible="false" Text="Refresh" OnClick="RefreshStudents_Click" />
                 <button type="button" class="completion-button" id="addStudentButton">Add student</button>
             </div>
         </header>
@@ -115,7 +114,7 @@
         <div class="completion-table-wrap" role="region" aria-label="Student accounts" tabindex="0">
             <asp:GridView ID="studentsGrid" runat="server" ClientIDMode="Static" AutoGenerateColumns="false"
                 DataKeyNames="Uid" GridLines="None" UseAccessibleHeader="true" ShowHeaderWhenEmpty="true"
-                EmptyDataText="No student accounts found. Add a student or refresh the list."
+                EmptyDataText="No student accounts found. Add a student to get started."
                 OnSelectedIndexChanged="ViewDetails_Click"
                 OnRowDataBound="StudentGrid_RowDataBound">
                 <Columns>
@@ -126,13 +125,14 @@
                     <asp:BoundField DataField="Supervisor" HeaderText="Academic supervisor" HtmlEncode="true" />
                     <asp:BoundField DataField="CompletionStatus" HeaderText="Completion" HtmlEncode="true" />
                     <asp:BoundField DataField="AccountStatus" HeaderText="Account" HtmlEncode="true" />
-                    <asp:CommandField ShowSelectButton="true" SelectText="View details" CausesValidation="false" />
+                    <asp:TemplateField HeaderText="Details"><ItemTemplate><asp:LinkButton ID="viewStudent" runat="server" CommandName="Select" CausesValidation="false" CssClass="management-icon-button" ToolTip="View student details" aria-label="View student details"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg></asp:LinkButton></ItemTemplate></asp:TemplateField>
                     <asp:TemplateField HeaderText="Actions"><ItemTemplate>
-                        <button type="button" class="student-delete-action" data-delete-student='<%#: Eval("Uid") %>' data-student-name='<%#: Eval("FullName") %>'>Delete</button>
+                        <button type="button" class="student-delete-action" data-delete-student='<%#: Eval("Uid") %>' data-student-name='<%#: Eval("FullName") %>' title="Delete student" aria-label="Delete student"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18M9 6V3h6v3M5 6l1 15h12l1-15M10 10v7m4-7v7"/></svg></button>
                     </ItemTemplate></asp:TemplateField>
                 </Columns>
             </asp:GridView>
         </div>
+        <div class="management-pagination"><span id="studentPageSummary" role="status" aria-live="polite"></span><div><label for="studentPageSize">Rows per page</label><select id="studentPageSize"><option selected>15</option><option>25</option><option>50</option></select><button type="button" id="studentPrevious" aria-label="Previous page">&#8592;</button><nav id="studentPageNumbers" aria-label="Directory pages"></nav><button type="button" id="studentNext" aria-label="Next page">&#8594;</button></div></div>
         <p id="studentNoMatches" class="student-filter-summary" hidden>No students match these filters.</p>
     </section>
 </main></div></div>
@@ -140,8 +140,8 @@
 <dialog id="studentDeleteDialog" class="completion-dialog" aria-labelledby="studentDeleteTitle">
     <header class="completion-dialog-header"><h2 id="studentDeleteTitle">Delete student?</h2><button type="button" class="completion-close" data-close="" aria-label="Cancel deletion">&times;</button></header>
     <div class="completion-dialog-body">
-        <p>Delete the login and account profile for <strong id="studentDeleteName"></strong>?</p>
-        <p>This permanently removes their login, profile, applications, placements, tasks, evaluations and attendance history. Official university records remain so a recreated account starts fresh.</p>
+        <p>Permanently delete the account for <strong id="studentDeleteName"></strong>?</p>
+        <p>This permanently deletes the login, profile and linked internship history, including attendance and approved hours. Official university records remain. This cannot be undone.</p>
         <asp:HiddenField ID="studentDeleteUid" runat="server" ClientIDMode="Static" />
         <div class="student-form-actions">
             <button type="button" class="completion-button completion-button--secondary" data-close="">Cancel</button>
@@ -175,21 +175,13 @@
             <label class="student-label">Department<input id="studentDepartment" runat="server" ClientIDMode="Static" disabled="disabled" /></label>
             <label class="student-label student-email">University email<input id="studentEmail" runat="server" ClientIDMode="Static" type="email" disabled="disabled" /></label>
         </div></div>
-        <div class="student-password-section">
-            <label for="studentTemporaryPassword" class="student-label">Temporary password</label>
-            <div class="student-input-action">
-                <input id="studentTemporaryPassword" runat="server" ClientIDMode="Static" EnableViewState="false" type="text" readonly="readonly" autocomplete="off" spellcheck="false" />
-                <asp:Button ID="generateStudentPassword" runat="server" ClientIDMode="Static" Text="Generate password" CssClass="completion-button completion-button--secondary" CausesValidation="false" OnClick="generateStudentPassword_Click" />
-                <button type="button" id="copyStudentPassword" class="completion-button completion-button--secondary" aria-label="Copy temporary password">Copy</button>
-            </div>
-            <span id="studentPasswordStatus" class="student-field-help" role="status"></span>
-        </div>
     </div>
     <div class="student-form-actions"><button type="button" class="completion-button completion-button--secondary" data-close="">Cancel</button>
-        <asp:Button ID="saveStudentButton" runat="server" ClientIDMode="Static" Text="Confirm" CssClass="completion-button" CausesValidation="false" OnClick="saveStudentButton_Click" />
+        <p class="student-field-help">Confirm &amp; Send emails a password setup link to the university email shown above. Use that same email to sign in after setting your password.</p>
+        <asp:Button ID="saveStudentButton" runat="server" ClientIDMode="Static" Text="Confirm &amp; Send" CssClass="completion-button" CausesValidation="false" OnClick="saveStudentButton_Click" />
     </div></div>
 </dialog>
 </form>
-<script src="<%= ResolveUrl("~/Js_project/Public/dashboard-navigation.js?v=20261021-original-ui") %>"></script>
-<script src="../Js_project/Coordinator/manage-students.js?v=20261022-delete-submit"></script>
+<script src="<%= ResolveUrl("~/Js_project/Public/dashboard-navigation.js?v=20261024-link-cleanup") %>"></script>
+<script src="../Js_project/Coordinator/manage-students.js?v=20261024-link-cleanup"></script>
 </body></html>

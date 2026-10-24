@@ -93,13 +93,6 @@
     }
     async function acceptSignIn(data) {
         if (signingOut) return;
-        if (data.mustChangePassword) {
-            sessionStorage.removeItem(storageKey);
-            await loginFeedback('success');
-            const url = new URL('Auth/Login.aspx?change=required', new URL('./', endpoint));
-            location.assign(url.href);
-            return;
-        }
         save(data);
         const password = document.getElementById('Password'); if (password) password.value = '';
         status(window.UimsLoginAnimation ? 'Signed in. Opening your workspace…' : 'Firebase identity verified: ' + data.role + ' / ' + data.profileId + '.');

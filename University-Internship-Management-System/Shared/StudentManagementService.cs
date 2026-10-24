@@ -294,7 +294,7 @@ namespace University_Internship_Management_System.Shared
                         fullName = student.fullName.Trim(), email = student.email.Trim(), studentId,
                         universityId = student.universityId, collegeId = student.collegeId, majorId = student.majorId,
                         requiredTrainingHours = student.requiredTrainingHours, academicSupervisorId = supervisorId,
-                        role = "student", isActive = false, mustChangePassword = true, accountSetupStatus = "pending",
+                        role = "student", isActive = false, mustChangePassword = false, accountSetupStatus = "pending",
                         createdBy = coordinatorUid, createdAtUtc = now().ToString("o")
                     };
                     if (oldProfile == null)
@@ -345,6 +345,35 @@ namespace University_Internship_Management_System.Shared
                 throw new StudentManagementException("The student login is missing or disabled.");
             string link = await authentication.ResetLinkAsync(account.Email);
             await mailer.SendResetAsync(account.Email, Text(profile, "fullName"), link);
+        }
+
+        public async Task SetActiveAsync(string uid, bool active, string coordinatorUid)
+        {
+            await RequireCoordinatorAsync(coordinatorUid);
+            var profile = await RequireStudentAsync(uid);
+            if (uid == coordinatorUid) throw new StudentManagementException("You cannot change your own account.");
+            if (Text(profile, "accountSetupStatus") == "pending" || Text(profile, "deletionStatus") == "pending")
+                throw new StudentManagementException("Complete pending account setup before changing access.");
+            string operationPath = "studentAccountOperations/" + Key(uid);
+            var version = await database.ReadVersionAsync(operationPath);
+            var operation = version.Value ?? new JObject();
+            EnsureLeaseAvailable(operation);
+            operation["kind"] = active ? "enable" : "disable";
+            operation["leaseUntilUtc"] = now().AddMinutes(10).ToString("o");
+            if (!await database.CompareWriteAsync(operationPath, operation, version.ETag))
+                throw new StudentManagementException("Another account operation is in progress.");
+            try
+            {
+                profile = await RequireStudentAsync(uid);
+                if (Text(profile, "accountSetupStatus") == "pending" || Text(profile, "deletionStatus") == "pending")
+                    throw new StudentManagementException("Complete pending account setup before changing access.");
+                var account = await authentication.FindAsync(uid);
+                if (active && account == null) throw new StudentManagementException("The login is missing. Reconcile this existing account before reactivation.");
+                if (!active) await database.PatchAsync("users/" + Key(uid), new { isActive = false });
+                if (account != null) await authentication.UpdateAsync(uid, !active);
+                if (active) await database.PatchAsync("users/" + Key(uid), new { isActive = true });
+            }
+            finally { await database.PatchAsync(operationPath, new { leaseUntilUtc = (string)null }); }
         }
 
         public async Task DeleteAsync(string uid, string coordinatorUid)

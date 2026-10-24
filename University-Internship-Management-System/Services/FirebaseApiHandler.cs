@@ -176,6 +176,10 @@ namespace UIMS
 
         private static void IssueFormsCookie(HttpContext context, FirebaseLoginResult result)
         {
+            // Successful normal sign-in must invalidate any old first-login ticket.
+            context.Response.Cookies.Add(new HttpCookie(".UIMS.FirstLogin", "") {
+                Expires = DateTime.UtcNow.AddDays(-1), HttpOnly = true, Secure = context.Request.IsSecureConnection,
+                SameSite = SameSiteMode.Lax, Path = FormsAuthentication.FormsCookiePath });
             var previous = context.User?.Identity as FormsIdentity;
             string previousRole = previous == null || previous.Ticket.Expired ? null : FirebaseSignInService.CanonicalRole(previous.Ticket.UserData);
             if (previousRole != null && previousRole != result.Role)

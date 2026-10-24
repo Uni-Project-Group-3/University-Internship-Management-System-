@@ -12,6 +12,14 @@
     const resetButton = document.getElementById("SendResetLink");
     const resetError = document.getElementById("resetError");
     const saveChanges = document.getElementById("SaveChanges");
+    const emailResetMode = new URLSearchParams(window.location.search).get('mode') === 'resetPassword';
+    if (emailResetMode) {
+        document.getElementById('changeTitle').textContent = 'Set Your Password';
+        document.getElementById('changeDescription').textContent = 'Choose a password for the account linked to this email.';
+        const note = dialog.querySelector('.auth-dialog__note');
+        if (note) note.textContent = 'This email link can be used only once. Return to login after saving your password.';
+        saveChanges.value = 'Set Password';
+    }
     const requiresPasswordChange = form.dataset.passwordRequired === "true";
     let resetBusy = false;
     let submitting = false;
@@ -31,16 +39,13 @@
     function passwordRules() {
         const value = newPassword.value;
         return {
-            length: value.length >= 12,
-            case: /[a-z]/.test(value) && /[A-Z]/.test(value),
-            number: /[0-9]/.test(value),
-            symbol: /[^a-zA-Z0-9\s]/.test(value)
+            length: value.length >= 6 && value.length <= 4096
         };
     }
 
     function updatePasswordFeedback() {
         const rules = passwordRules();
-        const score = Object.values(rules).filter(Boolean).length;
+        const score = rules.length ? 4 : 0;
         const meter = document.getElementById("strengthMeter");
         document.querySelectorAll("[data-rule]").forEach(item => {
             item.classList.toggle("is-valid", rules[item.dataset.rule]);
@@ -48,7 +53,7 @@
         meter.querySelectorAll("span").forEach((bar, index) => bar.classList.toggle("is-filled", index < score));
         meter.classList.toggle("is-strong", score === 4);
         meter.setAttribute("aria-valuenow", String(score));
-        const strength = newPassword.value ? ["Very weak", "Weak", "Fair", "Good", "Strong"][score] : "Password strength";
+        const strength = newPassword.value ? (rules.length ? "Length accepted; Firebase checks its password policy" : "At least 6 characters required") : "Password strength";
         meter.setAttribute("aria-valuetext", strength);
         document.getElementById("strengthText").textContent = strength;
         const match = confirmation.value && confirmation.value === newPassword.value;
