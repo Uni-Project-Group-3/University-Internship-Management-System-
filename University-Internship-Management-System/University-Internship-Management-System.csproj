@@ -153,6 +153,9 @@
     <Content Include="Shared\CompanySidebar.ascx" />
     <Content Include="Shared\CoordinatorSidebar.ascx" />
     <Content Include="Shared\HomeNavbar.ascx" />
+    <Content Include="Shared\WorkspaceNavbar.ascx" />
+    <Content Include="Assets\shared\workspace-navigation.css" />
+    <Content Include="Js_project\Public\workspace-navigation.js" />
     <Content Include="Js_project\Public\navbar.js" />
     <Content Include="Assets\shared\navbar.css" />
     <Content Include="Assets\shared\sidebar.css" />

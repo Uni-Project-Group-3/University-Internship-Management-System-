@@ -1,4 +1,6 @@
 <%@ Page Async="true" Language="C#" AutoEventWireup="true" CodeBehind="MonitorPlacementsProgress.aspx.cs" Inherits="University_Internship_Management_System.Coordinator.MonitorPlacementsProgress" %>
+<%@ Register Src="~/Shared/CoordinatorSidebar.ascx" TagPrefix="shared" TagName="RoleSidebar" %>
+<%@ Register Src="~/Shared/WorkspaceNavbar.ascx" TagPrefix="shared" TagName="WorkspaceNavbar" %>
 <!DOCTYPE html>
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en">
 <head runat="server">
@@ -13,8 +15,10 @@
 <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
 <!-- DataTables JS -->
 <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+    <link runat="server" href="~/Assets/shared/role-sidebars.css?v=20261024-workspace" rel="stylesheet" />
+    <link runat="server" href="~/Assets/shared/workspace-navigation.css?v=20261024-hide-search" rel="stylesheet" />
 </head>
-<body class="dashboard-direct app-page placements-page">
+<body class="dashboard-direct app-page placements-page shared-workspace-shell">
 
     <!-- Icon sprite -->
     <svg width="0" height="0" style="position:absolute" aria-hidden="true">
@@ -42,51 +46,11 @@
         <div class="app-layout">
             
             <!-- Sidebar -->
-            <aside class="uims-fixed-sidebar" aria-label="Coordinator navigation">
-                <a href="CoordinatorDashboard.aspx" class="uims-side-brand">
-                    <span class="uims-side-logo">JU</span>
-                    <span class="uims-side-brandtext"><strong>JUST</strong><small>Internships</small></span>
-                </a>
-                <div class="uims-side-role">Coordinator</div>
-                <nav aria-label="Workspace navigation">
-                    <ul class="uims-side-links">
-                        <li><a class="uims-side-link" href="CoordinatorDashboard.aspx"><svg class="ic uims-side-icon"><use href="#i-home"/></svg><span>Dashboard</span></a></li>
-                        <li><a class="uims-side-link" href="ManageStudents.aspx"><svg class="ic uims-side-icon"><use href="#i-evaluate"/></svg><span>Manage Students</span></a></li>
-                        <li><a class="uims-side-link" href="ManageCompanies.aspx"><svg class="ic uims-side-icon"><use href="#i-building"/></svg><span>Manage Companies</span></a></li>
-                        <li><a class="uims-side-link active" href="MonitorPlacementsProgress.aspx"><svg class="ic uims-side-icon"><use href="#i-chart"/></svg><span>Placements &amp; Progress</span></a></li>
-                        <li><a class="uims-side-link" href="FinalCompletionReview.aspx"><svg class="ic uims-side-icon"><use href="#i-report"/></svg><span>Final Completion Review</span></a></li>
-                        <li><a class="uims-side-link" href="ContactMessages.aspx"><svg class="ic uims-side-icon"><use href="#i-inbox"/></svg><span>Contact Messages</span></a></li>
-                        <li><a class="uims-side-link" href="Manage_Academic_Supervisor.aspx"><svg class="ic uims-side-icon"><use href="#i-user"/></svg><span>Academic Supervisors</span></a></li>
-                        <li><a class="uims-side-link" href="Assign_Supervisors.aspx"><svg class="ic uims-side-icon"><use href="#i-users"/></svg><span>Assign Supervisors</span></a></li>
-                    </ul>
-                </nav>
-
-                <div class="uims-side-promo">
-                    <svg class="ic"><use href="#i-cap"/></svg>
-                    <div>New semester?<br />Add students and assign groups.</div>
-                    <a href="ManageStudents.aspx">Add students &rarr;</a>
-                </div>
-
-                <div class="uims-side-footer">
-                    <a class="uims-side-link uims-side-logout" href="../Auth/Logout.aspx"><svg class="ic uims-side-icon"><use href="#i-logout"/></svg><span>Logout</span></a>
-                </div>
-            </aside>
+            <shared:RoleSidebar ID="RoleNavigation" runat="server" SidebarId="workspaceSidebar" />
 
             <!-- Main Content -->
             <div class="dash-main">
-                <header class="topbar">
-                    <label class="topbar-search">
-                        <svg class="ic"><use href="#i-search"/></svg>
-                        <input type="search" id="dashboardSearch" placeholder="Search for students, companies, or supervisors..." />
-                    </label>
-                    <div class="topbar-right">
-                        <span class="icon-btn" aria-label="Notifications"><svg class="ic"><use href="#i-bell"/></svg></span>
-                        <div class="user-chip">
-                            <span class="av">CO</span>
-                            <div><b>Coordinator</b><small>Internship Coordinator</small></div>
-                        </div>
-                    </div>
-                </header>
+                <shared:WorkspaceNavbar ID="WorkspaceNavigation" runat="server" SearchInputId="dashboardSearch" SearchInputType="search" SearchPlaceholder="Search for students, companies, or supervisors..." AccountLabel="Coordinator" AccountRole="Internship Coordinator" AccountInitials="CO" AccountUrl="~/Coordinator/CoordinatorAccountProfile.aspx" SidebarId="workspaceSidebar" />
 
                 <main class="app-content placements-main">
                     <!-- Hero Banner -->
@@ -175,5 +139,6 @@
         </div>
     </form>
     
+    <script src="<%= ResolveUrl("~/Js_project/Public/workspace-navigation.js?v=20261024") %>" defer="defer"></script>
 </body>
 </html>

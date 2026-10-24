@@ -1,4 +1,6 @@
-﻿<%@ Page Language="C#" AutoEventWireup="true" CodeBehind="StudentProgressMonitor.aspx.cs" Inherits="University_Internship_Management_System.Academic.StudentProgressMonitor" %>
+<%@ Page Language="C#" AutoEventWireup="true" CodeBehind="StudentProgressMonitor.aspx.cs" Inherits="University_Internship_Management_System.Academic.StudentProgressMonitor" %>
+<%@ Register Src="~/Shared/AcademicSidebar.ascx" TagPrefix="shared" TagName="RoleSidebar" %>
+<%@ Register Src="~/Shared/WorkspaceNavbar.ascx" TagPrefix="shared" TagName="WorkspaceNavbar" %>
 
 <!DOCTYPE html>
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en">
@@ -8,8 +10,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <link rel="stylesheet" type="text/css" href="/Assets/shared/colors.css" />
     <link rel="stylesheet" type="text/css" href="/Assets/academic/progress-monitor.css" />
+    <link runat="server" href="~/Assets/shared/role-sidebars.css?v=20261024-workspace" rel="stylesheet" />
+    <link runat="server" href="~/Assets/shared/workspace-navigation.css?v=20261024-hide-search" rel="stylesheet" />
 </head>
-<body class="dashboard-direct app-page monitor-page">
+<body class="dashboard-direct app-page monitor-page shared-workspace-shell">
 
     <!-- Icon sprite -->
     <svg width="0" height="0" style="position:absolute" aria-hidden="true">
@@ -42,50 +46,13 @@
         <div class="app-layout">
 
             <!-- Sidebar -->
-            <aside class="uims-fixed-sidebar" aria-label="Academic Supervisor navigation">
-                <a class="uims-side-brand" href="AcademicDashboard.aspx">
-                    <span class="uims-side-logo">JU</span>
-                    <span class="uims-side-brandtext"><strong>JUST</strong><small>Internships</small></span>
-                </a>
-                <div class="uims-side-role">Academic Supervisor</div>
-                <nav class="uims-side-navigation" aria-label="Academic Supervisor pages">
-                    <ul class="uims-side-links">
-                        <li><a class="uims-side-link" href="AcademicDashboard.aspx"><svg class="ic uims-side-icon"><use href="#i-home"/></svg><span>Dashboard</span></a></li>
-                        <li><a class="uims-side-link active" href="StudentProgressMonitor.aspx"><svg class="ic uims-side-icon"><use href="#i-chart"/></svg><span>Student Progress Monitor</span></a></li>
-                        <li><a class="uims-side-link" href="WeeklyReports.aspx"><svg class="ic uims-side-icon"><use href="#i-report"/></svg><span>Weekly Reports</span></a></li>
-                        <li><a class="uims-side-link" href="FinalAcademicEvaluation.aspx"><svg class="ic uims-side-icon"><use href="#i-evaluate"/></svg><span>Final Academic Evaluation</span></a></li>
-                    </ul>
-                </nav>
-
-                <div class="uims-side-promo">
-                    <svg class="ic"><use href="#i-cap"/></svg>
-                    <div>Guide your students<br />with real insight.</div>
-                    <a href="WeeklyReports.aspx">Review reports</a>
-                </div>
-
-                <div class="uims-side-footer">
-                    <a class="uims-side-link" href="AcademicSupervisorAccount.aspx"><svg class="ic uims-side-icon"><use href="#i-user"/></svg><span>My Account</span></a>
-                    <a class="uims-side-link uims-side-logout" href="../Auth/Logout.aspx"><svg class="ic uims-side-icon"><use href="#i-logout"/></svg><span>Logout</span></a>
-                </div>
-            </aside>
+            <shared:RoleSidebar ID="RoleNavigation" runat="server" SidebarId="workspaceSidebar" />
 
             <!-- Main Content -->
             <div class="dash-main">
 
                 <!-- Top bar -->
-                <div class="topbar">
-                    <label class="topbar-search">
-                        <svg class="ic"><use href="#i-search"/></svg>
-                        <input type="text" id="searchInput" placeholder="Search students or majors..." autocomplete="off" />
-                    </label>
-                    <div class="topbar-right">
-                        <span class="icon-btn" aria-label="Notifications"><svg class="ic"><use href="#i-bell"/></svg></span>
-                        <div class="user-chip">
-                            <span class="av">AS</span>
-                            <div><b>Supervisor</b><small>Academic</small></div>
-                        </div>
-                    </div>
-                </div>
+                <shared:WorkspaceNavbar ID="WorkspaceNavigation" runat="server" SearchInputId="searchInput" SearchInputType="text" SearchPlaceholder="Search students or majors..." AccountLabel="Supervisor" AccountRole="Academic" AccountInitials="AS" AccountUrl="~/Academic/AcademicSupervisorAccount.aspx" SidebarId="workspaceSidebar" />
 
                 <!-- Hero -->
                 <div class="hero-banner">
@@ -319,5 +286,6 @@
             setupPagination();
         };
     </script>
+    <script src="<%= ResolveUrl("~/Js_project/Public/workspace-navigation.js?v=20261024") %>" defer="defer"></script>
 </body>
 </html>
