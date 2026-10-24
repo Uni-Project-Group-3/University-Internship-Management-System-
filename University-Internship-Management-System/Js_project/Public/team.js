@@ -10,8 +10,8 @@
       "name": "Yasmeen Talafha",
       "role": "Computer Science",
       "bio": "",
-      "photo": "../Assets/public/images/team/yasmeen-talafha.png",
-      "alt": "Portrait of Yasmeen Talafha",
+      "photo": "",
+      "alt": "",
       "links": [
         {
           "label": "Portfolio",

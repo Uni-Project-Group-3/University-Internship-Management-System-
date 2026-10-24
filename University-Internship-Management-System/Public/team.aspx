@@ -63,7 +63,7 @@
 </div><div class="fl"><span>© 2026 Jordan University of Science and Technology</span><span>Internship Management System</span></div></div></footer>
 <div class="toast" id="toast" role="status"></div>
 
-<script src="../Js_project/Public/team.js?v=20261024-portraits"></script>
+<script src="../Js_project/Public/team.js?v=20261024-remove-yasmeen-photo"></script>
 <noscript><p style="position:fixed;bottom:0;left:0;right:0;margin:0;padding:14px 18px;background:#f4efe3;color:#1d2a3a">The team list needs JavaScript. <a href="home.aspx">Back to the homepage</a></p></noscript>
 </body>
 </html>
