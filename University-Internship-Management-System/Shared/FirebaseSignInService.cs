@@ -85,7 +85,7 @@ namespace University_Internship_Management_System.Shared
                         throw new FirebaseLoginException("Check the Firebase Web API key and enable Email/Password sign-in for this project.", 503);
                     var transient = ProviderTransientFailure(response, code);
                     if (transient != null) throw transient;
-                    throw new FirebaseLoginException("Sign-in failed. Check the email and password, or contact your coordinator if the account is disabled.");
+                    throw new FirebaseLoginException("Sign-in failed. Check the email and password. If your account was just created or re-created, your old password no longer works: use the set-password link in your newest email, or choose Forgot Password?. Contact your coordinator if the account is disabled.");
                 }
                 string idToken = (string)body["idToken"];
                 string localId = (string)body["localId"];
