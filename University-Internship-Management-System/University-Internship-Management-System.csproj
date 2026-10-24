@@ -1028,4 +1028,13 @@
 <ItemGroup><Content Include="Assets\public\public-campus.css" /></ItemGroup>
 
 
-<ItemGroup><Content Include="Js_project\Public\public-workspace.js" /><Content Include="ApplicationCv.ashx" /></ItemGroup><ItemGroup><Compile Include="ApplicationCv.ashx.cs" /></ItemGroup></Project>
+<ItemGroup><Content Include="Js_project\Public\public-workspace.js" /><Content Include="ApplicationCv.ashx" /></ItemGroup><ItemGroup><Compile Include="ApplicationCv.ashx.cs" /></ItemGroup><ItemGroup>
+    <Content Include="img\team\yasmeen-talafha.jpg" />
+    <Content Include="img\team\deyaa-alwardat.jpg" />
+    <Content Include="img\team\roaa-basil-ajlouni.jpg" />
+    <Content Include="img\team\anas-ghawanmeh.jpg" />
+    <Content Include="img\team\mohammad-mustafa.jpg" />
+    <Content Include="img\team\tariq-bataineh.jpg" />
+    <Content Include="img\team\eiad-mansour.jpg" />
+</ItemGroup>
+</Project>
