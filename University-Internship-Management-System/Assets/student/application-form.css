@@ -409,6 +409,16 @@ a:focus-visible, button:focus-visible {
         font-weight: 500;
     }
 
+.application-message { width:min(460px,calc(100vw - 32px)); border:1px solid #DFE3EB; border-radius:22px; padding:28px; color:#242844; box-shadow:0 24px 80px #14234140; }
+.application-message::backdrop { background:#18213888; backdrop-filter:blur(3px); }
+.application-message h2 { font-size:22px; margin:0 0 14px; }
+.application-message p { line-height:1.65; overflow-wrap:anywhere; }
+.application-message button,.cv-choose-button { border:0; border-radius:12px; padding:13px 24px; background:#1F3D78; color:white; font:600 14px var(--font-body, sans-serif); cursor:pointer; }
+.application-message button:hover,.cv-choose-button:hover { background:#294D91; }
+.input-icon.cv-file-picker { display:flex; align-items:center; flex-wrap:wrap; gap:12px; }
+.cv-file-picker .cv-native-input { position:absolute; width:1px; height:1px; padding:0; overflow:hidden; opacity:0; }
+.cv-file-picker .cv-selected-name { color:#66718A; font-size:13px; overflow-wrap:anywhere; max-width:100%; }
+.cv-file-picker:focus-within .cv-choose-button { outline:3px solid #DCE9F7; outline-offset:3px; }
 .input-icon {
     position: relative;
 }

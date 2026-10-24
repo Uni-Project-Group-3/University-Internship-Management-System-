@@ -10,11 +10,11 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet" />
     <link runat="server" href="~/Assets/shared/colors.css" rel="stylesheet" />
     
-    <link runat="server" href="~/Assets/company/manage-opportunities.css?v=20261023-modern" rel="stylesheet" />
+    <link runat="server" href="~/Assets/company/manage-opportunities.css?v=20261024-modal-spacing" rel="stylesheet" />
 <link href="../Assets/shared/workspace-identity.css?v=20261024-refine" rel="stylesheet" />
 <script src="../Js_project/workspace-navigation-unified.js?v=20261024-refine" defer></script>
 </head>
-<body data-demo-role="company">
+<body data-demo-role="company" class="opportunities-workspace">
     <form id="form1" runat="server">
         <div class="app">
 

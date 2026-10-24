@@ -49,9 +49,20 @@
         }
         if (view.connectionError) notice(view.connectionError);
         function error(error, scope) {
-            let element = scope?.querySelector('[data-uims-error]');
-            if (scope && !element) { element = document.createElement('p'); element.dataset.uimsError = ''; element.className = 'uims-error'; element.setAttribute('role', 'alert'); (scope.querySelector('.modal-body') || scope).append(element); }
-            if (element) element.textContent = error.message; else notice(error.message);
+            let dialog = by('applicationErrorPopup');
+            if (!dialog) {
+                dialog = document.createElement('dialog'); dialog.id = 'applicationErrorPopup';
+                dialog.className = 'application-error-popup';
+                dialog.setAttribute('aria-labelledby', 'applicationErrorTitle');
+                dialog.innerHTML = '<h2 id="applicationErrorTitle">Unable to confirm this action</h2><p></p><button type="button">Back to application</button>';
+                document.body.append(dialog);
+                dialog.querySelector('button').onclick = () => dialog.close();
+            }
+            const opener = document.activeElement;
+            dialog.querySelector('p').textContent = error.message;
+            dialog.onclose = () => opener?.focus();
+            if (!dialog.open) dialog.showModal();
+            dialog.querySelector('button').focus();
         }
         const dirty = new WeakSet(), openers = new WeakMap();
         let beforeClose = null;

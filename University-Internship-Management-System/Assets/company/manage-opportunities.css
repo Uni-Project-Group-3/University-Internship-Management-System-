@@ -1,3 +1,17 @@
+/* Keep opportunity dialogs above fixed navigation, with viewport-safe spacing. */
+body.opportunities-workspace .modal { z-index: 2300; }
+body.opportunities-workspace .modal-backdrop { z-index: 2290; }
+body.opportunities-workspace #oppModal .modal-dialog {
+    width: calc(100% - 32px);
+    max-width: 1100px;
+    margin-left: auto;
+    margin-right: auto;
+}
+@media (max-width: 575.98px) {
+    body.opportunities-workspace #oppModal .modal-dialog {
+        width: calc(100% - 16px);
+    }
+}
 /* Page-owned styles: Assets/company/company-dashboard.css */
 /* =========================================================
    UIMS – Shared Dashboard Layout
