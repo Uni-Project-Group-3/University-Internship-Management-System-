@@ -796,6 +796,7 @@
     <Content Include="Assets\company\WeeklyReports.css" />
     <Content Include="Services\WEEKLY-REPORTS-SCHEMA.md" />
     <Content Include="Js_project\Company\WeeklyReports.js" />
+    <Content Include="Assets\company\company-hero.css" />
     <Content Include="Js_project\Academic\WeeklyReports.js" />
     <Content Include="Js_project\Student\WeeklyReports.js" />
     <Content Include="Company\ManageExams.aspx" />

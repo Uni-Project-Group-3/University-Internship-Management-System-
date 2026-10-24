@@ -81,3 +81,63 @@
 .company-weekly-page .wr-routing-details dt { font-size:12px;color:#526781;margin-bottom:5px; }
 .company-weekly-page .wr-routing-details dd { margin:0;font-size:14px;color:#213f7f;overflow-wrap:anywhere; }
 @media(max-width:760px){.company-weekly-page .wr-routing-details{grid-template-columns:repeat(2,minmax(0,1fr));}}
+
+/* Company report workspace only: compact table and focused editor. */
+.company-weekly-page .wr-company-dialog #weeklySubmit{border:0!important;background:transparent!important;padding:0!important;box-shadow:none!important}
+.company-weekly-page dialog.wr-company-dialog{background:#fff!important}
+.company-weekly-page .wr-content>.wr-heading{min-height:150px!important;padding:26px 7px!important}
+.company-weekly-page .wr-content>.wr-heading h1{font-size:36px!important;letter-spacing:-1px!important}
+.company-weekly-page .wr-heading .wr-kicker{display:none}
+.company-weekly-page .wr-company-dialog #weeklySubmit label{margin:0 0 14px}
+.company-weekly-page .wr-company-dialog #weeklySubmit .wr-grid{row-gap:4px}
+.company-weekly-page .wr-heading{min-height:150px;padding:28px 32px}
+.company-weekly-page .wr-history-tools{display:grid;grid-template-columns:minmax(180px,1fr) 220px;gap:18px;margin:4px 0 22px}
+.company-weekly-page .wr-history-tools label{margin:0}
+.company-weekly-page .wr-table-scroll{overflow:auto;border:1px solid var(--border);border-radius:14px}
+.company-weekly-page .wr-company-table{width:100%;min-width:700px;border-collapse:collapse;text-align:left}
+.company-weekly-page .wr-company-table th{background:var(--surface-alt);padding:15px 18px;font-size:12px;color:var(--text-secondary);font-weight:600}
+.company-weekly-page .wr-company-table td{padding:18px;border-top:1px solid var(--border-light);font-size:13px;vertical-align:middle}
+.company-weekly-page .wr-company-table td:first-child strong,.company-weekly-page .wr-company-table td:first-child small{display:block}
+.company-weekly-page .wr-company-table td small{color:var(--text-secondary);margin-top:5px;font-size:12px}
+.company-weekly-page .wr-company-table tbody tr:hover{background:var(--primary-soft)}
+.company-weekly-page .wr-company-table td:last-child{white-space:nowrap}
+.company-weekly-page .wr-company-table td:last-child>*{display:inline-flex;margin:3px;padding:9px 12px;text-decoration:none}
+.company-weekly-page .wr-empty{margin:0;padding:48px 20px;font-size:14px}
+.company-weekly-page dialog.wr-company-dialog{width:min(850px,calc(100vw - 32px));max-height:calc(100dvh - 40px);padding:0;border:1px solid var(--border);border-radius:22px;color:var(--text);background:var(--surface);box-shadow:0 26px 90px #14234040;overflow:hidden;margin:auto;font-family:var(--font-body),sans-serif}
+.company-weekly-page dialog.wr-company-dialog[open]{display:flex;flex-direction:column}
+.company-weekly-page dialog.wr-company-dialog::backdrop{background:#14234099;backdrop-filter:blur(3px)}
+.company-weekly-page .wr-company-dialog>header{display:flex;align-items:center;justify-content:space-between;padding:22px 26px;border-bottom:1px solid var(--border);gap:12px;flex-shrink:0}
+.company-weekly-page .wr-company-dialog>header h2{margin:0;font-size:21px;font-weight:750}
+.company-weekly-page .wr-dialog-close{border:0;background:var(--surface-alt);color:var(--text-secondary);width:36px;height:36px;border-radius:10px;font-size:24px;cursor:pointer}
+.company-weekly-page .wr-dialog-content{padding:24px 26px;overflow:auto;min-height:0;overscroll-behavior:contain}
+.company-weekly-page .wr-company-dialog>footer{display:flex;justify-content:flex-end;gap:10px;padding:16px 26px;border-top:1px solid var(--border);background:var(--surface);flex-shrink:0}
+.company-weekly-page .wr-compose-card{border:0;margin:0;padding:0;background:transparent;box-shadow:none}
+.company-weekly-page .wr-compose-card .wr-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
+.company-weekly-page .wr-compose-card .wr-trainee-select{grid-column:1/-1}
+.company-weekly-page .wr-compose-card label{margin:0 0 16px;font-size:13px}
+.company-weekly-page .wr-compose-card input,.company-weekly-page .wr-compose-card select,.company-weekly-page .wr-compose-card textarea{font-size:14px;background:white}
+.company-weekly-page .wr-compose-card .wr-routing-details{grid-template-columns:1fr 1fr;background:var(--surface-alt);padding:14px 16px;border-radius:12px;margin:0 0 20px}
+.company-weekly-page .wr-routing-details div:has(#routingStudentId),.company-weekly-page .wr-routing-details div:has(#routingAcademicId){display:none}
+.company-weekly-page .wr-compose-card .wr-routing-details dt{font-size:11px}
+.company-weekly-page .wr-compose-card .wr-routing-details dd{font-size:13px}
+.company-weekly-page .wr-task-picker,.company-weekly-page .wr-company-revision{border:1px solid var(--border);padding:14px 16px;border-radius:12px;margin:14px 0}
+.company-weekly-page .wr-task-picker summary,.company-weekly-page .wr-company-revision summary{font-size:13px;font-weight:700;cursor:pointer}
+.company-weekly-page .wr-task-picker label{display:flex;align-items:center;gap:8px;margin:12px 0 0;font-weight:500}
+.company-weekly-page .wr-task-picker input[type=checkbox]{width:16px;min-height:16px;margin:0;flex-shrink:0}
+.company-weekly-page .wr-task-picker label small{margin:0 0 0 auto}
+.company-weekly-page .wr-company-dialog .field-error,.company-weekly-page .wr-inline-error{color:var(--danger);font-size:12px;display:block;margin-top:6px}
+.company-weekly-page .wr-company-dialog .is-invalid{border-color:var(--danger);box-shadow:0 0 0 2px #b4232b12}
+.company-weekly-page .wr-report-overview{padding-bottom:16px;border-bottom:1px solid var(--border-light);margin-bottom:18px}
+.company-weekly-page .wr-report-overview h3{font-size:18px;margin:0 0 12px}
+.company-weekly-page .wr-report-overview p{margin:10px 0 0}
+.company-weekly-page .wr-company-revision p{font-size:14px;line-height:1.6;white-space:pre-wrap;overflow-wrap:anywhere;margin:14px 0}
+.company-weekly-page .wr-company-revision a{display:inline-flex;margin-top:12px;text-decoration:none;font-size:12px}
+.company-weekly-page .wr-company-feedback{margin:24px 0}
+.company-weekly-page .wr-company-feedback h3{font-size:15px}
+.company-weekly-page .wr-company-feedback article{padding:16px;background:var(--primary-soft);border-radius:12px;margin-top:10px}
+.company-weekly-page .wr-company-feedback p{font-size:14px;white-space:pre-wrap;overflow-wrap:anywhere;margin:8px 0}
+.company-weekly-page .wr-company-feedback small{color:var(--text-secondary)}
+.company-weekly-page .wr-conversation>p.wr-small{display:none}
+.company-weekly-page .wr-conversation h3{font-size:15px}
+.company-weekly-page .wr-company-dialog :is(button,a,input,select,textarea,summary):focus-visible{outline:2px solid var(--primary);outline-offset:3px}
+@media(max-width:600px){.company-weekly-page .wr-history-tools{grid-template-columns:1fr;gap:12px}.company-weekly-page .wr-compose-card .wr-grid{grid-template-columns:1fr}.company-weekly-page .wr-dialog-content{padding:18px}.company-weekly-page .wr-company-dialog>header{padding:18px}.company-weekly-page .wr-company-dialog>footer{padding:14px 18px}.company-weekly-page .wr-company-dialog>footer button{flex:1}.company-weekly-page .wr-heading{padding:24px}.company-weekly-page .wr-compose-card .wr-routing-details{grid-template-columns:1fr;gap:14px}}

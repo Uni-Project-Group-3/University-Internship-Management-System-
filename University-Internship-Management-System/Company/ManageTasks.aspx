@@ -20,6 +20,7 @@
 
 <link href="../Assets/shared/workspace-identity.css?v=20261024-refine" rel="stylesheet" />
 <script src="../Js_project/workspace-navigation-unified.js?v=20261024-refine" defer></script>
+<link href="../Assets/company/company-hero.css?v=20261024-blue" rel="stylesheet" />
 </head>
     <body class="uims-tasks-theme" data-demo-role="company">
         <form id="form1" runat="server">
@@ -51,7 +52,7 @@
                         <p class="preview-note">Loading live task records from Firebase…</p>
                         <div id="pageNotice" class="page-notice" role="status" aria-live="polite" hidden>
                         </div>
-                        <section class="tasks-premium-hero"><div><span class="tasks-role-badge">JUST / COMPANY SUPERVISOR WORKSPACE</span><h1>Manage Tasks & Exams</h1><p>Create tasks, assign students, monitor progress and release results.</p></div><div class="tasks-hero-metrics"><span><strong id="heroTaskCount">—</strong> active tasks</span><span><strong id="heroExamCount">—</strong> exam tasks</span></div></section>
+                        <section class="tasks-premium-hero company-reference-hero"><div><span class="tasks-role-badge">JUST / COMPANY SUPERVISOR WORKSPACE</span><h1>Manage Tasks & Exams</h1><p>Create tasks, assign students, monitor progress and release results.</p></div><div class="tasks-hero-metrics"><span><strong id="heroTaskCount">—</strong> active tasks</span><span><strong id="heroExamCount">—</strong> exam tasks</span></div></section>
                             <button type="button" class="btn custom-btn-primary" data-bs-toggle="modal" data-bs-target="#createTaskModal">
                                 <i class="bi bi-plus-lg me-2" aria-hidden="true">
                                 </i>Create New Task

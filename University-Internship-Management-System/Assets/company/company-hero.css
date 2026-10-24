@@ -1,0 +1,44 @@
+/* Only the three company headers marked with company-reference-hero. */
+body:not(#coordinator-style-scope) .company-reference-hero.company-reference-hero.company-reference-hero.company-reference-hero{
+  position:relative;isolation:isolate;display:flex;align-items:center;justify-content:space-between;gap:30px;
+  min-height:220px!important;padding:36px 42px!important;margin:12px 0 26px;
+  background:linear-gradient(115deg,#1E284C 0%,#1F294D 57%,#6689BB 100%)!important;
+  background-image:linear-gradient(115deg,#1E284C 0%,#1F294D 57%,#6689BB 100%)!important;
+  color:#fff!important;border:0!important;border-radius:28px!important;box-shadow:0 16px 36px #1e284c15!important;overflow:hidden;
+}
+body:not(#coordinator-style-scope) .company-reference-hero.company-reference-hero.company-reference-hero.company-reference-hero::before{
+  content:''!important;display:block!important;position:absolute;z-index:-1;pointer-events:none;top:-280px;right:-110px;
+  width:440px;height:440px;max-width:none!important;background:none!important;background-image:none!important;
+  border:1px solid #ffffff1c!important;border-radius:50%!important;opacity:1!important;filter:none!important;
+  box-shadow:0 0 0 65px #ffffff05,0 0 0 130px #ffffff04!important;transform:none!important;
+}
+body:not(#coordinator-style-scope) .company-reference-hero.company-reference-hero.company-reference-hero.company-reference-hero::after{content:none!important}
+body:not(#coordinator-style-scope) .company-reference-hero.company-reference-hero.company-reference-hero.company-reference-hero h1{
+  font-family:var(--font-heading,'Manrope'),sans-serif!important;color:#fff!important;
+  font-size:clamp(28px,3vw,42px)!important;line-height:1.15!important;letter-spacing:-1px!important;
+  font-weight:800!important;margin:16px 0 10px!important;max-width:900px;
+}
+body:not(#coordinator-style-scope) .company-reference-hero.company-reference-hero.company-reference-hero.company-reference-hero p{
+  color:#e6ebf5!important;font-size:15px!important;line-height:1.65;max-width:760px;margin:0;
+}
+body:not(#coordinator-style-scope) .company-reference-hero.company-reference-hero.company-reference-hero.company-reference-hero :is(.wr-kicker,.tasks-role-badge,.eyebrow){
+  display:inline-flex!important;align-items:center;gap:8px;width:fit-content;padding:7px 13px;
+  background:#ffffff18!important;color:#fff!important;border:1px solid #ffffff30!important;border-radius:999px;
+  font-size:11px!important;line-height:1.3!important;font-weight:700;letter-spacing:.5px;margin:0;
+}
+body:not(#coordinator-style-scope) .company-reference-hero.company-reference-hero.company-reference-hero.company-reference-hero .wr-kicker svg{width:14px;height:14px}
+body:not(#coordinator-style-scope) .company-reference-hero.company-reference-hero.company-reference-hero.company-reference-hero .wr-hero-action{
+  display:inline-flex;align-items:center;justify-content:center;background:#fff!important;color:#1F3D78!important;
+  border:0;border-radius:999px;padding:17px 24px;min-height:54px;box-shadow:0 8px 24px #14214020;flex-shrink:0;
+}
+body:not(#coordinator-style-scope) .company-reference-hero.company-reference-hero.company-reference-hero.company-reference-hero .tasks-hero-metrics{
+  display:flex;gap:0;align-items:center;padding:20px 12px!important;border:1px solid #ffffff26!important;border-radius:20px;background:#ffffff12!important;flex-shrink:0;
+}
+body:not(#coordinator-style-scope) .company-reference-hero.company-reference-hero.company-reference-hero.company-reference-hero .tasks-hero-metrics>span{
+  color:#e6ebf5!important;border:0;padding:2px 22px;font-size:13px;min-width:110px;
+}
+body:not(#coordinator-style-scope) .company-reference-hero.company-reference-hero.company-reference-hero.company-reference-hero .tasks-hero-metrics>span+span{border-left:1px solid #ffffff30}
+body:not(#coordinator-style-scope) .company-reference-hero.company-reference-hero.company-reference-hero.company-reference-hero .tasks-hero-metrics strong{display:block;color:#fff!important;font-size:34px;line-height:1.3}
+body:not(#coordinator-style-scope) .company-reference-hero.company-reference-hero.company-reference-hero.company-reference-hero .date-chip{background:#ffffff18!important;color:#fff!important;border:1px solid #ffffff30;padding:10px 16px;border-radius:999px;white-space:nowrap}
+@media(max-width:1000px){body:not(#coordinator-style-scope) .company-reference-hero.company-reference-hero.company-reference-hero.company-reference-hero{flex-wrap:wrap;gap:22px;padding:28px!important}}
+@media(max-width:600px){body:not(#coordinator-style-scope) .company-reference-hero.company-reference-hero.company-reference-hero.company-reference-hero{padding:24px!important;border-radius:22px!important;min-height:0!important;align-items:flex-start;flex-direction:column}body:not(#coordinator-style-scope) .company-reference-hero.company-reference-hero.company-reference-hero.company-reference-hero h1{font-size:28px!important}body:not(#coordinator-style-scope) .company-reference-hero.company-reference-hero.company-reference-hero.company-reference-hero p{font-size:13px!important}body:not(#coordinator-style-scope) .company-reference-hero.company-reference-hero.company-reference-hero.company-reference-hero .tasks-hero-metrics{width:100%;justify-content:center}}
