@@ -147,6 +147,7 @@
     <Content Include="Js_project\Student\explore-opportunities.js" />
     <Content Include="Assets\shared\colors.css" />
     <Content Include="Assets\shared\evaluation-workspace.css" />
+    <Content Include="Assets\shared\evaluation-colors.css" />
     <Content Include="Shared\CompanySidebar.ascx" />
     <Content Include="Shared\AcademicSidebar.ascx" />
     <Content Include="Shared\CoordinatorSidebar.ascx" />

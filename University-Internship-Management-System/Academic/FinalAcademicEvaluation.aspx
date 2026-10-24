@@ -3,14 +3,25 @@
 <!DOCTYPE html>
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en">
 <head runat="server">
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous" />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&amp;family=Inter:wght@400;500;600;700&amp;display=swap" media="print" data-evaluation-external="true" />
+    <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&amp;family=Inter:wght@400;500;600;700&amp;display=swap" /></noscript>
     <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Final Academic Evaluation | JUST UIMS</title>
-    <link runat="server" href="~/Content/bootstrap.min.css" rel="stylesheet" /><link runat="server" href="~/Assets/shared/colors.css" rel="stylesheet" />
+    <link runat="server" href="~/Content/bootstrap.min.css" rel="stylesheet" /><link runat="server" href="~/Assets/shared/evaluation-colors.css?v=20261024-fast-paint" rel="stylesheet" />
 
     <link runat="server" href="~/Assets/academic/final-academic-evaluation.css?v=20261024-academic-footer" rel="stylesheet" />
     <link runat="server" href="~/Assets/shared/evaluation-workspace.css?v=20261023" rel="stylesheet" />
     
     <link href="../Assets/shared/workflow-ui.css?v=20261023" rel="stylesheet" />
+    <script>
+        document.querySelectorAll('link[data-evaluation-external]').forEach(function (link) {
+            function activate() { link.media = 'all'; }
+            link.addEventListener('load', activate);
+            if (link.sheet) activate();
+        });
+    </script>
 </head>
 <body class="dashboard-direct app-page evaluation-page" data-demo-role="academic">
     <form id="form1" runat="server" novalidate="novalidate">

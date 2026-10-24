@@ -17,6 +17,7 @@ namespace University_Internship_Management_System.Models.FinalEvaluation
         public string PolicyVersion { get; set; }
         public string DocumentType { get; set; }
         public string StorageObjectPath { get; set; }
+        public string StorageProvider { get; set; }
         public string Sha256 { get; set; }
         [JsonProperty(Required = Required.Always)]
         public DocumentStatus Status { get; set; }
