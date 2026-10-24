@@ -477,25 +477,51 @@ namespace UIMS.Tasks
             section.PageSetup.TopMargin = section.PageSetup.BottomMargin = MigraDoc.DocumentObjectModel.Unit.FromCentimeter(1.8);
             string logoPath = System.Web.Hosting.HostingEnvironment.MapPath("~/Assets/shared/images/just-logo.png");
             if (string.IsNullOrEmpty(logoPath)) logoPath = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Assets/shared/images/just-logo.png");
-            if (System.IO.File.Exists(logoPath)) { var logo = section.AddImage("base64:" + Convert.ToBase64String(System.IO.File.ReadAllBytes(logoPath))); logo.Width = MigraDoc.DocumentObjectModel.Unit.FromCentimeter(1.7); logo.LockAspectRatio = true; }
-            var university = section.AddParagraph("JORDAN UNIVERSITY OF SCIENCE AND TECHNOLOGY"); university.Format.Font.Size = 9; university.Format.Font.Color = MigraDoc.DocumentObjectModel.Color.Parse("#526781");
-            var title = section.AddParagraph("Internship Weekly Report"); title.Format.Font.Size = 24; title.Format.Font.Bold = true; title.Format.Font.Color = MigraDoc.DocumentObjectModel.Colors.Black;
-            section.AddParagraph("Week " + week + "  |  " + start + " to " + end);
+            var navy = MigraDoc.DocumentObjectModel.Color.Parse("#1F3D78");
+            var muted = MigraDoc.DocumentObjectModel.Color.Parse("#5E6B7A");
+            var masthead = section.AddTable(); masthead.Borders.Width = 0; masthead.AddColumn(MigraDoc.DocumentObjectModel.Unit.FromCentimeter(2.0)); masthead.AddColumn(MigraDoc.DocumentObjectModel.Unit.FromCentimeter(15.5));
+            var mastheadRow = masthead.AddRow();
+            if (System.IO.File.Exists(logoPath)) { var logo = mastheadRow.Cells[0].AddImage("base64:" + Convert.ToBase64String(System.IO.File.ReadAllBytes(logoPath))); logo.Width = MigraDoc.DocumentObjectModel.Unit.FromCentimeter(1.45); logo.LockAspectRatio = true; }
+            var university = mastheadRow.Cells[1].AddParagraph("JORDAN UNIVERSITY OF SCIENCE AND TECHNOLOGY"); university.Format.Font.Size = 8; university.Format.Font.Color = muted;
+            var title = mastheadRow.Cells[1].AddParagraph("Internship Weekly Report"); title.Format.Font.Size = 23; title.Format.Font.Bold = true; title.Format.Font.Color = navy;
+            var period = mastheadRow.Cells[1].AddParagraph("Student progress  |  Week " + week.ToString("00") + "  |  " + start + " to " + end); period.Format.Font.Size = 9; period.Format.Font.Color = muted;
             var amman = TimeZoneInfo.ConvertTime(DateTimeOffset.UtcNow, TimeZoneInfo.FindSystemTimeZoneById("Jordan Standard Time"));
-            var timestamp = section.AddParagraph("Generated " + amman.ToString("yyyy-MM-dd HH:mm:ss zzz", CultureInfo.InvariantCulture) + "  Asia/Amman"); timestamp.Format.Font.Size = 9; timestamp.Format.SpaceAfter = 14;
-            void Heading(string text) { var p = section.AddParagraph(text); p.Format.Font.Size = 13; p.Format.Font.Bold = true; p.Format.Font.Color = MigraDoc.DocumentObjectModel.Color.Parse("#213F7F"); p.Format.SpaceBefore = 8; p.Format.KeepWithNext = true; }
+            var timestamp = section.AddParagraph("Generated " + amman.ToString("yyyy-MM-dd HH:mm:ss zzz", CultureInfo.InvariantCulture) + "  Asia/Amman"); timestamp.Format.Font.Size = 8; timestamp.Format.Font.Color = muted; timestamp.Format.SpaceBefore = 5; timestamp.Format.SpaceAfter = 12;
+            void CellText(MigraDoc.DocumentObjectModel.Tables.Cell cell, string text, double width, string background, string foreground, double size, bool bold)
+            {
+                if (text.Any(c => c >= '\u0590' && c <= '\u109f' || c >= '\ufb1d' && c <= '\ufeff'))
+                { var image = cell.AddImage("base64:" + Convert.ToBase64String(ShapeReportText(text, width, background, foreground))); image.Width = MigraDoc.DocumentObjectModel.Unit.FromCentimeter(width - .5); image.LockAspectRatio = true; }
+                else { var p = cell.AddParagraph(text); p.Format.Font.Size = size; p.Format.Font.Bold = bold; p.Format.Font.Color = MigraDoc.DocumentObjectModel.Color.Parse("#" + foreground); }
+            }
+            var banner = section.AddTable(); banner.Borders.Width = 0; banner.LeftPadding = banner.RightPadding = MigraDoc.DocumentObjectModel.Unit.FromPoint(10); banner.TopPadding = banner.BottomPadding = MigraDoc.DocumentObjectModel.Unit.FromPoint(8);
+            banner.AddColumn(MigraDoc.DocumentObjectModel.Unit.FromCentimeter(12)); banner.AddColumn(MigraDoc.DocumentObjectModel.Unit.FromCentimeter(5.5));
+            var bannerRow = banner.AddRow(); bannerRow.Shading.Color = navy;
+            CellText(bannerRow.Cells[0], "STUDENT", 12, "1F3D78", "D8E3F6", 8, false);
+            CellText(bannerRow.Cells[0], string.IsNullOrWhiteSpace(studentName) ? "Student name unavailable" : studentName, 12, "1F3D78", "FFFFFF", 14, true);
+            CellText(bannerRow.Cells[0], "Student ID  " + studentId, 12, "1F3D78", "D8E3F6", 9, false);
+            CellText(bannerRow.Cells[1], "ACADEMIC REVIEW", 5.5, "1F3D78", "D8E3F6", 8, false);
+            CellText(bannerRow.Cells[1], "Submitted", 5.5, "1F3D78", "FFFFFF", 14, true);
+            var gap = section.AddParagraph(); gap.Format.SpaceAfter = 0; gap.Format.Font.Size = 4;
+            var summary = section.AddTable(); summary.Borders.Width = 0; summary.LeftPadding = summary.RightPadding = MigraDoc.DocumentObjectModel.Unit.FromPoint(10); summary.TopPadding = summary.BottomPadding = MigraDoc.DocumentObjectModel.Unit.FromPoint(6);
+            summary.AddColumn(MigraDoc.DocumentObjectModel.Unit.FromCentimeter(11)); summary.AddColumn(MigraDoc.DocumentObjectModel.Unit.FromCentimeter(6.5));
+            var summaryRow = summary.AddRow(); summaryRow.Shading.Color = MigraDoc.DocumentObjectModel.Color.Parse("#F4F6F9");
+            CellText(summaryRow.Cells[0], "TRAINING COMPANY", 11, "F4F6F9", "5E6B7A", 8, false);
+            CellText(summaryRow.Cells[0], Text(placement, "companyName", "companyId"), 11, "F4F6F9", "243041", 11, true);
+            CellText(summaryRow.Cells[1], "APPROVED HOURS TO DATE", 6.5, "F4F6F9", "5E6B7A", 8, false);
+            CellText(summaryRow.Cells[1], Text(progress, "approvedTrainingHours") + " h", 6.5, "F4F6F9", "167044", 16, true);
+            void Heading(string text) { var p = section.AddParagraph(text); p.Format.Font.Size = 12; p.Format.Font.Bold = true; p.Format.Font.Color = navy; p.Format.SpaceBefore = 13; p.Format.SpaceAfter = 7; p.Format.KeepWithNext = true; p.Format.Borders.Top.Width = .5; p.Format.Borders.Top.Color = MigraDoc.DocumentObjectModel.Color.Parse("#D8DEE8"); p.Format.Borders.DistanceFromTop = 8; }
             void Table(string[] headers, double[] widths, IEnumerable<string[]> values)
             {
                 var table = section.AddTable(); table.Borders.Width = 0;
                 table.TopPadding = table.BottomPadding = MigraDoc.DocumentObjectModel.Unit.FromPoint(4);
                 table.LeftPadding = table.RightPadding = MigraDoc.DocumentObjectModel.Unit.FromPoint(6);
                 foreach (double width in widths) table.AddColumn(MigraDoc.DocumentObjectModel.Unit.FromCentimeter(width));
-                var header = table.AddRow(); header.HeadingFormat = true; header.Shading.Color = MigraDoc.DocumentObjectModel.Color.Parse("#213F7F"); header.Format.Font.Color = MigraDoc.DocumentObjectModel.Colors.White; header.Format.Font.Bold = true;
+                var header = table.AddRow(); header.HeadingFormat = true; header.Shading.Color = MigraDoc.DocumentObjectModel.Color.Parse("#F4F6F9"); header.Format.Font.Color = MigraDoc.DocumentObjectModel.Color.Parse("#5E6B7A"); header.Format.Font.Bold = true;
                 for (int i = 0; i < headers.Length; i++) header.Cells[i].AddParagraph(headers[i]);
                 int number = 0;
                 foreach (var valuesRow in values)
                 {
-                    var row = table.AddRow(); row.Shading.Color = MigraDoc.DocumentObjectModel.Color.Parse(number++ % 2 == 0 ? "#F0F4FA" : "#FFFFFF");
+                    var row = table.AddRow(); row.Shading.Color = MigraDoc.DocumentObjectModel.Colors.White; number++; row.Borders.Bottom.Width = .4; row.Borders.Bottom.Color = MigraDoc.DocumentObjectModel.Color.Parse("#D8DEE8");
                     for (int i = 0; i < valuesRow.Length; i++)
                     {
                         string text = valuesRow[i] ?? "";
@@ -504,30 +530,31 @@ namespace UIMS.Tasks
                             var image = row.Cells[i].AddImage("base64:" + Convert.ToBase64String(ShapeReportText(text, widths[i])));
                             image.Width = MigraDoc.DocumentObjectModel.Unit.FromCentimeter(widths[i] - .45); image.LockAspectRatio = true;
                         }
-                        else row.Cells[i].AddParagraph(text);
+                        else { var value = row.Cells[i].AddParagraph(string.IsNullOrWhiteSpace(text) ? "Not recorded" : text);
+                            if (text.Equals("completed", StringComparison.OrdinalIgnoreCase) || text.Equals("approved", StringComparison.OrdinalIgnoreCase)) { value.Format.Font.Color = MigraDoc.DocumentObjectModel.Color.Parse("#167044"); value.Format.Font.Bold = true; }
+                        }
                     }
                 }
             }
-            Heading("Student and placement");
-            Table(new[] { "Field", "Record" }, new[] { 4.5, 13.0 }, new[] { new[] { "Student", string.IsNullOrWhiteSpace(studentName) ? studentId : studentName }, new[] { "Student ID", studentId }, new[] { "Company", Text(placement, "companyName", "companyId") }, new[] { "Placement", placementId }, new[] { "Approved hours to date", Text(progress, "approvedTrainingHours") } });
-            section.AddParagraph("Available records at submission time. A partial reporting period does not certify completion of a full week or approve additional hours.");
-            Heading("Task activity");
+            Heading("01  Weekly overview");
+            section.AddParagraph(tasks.Count + " task record(s) and " + exams.Count + " submitted examination attempt(s) captured for this report. Approved hours are cumulative, not hours newly approved for this week.");
+            Heading("02  Tasks and assessments");
             if (tasks.Count == 0) section.AddParagraph("No task activity was available for this report period.");
             else Table(new[] { "Task", "Status", "Deadline" }, new[] { 8.0, 4.0, 5.5 }, tasks.Select(t => new[] { Text(t, "title", "taskId"), Text(t, "status"), Text(t, "dueDate") }));
-            Heading("Completed examinations");
+            Heading("03  Completed examinations");
             if (exams.Count == 0) section.AddParagraph("No submitted examination attempts were available at generation time.");
             else Table(new[] { "Examination", "Submitted", "Result" }, new[] { 7.0, 5.5, 5.0 }, exams.Select(e => new[] { Text(e, "title", "examId"), Text(e, "submittedAt"), Text(e, "resultStatus") == "released" ? Text(e, "score") + " / " + Text(e, "maximumScore") : "Awaiting result release" }));
             section.AddParagraph("Only explicitly released grades appear. Answers and private grading keys are excluded.");
-            Heading("Company supervisor comments");
+            Heading("04  Supervisor observations");
             string note = string.IsNullOrWhiteSpace(comments) ? "No additional comments supplied." : comments;
             if (note.Any(c => c >= '\u0590' && c <= '\u109f' || c >= '\ufb1d' && c <= '\ufeff')) { var image = section.AddImage("base64:" + Convert.ToBase64String(ShapeReportText(note, 17.5))); image.Width = MigraDoc.DocumentObjectModel.Unit.FromCentimeter(17); image.LockAspectRatio = true; }
             else section.AddParagraph(note);
-            Heading("Review status"); section.AddParagraph("Submitted for review by the assigned academic supervisor. System generation does not constitute academic approval or a certified completion decision.");
-            var footer = section.Footers.Primary.AddParagraph("JUST Internship Management System  |  Week " + week + "  |  Page "); footer.AddPageField(); footer.Format.Font.Size = 9; footer.Format.Font.Color = MigraDoc.DocumentObjectModel.Color.Parse("#526781"); footer.Format.Alignment = MigraDoc.DocumentObjectModel.ParagraphAlignment.Center;
+            Heading("05  Academic review"); section.AddParagraph("Submitted to the assigned academic supervisor. The review decision is recorded separately in UIMS; this generated snapshot is not an approval.");
+            var footer = section.Footers.Primary.AddParagraph("JUST Internship Management System  |  Week " + week + "  |  Page "); footer.AddPageField(); footer.AddText(" of "); footer.AddNumPagesField(); footer.Format.Font.Size = 9; footer.Format.Font.Color = MigraDoc.DocumentObjectModel.Color.Parse("#526781"); footer.Format.Alignment = MigraDoc.DocumentObjectModel.ParagraphAlignment.Center;
             var renderer = new MigraDoc.Rendering.PdfDocumentRenderer { Document = document }; renderer.RenderDocument();
             using (var output = new System.IO.MemoryStream()) { renderer.PdfDocument.Save(output, false); var bytes = output.ToArray(); UIMS.Services.FirebaseFileStorageService.ValidateFile("weekly-report.pdf", "application/pdf", bytes); return bytes; }
         }
-        private static byte[] ShapeReportText(string text, double centimeters)
+        internal static byte[] ShapeReportText(string text, double centimeters, string background = "FFFFFF", string foreground = "243041")
         {
             const float dpi = 200; int width = Math.Max(180, (int)((centimeters - .45) / 2.54 * dpi));
             using (var font = new System.Drawing.Font("Segoe UI", 10.5f, System.Drawing.GraphicsUnit.Point))
@@ -539,7 +566,7 @@ namespace UIMS.Tasks
                 using (var bitmap = new System.Drawing.Bitmap(width, height))
                 {
                     bitmap.SetResolution(dpi, dpi);
-                    using (var graphics = System.Drawing.Graphics.FromImage(bitmap)) { graphics.Clear(System.Drawing.Color.White); graphics.TextRenderingHint = System.Drawing.Text.TextRenderingHint.AntiAliasGridFit; graphics.DrawString(text, font, System.Drawing.Brushes.Black, new System.Drawing.RectangleF(4, 4, width - 8, height - 8), format); }
+                    using (var graphics = System.Drawing.Graphics.FromImage(bitmap)) { graphics.Clear(System.Drawing.ColorTranslator.FromHtml("#" + background)); graphics.TextRenderingHint = System.Drawing.Text.TextRenderingHint.AntiAliasGridFit; using (var brush = new System.Drawing.SolidBrush(System.Drawing.ColorTranslator.FromHtml("#" + foreground))) graphics.DrawString(text, font, brush, new System.Drawing.RectangleF(4, 4, width - 8, height - 8), format); }
                     using (var output = new System.IO.MemoryStream()) { bitmap.Save(output, System.Drawing.Imaging.ImageFormat.Png); return output.ToArray(); }
                 }
             }

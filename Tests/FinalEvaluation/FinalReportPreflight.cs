@@ -14,6 +14,12 @@ internal static partial class Program
         try
         {
             var xml = new XmlDocument(); xml.Load(configPath); var values = xml.SelectNodes("/configuration/appSettings/add").Cast<XmlElement>().ToDictionary(x => x.GetAttribute("key"), x => x.GetAttribute("value"));
+            string overrideName = xml.DocumentElement["appSettings"]?.GetAttribute("file");
+            if (!string.IsNullOrWhiteSpace(overrideName))
+            {
+                string overridePath = Path.Combine(Path.GetDirectoryName(Path.GetFullPath(configPath)), overrideName);
+                if (File.Exists(overridePath)) { var local = new XmlDocument(); local.Load(overridePath); foreach (XmlElement entry in local.SelectNodes("/appSettings/add")) values[entry.GetAttribute("key")] = entry.GetAttribute("value"); }
+            }
             Func<string, string> setting = key => values.ContainsKey(key) ? values[key] : null;
             foreach (string flag in new[] { "FirebaseEnabled", "FirebaseAuthenticationEnabled", "FirebaseLiveWritesEnabled", "FirebaseSchemaValidated", "AttendanceEnabled", "AttendanceSchemaValidated", "FinalReportWorkflowEnabled", "FinalReportWorkflowSchemaValidated", "FinalReportWorkflowWritesEnabled" }) Console.WriteLine(flag + "=" + (setting(flag) ?? "absent/disabled"));
             string credentialPath = Environment.GetEnvironmentVariable("GOOGLE_APPLICATION_CREDENTIALS");
