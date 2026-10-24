@@ -41,9 +41,8 @@ namespace UIMS.Attendance
             await Identity("student", studentId, uid, false);
             await CheckEnabled();
             var c = await Context(studentId, null);
-            CheckSchedule(c);
+            CheckFlexibleAttendanceDate(c);
             CheckRecord(c);
-            if (!Flag(c.Schedule, "isTrainingDay")) throw new UIMS.Services.FirebaseException(409, "Today is not a scheduled training day.");
             // Legacy requests live in a separate conditional record. Never silently reset half of a two-record workflow.
             if (c.Request != null && c.Request.HasValues)
                 throw new UIMS.Services.FirebaseException(409, "An early check-out request is linked to today. Ask your supervisor to reconcile it before resetting.");
