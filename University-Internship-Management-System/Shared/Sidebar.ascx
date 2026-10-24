@@ -1,11 +1,12 @@
 <%@ Control Language="C#" CodeBehind="Sidebar.ascx.cs" Inherits="University_Internship_Management_System.Shared.Sidebar" %>
 <aside class="app-sidebar" aria-label="User sidebar">
     <a class="app-sidebar__brand" runat="server" href="~/Default.aspx" aria-label="JUST Internships home">
-        <span class="app-sidebar__mark" aria-hidden="true">J</span>
+        <img class="brand-logo" src="../Assets/shared/images/JUST-Logo-01.png" alt="JUST logo" width="50" height="50" />
         <span><strong>JUST</strong><span class="app-sidebar__brand-subtitle">Internships</span></span>
     </a>
     <p class="app-sidebar__section"><asp:Literal ID="RoleLabel" runat="server" Mode="Encode" /> workspace</p>
-    <nav class="app-sidebar__nav" aria-label="Workspace navigation">
+    <a class="workspace-essential-link workspace-home-link" href="../Default.aspx"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="m3 10 9-7 9 7v10h-6v-7H9v7H3V10Z"/></svg><span>Home</span></a>
+<nav class="app-sidebar__nav" aria-label="Workspace navigation">
         <asp:HyperLink ID="HomeLink" runat="server" CssClass="app-sidebar__link">
             <svg class="app-sidebar__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M3 10 12 3l9 7v10a1 1 0 0 1-1 1h-5v-8H9v8H4a1 1 0 0 1-1-1Z" /></svg>
             <span>Dashboard</span>
@@ -37,4 +38,5 @@
             <span aria-hidden="true">&#8592;</span><span>Back to home</span>
         </a>
     </div>
+<a class="workspace-essential-link workspace-help-link" href="../Contact.aspx"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9 9a3 3 0 1 1 5 2c-2 1-2 2-2 3m0 3v.2"/></svg><span>Help &amp; contact</span></a>
 </aside>

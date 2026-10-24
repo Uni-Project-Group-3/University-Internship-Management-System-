@@ -1,26 +1,7 @@
-/* Contact Us: sends the message to the internship coordinator (saved in Firebase by Contact.aspx.cs). */
-(function () {
-    const button = document.querySelector('button[aria-describedby="contactStatus"]');
-    const status = document.getElementById('contactStatus');
-    if (!button || !status || !window.UimsDemo) return;
-
-    button.disabled = false;
-    button.innerHTML = 'Send Message <span aria-hidden="true">&#8599;</span>';
-    status.innerHTML = '<strong>Your message goes to the internship coordinator.</strong><p>Fill in all fields, then press Send Message.</p>';
-
-    button.addEventListener('click', () => {
-        const fields = ['contactName', 'contactEmail', 'contactSubject', 'contactMessage'].map(id => document.getElementById(id));
-        const invalid = fields.find(el => !el.checkValidity());
-        if (invalid) { invalid.reportValidity(); return; }
-
-        try {
-            UimsDemo.transaction('contact', { name: fields[0].value, email: fields[1].value, subject: fields[2].value, message: fields[3].value });
-            status.innerHTML = '<strong>Message sent.</strong><p>The internship coordinator will review it soon.</p>';
-            fields.forEach(el => el.value = '');
-        } catch (e) {
-            status.textContent = e.message;
-        }
-    });
+(() => {
+ 'use strict';const form=document.getElementById('contactForm'),status=document.getElementById('contactStatus'),button=form?.querySelector('button[aria-describedby="contactStatus"]');if(!form||!status||!button)return;
+ button.disabled=false;status.setAttribute('role','status');status.innerHTML='<strong>A direct line to your internship coordinator.</strong><p>Send your question and we will keep it with the contact requests.</p>';
+ let sending=false;async function send(){if(sending)return;const ids=['contactName','contactEmail','contactSubject','contactMessage'],fields=ids.map(id=>document.getElementById(id)),invalid=fields.find(f=>!f.checkValidity()||!f.value.trim());if(invalid){invalid.reportValidity();invalid.focus();return}sending=true;button.disabled=true;status.textContent='Sending your message…';
+ try{const response=await fetch(location.href,{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json','X-Action':'contact'},body:JSON.stringify({name:fields[0].value.trim(),email:fields[1].value.trim(),subject:fields[2].value.trim(),message:fields[3].value.trim()}),signal:AbortSignal.timeout(20000)});const reply=await response.json();if(!response.ok||!reply.sent)throw Error();status.textContent='Message sent. Your internship coordinator can now review it.';fields.forEach(f=>f.value='');}catch{status.textContent='Your message could not be sent. Check your connection and try again.';}finally{sending=false;button.disabled=false;}}
+ button.addEventListener('click',send);form.addEventListener('submit',e=>{e.preventDefault();send()});
 })();
-
-(() => { const form = document.getElementById("contactForm"); const button = form?.querySelector("button[aria-describedby=contactStatus]"); form?.addEventListener("submit", event => { event.preventDefault(); button?.click(); }); })();

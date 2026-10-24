@@ -13,7 +13,7 @@
     if (params.has('taskId')) { $('taskId').value = params.get('taskId'); $('placementId').value = params.get('placementId') || ''; }
     if (params.get('embedded') === '1') { document.querySelector('.exam-list').hidden = true; document.querySelector('.exam-header').hidden = true; document.querySelector('.exam-layout').style.display = 'block'; }
     const timezone = document.createElement('p'); timezone.className = 'muted'; timezone.textContent = 'All times: ' + Intl.DateTimeFormat().resolvedOptions().timeZone; $('opensAt').parentElement.before(timezone);
-    function message(text, kind) { notice.textContent = text; notice.className = 'notice' + (kind ? ' ' + kind : ''); }
+    function message(text, kind) { if(/FirebaseSchemaValidated|schema.*not.*validated/i.test(text))text='Exams are temporarily unavailable while the university validates this environment. Please contact your coordinator.'; notice.textContent = text; notice.className = 'notice' + (kind ? ' ' + kind : ''); }
     async function call(action, data, method) {
         const split = action.indexOf('&'); const name = split < 0 ? action : action.slice(0, split); const query = split < 0 ? '' : '&' + action.slice(split + 1);
         const response = await fetch(api + '?action=' + encodeURIComponent(name) + query, {
@@ -119,7 +119,7 @@
                 if (exam.status === 'published') { const results = document.createElement('button'); results.type = 'button'; results.className = 'primary'; results.textContent = 'Review and release results'; results.onclick = () => reviewResults(id); card.append(results); }
                 host.append(card);
             });
-        } catch (e) { message(e.message, 'error'); }
+        } catch (e) { message(e.message, 'error'); const host=$('examList'); if(host){host.replaceChildren();const empty=document.createElement('p');empty.className='muted';empty.textContent='Exams could not be loaded. Refresh this page when the connection is available.';host.append(empty);} }
     }
     $('newExam').onclick = async () => { if (($('title').value.trim() || questions.length) && !await TaskDialogs.confirm('Start a new exam?', 'Unsaved changes in the current editor will be discarded. Saved Firebase drafts remain available.', 'Start new exam')) return; $('examForm').reset(); $('examId').value = ''; $('draftRevision').value = '0'; $('taskId').value = params.get('taskId') || ''; $('placementId').value = params.get('placementId') || ''; questions = []; renderQuestions(); $('editorTitle').textContent = 'Create exam draft'; $('examForm').querySelectorAll('input,textarea,select,button').forEach(el => el.disabled = false); };
     $('addQuestion').onclick = () => { questions.push({ id: uid(), type: 'multipleChoice', prompt: '', points: 1, options: 'Option 1\nOption 2', answer: '1', imageFileId: '' }); renderQuestions(); };

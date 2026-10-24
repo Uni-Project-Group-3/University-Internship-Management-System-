@@ -12,10 +12,10 @@ namespace University_Internship_Management_System.Shared
 
         protected void Logout_Click(object sender, EventArgs e)
         {
-            FormsAuthentication.SignOut();
+            LoginSession.End(Context);
             Session.Clear();
             Session.Abandon();
-            Response.Redirect("~/Auth/Login.aspx", false);
+            Response.Redirect("~/Auth/Login.aspx?account=new", false);
             Context.ApplicationInstance.CompleteRequest();
         }
 
