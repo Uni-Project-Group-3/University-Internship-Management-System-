@@ -1,4 +1,14 @@
 /* Task workspaces only. Uses the existing official theme; no navigation selectors. */
+body.uims-tasks-theme dialog.workspace-dialog.workspace-confirmation {width:min(480px,calc(100vw - 32px));padding:28px!important;border:1px solid #DFE3EB;border-radius:20px;background:#fff;box-shadow:0 30px 90px #14234155;color:#242844;}
+body.uims-tasks-theme dialog.workspace-confirmation::backdrop {background:#18213888;backdrop-filter:blur(3px);}
+body.uims-tasks-theme dialog.workspace-confirmation h2 {font-size:23px;line-height:1.35;margin:12px 0;}
+body.uims-tasks-theme dialog.workspace-confirmation .workspace-dialog-body {color:#66718A;font-size:14px;line-height:1.7;}
+body.uims-tasks-theme dialog.workspace-confirmation .workspace-dialog-actions {display:flex;justify-content:flex-end;gap:12px;padding:20px 0 0!important;margin:18px 0 0;background:transparent!important;border-top:1px solid #DFE3EB;}
+body.uims-tasks-theme dialog.workspace-confirmation .workspace-dialog-actions button {display:inline-flex!important;align-items:center;justify-content:center;min-height:44px;padding:11px 22px!important;border:1px solid #DFE3EB!important;border-radius:11px!important;font:600 14px var(--font-body)!important;cursor:pointer;}
+body.uims-tasks-theme dialog.workspace-confirmation .workspace-dialog-actions .primary {background:#1F3D78!important;color:#fff!important;border-color:#1F3D78!important;}
+body.uims-tasks-theme dialog.workspace-confirmation .workspace-dialog-actions .secondary {background:#F6F7FA!important;color:#242844!important;}
+body.uims-tasks-theme .task-action button[data-task-action] {border-radius:10px!important;min-height:40px!important;}
+body.uims-tasks-theme .task-action button[data-task-action="details"] {background:#F6F7FA!important;color:#1F3D78!important;border:1px solid #DFE3EB!important;}
 body.uims-tasks-theme .custom-btn-primary,body.uims-tasks-theme .workspace-dialog .primary{background:var(--primary);border-color:var(--primary);color:white}
 body.uims-tasks-theme .content{padding:24px;max-width:1920px;margin:auto}
 body.uims-tasks-theme .tasks-premium-hero{position:relative;isolation:isolate;overflow:hidden;display:flex;align-items:center;justify-content:space-between;gap:24px;padding:30px 34px;margin:0 0 20px;border-radius:20px;background:linear-gradient(115deg,#1E284C,#1F294D 48%,#6689BB);color:white;box-shadow:0 9px 24px rgb(31 61 120 / 15%)}

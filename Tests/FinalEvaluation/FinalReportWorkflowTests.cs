@@ -64,6 +64,15 @@ internal static partial class Program
     private static JObject FApprove(string revision) { var input = FInput("admin-final", revision); input["finalGrade"] = 91.5m; input["fileName"] = "completion-notice.pdf"; input["feedback"] = "Private admin notes"; return input; }
     private static async Task RunFinalReportTests()
     {
+        await Test("approved attendance calendar preserves weekends and exact Amman 08 to 18 shifts", () => {
+            var calendar=BuildApprovedAttendanceCalendar("placement");
+            Assert(calendar.Count==57 && calendar.Properties().Count(p=>(bool)p.Value["isTrainingDay"])==40);
+            Assert(!(bool)calendar["2026-10-24"]["isTrainingDay"] && !(bool)calendar["2026-12-19"]["isTrainingDay"]);
+            var zone=TimeZoneInfo.FindSystemTimeZoneById("Jordan Standard Time");var first=calendar["2026-10-25"];
+            Assert(TimeZoneInfo.ConvertTime(DateTimeOffset.FromUnixTimeMilliseconds((long)first["scheduledStartAt"]),zone).Hour==8 && TimeZoneInfo.ConvertTime(DateTimeOffset.FromUnixTimeMilliseconds((long)first["scheduledEndAt"]),zone).Hour==18);
+            Assert((long)first["scheduledEndAt"]-(long)first["scheduledStartAt"]==10*60*60*1000);
+            return Task.CompletedTask;
+        });
         await Test("final report resolves missing placement academic field from existing student assignment without writes", async () => {
             var db = FinalSeed(); db.Values["placements/P"].Remove("academicSupervisorId");
             var result = await FinalService(db).ReadAsync("company", "companySupervisor", "P");

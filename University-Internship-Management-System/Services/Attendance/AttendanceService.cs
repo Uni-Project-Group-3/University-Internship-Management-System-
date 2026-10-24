@@ -290,7 +290,7 @@ namespace UIMS.Attendance
 
         public static void CheckAction(AttendanceContext c, string action, long now)
         {
-            CheckSchedule(c);
+            CheckFlexibleAttendanceDate(c);
             CheckRecord(c);
             if (action == "checkIn")
             {
@@ -304,6 +304,34 @@ namespace UIMS.Attendance
                 throw new InvalidOperationException("Check-out requires an existing check-in and cannot be repeated.");
             if (now <= Number(c.Record, "checkInAt")) throw new InvalidOperationException("Check-out must be after check-in.");
             // إصدار رمز الخروج ومسحه من المشرف يغنيان عن طلب مغادرة مبكرة منفصل.
+        }
+
+        // Supervisor-issued QR attendance is available on every date within the
+        // approved training period. Shift/day-off settings do not authorize actors.
+        public static void CheckFlexibleAttendanceDate(AttendanceContext c)
+        {
+            if (c == null || c.Assignment == null || c.Schedule == null || c.Date != Today() ||
+                Text(c.Schedule, "assignmentId") != c.AssignmentId || Text(c.Schedule, "attendanceDate") != c.Date ||
+                Text(c.Schedule, "timeZone") != "Asia/Amman" || Number(c.Schedule, "version") <= 0)
+                throw new InvalidOperationException("A verified attendance date and assignment are required.");
+            DateTime start, end;
+            if (!DateTime.TryParseExact(Text(c.Assignment,"startDate"), "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out start) ||
+                !DateTime.TryParseExact(Text(c.Assignment,"endDate"), "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out end) || start > end ||
+                string.CompareOrdinal(c.Date, start.ToString("yyyy-MM-dd")) < 0 || string.CompareOrdinal(c.Date, end.ToString("yyyy-MM-dd")) > 0)
+                throw new InvalidOperationException("Attendance is outside the approved training period.");
+        }
+
+        public JObject CurrentIssuedQr(AttendanceContext context, bool localTest = false)
+        {
+            string action = Number(context.Record,"checkInAt") > 0 ? "checkOut" : "checkIn";
+            try
+            {
+                CheckAction(context, action, Now());
+                var state = IssuedState(context.Record, action); CheckIssuedState(state);
+                CheckQrContext(state, context, Text(context.Assignment,"companySupervisorId"), localTest);
+                return new JObject { ["action"] = action, ["issuedAt"] = state["issuedAt"], ["expiresAt"] = state["expiresAt"] };
+            }
+            catch (InvalidOperationException) { return null; }
         }
 
         private async Task CheckEnabled()

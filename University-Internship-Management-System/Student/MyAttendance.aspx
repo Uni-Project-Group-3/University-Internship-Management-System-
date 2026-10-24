@@ -93,9 +93,9 @@
             </div>
         </div>
     </form>
-    <script src="../Js_project/firebase-client.js"></script>
+    <script src="../Js_project/firebase-client.js?v=20261024-attendance-session"></script>
     <script src="../Scripts/bootstrap.bundle.min.js"></script>
     <script src="../Js_project/Student/attendance-qrcodegen.js?v=nayuki-local-20261024"></script>
-    <script src="../Js_project/Student/my-attendance.js?v=20261024-approval-visibility"></script>
+    <script src="../Js_project/Student/my-attendance.js?v=20261024-company-issued-flexible"></script>
 </body>
 </html>

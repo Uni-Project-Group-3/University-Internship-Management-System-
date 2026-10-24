@@ -200,7 +200,7 @@
         <script src="../Scripts/bootstrap.bundle.min.js">
         </script>
         <link href="../Assets/task-workspace.css?v=20261023-task-connection" rel="stylesheet" />
-<link href="../Assets/tasks-premium.css?v=20261023-closeout" rel="stylesheet" />
+<link href="../Assets/tasks-premium.css?v=20261024-buttons" rel="stylesheet" />
         <script src="../Js_project/firebase-client.js?v=20261023-task-connection"></script>
         <script src="../Js_project/task-dialogs.js?v=20261024-polish"></script>
         <script src="../Js_project/Company/TaskExams.js?v=20261024-polish"></script>

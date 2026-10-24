@@ -48,7 +48,7 @@
 (() => {
  'use strict';
  const eye='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg>';
- function icons(){document.querySelectorAll('button,a').forEach(el=>{if(/^view details$/i.test(el.textContent.trim())&&!el.querySelector('svg')){el.setAttribute('aria-label','View details');el.title='View details';el.classList.add('workspace-details-icon');el.innerHTML=eye;}})}
+ function icons(){document.querySelectorAll('.workspace-nav-primary a').forEach(el=>{if(/^task exams$/i.test(el.textContent.trim()))el.remove();});document.querySelectorAll('button,a').forEach(el=>{if(/^view details$/i.test(el.textContent.trim())&&!el.querySelector('svg')){el.setAttribute('aria-label','View details');el.title='View details';el.classList.add('workspace-details-icon');el.innerHTML=eye;}})}
  function dismiss(dialog){const cancel=new Event('cancel',{cancelable:true});if(dialog.dispatchEvent(cancel))dialog.close();}
  document.addEventListener('click',e=>{const d=e.target;if(d instanceof HTMLDialogElement&&d.open){const r=d.getBoundingClientRect();if(e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom)dismiss(d);}});
  document.addEventListener('workspace:saved',()=>{document.querySelectorAll('dialog[open]').forEach(dismiss);document.querySelectorAll('.modal.show').forEach(m=>window.bootstrap?.Modal.getInstance(m)?.hide());});

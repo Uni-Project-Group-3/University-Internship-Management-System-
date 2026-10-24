@@ -198,7 +198,8 @@
     const originalFetch = window.fetch.bind(window);
     window.fetch = async function (input, options = {}) {
         const url = new URL(input instanceof Request ? input.url : input, location.href);
-        if (url.origin === endpoint.origin && /\/(?:TasksApi|TaskExamsApi|FinalReportsApi|FirebaseApi)\.ashx$/i.test(url.pathname)) {
+        const attendanceRequest = /\/(?:Student\/MyAttendance|Company\/VerifyAttendance)(?:\.aspx)?\/?$/i.test(url.pathname) && (options.method || (input instanceof Request ? input.method : 'GET')).toUpperCase() === 'POST';
+        if (url.origin === endpoint.origin && (/\/(?:TasksApi|TaskExamsApi|FinalReportsApi|FirebaseApi)\.ashx$/i.test(url.pathname) || attendanceRequest)) {
             if (/\/(?:TasksApi|TaskExamsApi)\.ashx$/i.test(url.pathname)) { const role = /^\/Company\//i.test(location.pathname) ? 'companySupervisor' : /^\/Student\//i.test(location.pathname) ? 'student' : null; if (role) { const headers = new Headers(options.headers || (input instanceof Request ? input.headers : undefined)); headers.set('X-UIMS-Role', role); options = { ...options, headers }; } }
             if (load()?.tabTicket && /\/(?:TasksApi|TaskExamsApi|FinalReportsApi)\.ashx$/i.test(url.pathname)) await getIdToken();
             const ticket = load()?.tabTicket;

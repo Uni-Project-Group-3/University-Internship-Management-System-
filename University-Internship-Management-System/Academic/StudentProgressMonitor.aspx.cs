@@ -99,6 +99,7 @@ namespace University_Internship_Management_System.Academic
             if (e.CommandName == "ViewDetails")
             {
                 string studentId = e.CommandArgument.ToString();
+                ReadMonitorSources("users", "groups", "supervisorAssignments", "assignments", "placements", "tasks", "companies", "uimsAttendance/attendance");
                 RequireStudentScope(studentId);
                 hfCurrentStudentId.Value = studentId;
                 lblFeedbackMsg.Text = "";
@@ -137,7 +138,7 @@ namespace University_Internship_Management_System.Academic
                         lblDetCompany.Text = "Not Assigned";
                         if (!string.IsNullOrEmpty(compId))
                         {
-                            string compJson = DownloadSafe(client, $"companies/{compId}.json");
+                            string compJson = JsonObject(DownloadSafe(client, "companies.json"))[compId]?.ToString() ?? "null";
                             if (!string.IsNullOrEmpty(compJson) && compJson != "null")
                             {
                                 var compData = serializer.Deserialize<Dictionary<string, object>>(compJson);
@@ -194,7 +195,7 @@ namespace University_Internship_Management_System.Academic
                         txtFeedback.Text = (!string.IsNullOrEmpty(feedbackJson) && feedbackJson != "null") ? feedbackJson.Trim('"') : "";
                     }
                 }
-                catch { }
+                catch (Exception ex) { Trace.Warn("StudentProgressDetails", ex.GetType().Name); lblFeedbackMsg.Text = "Some student details could not be loaded. Close and retry."; }
 
                 ScriptManager.RegisterStartupScript(this, GetType(), "OpenModal", "document.getElementById('studentDetails').showModal();", true);
             }

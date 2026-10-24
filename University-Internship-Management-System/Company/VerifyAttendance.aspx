@@ -83,7 +83,7 @@
             </div>
         </div>
     </form>
-    <script src="../Js_project/firebase-client.js"></script>
+    <script src="../Js_project/firebase-client.js?v=20261024-attendance-session"></script>
     <script src="../Scripts/bootstrap.bundle.min.js"></script>
     <script src="../Js_project/Company/attendance-jsqr.js"></script>
     <script src="../Js_project/Company/verify-attendance.js?v=20261024-scanner-flash"></script>
