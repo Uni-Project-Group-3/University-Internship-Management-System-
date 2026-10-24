@@ -1,4 +1,4 @@
-<%@ Page Language="C#" AutoEventWireup="true" CodeBehind="home.aspx.cs" Inherits="University_Internship_Management_System.Public.home" %>
+﻿<%@ Page Language="C#" AutoEventWireup="true" CodeBehind="home.aspx.cs" Inherits="University_Internship_Management_System.Public.home" %>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -16,7 +16,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Naskh+Arabic:wght@600;700&family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;1,9..144,400&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../Assets/public/home.css?v=20261023-evolved">
-<link href="../Assets/public/public-campus.css?v=20261024" rel="stylesheet" /><style>
+<link href="../Assets/public/public-campus.css?v=20261024-refine" rel="stylesheet" /><style>
 .home-profile{position:relative}.home-profile[hidden],#homeAccountAction[hidden],.home-profile-menu[hidden]{display:none!important}.home-profile-toggle{display:flex;align-items:center;gap:7px;padding:9px 12px;border:1px solid #d8dee8;border-radius:9px;background:#fff;color:#1f3d78;font:600 12px Manrope,sans-serif;cursor:pointer}.home-profile-menu{position:absolute;right:0;top:calc(100% + 8px);min-width:180px;padding:5px;background:white;border:1px solid #d8dee8;border-radius:10px;box-shadow:0 12px 32px #13284726;z-index:1000}.home-profile-menu a,.home-profile-menu button{display:block;width:100%;padding:10px 11px;border:0;border-radius:6px;background:transparent;text-align:left;text-decoration:none;color:#243041;font:500 12px Manrope,sans-serif;white-space:nowrap;cursor:pointer}.home-profile-menu :is(a,button):hover,.home-profile-menu :is(a,button):focus-visible{background:#eef3fa}.home-profile-menu button{color:#b4232b}.home-profile-toggle:focus-visible{outline:3px solid #9bb9ec;outline-offset:2px}
 </style></head>
 <body>
@@ -140,5 +140,5 @@
     window.addEventListener('pageshow',function(event){if(event.persisted)location.reload();});
 })();
 </script>
-</body>
+<script src="../Js_project/Public/public-workspace.js?v=20261024-profile-menu"></script></body>
 </html>

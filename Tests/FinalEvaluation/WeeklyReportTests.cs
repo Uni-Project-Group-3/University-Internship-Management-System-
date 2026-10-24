@@ -18,6 +18,32 @@ internal static partial class Program
 {
     private static async Task RunWeeklyReportTests()
     {
+        await Test("weekly submission rejects a stale displayed academic recipient", async () => {
+            var db = new WeeklyReportDb(); SeedWeekly(db);
+            await Reject<UIMS.Services.FirebaseException>(() => WeeklyService(db, WeeklyCompanyActor()).SubmitAsync("PL-1", 1, "2026-10-24", "2026-10-24", "report.docx", WeeklyMime, WeeklyDocx(), "", CancellationToken.None, null, "AC-STALE"));
+        });
+        await Test("weekly recipient keeps assigned ID when names are unavailable", async () => {
+            var db = new WeeklyReportDb(); SeedWeekly(db);
+            db.Set("users/AC-1", new JObject { ["role"] = "academicSupervisor", ["email"] = "private@example.invalid" });
+            var rows = (await WeeklyService(db, WeeklyCompanyActor()).ListCompanyPlacementsAsync(CancellationToken.None))["placements"];
+            var row = rows.Single(p => (string)p["studentId"] == "ST-1");
+            Assert((string)row["academicSupervisorId"] == "AC-1" && (string)row["academicSupervisorName"] == "Name unavailable" && (bool)row["canSubmit"]);
+            Assert(!rows.ToString().Contains("private@example.invalid"));
+        });
+        await Test("weekly recipient resolves academic name through the matching users profile", async () => {
+            var db = new WeeklyReportDb(); SeedWeekly(db);
+            db.Set("users/UID-ACADEMIC", new JObject { ["role"] = "academicSupervisor", ["academicSupervisorId"] = "AC-1", ["fullName"] = "Verified recipient", ["privateField"] = "DO_NOT_EXPOSE" });
+            var row = (await WeeklyService(db, WeeklyCompanyActor()).ListCompanyPlacementsAsync(CancellationToken.None))["placements"].Single(p => (string)p["studentId"] == "ST-1");
+            Assert((string)row["academicSupervisorName"] == "Verified recipient" && !row.ToString().Contains("DO_NOT_EXPOSE"));
+        });
+        await Test("weekly conflicting recipient blocks only the affected student and submission", async () => {
+            var db = new WeeklyReportDb(); SeedWeekly(db);
+            db.Set("supervisorAssignments/CONFLICT", new JObject { ["studentId"] = "ST-1", ["academicSupervisorId"] = "AC-OTHER", ["isActive"] = true });
+            var service = WeeklyService(db, WeeklyCompanyActor());
+            var row = (await service.ListCompanyPlacementsAsync(CancellationToken.None))["placements"].Single(p => (string)p["studentId"] == "ST-1");
+            Assert(!(bool)row["canSubmit"] && ((string)row["submissionBlocker"]).Contains("conflicting"));
+            await Reject<UIMS.Services.FirebaseException>(() => NewWeeklyReport(service));
+        });
         await Test("academic review persists without enabling Storage or company report uploads", async () => {
             var db = new WeeklyReportDb(); SeedWeekly(db);
             var report = await NewWeeklyReport(WeeklyService(db, WeeklyCompanyActor()));

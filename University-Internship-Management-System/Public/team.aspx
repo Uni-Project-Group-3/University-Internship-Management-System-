@@ -13,7 +13,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;1,9..144,400&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../Assets/public/team.css?v=20261024" />
-<link href="../Assets/public/public-campus.css?v=20261024" rel="stylesheet" /></head>
+<link href="../Assets/public/public-campus.css?v=20261024-refine" rel="stylesheet" /></head>
 <body>
 <header class="nav campus-public-nav" role="banner">
  <a class="brand" href="#" data-home="" aria-label="JUST Internships – back to the homepage"><img src="../Assets/public/images/team-brand.png" alt="Jordan University of Science and Technology"></a>
@@ -57,5 +57,5 @@
 
 <script src="../Js_project/Public/team.js?v=20261024-remove-yasmeen-photo"></script>
 <noscript><p style="position:fixed;bottom:0;left:0;right:0;margin:0;padding:14px 18px;background:#f4efe3;color:#1d2a3a">The team list needs JavaScript. <a href="home.aspx">Back to the homepage</a></p></noscript>
-</body>
+<script src="../Js_project/firebase-client.js?v=20261024-refine"></script><script src="../Js_project/Public/public-workspace.js?v=20261024-refine"></script></body>
 </html>

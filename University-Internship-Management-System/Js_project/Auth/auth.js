@@ -252,3 +252,5 @@
         mobile.addEventListener("change", () => setOpen(false));
     });
 })();
+
+if(new URLSearchParams(location.search).get('reset')==='1')document.getElementById('ForgotPassword')?.click();

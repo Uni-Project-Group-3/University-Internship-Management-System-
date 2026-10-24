@@ -9,8 +9,8 @@
 
     <link runat="server" href="~/Assets/coordinator/manage-companies.css?v=20261024-actions" rel="stylesheet" />
 
-<link href="../Assets/shared/workspace-identity.css?v=20261024-polish" rel="stylesheet" />
-<script src="../Js_project/workspace-navigation-unified.js?v=20261024-polish" defer></script>
+<link href="../Assets/shared/workspace-identity.css?v=20261024-refine" rel="stylesheet" />
+<script src="../Js_project/workspace-navigation-unified.js?v=20261024-refine" defer></script>
 </head>
 <body class="dashboard-direct app-page companies-page management-page" data-page="manage-companies">
     <form id="form1" runat="server" novalidate="novalidate"><asp:HiddenField ID="companyCsrf" runat="server" ClientIDMode="Static" />

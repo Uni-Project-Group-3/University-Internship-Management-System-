@@ -79,3 +79,5 @@ document.addEventListener("click",event=>{const modal=event.target;if(modal?.mat
  function scan(){document.querySelectorAll('#opportunitiesList,.wr-report-list,#examList').forEach(attach)}
  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',scan);else scan();let pending=false;new MutationObserver(()=>{if(!pending){pending=true;requestAnimationFrame(()=>{pending=false;scan()})}}).observe(document.documentElement,{childList:true,subtree:true});
 })();
+
+(()=>{document.addEventListener('DOMContentLoaded',()=>{document.querySelectorAll('a,button').forEach(el=>{if(!/^change password$/i.test(el.textContent.trim()))return;const link=document.createElement('a');link.className=el.className;link.innerHTML=el.innerHTML;link.href=new URL('../Auth/Login.aspx?account=new&reset=1',document.querySelector('script[src*="workspace-navigation-unified"]').src);link.target='_blank';link.rel='noopener';link.setAttribute('aria-label','Change password using a secure email link (opens a new tab)');el.replaceWith(link)});});})();

@@ -15,7 +15,7 @@ const server = http.createServer((req, res) => {
 (async () => {
   await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
   const base = 'http://127.0.0.1:' + server.address().port;
-  const browser = await chromium.launch({ executablePath: process.env.PROGRAMFILES + '/Google/Chrome/Application/chrome.exe', headless: true });
+  const browser = await chromium.launch({ channel: 'msedge', headless: true });
   try {
     const page = await browser.newPage({ viewport: { width: 1600, height: 1000 } });
     const errors = [];
@@ -35,7 +35,7 @@ const server = http.createServer((req, res) => {
       assert.strictEqual(route.request().method(), 'GET');
       if (fail) return route.fulfill({ status: 503, json: { message: 'Isolated service error' } });
       return route.fulfill({ json: url.searchParams.get('action') === 'placements'
-        ? { placements: [{ studentName: 'Test trainee', studentId: 'ST0', placementId: 'P0', academicSupervisorId:'AC0', academicSupervisorName:'Assigned academic supervisor' }] }
+        ? { placements: [{ studentName: 'Test trainee', studentId: 'ST0', placementId: 'P0', academicSupervisorId:'AC0', academicSupervisorName:'Assigned academic supervisor' },{studentName:'Second trainee',studentId:'ST1',placementId:'P1',academicSupervisorId:'AC1',academicSupervisorName:''},{studentName:'Missing assignment',studentId:'ST2',placementId:'P2',canSubmit:false,submissionBlocker:'No current assignment.'},{studentName:'Conflicting assignment',studentId:'ST3',placementId:'P3',canSubmit:false,submissionBlocker:'Conflicting active assignments.'}] }
         : { reports } });
     });
     await page.goto(base + '/Company/WeeklyReports.aspx');
@@ -44,8 +44,14 @@ const server = http.createServer((req, res) => {
     await page.screenshot({ path: path.join(process.env.TEMP, 'uims-company-weekly-desktop.png'), fullPage: true });
     await page.getByRole('link', { name: 'Submit a report', exact: true }).click();
     assert(page.url().endsWith('#weeklySubmit'));
-    await page.locator('#submitReport').click();
-    await page.waitForFunction(() => document.getElementById('wrNotice').textContent === 'Choose a student, training week and valid reporting dates.');
+    assert(await page.locator('#submitReport').isDisabled());
+    assert.strictEqual(await page.locator('#placementSelect option[value="P0"]').textContent(),'Test trainee | ST0');
+    await page.locator('#placementSelect').selectOption('P1');
+    assert.strictEqual(await page.locator('#routingStudentName').textContent(),'Second trainee');
+    assert.strictEqual(await page.locator('#routingAcademicId').textContent(),'AC1');
+    assert.strictEqual(await page.locator('#routingAcademicName').textContent(),'Name unavailable');
+    assert(!await page.locator('#submitReport').isDisabled());
+    for(const id of ['P2','P3']){await page.locator('#placementSelect').selectOption(id);assert(await page.locator('#submitReport').isDisabled());assert((await page.locator('#reportRecipient').textContent()).includes('coordinator'));}
     await page.locator('#placementSelect').selectOption('P0');
     assert.strictEqual(await page.locator('#routingAcademicName').textContent(),'Assigned academic supervisor');
     assert.strictEqual(await page.locator('#routingAcademicId').textContent(),'AC0');

@@ -609,6 +609,7 @@ internal static partial class Program
         await RunTaskExamTests();
         await RunFinalReportTests();
         await RunWeeklyReportTests();
+        await RunApplicationCvTests();
         await RunFirebaseDemoTests();
         await RunPercentageRequirementsTests();
         await RunPercentageSecurityTests();
