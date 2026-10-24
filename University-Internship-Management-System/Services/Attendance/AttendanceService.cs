@@ -11,7 +11,7 @@ using Newtonsoft.Json.Linq;
 
 namespace UIMS.Attendance
 {
-    public class AttendanceService
+    public partial class AttendanceService
     {
         private readonly AttendanceFirebase database;
         private readonly Func<byte[]> qrSigningKey;
@@ -54,6 +54,7 @@ namespace UIMS.Attendance
         {
             var result = record == null ? new JObject() : (JObject)record.DeepClone();
             result.Remove("qrState");
+            result.Remove("resetAttempts");
             return result;
         }
         public static long Now() { return DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(); }
@@ -352,7 +353,7 @@ namespace UIMS.Attendance
                 };
             }
             foreach (var record in records.Properties())
-                if (record.Value is JObject) ((JObject)record.Value).Remove("qrState");
+                if (record.Value is JObject) { ((JObject)record.Value).Remove("qrState"); ((JObject)record.Value).Remove("resetAttempts"); }
             return records;
         }
 

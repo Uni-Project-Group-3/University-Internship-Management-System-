@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
@@ -608,6 +608,7 @@ internal static partial class Program
         });
         await RunTaskExamTests();
         await RunFinalReportTests();
+        await RunAttendanceResetTests();
         await RunWeeklyReportTests();
         await RunApplicationCvTests();
         await RunFirebaseDemoTests();
