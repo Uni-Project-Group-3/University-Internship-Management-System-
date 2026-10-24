@@ -100,6 +100,37 @@ namespace UIMS.Services
             var rows = new JArray(groups.Properties().Where(g => Active(g.Value)).Select(g => new JObject { ["id"] = g.Name, ["name"] = T(g.Value, "name").Length > 0 ? T(g.Value, "name") : g.Name, ["department"] = Normalize(T(g.Value, "department")), ["supervisorId"] = CanonicalSupervisor(users, T(g.Value, "academicSupervisorId")), ["students"] = g.Value["students"]?.DeepClone() ?? new JObject() }));
             return new JObject { ["departments"] = departments, ["professors"] = professors, ["students"] = students, ["groups"] = rows };
         }
+        public async Task<JObject> RemoveAsync(string uid, JObject input)
+        {
+            await Authorize(uid);
+            string groupId = Key(T(input, "groupId")), studentId = Key(T(input, "studentId"));
+            var pending = await db.ReadAsync("academicAssignmentOperations/current");
+            if (pending != null && pending.Type != JTokenType.Null) throw new FirebaseException(409, "Another assignment is pending. Retry after it completes.");
+            var users = O(await db.ReadAsync("users")); var groups = O(await db.ReadAsync("groups")); var assignments = O(await db.ReadAsync("supervisorAssignments")); var legacy = O(await db.ReadAsync("assignments")); var placements = O(await db.ReadAsync("placements"));
+            var group = groups[groupId] as JObject;
+            if (group == null || !Active(group)) throw new FirebaseException(404, "This group no longer exists. Refresh the groups list.");
+            if ((bool?)group["students"]?[studentId] != true) throw new FirebaseException(409, "This student is no longer in the group. Refresh the groups list.");
+            string supervisorId = CanonicalSupervisor(users, T(group, "academicSupervisorId")), now = DateTimeOffset.UtcNow.ToString("o");
+            Func<JToken, bool> sameSupervisor = value => T(value, "academicSupervisorId").Length > 0 && CanonicalSupervisor(users, T(value, "academicSupervisorId")) == supervisorId;
+            var update = new JObject();
+            update["groups/" + groupId + "/students/" + studentId] = JValue.CreateNull();
+            update["groups/" + groupId + "/updatedAt"] = now;
+            // Retire the supervisor links this group created; other supervisors' records stay untouched.
+            foreach (var pair in new[] { new { Root = "supervisorAssignments", Rows = assignments }, new { Root = "assignments", Rows = legacy } })
+                foreach (var link in pair.Rows.Properties().Where(a => Active(a.Value) && T(a.Value, "studentId") == studentId && sameSupervisor(a.Value)))
+                {
+                    update[pair.Root + "/" + Key(link.Name) + "/active"] = false; update[pair.Root + "/" + Key(link.Name) + "/isActive"] = false;
+                    update[pair.Root + "/" + Key(link.Name) + "/removedBy"] = uid; update[pair.Root + "/" + Key(link.Name) + "/removedAt"] = now;
+                }
+            foreach (var student in users.Properties().Where(p => FirebaseSignInService.CanonicalRole(T(p.Value, "role")) == "student" && T(p.Value, "studentId") == studentId && sameSupervisor(p.Value)))
+                update["users/" + Key(student.Name) + "/academicSupervisorId"] = JValue.CreateNull();
+            foreach (var placement in placements.Properties().Where(x => Active(x.Value) && T(x.Value, "status") != "completed" && (T(x.Value, "studentId") == studentId || T(x.Value, "studentProfileId") == studentId) && sameSupervisor(x.Value)))
+                update["placements/" + Key(placement.Name) + "/academicSupervisorId"] = JValue.CreateNull();
+            await Authorize(uid);
+            // Atomic multi-location PATCH, matching SaveAsync.
+            await db.PatchAsync("", update);
+            return new JObject { ["removed"] = true, ["groupId"] = groupId, ["studentId"] = studentId };
+        }
         public async Task<JObject> SaveAsync(string uid, JObject input)
         {
             await Authorize(uid);

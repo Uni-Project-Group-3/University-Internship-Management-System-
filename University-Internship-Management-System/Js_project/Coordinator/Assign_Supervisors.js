@@ -73,7 +73,10 @@
             for (const id of members) {
                 const s = data.students.find(x => x.id === id), row = node('div', null, 'assignment-student assignment-member'), info = node('span');
                 info.append(node('strong', s?.name || id), node('small', 'Student ID: ' + id));
-                row.append(info); list.append(row);
+                const remove = node('button', 'Remove', 'assignment-remove');
+                remove.type = 'button'; remove.setAttribute('aria-label', 'Remove ' + (s?.name || id) + ' from this group');
+                remove.onclick = () => removeStudent(id, s?.name || id);
+                row.append(info, remove); list.append(row);
             }
             if (!members.length) list.append(node('p', 'No students in this group yet.', 'assignment-empty'));
         }
@@ -120,6 +123,21 @@
         if (!host.children.length) host.append(node('p', !enabled ? 'Choose a supervisor and major to see students.' : group && !query ? 'No more available students in this major.' : 'No students match this major and search.', 'assignment-empty'));
         by('studentCount').textContent = selected.size + ' selected';
         by('assignmentSave').disabled = busy || (!!group && !selected.size);
+    }
+    async function removeStudent(id, name) {
+        if (busy || !group || !window.confirm('Remove ' + name + ' from ' + (group.name || 'this group') + '? The student will no longer have this academic supervisor.')) return;
+        busy = true; by('assignmentFields').inert = true; by('assignmentError').textContent = '';
+        try {
+            const result = await api({ action: 'remove', groupId: group.id, studentId: id });
+            if (!result.removed) throw Error('The server did not confirm the removal. Refresh and check the group.');
+            const groupId = group.id;
+            await load();
+            notice(name + ' was removed from the group.');
+            busy = false; by('assignmentFields').inert = false;
+            const fresh = data.groups.find(g => g.id === groupId);
+            if (fresh) open(fresh); else dialog.close();
+        } catch (e) { by('assignmentError').textContent = e.message; }
+        finally { busy = false; by('assignmentFields').inert = false; }
     }
     async function close() {
         if (busy) return;
