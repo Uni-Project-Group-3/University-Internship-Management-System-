@@ -11,8 +11,8 @@
 
         <link href="../Assets/shared/colors.css" rel="stylesheet" />
         <link href="../Assets/coordinator/Manage_Academic_Supervisor.css?v=20261024-link-cleanup" rel="stylesheet" />
-    <link href="../Assets/shared/workspace-identity.css?v=20261024-polish" rel="stylesheet" />
-<script src="../Js_project/workspace-navigation-unified.js?v=20261024-polish" defer></script>
+    <link href="../Assets/shared/workspace-identity.css?v=20261024-refine" rel="stylesheet" />
+<script src="../Js_project/workspace-navigation-unified.js?v=20261024-refine" defer></script>
 </head>
     <body class="management-page" data-page="manage-academic-supervisors">
         <form id="form1" runat="server" novalidate="novalidate"><asp:HiddenField ID="academicCsrf" runat="server" ClientIDMode="Static" />

@@ -76,9 +76,9 @@ namespace UIMS.Tasks
                         {
                             int week; if (!int.TryParse(context.Request.Form["weekNumber"], NumberStyles.None, CultureInfo.InvariantCulture, out week)) throw new UIMS.Services.FirebaseException(400, "Choose a training week number.");
                             result = await service.SubmitAsync(context.Request.Form["placementId"], week, context.Request.Form["weekStart"], context.Request.Form["weekEnd"],
-                                fileName, fileMime, bytes, context.Request.Form["companyComments"], cancellation, ParseTaskSelection(context)).ConfigureAwait(false);
+                                fileName, fileMime, bytes, context.Request.Form["companyComments"], cancellation, ParseTaskSelection(context), context.Request.Form["expectedAcademicSupervisorId"]).ConfigureAwait(false);
                         }
-                        else if (action == "resubmit") result = await service.ResubmitAsync(context.Request.Form["reportId"], fileName, fileMime, bytes, context.Request.Form["companyComments"], cancellation, ParseTaskSelection(context)).ConfigureAwait(false);
+                        else if (action == "resubmit") result = await service.ResubmitAsync(context.Request.Form["reportId"], fileName, fileMime, bytes, context.Request.Form["companyComments"], cancellation, ParseTaskSelection(context), context.Request.Form["expectedAcademicSupervisorId"]).ConfigureAwait(false);
                         else throw new UIMS.Services.FirebaseException(400, "Unknown weekly report upload action.");
                         await WriteJsonAsync(context, result).ConfigureAwait(false); return;
                     }

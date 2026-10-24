@@ -13,7 +13,7 @@
         document.getElementById('previewEmail').textContent = value || 'University email';
         document.getElementById('previewEmail').classList.toggle('placeholder', !value);
         // Only a count is mirrored. The password itself never enters another DOM node.
-        document.getElementById('previewPassword').textContent = count ? '•'.repeat(Math.min(count, 18)) : '••••••••';
+        document.getElementById('previewPassword').textContent = count ? '\u2022'.repeat(Math.min(count, 18)) : '\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022';
     }
     [email, password].forEach(input => {
         input.addEventListener('input', preview); input.addEventListener('change', preview);
@@ -34,7 +34,7 @@
             phase = 'loading'; started = performance.now(); preview();
             workspace.classList.remove('is-error', 'is-success'); workspace.classList.add('is-scanning');
             tilt.style.setProperty('--rx', '0deg'); tilt.style.setProperty('--ry', '0deg');
-            flipper.classList.add('flipped'); status.textContent = 'Signing in…';
+            flipper.classList.add('flipped'); status.textContent = 'Signing in\u2026';
         },
         async success() {
             if (phase !== 'loading') this.begin();

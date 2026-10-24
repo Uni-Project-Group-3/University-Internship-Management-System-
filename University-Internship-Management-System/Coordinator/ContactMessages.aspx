@@ -8,8 +8,8 @@
     <link runat="server" href="~/Assets/shared/colors.css" rel="stylesheet" />
     
     <link runat="server" href="~/Assets/coordinator/contact-messages.css?v=3" rel="stylesheet" />
-<link href="../Assets/shared/workspace-identity.css?v=20261024-polish" rel="stylesheet" />
-<script src="../Js_project/workspace-navigation-unified.js?v=20261024-polish" defer></script>
+<link href="../Assets/shared/workspace-identity.css?v=20261024-refine" rel="stylesheet" />
+<script src="../Js_project/workspace-navigation-unified.js?v=20261024-refine" defer></script>
 </head>
 <body class="app-page contact-messages-page role-shell" data-demo-role="admin">
     <form id="form1" runat="server">

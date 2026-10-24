@@ -294,9 +294,9 @@ namespace UIMS.Tasks
                     }
                 }
                 result.Add(new JObject { ["placementId"] = pair.Key, ["studentId"] = studentId,
-                    ["studentName"] = profile == null ? studentId : Text(profile, "fullName", "displayName", "name"),
+                    ["studentName"] = profile == null || Text(profile, "fullName", "displayName", "name").Length == 0 ? "Name unavailable" : Text(profile, "fullName", "displayName", "name"),
                     ["companyId"] = Text(placement, "companyId"), ["status"] = Text(placement, "status", "placementStatus"),
-                    ["academicSupervisorId"] = academicId, ["academicSupervisorName"] = academicName, ["canSubmit"] = submissionBlocker.Length == 0, ["submissionBlocker"] = submissionBlocker });
+                    ["academicSupervisorId"] = academicId, ["academicSupervisorName"] = academicName.Length == 0 ? "Name unavailable" : academicName, ["canSubmit"] = submissionBlocker.Length == 0, ["submissionBlocker"] = submissionBlocker });
             }
             return new JObject { ["placements"] = result };
         }
@@ -576,7 +576,7 @@ namespace UIMS.Tasks
             }
         }
 
-        public async Task<JObject> SubmitAsync(string placementId, int weekValue, string weekStartValue, string weekEndValue, string fileName, string contentType, byte[] bytes, string companyComments, CancellationToken cancellation, JArray selectedTaskIds = null)
+        public async Task<JObject> SubmitAsync(string placementId, int weekValue, string weekStartValue, string weekEndValue, string fileName, string contentType, byte[] bytes, string companyComments, CancellationToken cancellation, JArray selectedTaskIds = null, string expectedAcademicSupervisorId = null)
         {
             Ensure(true, "companySupervisor");
             int week = WeekNumber(new JValue(weekValue)); string weekStart = DateOnly(weekStartValue, "weekStart"), weekEnd = DateOnly(weekEndValue, "weekEnd");
@@ -586,13 +586,14 @@ namespace UIMS.Tasks
             string studentId = Text(placement, "studentId", "studentProfileId", "traineeId");
             if (studentId.Length == 0) throw new UIMS.Services.FirebaseException(409, "The active placement has no student relationship.");
             string academicId = await ResolveAcademicSupervisorAsync(studentId, cancellation).ConfigureAwait(false);
+            if (expectedAcademicSupervisorId != null && academicId != expectedAcademicSupervisorId) throw new UIMS.Services.FirebaseException(409, "The academic assignment has changed. Refresh the student selection and check the recipient before submitting.");
             string reportId = StableReportId(placementId, week);
             var existing = await ReadAsync("weeklyReports/" + reportId, cancellation).ConfigureAwait(false);
             if (existing.Value != null) throw new UIMS.Services.FirebaseException(409, "A weekly report already exists for this placement and training week. Use the resubmit action only after revision was requested.");
             return await StoreNewOrRevisionAsync(reportId, placementId, null, placement, studentId, academicId, week, weekStart, weekEnd, fileName, contentType, bytes, companyComments, cancellation, selectedTaskIds).ConfigureAwait(false);
         }
 
-        public async Task<JObject> ResubmitAsync(string reportId, string fileName, string contentType, byte[] bytes, string companyComments, CancellationToken cancellation, JArray selectedTaskIds = null)
+        public async Task<JObject> ResubmitAsync(string reportId, string fileName, string contentType, byte[] bytes, string companyComments, CancellationToken cancellation, JArray selectedTaskIds = null, string expectedAcademicSupervisorId = null)
         {
             Ensure(true, "companySupervisor");
             var reportNode = await ReadAsync("weeklyReports/" + reportId, cancellation).ConfigureAwait(false); var report = reportNode.Value as JObject;
@@ -600,6 +601,7 @@ namespace UIMS.Tasks
             await EnsureCompanyStudentPlacementAsync(Text(report, "placementId"), Text(report, "studentId"), cancellation, requireActive: true).ConfigureAwait(false);
             if (Text(report, "status") != "revisionRequested") throw new UIMS.Services.FirebaseException(409, "A new report revision is allowed only after the academic supervisor requests changes.");
             string currentAcademic = await ResolveAcademicSupervisorAsync(Text(report, "studentId"), cancellation).ConfigureAwait(false);
+            if (expectedAcademicSupervisorId != null && currentAcademic != expectedAcademicSupervisorId) throw new UIMS.Services.FirebaseException(409, "The academic assignment has changed. Refresh the student selection and check the recipient before submitting.");
             var placementNode = await ReadAsync("placements/" + Text(report, "placementId"), cancellation).ConfigureAwait(false);
             return await StoreNewOrRevisionAsync(reportId, Text(report, "placementId"), reportNode, placementNode.Value as JObject,
                 Text(report, "studentId"), currentAcademic, (int?)report["weekNumber"] ?? 0, Text(report, "weekStart"), Text(report, "weekEnd"), fileName, contentType, bytes, companyComments, cancellation, selectedTaskIds).ConfigureAwait(false);
@@ -642,6 +644,8 @@ namespace UIMS.Tasks
             bool reportWriteAttempted = false;
             try
             {
+                await EnsureCompanyStudentPlacementAsync(placementId, studentId, cancellation, requireActive: true).ConfigureAwait(false);
+                await EnsureCurrentAssignmentAsync(studentId, academicId, cancellation).ConfigureAwait(false);
                 await WriteAsync("fileAttachments/" + fileId, metadata, "null_etag", HttpMethod.Put, cancellation).ConfigureAwait(false);
                 JObject updated;
                 if (existing == null)
