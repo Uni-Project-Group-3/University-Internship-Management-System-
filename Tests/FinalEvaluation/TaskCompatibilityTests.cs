@@ -43,6 +43,7 @@ internal static partial class Program
     private static async Task TaskSubmissionCompatibilityTests()
     {
         await TaskBulkAndExtensionTests();
+        await TaskCreationRecoveryTests();
         var settings = EnabledTaskSettings();
         var student = TaskActor.FromVerifiedProfile("auth-student-1", "student", JObject.Parse("{\"role\":\"student\",\"isActive\":true,\"studentId\":\"ST-1\"}"));
         var company = TaskActor.FromVerifiedProfile("auth-company-1", "companySupervisor", JObject.Parse("{\"role\":\"companySupervisor\",\"isActive\":true,\"companySupervisorId\":\"SUP-1\",\"companyId\":\"CO-1\"}"));
@@ -122,6 +123,61 @@ internal static partial class Program
             StatusCode(() => raceServiceB.StartAsync("race-task", CancellationToken.None)));
         Assert(raceResults.Count(x => x == 200) == 1 && raceResults.Count(x => x == 409) == 1);
         Assert((string)raceHandler.TaskRecord["status"] == "In Progress" && raceHandler.TaskWrites == 1);
+    }
+
+    private static async Task TaskCreationRecoveryTests()
+    {
+        var db = TaskDbWithPlacement(); var settings = EnabledTaskSettings();
+        db.Records["users/one"] = JObject.Parse("{\"role\":\"student\",\"isActive\":true,\"studentId\":\"ST-1\"}");
+        var company = TaskActor.FromVerifiedProfile("company-uid", "companySupervisor", JObject.Parse("{\"role\":\"companySupervisor\",\"isActive\":true,\"companySupervisorId\":\"SUP-1\",\"companyId\":\"CO-1\"}"));
+        var student = TaskActor.FromVerifiedProfile("student-uid", "student", JObject.Parse("{\"role\":\"student\",\"isActive\":true,\"studentId\":\"ST-1\"}"));
+        var service = OfflineTaskService(db, company, settings);
+        string hash = new string('a',64);
+        var payload = new JObject { ["batchId"]="RECOVERY-TEST",["placementIds"]=new JArray("PLACE-1"),["title"]="Recoverable task",["description"]="Requirements",["criteria"]="Instructions",["maximum"]=10,["taskType"]="standard",["startsAt"]=DateTimeOffset.UtcNow.ToString("o"),["deadline"]=DateTimeOffset.UtcNow.AddDays(1).ToString("o") };
+        var plan = new JObject { ["payload"]=payload,["resources"]=new JArray(new JObject {["id"]="resource-0",["name"]="work.txt",["size"]=10,["sha256"]=hash}),["questionImages"]=new JArray() };
+        var started = await service.BeginCreationAsync(plan,CancellationToken.None);
+        Assert((string)started["status"]=="incomplete" && !(bool)started["progress"][0]["taskSaved"]);
+        Assert(!db.Records.Keys.Any(key=>key.StartsWith("tasks/")));
+        var restarted = OfflineTaskService(db,company,settings);
+        Assert((await restarted.ListCreationOperationsAsync(CancellationToken.None))["operations"].Count()==1);
+        Assert(JToken.DeepEquals(JToken.Parse(plan.ToString()),(await restarted.CreationOperationAsync("RECOVERY-TEST",false,CancellationToken.None))["plan"]));
+        var duplicate = await restarted.BeginCreationAsync(plan,CancellationToken.None); Assert((string)duplicate["batchId"]=="RECOVERY-TEST");
+        var changed = (JObject)plan.DeepClone();changed["payload"]["title"]="Changed";
+        await Reject<FirebaseException>(()=>restarted.BeginCreationAsync(changed,CancellationToken.None));
+        int before = db.Requests;
+        await Reject<FirebaseException>(()=>OfflineTaskService(db,student,settings).CreationOperationAsync("RECOVERY-TEST",false,CancellationToken.None));
+        await Reject<FirebaseException>(()=>OfflineTaskService(db,student,settings).ListCreationOperationsAsync(CancellationToken.None));
+        Assert(db.Requests==before);
+        var wrong = TaskActor.FromVerifiedProfile("other-company-uid","companySupervisor",JObject.Parse("{\"role\":\"companySupervisor\",\"isActive\":true,\"companySupervisorId\":\"SUP-2\",\"companyId\":\"CO-2\"}"));
+        await Reject<FirebaseException>(()=>OfflineTaskService(db,wrong,settings).CreationOperationAsync("RECOVERY-TEST",false,CancellationToken.None));
+        var created = await restarted.BulkCreateAsync(payload,CancellationToken.None);string taskId=(string)created["results"][0]["id"];
+        var partial = await restarted.CreationOperationAsync("RECOVERY-TEST",true,CancellationToken.None);
+        Assert((bool)partial["progress"][0]["taskSaved"] && (string)partial["status"]=="incomplete");
+        // A resource must be both ready and linked to the exact task, with the original fingerprint.
+        db.Records["fileAttachments/file-recovery"] = new JObject {["taskId"]=taskId,["purpose"]="taskAttachment",["status"]="ready",["fileName"]="work.txt",["sizeBytes"]=10,["sha256"]=hash};
+        Assert((string)(await restarted.CreationOperationAsync("RECOVERY-TEST",true,CancellationToken.None))["status"]=="incomplete");
+        ((JObject)db.Records["tasks/"+taskId])["attachmentIds"]=new JArray("file-recovery");
+        var finished = await OfflineTaskService(db,company,settings).CreationOperationAsync("RECOVERY-TEST",true,CancellationToken.None);
+        Assert((string)finished["status"]=="complete" && (string)finished["progress"][0]["resourceFiles"]["resource-0"]=="file-recovery");
+        Assert(!(await restarted.ListCreationOperationsAsync(CancellationToken.None))["operations"].HasValues);
+        Assert(db.Records.Keys.Count(key=>key.StartsWith("tasks/"))==1);
+        var examPayload = (JObject)payload.DeepClone();examPayload["batchId"]="RECOVERY-EXAM";examPayload["taskType"]="exam";
+        var examPlan = new JObject {["payload"]=examPayload,["exam"]=ExamDraft(),["questionImages"]=new JArray(new JObject {["questionId"]="Q1",["name"]="question.png",["size"]=11,["sha256"]=hash})};
+        await restarted.BeginCreationAsync(examPlan,CancellationToken.None);
+        var examTask = await restarted.BulkCreateAsync(examPayload,CancellationToken.None);string examTaskId=(string)examTask["results"][0]["id"];
+        var waitingExam = await restarted.CreationOperationAsync("RECOVERY-EXAM",false,CancellationToken.None);string examId=(string)waitingExam["progress"][0]["examId"];
+        Assert((string)waitingExam["status"]=="incomplete");
+        db.Records["taskExams/"+examId]=new JObject {["taskId"]=examTaskId,["placementId"]="PLACE-1",["createdBy"]="SUP-1",["status"]="draft",["draft"]=new JObject {["questions"]=new JObject {["Q1"]=new JObject()}}};
+        db.Records["fileAttachments/image-recovery"]=new JObject {["taskId"]=examTaskId,["examId"]=examId,["questionId"]="Q1",["purpose"]="examQuestionImage",["status"]="ready",["sha256"]=hash,["sizeBytes"]=11};
+        var uploadedImage = await restarted.CreationOperationAsync("RECOVERY-EXAM",true,CancellationToken.None);
+        Assert((string)uploadedImage["progress"][0]["images"]["Q1"]=="image-recovery" && (string)uploadedImage["status"]=="incomplete");
+        ((JObject)db.Records["taskExams/"+examId])["status"]="published";
+        Assert((string)(await restarted.CreationOperationAsync("RECOVERY-EXAM",true,CancellationToken.None))["status"]=="incomplete");
+        db.Records["taskExams/"+examId]["draft"]["questions"]["Q1"]["imageFileId"]="image-recovery";
+        Assert((string)(await OfflineTaskService(db,company,settings).CreationOperationAsync("RECOVERY-EXAM",true,CancellationToken.None))["status"]=="complete");
+        // Completion cannot be supplied by the caller: removing ready metadata makes reconciliation incomplete.
+        ((JObject)db.Records["fileAttachments/file-recovery"])["status"]="pending";
+        Assert((string)(await restarted.CreationOperationAsync("RECOVERY-TEST",false,CancellationToken.None))["status"]=="incomplete");
     }
 
     private static async Task TaskBulkAndExtensionTests()

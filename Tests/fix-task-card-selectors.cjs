@@ -1,0 +1,1 @@
+const fs=require('fs'),p='University-Internship-Management-System/Js_project/Company/ManageTasks.js';let s=fs.readFileSync(p,'utf8').replace("'<article class=\"task-card task-board-card\" data-status=\"'","'<article class=\"task-card'+(board?' task-board-card':'')+'\" data-status=\"'");fs.writeFileSync(p,s);

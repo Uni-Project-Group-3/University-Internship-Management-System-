@@ -25,28 +25,32 @@ namespace University_Internship_Management_System.Shared
             ServicePointManager.SecurityProtocol |= SecurityProtocolType.Tls12;
         }
 
-        readonly string baseUrl = (ConfigurationManager.AppSettings["FirebaseUrl"] ?? "https://just-project-4af15-default-rtdb.firebaseio.com").TrimEnd('/');
-        readonly string secret = ConfigurationManager.AppSettings["FirebaseSecret"];
+        readonly UIMS.Services.FirebaseConfiguration configuration = new UIMS.Services.FirebaseConfiguration();
 
         string Url(string path)
         {
-            string url = baseUrl + "/" + (path ?? "").Trim('/') + ".json";
-            return string.IsNullOrEmpty(secret) ? url : url + "?auth=" + Uri.EscapeDataString(secret);
+            configuration.EnsureEnabled();
+            return configuration.DatabaseUrl.TrimEnd('/') + "/" + (path ?? "").Trim('/') + ".json";
         }
 
         string Send(HttpMethod method, string path, object body)
         {
+            if (method != HttpMethod.Get) configuration.EnsureWritesAllowed();
             return Task.Run(async () =>
             {
-                var request = new HttpRequestMessage(method, Url(path));
+                using (var request = new HttpRequestMessage(method, Url(path)))
+                {
+                request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer",
+                    await FirebaseServerCredential.AccessTokenAsync(System.Threading.CancellationToken.None).ConfigureAwait(false));
                 if (body != null)
                     request.Content = new StringContent(JsonConvert.SerializeObject(body), Encoding.UTF8, "application/json");
                 using (var response = await http.SendAsync(request))
                 {
                     string text = await response.Content.ReadAsStringAsync();
                     if (!response.IsSuccessStatusCode)
-                        throw new Exception("Firebase " + (int)response.StatusCode + ": " + text);
+                        throw new AppError("Firebase records are unavailable (HTTP " + (int)response.StatusCode + ").");
                     return text;
+                }
                 }
             }).GetAwaiter().GetResult();
         }

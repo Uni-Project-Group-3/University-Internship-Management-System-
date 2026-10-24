@@ -141,17 +141,7 @@ namespace UIMS
 
         private static object Logout(HttpContext context)
         {
-            var identity = context.User?.Identity as FormsIdentity;
-            string role = identity == null ? null : FirebaseSignInService.CanonicalRole(identity.Ticket.UserData);
-            if (role != null) context.Response.Cookies.Add(new HttpCookie(".UIMS.Role." + role, "") { Expires = DateTime.UtcNow.AddDays(-1), HttpOnly = true, Secure = context.Request.IsSecureConnection, SameSite = SameSiteMode.Lax, Path = FormsAuthentication.FormsCookiePath });
-            FormsAuthentication.SignOut();
-            context.Session.Remove("Uims.FirebaseIdToken");
-            context.Response.Cookies.Add(new HttpCookie(FormsAuthentication.FormsCookieName, "")
-            {
-                Expires = DateTime.UtcNow.AddDays(-1), HttpOnly = true,
-                Secure = context.Request.IsSecureConnection, SameSite = SameSiteMode.Lax,
-                Path = FormsAuthentication.FormsCookiePath
-            });
+            LoginSession.End(context);
             return new { signedOut = true };
         }
 

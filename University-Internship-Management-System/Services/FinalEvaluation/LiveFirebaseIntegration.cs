@@ -266,7 +266,8 @@ namespace University_Internship_Management_System.Services.FinalEvaluation
         }
         private sealed class PrivateStorage : IPrivateCompletionReportStorage
         {
-            private readonly UIMS.Services.FirebaseFileStorageService storage = new UIMS.Services.FirebaseFileStorageService(k => ConfigurationManager.AppSettings[k]);
+            // Completion-report records predate provider metadata; preserve their Firebase transport.
+            private readonly UIMS.Services.FirebaseFileStorageService storage = new UIMS.Services.FirebaseFileStorageService(k => k == "FileStorageProvider" ? "firebase" : ConfigurationManager.AppSettings[k]);
             public async Task PutNewAsync(string key, byte[] bytes) { await storage.UploadAsync(key, "completion-report.pdf", "application/pdf", bytes, CancellationToken.None).ConfigureAwait(false); }
             public Task<byte[]> ReadAsync(string key) { return storage.DownloadAsync(key, CancellationToken.None); }
             public async Task DeleteIfHashMatchesAsync(string key, string hash) { var bytes = await ReadAsync(key).ConfigureAwait(false); if (CompletionReportValidation.Hash(bytes) == hash) await storage.DeleteObjectAsync(key, CancellationToken.None).ConfigureAwait(false); }

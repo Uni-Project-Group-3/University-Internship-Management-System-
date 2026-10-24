@@ -8,7 +8,6 @@ using System.Net.Http.Headers;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using Google.Apis.Auth.OAuth2;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System.Web.Configuration;
@@ -19,15 +18,11 @@ namespace UIMS.Tasks
     public sealed class TaskExamService
     {
         private static readonly HttpClient SharedClient = new HttpClient { Timeout = TimeSpan.FromSeconds(25) };
-        private static readonly Lazy<Task<GoogleCredential>> Credential = new Lazy<Task<GoogleCredential>>(() => GoogleCredential.GetApplicationDefaultAsync());
         private readonly Func<string, string> setting;
         private readonly HttpClient client;
         private readonly TaskActor actor;
         private readonly Func<CancellationToken, Task<string>> tokenProvider;
         private readonly string root;
-        private readonly bool enabled;
-        private readonly bool writesEnabled;
-        private readonly bool schemaValidated;
 
         public TaskExamService(TaskActor verifiedActor) : this(k => WebConfigurationManager.AppSettings[k], SharedClient, verifiedActor, GetAccessTokenAsync, null) { }
         public TaskExamService(Func<string, string> settings, HttpClient httpClient, TaskActor verifiedActor,
@@ -37,39 +32,220 @@ namespace UIMS.Tasks
             client = httpClient ?? throw new ArgumentNullException(nameof(httpClient)); actor = verifiedActor;
             tokenProvider = accessTokenProvider ?? GetAccessTokenAsync;
             root = (setting("FirebaseDatabaseUrl") ?? "").TrimEnd('/');
-            enabled = IsTrue(setting("FirebaseEnabled")) && IsTrue(setting("TaskExamsEnabled"));
-            writesEnabled = IsTrue(setting("FirebaseLiveWritesEnabled")) && IsTrue(setting("TaskExamsLiveWritesEnabled"));
-            schemaValidated = IsTrue(setting("FirebaseSchemaValidated")) && IsTrue(setting("TaskExamsSchemaValidated"));
             Storage = storage ?? new UIMS.Services.FirebaseFileStorageService(setting, httpClient);
         }
         internal UIMS.Services.FirebaseFileStorageService Storage { get; private set; }
 
         private static bool IsTrue(string value) { return string.Equals(value, "true", StringComparison.OrdinalIgnoreCase); }
-        private static async Task<string> GetAccessTokenAsync(CancellationToken cancellation)
+        private static Task<string> GetAccessTokenAsync(CancellationToken cancellation)
+        { return University_Internship_Management_System.Shared.FirebaseServerCredential.AccessTokenAsync(cancellation); }
+
+        public static JObject ConfigurationStatus(Func<string,string> settings, bool requireWrites, bool requireImages)
         {
-            var scoped = (await Credential.Value.ConfigureAwait(false)).CreateScoped("https://www.googleapis.com/auth/firebase.database", "https://www.googleapis.com/auth/userinfo.email");
-            cancellation.ThrowIfCancellationRequested();
-            return await scoped.UnderlyingCredential.GetAccessTokenForRequestAsync().ConfigureAwait(false);
+            var checks = new JArray();
+            Action<string,bool,string> add = (key,passed,message) => checks.Add(new JObject { ["key"] = key, ["passed"] = passed, ["message"] = passed ? key + " is satisfied by configuration; live verification is separate." : message });
+            bool firebaseOn = IsTrue(settings("FirebaseEnabled"));
+            add("FirebaseEnabled",firebaseOn,"Firebase access is disabled by FirebaseEnabled=false.");
+            add("TaskExamsEnabled",IsTrue(settings("TaskExamsEnabled")),"The Exams module is disabled (TaskExamsEnabled=false). This does not mean the existing Firebase connection is disconnected.");
+            add("FirebaseAuthenticationEnabled",IsTrue(settings("FirebaseAuthenticationEnabled")),"The existing Firebase Authentication integration must be enabled for exam authorization.");
+            Uri uri; string url = (settings("FirebaseDatabaseUrl") ?? "").TrimEnd('/');
+            bool validRoot = Uri.TryCreate(url,UriKind.Absolute,out uri) && uri.Scheme == "https" && uri.IsDefaultPort && uri.AbsolutePath == "/" && uri.UserInfo == "" && uri.Query == "" && uri.Fragment == "" && (uri.Host.EndsWith(".firebaseio.com",StringComparison.OrdinalIgnoreCase) || uri.Host.EndsWith(".firebasedatabase.app",StringComparison.OrdinalIgnoreCase));
+            add("FirebaseDatabaseUrl",validRoot,"The existing Firebase database root is invalid; ask the administrator to inspect its current setting.");
+            add("FirebaseSchemaValidated",IsTrue(settings("FirebaseSchemaValidated")),"The existing Firebase schema has not been approved for this environment (FirebaseSchemaValidated=false).");
+            add("TaskExamsSchemaValidated",IsTrue(settings("TaskExamsSchemaValidated")),"Exam schema/security verification is pending (TaskExamsSchemaValidated=false). Verify existing records, private answer keys and deployed client Rules before approving this flag.");
+            if (requireWrites)
+            {
+                add("FirebaseLiveWritesEnabled",IsTrue(settings("FirebaseLiveWritesEnabled")),"Firebase writes are disabled by FirebaseLiveWritesEnabled=false.");
+                add("FirebaseTaskSchemaValidated",IsTrue(settings("FirebaseTaskSchemaValidated")),"The task schema must be validated before exam state can update linked tasks.");
+                add("TaskExamsLiveWritesEnabled",IsTrue(settings("TaskExamsLiveWritesEnabled")),"Exam creation, publication, answers, submission and result release are disabled (TaskExamsLiveWritesEnabled=false).");
+            }
+            string provider = settings("FileStorageProvider");
+            if (string.IsNullOrWhiteSpace(provider)) provider = Environment.GetEnvironmentVariable("UIMS_FileStorageProvider");
+            provider = string.IsNullOrWhiteSpace(provider) ? "firebase" : provider.Trim().ToLowerInvariant();
+            if (requireImages) add("FileStorageProvider",provider == "firebase" || provider == "supabase","The configured file Storage provider is unsupported.");
+            if (requireImages && provider == "supabase")
+            {
+                Func<string,string> storageSetting = key => Environment.GetEnvironmentVariable("UIMS_" + key) ?? settings(key);
+                Uri storageUri;
+                bool validStorage = Uri.TryCreate(storageSetting("SupabaseStorageUrl"),UriKind.Absolute,out storageUri) && storageUri.Scheme == "https" && storageUri.IsDefaultPort && storageUri.Host.EndsWith(".supabase.co",StringComparison.OrdinalIgnoreCase) && storageUri.AbsolutePath == "/" && storageUri.UserInfo == "" && storageUri.Query == "" && storageUri.Fragment == "";
+                add("SupabaseStorageUrl",validStorage,"Configure the existing Supabase Storage HTTPS project URL on the server.");
+                string bucket = storageSetting("SupabaseStorageBucket");
+                add("SupabaseStorageBucket",!string.IsNullOrWhiteSpace(bucket) && bucket.All(c => char.IsLetterOrDigit(c) || c == '-'),"Configure the private Supabase Storage bucket on the server.");
+                add("SupabaseStorageLiveWritesEnabled",IsTrue(storageSetting("SupabaseStorageLiveWritesEnabled")),"Exam image uploads are disabled by SupabaseStorageLiveWritesEnabled=false.");
+            }
+            if (requireImages && provider == "firebase")
+            {
+                add("FirebaseStorageEnabled",IsTrue(settings("FirebaseStorageEnabled")),"Question images require the existing Firebase Storage integration to be enabled.");
+                add("FirebaseStorageLiveWritesEnabled",IsTrue(settings("FirebaseStorageLiveWritesEnabled")),"Question image uploads are disabled by FirebaseStorageLiveWritesEnabled=false.");
+                add("FirebaseStorageBucket",!string.IsNullOrWhiteSpace(settings("FirebaseStorageBucket")),"The existing Firebase Storage bucket is not configured.");
+            }
+            var failures = checks.OfType<JObject>().Where(check => !(bool)check["passed"]).ToList();
+            string code = failures.Count == 0 ? "EXAM_CONFIGURATION_READY" : !firebaseOn ? "FIREBASE_DISABLED" : failures.Any(check => (string)check["key"] == "TaskExamsEnabled") ? "EXAMS_DISABLED" : failures.Any(check => ((string)check["key"]).Contains("SchemaValidated")) ? "EXAM_SCHEMA_NOT_VERIFIED" : "EXAM_DEPENDENCY_DISABLED";
+            return new JObject { ["ready"] = failures.Count == 0, ["code"] = code, ["verification"] = "configurationOnly", ["checks"] = checks,
+                ["message"] = failures.Count == 0 ? "Exam configuration gates are enabled. Backend compatibility and image permissions are checked separately." : string.Join(" ",failures.Select(check => (string)check["message"])) };
         }
         private void Ensure(bool write, string role = null)
         {
-            if (!enabled) throw new UIMS.Services.FirebaseException(503, "Firebase connection not configured for exams.");
-            if (!IsTrue(setting("FirebaseAuthenticationEnabled"))) throw new UIMS.Services.FirebaseException(503, "Firebase Authentication is not configured for exams.");
-            Uri uri;
-            if (!Uri.TryCreate(root, UriKind.Absolute, out uri) || uri.Scheme != "https" || !uri.IsDefaultPort ||
-                uri.AbsolutePath != "/" || !(uri.Host.EndsWith(".firebaseio.com", StringComparison.OrdinalIgnoreCase) || uri.Host.EndsWith(".firebasedatabase.app", StringComparison.OrdinalIgnoreCase)))
-                throw new UIMS.Services.FirebaseException(503, "Configure the HTTPS Firebase database root in Web.config.");
-            if (!schemaValidated) throw new UIMS.Services.FirebaseException(503, "The exam schema is not validated for this environment.");
-            if (actor == null || string.IsNullOrWhiteSpace(actor.Uid)) throw new UIMS.Services.FirebaseException(401, "A verified Firebase account is required.");
-            if (role != null && actor.Role != role) throw new UIMS.Services.FirebaseException(403, "This exam operation is not allowed for the signed-in role.");
-            if (write && (!writesEnabled || !IsTrue(setting("FirebaseTaskSchemaValidated")))) throw new UIMS.Services.FirebaseException(503, "Exam writes are disabled until schema and authorization are validated.");
+            var status = ConfigurationStatus(setting,write,false);
+            if (!(bool)status["ready"]) throw new UIMS.Services.FirebaseException(503,(string)status["message"]);
+            if (actor == null || string.IsNullOrWhiteSpace(actor.Uid)) throw new UIMS.Services.FirebaseException(401,"A verified Firebase account is required.");
+            if (role != null && actor.Role != role) throw new UIMS.Services.FirebaseException(403,"This exam operation is not allowed for the signed-in role.");
+        }
+        public JObject ConfigurationForCompany(bool images)
+        {
+            if (actor == null || string.IsNullOrWhiteSpace(actor.Uid)) throw new UIMS.Services.FirebaseException(401,"A verified Firebase account is required.");
+            if (actor.Role != "companySupervisor") throw new UIMS.Services.FirebaseException(403,"Only company supervisors can inspect exam readiness.");
+            return ConfigurationStatus(setting,true,images);
+        }
+        public async Task<JObject> CheckReadinessAsync(bool images, CancellationToken cancellation)
+        {
+            Ensure(true,"companySupervisor");
+            var configuration = ConfigurationStatus(setting,true,images);
+            if (!(bool)configuration["ready"]) throw new UIMS.Services.FirebaseException(503,(string)configuration["message"]);
+            var result = await VerifyEnvironmentAsync(images,cancellation).ConfigureAwait(false);
+            if (!(bool)result["compatible"]) throw new UIMS.Services.FirebaseException(409,"The existing exam records are not compatible with the secure exam contract: " + string.Join(" ",((JArray)result["issues"]).Values<string>()));
+            result["ready"] = true; return result;
+        }
+        // Explicit company-only inspection is permitted before activation. It never flips flags,
+        // creates probe records, publishes an exam, or claims to verify deployed client Rules.
+        public async Task<JObject> VerifyEnvironmentAsync(bool images, CancellationToken cancellation)
+        {
+            ConfigurationForCompany(images);
+            var local = ConfigurationStatus(setting,false,false);
+            var blockers = ((JArray)local["checks"]).OfType<JObject>().Where(check => !(bool)check["passed"] && new[] {"FirebaseEnabled","FirebaseAuthenticationEnabled","FirebaseDatabaseUrl"}.Contains((string)check["key"])).ToList();
+            if (blockers.Count > 0) throw new UIMS.Services.FirebaseException(503,string.Join(" ",blockers.Select(check => (string)check["message"])));
+            var candidates = await ReadEqualAsync("taskExams","createdBy",actor.CompanySupervisorId,cancellation).ConfigureAwait(false);
+            var issues = new JArray(); var securityFindings = new JArray(); var recordReports = new JArray(); int inspected = 0,attemptCount = 0;
+            if (candidates != null && !(candidates is JObject)) issues.Add("/taskExams must be an object keyed by exam ID.");
+            if ((candidates as JObject ?? new JObject()).Properties().Any(property => !(property.Value is JObject))) issues.Add("An exam record must be an object keyed by exam ID.");
+            foreach (var entry in (candidates as JObject ?? new JObject()).Properties().Where(property => property.Value is JObject))
+            {
+                var exam = (JObject)entry.Value; if (Text(exam,"createdBy") != actor.CompanySupervisorId) continue;
+                await EnsureExamCompanyAsync(exam,cancellation).ConfigureAwait(false); inspected++;
+                int issueStart = issues.Count, securityStart = securityFindings.Count;
+                if (Text(exam,"status") != "draft" && Text(exam,"status") != "published") issues.Add("An exam has an unsupported status.");
+                var draft = exam["draft"] as JObject;
+                if (Text(exam,"status") == "draft" && (draft == null || !(draft["questions"] is JObject))) issues.Add("An exam draft does not use keyed questions.");
+                if (draft != null && ContainsInlineAnswers(draft)) securityFindings.Add("An exam draft contains inline answers; private answer-key separation must be reviewed without automatic migration.");
+                // Read private material only after this exam's company/placement authorization.
+                var privateKeys = await ReadTokenAsync("taskExamAnswerKeys/" + entry.Name,cancellation).ConfigureAwait(false);
+                var normalizedKeys = NormalizePrivateAnswerKeys(privateKeys);
+                if (privateKeys != null && normalizedKeys == null) issues.Add("An exam's private answer-key record must be an object.");
+                var ownKeys = normalizedKeys ?? new JObject();
+                if (draft != null && Text(exam,"status") == "draft") await InspectStoredDefinitionAsync(entry.Name,draft,(ownKeys["draftVersions"] as JObject)?[Text(exam,"draftRevision")] as JObject,issues,cancellation).ConfigureAwait(false);
+                if (Text(exam,"status") == "published")
+                {
+                    int publishedVersion; if (!int.TryParse(Text(exam,"publishedVersion"),NumberStyles.Integer,CultureInfo.InvariantCulture,out publishedVersion)) publishedVersion = 0;
+                    if (publishedVersion < 1) issues.Add("A published exam has an invalid version number.");
+                    else
+                    {
+                        string version = publishedVersion.ToString(CultureInfo.InvariantCulture);
+                        var published = (exam["versions"] as JObject)?[version] as JObject;
+                        if (published == null) published = await ReadTokenAsync("taskExams/" + entry.Name + "/versions/" + version,cancellation).ConfigureAwait(false) as JObject;
+                        if (published == null || !(published["questions"] is JObject)) issues.Add("A published exam version is missing its keyed questions.");
+                        else
+                        {
+                            if (ContainsInlineAnswers(published)) securityFindings.Add("A published version contains inline answers; student projections hide them, but direct-client Rules must be verified.");
+                            await InspectStoredDefinitionAsync(entry.Name,published,ownKeys[version] as JObject,issues,cancellation).ConfigureAwait(false);
+                        }
+                    }
+                }
+                var attempts = await ReadTokenAsync("taskExamAttempts/" + entry.Name,cancellation).ConfigureAwait(false);
+                if (attempts != null && !(attempts is JObject)) issues.Add("Exam attempts must be keyed by student and attempt ID.");
+                foreach (var student in (attempts as JObject ?? new JObject()).Properties())
+                {
+                    if (!(student.Value is JObject)) { issues.Add("A student's attempt history must be keyed by attempt ID."); continue; }
+                    foreach (var attemptEntry in ((JObject)student.Value).Properties())
+                    {
+                        var attempt = attemptEntry.Value as JObject;
+                        if (attempt == null) { issues.Add("An attempt record must be an object."); continue; }
+                        attemptCount++;
+                        if (!new[] {"inProgress","submitted","expired"}.Contains(Text(attempt,"status"))) issues.Add("An exam attempt has an unsupported status.");
+                        if (Text(attempt,"resultStatus") != "released" && (attempt["score"] != null || attempt["maximumScore"] != null)) securityFindings.Add("A legacy unreleased attempt stores a raw grade outside private results; direct-client access must be denied before activation. Path: /taskExamAttempts/" + entry.Name + "/" + student.Name + "/" + attemptEntry.Name);
+                        if (Text(attempt,"status") == "submitted" || Text(attempt,"status") == "expired")
+                        {
+                            string calculation = Text(attempt,"calculatedResultId");
+                            var studentResults = (ownKeys["results"] as JObject)?[student.Name] as JObject;
+                            var attemptResults = studentResults?[attemptEntry.Name] as JObject;
+                            var result = attemptResults?[calculation] as JObject;
+                            if (calculation.Length > 0 && (result == null || result["score"] == null || result["maximumScore"] == null)) issues.Add("A finalized attempt is missing its immutable private calculated result.");
+                            if (calculation.Length == 0 && attempt["score"] == null) issues.Add("A finalized attempt has no calculated-result reference.");
+                        }
+                    }
+                }
+                bool arrayEncoding = privateKeys is JArray || (privateKeys as JObject)?["draftVersions"] is JArray;
+                string keyPath = "/taskExamAnswerKeys/" + entry.Name + (Text(exam,"status") == "draft" ? "/draftVersions/" + Text(exam,"draftRevision") : "/" + Text(exam,"publishedVersion"));
+                recordReports.Add(new JObject { ["examId"] = entry.Name, ["examPath"] = "/taskExams/" + entry.Name, ["privateKeyPath"] = "/taskExamAnswerKeys/" + entry.Name,
+                    ["requiredKeyRevisionPath"] = keyPath, ["observedPrivateKeyType"] = privateKeys == null ? "missing" : privateKeys.Type.ToString(),
+                    ["issues"] = new JArray(issues.Skip(issueStart)), ["securityFindings"] = new JArray(securityFindings.Skip(securityStart)),
+                    ["numericArrayEncoding"] = arrayEncoding, ["action"] = issues.Count > issueStart ? "manualSourceVerificationRequired" : arrayEncoding ? "readCompatibilityAppliedNoDatabaseWrite" : "none",
+                    ["cause"] = arrayEncoding ? "Firebase can serialize numeric revision keys as arrays. Original numeric indexes are preserved by read normalization." : "Creation provenance cannot be established from record shape alone; inspect trusted export/audit history.",
+                    ["writesPlanned"] = 0 });
+            }
+            JObject storage = null; if (images) storage = await Storage.CheckAvailabilityAsync(cancellation).ConfigureAwait(false);
+            return new JObject { ["compatible"] = issues.Count == 0, ["issues"] = new JArray(issues.Values<string>().Distinct()), ["securityFindings"] = new JArray(securityFindings.Values<string>().Distinct()), ["securityReviewRequired"] = securityFindings.Count > 0, ["examRecordsInspected"] = inspected, ["attemptRecordsInspected"] = attemptCount, ["schemaCoverage"] = inspected == 0 ? "emptyCollectionsOnly" : "existingSupervisorRecords",
+                ["configuration"] = ConfigurationStatus(setting,true,images), ["verification"] = "readOnlyBackend", ["storage"] = storage, ["dryRun"] = true, ["recordReports"] = recordReports,
+                ["deployedRulesVerified"] = false, ["databaseWritePermissionsVerified"] = false, ["flagsChanged"] = false,
+                ["message"] = "Read-only inspection completed. This checks backend reads and stored shape, not deployed student Rules or database write permission. No records or configuration were changed." };
+        }
+        // Firebase REST may encode numeric revision maps as arrays. Normalize only these
+        // known containers, preserve original indexes, and never infer missing answers.
+        public static JObject NormalizePrivateAnswerKeys(JToken original)
+        {
+            Func<JToken,JObject> map = value =>
+            {
+                if (value is JObject) return (JObject)value.DeepClone();
+                var array = value as JArray; if (array == null) return null;
+                var result = new JObject();
+                for (int i = 0; i < array.Count; i++) if (array[i] != null && array[i].Type != JTokenType.Null) result[i.ToString(CultureInfo.InvariantCulture)] = array[i].DeepClone();
+                return result;
+            };
+            var keys = map(original); if (keys == null) return null;
+            if (keys["draftVersions"] is JArray) keys["draftVersions"] = map(keys["draftVersions"]);
+            return keys;
+        }
+        private async Task InspectStoredDefinitionAsync(string examId,JObject definition,JObject keys,JArray issues,CancellationToken cancellation)
+        {
+            if (keys == null) { issues.Add("An exam definition is missing its private grading key revision."); return; }
+            var order = definition["questionOrder"] as JArray; var questions = definition["questions"] as JObject;
+            if (order == null || questions == null || order.Count != questions.Count || order.Any(item => item.Type != JTokenType.String)) { issues.Add("An exam has an invalid question order or keyed-question structure."); return; }
+            var reconstructed = (JObject)definition.DeepClone(); var inputQuestions = new JArray();
+            foreach (var id in order.Values<string>())
+            {
+                var source = questions[id] as JObject;var key = keys[id] as JObject;
+                if (source == null || key == null) { issues.Add("A question is missing its corresponding private answer key."); continue; }
+                var question = (JObject)source.DeepClone();
+                decimal publicPoints,privatePoints;
+                if (!decimal.TryParse(Text(question,"points"),NumberStyles.Number,CultureInfo.InvariantCulture,out publicPoints) || !decimal.TryParse(Text(key,"points"),NumberStyles.Number,CultureInfo.InvariantCulture,out privatePoints) || publicPoints != privatePoints) issues.Add("Public and private question points do not match.");
+                foreach (var property in key.Properties()) question[property.Name] = property.Value.DeepClone();
+                string imageId = Text(question,"imageFileId");
+                if (imageId.Length > 0)
+                {
+                    ValidateKey(imageId); var metadata = await ReadTokenAsync("fileAttachments/" + imageId,cancellation).ConfigureAwait(false);
+                    if (metadata == null || Text(metadata,"status") != "ready" || Text(metadata,"purpose") != "examQuestionImage" || Text(metadata,"examId") != examId || Text(metadata,"questionId") != id) issues.Add("An exam image lacks ready, correctly owned Storage metadata.");
+                }
+                inputQuestions.Add(question);
+            }
+            reconstructed["questions"] = inputQuestions;
+            try { ValidateDraft(reconstructed,null); }
+            catch (UIMS.Services.FirebaseException) { issues.Add("An exam definition has invalid dates, duration, attempts, question types, choices or private answers."); }
+        }
+        private static bool ContainsInlineAnswers(JToken value)
+        {
+            var row = value as JObject;
+            if (row != null) return row.Properties().Any(property => new[] {"correctAnswer","correctOptionId","answerKey","answerKeys"}.Contains(property.Name) || ContainsInlineAnswers(property.Value));
+            var array = value as JArray; return array != null && array.Any(ContainsInlineAnswers);
         }
         private string Url(string path) { return root + "/" + string.Join("/", path.Split('/').Where(p => p.Length != 0).Select(Uri.EscapeDataString)) + ".json"; }
         private async Task<HttpResponseMessage> RequestAsync(HttpMethod method, string path, string json, string etag, CancellationToken cancellation)
         {
             if (!string.IsNullOrWhiteSpace(etag) && method != HttpMethod.Put)
                 throw new InvalidOperationException("Conditional Firebase writes require PUT.");
-            string token = await tokenProvider(cancellation).ConfigureAwait(false);
+            string token;
+            try { token = await tokenProvider(cancellation).ConfigureAwait(false); }
+            catch (Exception error) when (!(error is UIMS.Services.FirebaseException) && !(error is OperationCanceledException))
+            { throw new UIMS.Services.FirebaseException(503,"The existing trusted server Firebase credentials could not initialize for Exams. Check the current IIS identity/ADC setup; do not replace the Firebase connection settings."); }
+            if (string.IsNullOrWhiteSpace(token)) throw new UIMS.Services.FirebaseException(503,"The existing server credential provider returned no Firebase access token for Exams.");
             var request = new HttpRequestMessage(method, Url(path));
             request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
             if (method == HttpMethod.Get) request.Headers.TryAddWithoutValidation("X-Firebase-ETag", "true");
@@ -108,7 +284,7 @@ namespace UIMS.Tasks
             if (response.IsSuccessStatusCode) return;
             string body = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
             if (response.StatusCode == HttpStatusCode.Unauthorized || response.StatusCode == HttpStatusCode.Forbidden)
-                throw new UIMS.Services.FirebaseException(403, "Firebase denied the exam request. Verify trusted credentials and least-privilege Rules.");
+                throw new UIMS.Services.FirebaseException(403, "The existing database denied the exam backend request. Verify the current server identity permissions and applicable Rules; this is not evidence that Firebase is disconnected.");
             if ((int)response.StatusCode == 412) throw new UIMS.Services.FirebaseException(409, "This exam changed concurrently. Refresh and retry.");
             if ((int)response.StatusCode == 429 || (int)response.StatusCode >= 500) throw new UIMS.Services.FirebaseException(503, "Firebase exam service is temporarily unavailable.");
             throw new UIMS.Services.FirebaseException((int)response.StatusCode, "Firebase rejected the exam operation." + (string.IsNullOrWhiteSpace(body) ? "" : " " + body));
@@ -264,6 +440,32 @@ namespace UIMS.Tasks
         }
         private static bool ResponsibleExamCreator(string creator, JObject placement, JObject task)
         { return creator.Length > 0 && (Matches(placement, creator, "companySupervisorId", "supervisorId", "assignedSupervisorId") || Matches(task, creator, "assignedBy", "companySupervisorId", "supervisorId")); }
+        private static void RemoveStudentExamSecrets(JToken token)
+        {
+            if (token is JObject)
+            {
+                var row = (JObject)token;
+                foreach (string name in new[] {"answerKey", "answerKeys", "grading", "correctAnswer", "correctOptionId", "score", "maximumScore", "calculatedResultId", "creationRequest"}) row.Remove(name);
+                foreach (var property in row.Properties()) RemoveStudentExamSecrets(property.Value);
+            }
+            else if (token is JArray) foreach (var item in (JArray)token) RemoveStudentExamSecrets(item);
+        }
+        private static JObject StudentVersion(JObject source)
+        {
+            var result = new JObject();
+            foreach (string field in new[] {"title","instructions","opensAt","closesAt","durationMinutes","attemptLimit","totalPoints","questionCount","questionOrder","version","publishedAt"}) if (source[field] != null) result[field] = source[field].DeepClone();
+            if (!(source["questions"] is JObject)) return result;
+            var questions = new JObject();
+            foreach (var entry in (source["questions"] as JObject ?? new JObject()).Properties().Where(p => p.Value is JObject))
+            {
+                var question = new JObject();
+                foreach (string field in new[] {"id","type","prompt","points","order","imageFileId"}) if (entry.Value[field] != null) question[field] = entry.Value[field].DeepClone();
+                if (entry.Value["options"] is JArray) question["options"] = new JArray(((JArray)entry.Value["options"]).OfType<JObject>().Select(option => new JObject { ["id"] = option["id"]?.DeepClone(), ["text"] = option["text"]?.DeepClone() }));
+                questions[entry.Name] = question;
+            }
+            result["questions"] = questions; return result;
+        }
+        internal static void ValidateCreationDefinition(JObject definition) { ValidateDraft(definition, null); }
         private static JObject PublicExam(JObject source, bool company)
         {
             var visible = (JObject)source.DeepClone();
@@ -271,6 +473,8 @@ namespace UIMS.Tasks
             if (company) return visible;
             // Public projections contain only the published immutable version and safe availability settings.
             var version = Text(source, "publishedVersion");
+            RemoveStudentExamSecrets(visible);
+            if (visible["versionData"] is JObject) visible["versionData"] = StudentVersion((JObject)visible["versionData"]);
             visible.Remove("versions");
             visible["version"] = version;
             return visible;
@@ -315,6 +519,14 @@ namespace UIMS.Tasks
                 ValidateKey(creationKey);
                 using (var hash = System.Security.Cryptography.SHA256.Create())
                     examId = "EX-" + BitConverter.ToString(hash.ComputeHash(Encoding.UTF8.GetBytes(actor.CompanySupervisorId + "|" + placementId + "|" + taskId + "|" + creationKey))).Replace("-", "").ToLowerInvariant();
+                // Bind retries to the original definition, including private answers. Keep the
+                // fingerprint under the existing private answer-key collection, never public exam data.
+                var creationDefinition = ValidateDraft(input, null);
+                string fingerprint;
+                using (var hash = System.Security.Cryptography.SHA256.Create())
+                    fingerprint = Convert.ToBase64String(hash.ComputeHash(Encoding.UTF8.GetBytes(creationDefinition.ToString(Formatting.None))));
+                await WriteImmutableAsync("taskExamAnswerKeys/" + examId + "/creationRequest",
+                    new JObject { ["fingerprint"] = fingerprint }, cancellation).ConfigureAwait(false);
                 var prior = (await ReadAsync(ExamPath(examId), cancellation).ConfigureAwait(false)).Data;
                 if (prior != null)
                 {
@@ -733,9 +945,19 @@ namespace UIMS.Tasks
             var metadata = new JObject { ["id"] = fileId, ["purpose"] = "examQuestionImage", ["status"] = "ready", ["examId"] = examId, ["questionId"] = questionId,
                 ["taskId"] = exam["taskId"], ["placementId"] = exam["placementId"], ["ownerUid"] = actor.Uid, ["ownerProfileId"] = actor.CompanySupervisorId,
                 ["fileName"] = stored.FileName, ["contentType"] = stored.ContentType, ["sizeBytes"] = stored.SizeBytes, ["sha256"] = stored.Sha256,
-                ["storagePath"] = stored.ObjectPath, ["storageGeneration"] = stored.Generation, ["createdAt"] = UtcNow() };
+                ["storageProvider"] = stored.Provider, ["storagePath"] = stored.ObjectPath, ["storageGeneration"] = stored.Generation, ["createdAt"] = UtcNow() };
             try { await WriteAsync("fileAttachments/" + fileId, metadata, "null_etag", false, cancellation).ConfigureAwait(false); }
-            catch { try { await Storage.DeleteObjectAsync(objectPath, cancellation).ConfigureAwait(false); } catch { } throw; }
+            catch
+            {
+                bool absent = false;
+                try {
+                    var confirmed = (await ReadAsync("fileAttachments/" + fileId,CancellationToken.None).ConfigureAwait(false)).Data;
+                    absent = confirmed == null;
+                    if (confirmed != null && Text(confirmed,"status")=="ready" && Text(confirmed,"storagePath")==objectPath && Text(confirmed,"sha256")==stored.Sha256) return confirmed;
+                } catch { /* Unknown acknowledgment: retain private bytes for later reconciliation. */ }
+                if (absent) { try { await Storage.DeleteObjectAsync(objectPath,CancellationToken.None).ConfigureAwait(false); } catch { } }
+                throw;
+            }
             return metadata;
         }
         public async Task<UIMS.Tasks.TaskFileDownload> DownloadQuestionImageAsync(string fileId, CancellationToken cancellation)
@@ -751,7 +973,7 @@ namespace UIMS.Tasks
                 if (published == null || !published.SelectTokens("questions.*.imageFileId").Any(x => x.ToString() == fileId)) throw new UIMS.Services.FirebaseException(403, "This image is not published for the student's exam.");
             }
             else throw new UIMS.Services.FirebaseException(403, "This image is not available for the verified role.");
-            return new UIMS.Tasks.TaskFileDownload { FileName = Text(metadata, "fileName"), ContentType = Text(metadata, "contentType"), Content = await Storage.DownloadAsync(Text(metadata, "storagePath"), cancellation).ConfigureAwait(false) };
+            return new UIMS.Tasks.TaskFileDownload { FileName = Text(metadata, "fileName"), ContentType = Text(metadata, "contentType"), Content = await Storage.DownloadAsync(Text(metadata, "storagePath"), Text(metadata, "storageProvider"), cancellation).ConfigureAwait(false) };
         }
         private static string UtcNow() { return DateTimeOffset.UtcNow.ToString("o", CultureInfo.InvariantCulture); }
         private static void ValidateKey(string value)

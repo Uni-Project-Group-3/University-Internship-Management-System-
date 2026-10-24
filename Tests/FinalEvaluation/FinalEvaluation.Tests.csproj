@@ -37,7 +37,7 @@
     <Compile Include="Program.cs" />
     <Compile Include="FinalReportWorkflowTests.cs" />
 <Compile Include="AcademicAssignmentTests.cs" />
-    <Compile Include="FinalReportPreflight.cs" /><Compile Include="FirebaseDemoRepositoryTests.cs" /><Compile Include="PercentageRequirementsTests.cs" /><Compile Include="PercentageSecurityTests.cs" /><Compile Include="DevelopmentIntegrationTests.cs" /><Compile Include="TaskExamTests.cs" /><Compile Include="WeeklyReportTests.cs" />
+    <Compile Include="FinalReportPreflight.cs" /><Compile Include="StudentIntegrationAudit.cs" /><Compile Include="FirebaseDemoRepositoryTests.cs" /><Compile Include="PercentageRequirementsTests.cs" /><Compile Include="PercentageSecurityTests.cs" /><Compile Include="DevelopmentIntegrationTests.cs" /><Compile Include="TaskExamTests.cs" /><Compile Include="WeeklyReportTests.cs" />
     <Compile Include="CompanyDraftWorkflowTests.cs" />
     <Compile Include="CompanySubmissionTests.cs" />
     <Compile Include="AcademicDraftTests.cs" />

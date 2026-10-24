@@ -19,21 +19,28 @@ namespace UIMS.Tasks
             context.Response.ContentType = "application/json; charset=utf-8";
             try
             {
-                // Short-circuit before UID/profile resolution: disabled integration must not make any request.
-                if (!string.Equals(WebConfigurationManager.AppSettings["FirebaseEnabled"], "true", StringComparison.OrdinalIgnoreCase) ||
-                    !string.Equals(WebConfigurationManager.AppSettings["TaskExamsEnabled"], "true", StringComparison.OrdinalIgnoreCase))
-                    throw new UIMS.Services.FirebaseException(503, "Firebase connection not configured for exams. Exam data is unavailable until the centralized Firebase settings are enabled.");
+                context.Items["ExamApiStage"] = "configuration";
+                string method = context.Request.HttpMethod, action = context.Request.QueryString["action"];
+                bool images = string.Equals(context.Request.QueryString["images"],"true",StringComparison.OrdinalIgnoreCase);
+                bool inspection = method == "GET" && action == "configuration" || method == "POST" && action == "verifyConfiguration";
+                var configuration = TaskExamService.ConfigurationStatus(key => WebConfigurationManager.AppSettings[key],method == "POST" || action == "readiness",images);
+                // Keep disabled modules offline; inspection alone may bypass exam feature flags,
+                // but never Firebase authentication or the verified company role.
+                if (!string.Equals(WebConfigurationManager.AppSettings["FirebaseEnabled"],"true",StringComparison.OrdinalIgnoreCase) || !inspection && !(bool)configuration["ready"])
+                { WriteConfigurationError(context,configuration); return; }
                 using (var timeout = CancellationTokenSource.CreateLinkedTokenSource(context.Response.ClientDisconnectedToken))
                 {
                     timeout.CancelAfter(TimeSpan.FromSeconds(60)); var cancellation = timeout.Token;
-                    string method = context.Request.HttpMethod;
-                    string action = context.Request.QueryString["action"];
+                    context.Items["ExamApiStage"] = "verified-actor-resolution";
                     var actor = await TaskActorResolver.ResolveAsync(context, cancellation).ConfigureAwait(false);
                     var service = new TaskExamService(actor);
+                    context.Items["ExamApiStage"] = "authorized-exam-operation";
                     if (method == "GET")
                     {
                         JObject result;
-                        if (action == "list") result = await service.ListAsync(cancellation).ConfigureAwait(false);
+                        if (action == "configuration") result = service.ConfigurationForCompany(images);
+                        else if (action == "readiness") result = await service.CheckReadinessAsync(images,cancellation).ConfigureAwait(false);
+                        else if (action == "list") result = await service.ListAsync(cancellation).ConfigureAwait(false);
                         else if (action == "eligibility") result = await service.EligibilityAsync(context.Request.QueryString["examId"], cancellation).ConfigureAwait(false);
                         else if (action == "exam") result = actor.Role == "companySupervisor" ? await service.GetCompanyExamAsync(context.Request.QueryString["examId"], cancellation).ConfigureAwait(false) : await service.GetStudentExamAsync(context.Request.QueryString["examId"], cancellation).ConfigureAwait(false);
                         else if (action == "attempts") result = await service.ListAttemptsAsync(context.Request.QueryString["examId"], cancellation).ConfigureAwait(false);
@@ -71,6 +78,7 @@ namespace UIMS.Tasks
                     JObject response;
                     switch (action)
                     {
+                        case "verifyConfiguration": response = await service.VerifyEnvironmentAsync((bool?)body["images"] ?? false,cancellation).ConfigureAwait(false); break;
                         case "create": response = await service.CreateDraftAsync(body, cancellation).ConfigureAwait(false); break;
                         case "save": response = await service.SaveDraftAsync((string)body["examId"], body["draft"] as JObject, body["revision"] == null ? null : body["revision"].ToString(), cancellation).ConfigureAwait(false); break;
                         case "publish": response = await service.PublishAsync((string)body["examId"], cancellation).ConfigureAwait(false); break;
@@ -88,7 +96,13 @@ namespace UIMS.Tasks
             catch (UIMS.Services.FirebaseException ex) { WriteError(context, ex.StatusCode, ex.Message); }
             catch (OperationCanceledException) { WriteError(context, 504, "Exam request timed out."); }
             catch (JsonException) { WriteError(context, 400, "Invalid exam request JSON."); }
-            catch (Exception error) { System.Diagnostics.Trace.TraceWarning("Task exams API failed: {0}", error.GetType().Name); WriteError(context, 503, "Exam service is unavailable. Check the disabled/live Firebase settings, trusted server credentials and network connectivity."); }
+            catch (Exception error) { System.Diagnostics.Trace.TraceWarning("Task exams API failed during {0}: {1}", context.Items["ExamApiStage"], error.GetType().Name); WriteError(context, 503, "The exam request failed during backend initialization. Check IIS logs for the failing credential or transport stage. This response does not establish that Firebase is disconnected."); }
+        }
+        private static void WriteConfigurationError(HttpContext context,JObject configuration)
+        {
+            context.Response.SuppressFormsAuthenticationRedirect = true; context.Response.StatusCode = 503; context.Response.TrySkipIisCustomErrors = true;
+            var response = (JObject)configuration.DeepClone(); response["success"] = false; response["configurationBlocked"] = true;
+            context.Response.Write(response.ToString(Formatting.None));
         }
         private static void ValidateSameOrigin(HttpContext context)
         {

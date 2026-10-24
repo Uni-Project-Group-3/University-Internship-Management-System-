@@ -147,7 +147,6 @@
     <Content Include="Js_project\Student\explore-opportunities.js" />
     <Content Include="Assets\shared\colors.css" />
     <Content Include="Assets\shared\images\JUST-Logo-01.png" />
-    <Content Include="Shared\Sidebar.ascx" />
     <Content Include="Shared\HomeNavbar.ascx" />
     <Content Include="Js_project\Public\navbar.js" />
     <Content Include="Assets\shared\navbar.css" />
@@ -155,6 +154,8 @@
     <Content Include="Js_project\Public\dashboard-navigation.js" />
     <Content Include="Auth\Login.aspx" />
     <Content Include="Assets\auth\auth.css" />
+    <Content Include="Assets\auth\login-card.css" />
+    <Content Include="Js_project\Auth\login-card.js" />
     <Content Include="Js_project\Auth\auth.js" />
     <Content Include="Assets\auth\just-campus.jpg" />
     <Content Include="Assets\shared\images\just-logo.png" />
@@ -381,8 +382,12 @@
       <DependentUpon>Default.aspx</DependentUpon>
     </Compile>
     <Compile Include="Services\FinalEvaluation\LiveFirebaseIntegration.cs" />
-    <Compile Include="Shared\LiveDashboardPage.cs" />
-    <Compile Include="Shared\AuthenticatedFirebaseClient.cs" />
+    <Compile Include="Shared\LiveDashboardPage.cs">
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="Shared\AuthenticatedFirebaseClient.cs">
+      <SubType>Component</SubType>
+    </Compile>
     <Compile Include="Global.asax.cs">
       <DependentUpon>Global.asax</DependentUpon>
     </Compile>
@@ -445,13 +450,6 @@
     <Compile Include="Shared\AccountHistoryCleanup.cs" />
     <Compile Include="Shared\CompanyManagementService.cs" />
     <Compile Include="Shared\AcademicSupervisorService.cs" />
-    <Compile Include="Shared\Sidebar.ascx.cs">
-      <DependentUpon>Sidebar.ascx</DependentUpon>
-      <SubType>ASPXCodeBehind</SubType>
-    </Compile>
-    <Compile Include="Shared\Sidebar.ascx.designer.cs">
-      <DependentUpon>Sidebar.ascx</DependentUpon>
-    </Compile>
     <Compile Include="UniversityStudentRecord.cs" />
     <Compile Include="ViewSwitcher.ascx.cs">
       <DependentUpon>ViewSwitcher.ascx</DependentUpon>
@@ -468,6 +466,7 @@
     <Content Include="Assets\company\verify-attendance.css" />
     <Content Include="Js_project\Student\my-attendance.js" />
     <Content Include="Js_project\Student\attendance-qrcode.min.js" />
+    <Content Include="Js_project\Student\attendance-qrcodegen.js" />
     <Content Include="Js_project\Company\verify-attendance.js" />
     <Content Include="Js_project\Company\attendance-jsqr.js" />
   </ItemGroup>
@@ -785,17 +784,20 @@
     <Compile Include="Services\FirebaseConfiguration.cs" />
     <Compile Include="Services\FirebaseApiHandler.cs" />
     <Compile Include="Services\ApplicationWorkflowService.cs" />
-<Compile Include="Services\AcademicAssignmentService.cs" />
-<Compile Include="Services\AcademicAssignmentsApi.cs" />
+    <Compile Include="Services\StudentAuthAuditFailure.cs" />
+    <Compile Include="Services\Attendance\AttendanceOnboarding.cs" />
+    <Compile Include="Services\AcademicAssignmentService.cs" />
+    <Compile Include="Services\AcademicAssignmentsApi.cs" />
     <Compile Include="Services\FirebaseFileStorageService.cs" />
+    <Compile Include="Services\SupabaseFileStorage.cs" />
     <Compile Include="Services\TaskService.cs" />
     <Compile Include="Shared\FirebaseServerCredential.cs" />
     <Compile Include="Services\Attendance\ApprovedTrainingMinutes.cs" />
     <Compile Include="Services\FinalEvaluation\FinalReportWorkflow.cs" />
     <Compile Include="Services\FinalEvaluation\FinalReportApi.cs" />
     <Content Include="AcademicAssignmentsApi.ashx" />
-<Content Include="Assets\coordinator\academic-assignment.css" />
-<Content Include="FinalReportsApi.ashx" />
+    <Content Include="Assets\coordinator\academic-assignment.css" />
+    <Content Include="FinalReportsApi.ashx" />
     <Content Include="FinalReports.aspx" />
     <Content Include="Assets\final-reports.css" />
     <Content Include="Assets\shared\workflow-ui.css" />
@@ -943,4 +945,16 @@
       <Private>True</Private>
     </Reference>
   </ItemGroup>
+<ItemGroup><Compile Include="Shared\RoleSidebarBase.cs" /></ItemGroup>
+<ItemGroup><Content Include="Shared\StudentSidebar.ascx" /></ItemGroup>
+<ItemGroup><Content Include="Shared\CompanySidebar.ascx" /></ItemGroup>
+<ItemGroup><Content Include="Shared\AcademicSidebar.ascx" /></ItemGroup>
+<ItemGroup><Content Include="Shared\CoordinatorSidebar.ascx" /></ItemGroup>
+<ItemGroup><Content Include="Assets\shared\just-theme.css" /></ItemGroup>
+<ItemGroup><Content Include="Js_project\shared-role-navigation.js" /></ItemGroup>
+<ItemGroup><Content Include="Assets\shared\role-sidebar.css" /></ItemGroup>
+<ItemGroup><Content Include="Shared\Sidebar.ascx" /></ItemGroup>
+<ItemGroup><Compile Include="Shared\Sidebar.ascx.cs" /></ItemGroup>
+<ItemGroup><Compile Include="Shared\Sidebar.ascx.designer.cs" /></ItemGroup>
+<ItemGroup><Content Include="Assets\tasks-premium.css" /></ItemGroup>
 </Project>
