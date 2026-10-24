@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="..\packages\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.2.0.1\build\net46\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.props" Condition="Exists('..\packages\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.2.0.1\build\net46\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.props')" />
   <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
@@ -55,7 +55,6 @@
     </Reference>
     <Reference Include="Microsoft.CodeDom.Providers.DotNetCompilerPlatform, Version=2.0.1.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
       <HintPath>..\packages\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.2.0.1\lib\net45\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.dll</HintPath>
-      <Private>True</Private>
     </Reference>
     <Reference Include="Microsoft.CSharp" />
     <Reference Include="System.Collections.Immutable, Version=8.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
@@ -154,12 +153,18 @@
     <Content Include="Assets\shared\images\JUST-Logo-01.png" />
     <Content Include="Shared\Sidebar.ascx" />
     <Content Include="Shared\HomeNavbar.ascx" />
+    <Content Include="Shared\WorkspaceNavbar.ascx" />
+    <Content Include="Assets\shared\workspace-navigation.css" />
+    <Content Include="Js_project\Public\workspace-navigation.js" />
     <Content Include="Js_project\Public\navbar.js" />
     <Content Include="Assets\shared\navbar.css" />
     <Content Include="Assets\shared\sidebar.css" />
+    <Content Include="Assets\shared\role-sidebars.css" />
     <Content Include="Js_project\Public\dashboard-navigation.js" />
     <Content Include="Auth\Login.aspx" />
     <Content Include="Assets\auth\auth.css" />
+    <Content Include="Assets\auth\login-card.css" />
+    <Content Include="Js_project\Auth\login-card.js" />
     <Content Include="Js_project\Auth\auth.js" />
     <Content Include="Assets\auth\just-campus.jpg" />
     <Content Include="Assets\shared\images\just-logo.png" />
@@ -386,8 +391,12 @@
       <DependentUpon>Default.aspx</DependentUpon>
     </Compile>
     <Compile Include="Services\FinalEvaluation\LiveFirebaseIntegration.cs" />
-    <Compile Include="Shared\LiveDashboardPage.cs" />
-    <Compile Include="Shared\AuthenticatedFirebaseClient.cs" />
+    <Compile Include="Shared\LiveDashboardPage.cs">
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="Shared\AuthenticatedFirebaseClient.cs">
+      <SubType>Component</SubType>
+    </Compile>
     <Compile Include="Global.asax.cs">
       <DependentUpon>Global.asax</DependentUpon>
     </Compile>
@@ -476,6 +485,7 @@
     <Content Include="Assets\company\verify-attendance.css" />
     <Content Include="Js_project\Student\my-attendance.js" />
     <Content Include="Js_project\Student\attendance-qrcode.min.js" />
+    <Content Include="Js_project\Student\attendance-qrcodegen.js" />
     <Content Include="Js_project\Company\verify-attendance.js" />
     <Content Include="Js_project\Company\attendance-jsqr.js" />
   </ItemGroup>
@@ -542,8 +552,8 @@
     <PropertyGroup>
       <ErrorText>This project references NuGet package(s) that are missing on this computer. Use NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
     </PropertyGroup>
-    <Error Condition="!Exists('..\packages\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.2.0.1\build\net46\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.props')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.2.0.1\build\net46\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.props'))" />
     <Error Condition="!Exists('..\packages\System.ValueTuple.4.6.2\build\net471\System.ValueTuple.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\System.ValueTuple.4.6.2\build\net471\System.ValueTuple.targets'))" />
+    <Error Condition="!Exists('..\packages\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.2.0.1\build\net46\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.props')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.2.0.1\build\net46\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.props'))" />
   </Target>
   <ItemGroup>
     <Content Include="Public\home.aspx" />
@@ -793,20 +803,24 @@
     <Compile Include="Services\FirebaseConfiguration.cs" />
     <Compile Include="Services\FirebaseApiHandler.cs" />
     <Compile Include="Services\ApplicationWorkflowService.cs" />
-<Compile Include="Services\AcademicAssignmentService.cs" />
-<Compile Include="Services\AcademicAssignmentsApi.cs" />
+    <Compile Include="Services\StudentAuthAuditFailure.cs" />
+    <Compile Include="Services\Attendance\AttendanceOnboarding.cs" />
+    <Compile Include="Services\AcademicAssignmentService.cs" />
+    <Compile Include="Services\AcademicAssignmentsApi.cs" />
     <Compile Include="Services\FirebaseFileStorageService.cs" />
+    <Compile Include="Services\SupabaseFileStorage.cs" />
     <Compile Include="Services\TaskService.cs" />
     <Compile Include="Shared\FirebaseServerCredential.cs" />
     <Compile Include="Services\Attendance\ApprovedTrainingMinutes.cs" />
     <Compile Include="Services\FinalEvaluation\FinalReportWorkflow.cs" />
     <Compile Include="Services\FinalEvaluation\FinalReportApi.cs" />
     <Content Include="AcademicAssignmentsApi.ashx" />
-<Content Include="Assets\coordinator\academic-assignment.css" />
-<Content Include="FinalReportsApi.ashx" />
+    <Content Include="Assets\coordinator\academic-assignment.css" />
+    <Content Include="FinalReportsApi.ashx" />
     <Content Include="FinalReports.aspx" />
     <Content Include="Assets\final-reports.css" />
     <Content Include="Assets\shared\workflow-ui.css" />
+    <Content Include="Assets\shared\account-form-design.css" />
     <Content Include="Js_project\final-reports.js" />
     <Content Include="Js_project\final-report-summary.js" />
     <Content Include="Js_project\workflow-dialogs.js" />
@@ -951,5 +965,33 @@
       <SpecificVersion>True</SpecificVersion>
       <Private>True</Private>
     </Reference>
+  </ItemGroup>
+  <ItemGroup>
+  </ItemGroup>
+  <ItemGroup>
+  </ItemGroup>
+  <ItemGroup>
+  </ItemGroup>
+  <ItemGroup>
+  </ItemGroup>
+  <ItemGroup>
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="Assets\shared\just-theme.css" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="Js_project\shared-role-navigation.js" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="Assets\shared\role-sidebar.css" />
+  </ItemGroup>
+  <ItemGroup>
+  </ItemGroup>
+  <ItemGroup>
+  </ItemGroup>
+  <ItemGroup>
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="Assets\tasks-premium.css" />
   </ItemGroup>
 </Project>

@@ -1,4 +1,5 @@
 using System;
+using System.Web.Security;
 using System.Web.UI;
 
 namespace University_Internship_Management_System.Shared
@@ -8,6 +9,15 @@ namespace University_Internship_Management_System.Shared
     public class RoleSidebarBase : UserControl
     {
         public string SidebarId { get; set; } = "sidebar";
+
+        protected void Logout_Click(object sender, EventArgs e)
+        {
+            FormsAuthentication.SignOut();
+            Session.Clear();
+            Session.Abandon();
+            Response.Redirect("~/Auth/Login.aspx", false);
+            Context.ApplicationInstance.CompleteRequest();
+        }
 
         protected string ActiveClass(string target)
         {

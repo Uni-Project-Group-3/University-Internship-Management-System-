@@ -29,3 +29,20 @@ publish/
 .final-evaluation-secrets/
 *service-account*.json
 *service_account*.json
+
+# Private read-only student identity audit output (UID/email metadata).
+Artifacts/Student-Integration-*.json
+Artifacts/UIMS-FULL-UNCHANGED-*.json
+
+# Local attendance signing material; never publish.
+.private/
+
+# Local database exports, audit artifacts, and generated verification output.
+Artifacts/
+UIMS-Review-*.json
+EXAMS-REPAIR-DRY-RUN.json
+Tests/*precompiled*/
+Tests/FinalEvaluation/*.png
+Tests/task-scope-baseline.json
+Tests/shared-navigation-migration.json
+University-Internship-Management-System/Firebase.Local.config

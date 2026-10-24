@@ -1,4 +1,6 @@
 <%@ Page Async="true" Language="C#" AutoEventWireup="true" CodeBehind="MonitorPlacementsProgress.aspx.cs" Inherits="University_Internship_Management_System.Coordinator.MonitorPlacementsProgress" %>
+<%@ Register Src="~/Shared/CoordinatorSidebar.ascx" TagPrefix="shared" TagName="RoleSidebar" %>
+<%@ Register Src="~/Shared/WorkspaceNavbar.ascx" TagPrefix="shared" TagName="WorkspaceNavbar" %>
 <!DOCTYPE html>
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en">
 <head runat="server">
@@ -7,145 +9,99 @@
     <title>Monitor Placements &amp; Progress | JUST UIMS</title>
     <link runat="server" href="~/Assets/shared/colors.css" rel="stylesheet" />
     <link runat="server" href="~/Assets/coordinator/monitor-placements-progress.css" rel="stylesheet" />
+    <!-- DataTables CSS -->
+<link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css" />
+<!-- jQuery (مطلوب لعمل DataTables) -->
+<script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+<!-- DataTables JS -->
+<script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+    <link runat="server" href="~/Assets/shared/role-sidebars.css?v=20261024-workspace" rel="stylesheet" />
+    <link runat="server" href="~/Assets/shared/workspace-navigation.css?v=20261024-hide-search" rel="stylesheet" />
 </head>
-<body class="dashboard-direct app-page placements-page">
+<body class="dashboard-direct app-page placements-page shared-workspace-shell">
+
+    <!-- Icon sprite -->
+    <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+        <defs>
+            <symbol id="i-home" viewBox="0 0 24 24"><path d="M3 10 12 3l9 7v10h-6v-7H9v7H3V10Z"/></symbol>
+            <symbol id="i-chart" viewBox="0 0 24 24"><path d="M4 20V5m0 15h16M8 16v-5m5 5V7m5 9v-8"/></symbol>
+            <symbol id="i-report" viewBox="0 0 24 24"><path d="M7 3h8l4 4v14H7zM15 3v5h4M10 13h6m-6 4h6"/></symbol>
+            <symbol id="i-evaluate" viewBox="0 0 24 24"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="m8 12 3 3 5-6"/></symbol>
+            <symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></symbol>
+            <symbol id="i-logout" viewBox="0 0 24 24"><path d="M10 3H4v18h6m4-15 6 6-6 6M9 12h11"/></symbol>
+            <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></symbol>
+            <symbol id="i-bell" viewBox="0 0 24 24"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9M10 21a2 2 0 0 0 4 0"/></symbol>
+            <symbol id="i-users" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0M16 4.6a3.5 3.5 0 0 1 0 6.8M18 14.2a6.5 6.5 0 0 1 3.5 5.8"/></symbol>
+            <symbol id="i-briefcase" viewBox="0 0 24 24"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M3 13h18"/></symbol>
+            <symbol id="i-check" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m8 12 3 3 5-6"/></symbol>
+            <symbol id="i-alert" viewBox="0 0 24 24"><path d="M12 3 2 20h20L12 3ZM12 10v4m0 3h.01"/></symbol>
+            <symbol id="i-building" viewBox="0 0 24 24"><path d="M3 21h18M5 21V8l7-4 7 4v13M9 12h2m2 0h2M9 16h2m2 0h2"/></symbol>
+            <symbol id="i-cap" viewBox="0 0 24 24"><path d="m2 9 10-5 10 5-10 5L2 9Z"/><path d="M6 11.5V16c0 1.5 2.7 3 6 3s6-1.5 6-3v-4.5M22 9v6"/></symbol>
+            <symbol id="i-filter" viewBox="0 0 24 24"><path d="M3 5h18l-7 8v6l-4-2v-4L3 5Z"/></symbol>
+            <symbol id="i-inbox" viewBox="0 0 24 24"><path d="M3 13h5l1.5 3h5L16 13h5M5 5h14l2 8v6H3v-6l2-8Z"/></symbol>
+        </defs>
+    </svg>
+
     <form id="form1" runat="server">
         <div class="app-layout">
-            <aside class="dash-sidebar" id="dashboardSidebar" aria-label="Coordinator navigation">
-                <a href="<%= ResolveUrl("~/Coordinator/CoordinatorDashboard.aspx") %>" class="dash-brand">
-                    <span class="dash-brand-logo">J</span>
-                    <span class="dash-brand-text">
-                        <strong>JUST</strong>
-                        <span>Internships</span>
-                    </span>
-                </a>
-                <button type="button" class="dash-sidebar-close" data-sidebar-close aria-label="Close navigation">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                        <path d="m6 6 12 12M6 18 18 6"/>
-                    </svg>
-                </button>
-                <nav aria-label="Workspace navigation">
-                    <ul class="dash-side-nav" aria-label="Coordinator pages">
-                        <li><a href="CoordinatorDashboard.aspx"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m3 10 9-7 9 7v10h-6v-7H9v7H3V10Z"/></svg><span>Dashboard</span></a></li>
-                        <li><a href="ManageStudents.aspx"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="m8 12 3 3 5-6"/></svg><span>Manage Students</span></a></li>
-                        <li><a href="ManageCompanies.aspx"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 21V4h11v17M15 9h5v12M1 21h22M8 8h3m-3 4h3m-3 4h3"/></svg><span>Manage Companies</span></a></li>
-                        <li><a href="MonitorPlacementsProgress.aspx" class="active" aria-current="page"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12h5l3-9 4 18 3-9h5"/></svg><span>Placements &amp; Progress</span></a></li>
-                        <li><a href="FinalCompletionReview.aspx"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="m8 12 3 3 5-6"/></svg><span>Final Completion Review</span></a></li>
-                        <li><a href="ContactMessages.aspx"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="m8 12 3 3 5-6"/></svg><span>Contact Messages</span></a></li>
-                        <li><a href='<%= ResolveUrl("~/Coordinator/Manage_Academic_Supervisor.aspx") %>'><svg class="nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M4 5h16v14H4zM8 9h8M8 13h6" /></svg><span>Manage Academic Supervisors</span></a></li>
-                        <li><a href="Assign_Supervisors.aspx"><svg class="nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M4 5h16v14H4zM8 9h8M8 13h6" /></svg><span>Assign Academic Supervisors</span></a></li>
-                        <li><a href="CoordinatorAccountProfile.aspx"><svg class="nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M4 5h16v14H4zM8 9h8M8 13h6" /></svg><span>Coordinator Account</span></a></li>
-                    </ul>
-                    <div class="dash-side-divider"></div>
-                    <ul class="dash-side-nav"></ul>
-                </nav>
-                <div class="dash-side-promo">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                        <path d="m2 9 10-5 10 5-10 5-10-5Zm4 3v6c4 3 8 3 12 0v-6m4-3v8"/>
-                    </svg>
-                    <p>New semester?<br />Add students and assign groups.</p>
-                    <a href="<%= ResolveUrl("~/Coordinator/ManageStudents.aspx") %>">Add students &rarr;</a>
-                </div>
-            </aside>
-            <button type="button" class="dash-sidebar-backdrop" data-sidebar-close aria-label="Close navigation" tabindex="-1" hidden></button>
+            
+            <!-- Sidebar -->
+            <shared:RoleSidebar ID="RoleNavigation" runat="server" SidebarId="workspaceSidebar" />
+
+            <!-- Main Content -->
             <div class="dash-main">
-                <header class="dash-topbar">
-                    <button type="button" class="dash-menu-btn" id="dashboardMenuToggle" aria-controls="dashboardSidebar" aria-expanded="false" aria-label="Open navigation">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                            <path d="M4 6h16M4 12h16M4 18h16"/>
-                        </svg>
-                    </button>
-                    <label class="dash-search">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                            <circle cx="10" cy="10" r="6"/>
-                            <path d="m15 15 6 6"/>
-                        </svg>
-                        <span class="dash-sr-only">Search this page</span>
-                        <input type="search" id="dashboardSearch" data-search-target="placementSearch" placeholder="Search for students, companies, or supervisors..." />
-                    </label>
-                    <div class="dash-topbar-actions">
-                        <button type="button" class="dash-icon-btn" disabled aria-label="Notifications are not connected" title="Notifications are not connected">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                                <path d="M5 17h14l-2-3V9a5 5 0 0 0-10 0v5l-2 3Zm5 3h4"/>
-                            </svg>
-                        </button>
-                        <details class="dash-profile">
-                            <summary class="dash-user-chip">
-                                <span class="dash-avatar">CO</span>
-                                <span class="dash-user-name">Coordinator<span class="dash-role">Internship Coordinator</span></span>
-                                <span aria-hidden="true">&#8964;</span>
-                            </summary>
-                            <div class="dash-profile-menu">
-                                <a href="<%= ResolveUrl("~/Contact.aspx") %>">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                                        <circle cx="12" cy="12" r="9"/>
-                                        <path d="M9 8a3 3 0 0 1 6 0c0 2-3 2-3 5m0 3v1"/>
-                                    </svg>Help &amp; contact
-                                </a>
-                                <a href="<%= ResolveUrl("~/Auth/Login.aspx") %>">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                                        <circle cx="12" cy="8" r="3"/>
-                                        <path d="M5 21v-3a7 7 0 0 1 14 0v3"/>
-                                    </svg>Sign in
-                                </a>
-                            </div>
-                        </details>
-                    </div>
-                </header>
-                <main class="app-content placements-main" id="placementsApp">
-                    <section class="placements-heading">
-                        <div>
-                            <p class="placements-eyebrow">UNIVERSITY-WIDE OVERSIGHT</p>
+                <shared:WorkspaceNavbar ID="WorkspaceNavigation" runat="server" SearchInputId="dashboardSearch" SearchInputType="search" SearchPlaceholder="Search for students, companies, or supervisors..." AccountLabel="Coordinator" AccountRole="Internship Coordinator" AccountInitials="CO" AccountUrl="~/Coordinator/CoordinatorAccountProfile.aspx" SidebarId="workspaceSidebar" />
+
+                <main class="app-content placements-main">
+                    <!-- Hero Banner -->
+                    <div class="hero-banner">
+                        <div class="hero-waves" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+                        <div class="hero-text">
+                            <span class="hero-badge"><svg class="ic"><use href="#i-chart"/></svg>UNIVERSITY-WIDE OVERSIGHT</span>
                             <h1>Monitor Placements &amp; Progress</h1>
                             <p>Track university-wide internships, training hours, tasks, evaluations, and student progress.</p>
+                            <span class="hero-info"><svg class="ic"><use href="#i-building"/></svg>Jordan University of Science and Technology &nbsp;·&nbsp; University-wide Management</span>
                         </div>
-                    </section>
-                    
-                    <asp:Label ID="lblMessage" runat="server" CssClass="d-block mb-3 text-danger fw-bold"></asp:Label>
 
-                    <section class="placements-stats" aria-label="Placement summary">
-                        <article>
-                            <span>Total Students</span>
-                            <strong><asp:Literal ID="lblTotalStudents" runat="server" Text="0" /></strong>
-                            <small>Across all departments</small>
-                        </article>
-                        <article>
-                            <span>Active Internships</span>
-                            <strong><asp:Literal ID="lblActiveInternships" runat="server" Text="0" /></strong>
-                            <small>Currently in training</small>
-                        </article>
-                        <article>
-                            <span>Completed Tasks</span>
-                            <strong><asp:Literal ID="lblCompletedTasks" runat="server" Text="0" /></strong>
-                            <small>University wide</small>
-                        </article>
-                        <article class="placements-stat-risk">
-                            <span>At-Risk Internships</span>
-                            <strong><asp:Literal ID="lblRiskInternships" runat="server" Text="0" /></strong>
-                            <small>Delays or pending follow-up</small>
-                        </article>
-                    </section>
+                        <section class="hero-stats">
+                            <article class="monitor-stat">
+                                <span class="stat-icon s-blue"><svg class="ic"><use href="#i-users"/></svg></span>
+                                <div><strong><asp:Literal ID="lblTotalStudents" runat="server" Text="0" /></strong><p>Total Students</p></div>
+                            </article>
+                            <article class="monitor-stat">
+                                <span class="stat-icon s-amber"><svg class="ic"><use href="#i-briefcase"/></svg></span>
+                                <div><strong><asp:Literal ID="lblActiveInternships" runat="server" Text="0" /></strong><p>Active Internships</p></div>
+                            </article>
+                            <article class="monitor-stat">
+                                <span class="stat-icon s-green"><svg class="ic"><use href="#i-check"/></svg></span>
+                                <div><strong><asp:Literal ID="lblCompletedTasks" runat="server" Text="0" /></strong><p>Completed Tasks</p></div>
+                            </article>
+                        </section>
+                    </div>
 
-                    <section class="placements-panel" aria-labelledby="directoryTitle">
-                        <div class="placements-panel-heading">
+                    <asp:Label ID="lblMessage" runat="server" CssClass="page-message"></asp:Label>
+
+                    <!-- Table Panel -->
+                    <section class="monitor-panel">
+                        <div class="monitor-panel-heading">
                             <div>
                                 <h2 id="directoryTitle">Placement overview</h2>
-                                <p>One clear view of every student's training journey.</p>
+                                <p style="color: var(--text-secondary); font-size: 0.9rem; margin: 4px 0 0;">One clear view of every student's training journey.</p>
                             </div>
                         </div>
 
-                        <div class="placements-table-wrap" tabindex="0" role="region" aria-label="Internship placements table">
-                            <table class="placements-table">
+                        <div class="monitor-table-wrap">
+                            <table class="monitor-table" id="placementsTable">
                                 <thead>
                                     <tr>
-                                        <th scope="col">Student / ID</th>
-                                        <th scope="col">Department</th>
-                                        <th scope="col">Company</th>
-                                        <th scope="col">Company supervisor</th>
-                                        <th scope="col">Academic supervisor</th>
-                                        <th scope="col">Training status</th>
-                                        <th scope="col">Approved / Required</th>
-                                        <th scope="col">Task completion</th>
+                                        <th>Student ID</th>
+                                        <th>Department</th>
+                                        <th>Company</th>
+                                        <th>Company supervisor</th>
+                                        <th>Academic supervisor</th>
+                                        <th>Training status</th>
+                                        <th>Progress Hours</th>
+                                        <th>Task completion</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -153,14 +109,22 @@
                                         <ItemTemplate>
                                             <tr>
                                                 <td>
-                                                    <strong><%# Eval("StudentName") %></strong><br />
-                                                    <small style="color: gray;"><%# Eval("StudentId") %></small>
+                                                    <div class="student-cell">
+                                                        <div>
+                                                            <strong style="color: var(--dark); font-weight: 700;"><%# Eval("StudentName") %></strong><br />
+                                                            <small style="color: var(--muted);"><%# Eval("StudentId") %></small>
+                                                        </div>
+                                                    </div>
                                                 </td>
                                                 <td><%# Eval("Major") %></td>
                                                 <td><%# Eval("Company") %></td>
                                                 <td><%# Eval("CompanySupervisor") %></td>
                                                 <td><%# Eval("AcademicSupervisor") %></td>
-                                                <td><span class="placements-chip" style="background:#e9ecef; color:#333;"><%# Eval("TrainingStatus") %></span></td>
+                                                <td>
+                                                    <span class="status-track">
+                                                        <%# Eval("TrainingStatus") %>
+                                                    </span>
+                                                </td>
                                                 <td><strong><%# Eval("ApprovedHours") %></strong> / <%# Eval("RequiredHours") %></td>
                                                 <td><strong><%# Eval("TaskPercentage") %>%</strong></td>
                                             </tr>
@@ -170,18 +134,11 @@
                             </table>
                         </div>
                     </section>
-                    
-                    <p class="placements-guidance"><strong>Monitoring, with context.</strong> Task completion and approved hours are separate measures. Final internship approval belongs to the Final Completion Review workflow.</p>
-                    <footer class="placements-footer">
-                        <span>&copy; 2026 Jordan University of Science and Technology</span>
-                        <span>University Internship Management System</span>
-                    </footer>
                 </main>
             </div>
         </div>
     </form>
     
-    <!-- تم حذف سكريبتات Demo الوهمية والإبقاء على سكريبت التنقل -->
-    <script src="<%= ResolveUrl("~/Js_project/Public/dashboard-navigation.js") %>"></script>
+    <script src="<%= ResolveUrl("~/Js_project/Public/workspace-navigation.js?v=20261024") %>" defer="defer"></script>
 </body>
 </html>

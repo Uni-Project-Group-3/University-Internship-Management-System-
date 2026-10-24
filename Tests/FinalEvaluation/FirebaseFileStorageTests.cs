@@ -17,11 +17,15 @@ internal static partial class Program
         public readonly Dictionary<string, byte[]> Objects = new Dictionary<string, byte[]>(StringComparer.Ordinal);
         public int Uploads, Downloads, Deletes, Requests;
         public bool FailUpload, InterruptUpload, DuplicateUpload;
+        public bool MissingBucket;
+        public string[] AvailabilityPermissions = {"storage.objects.create","storage.objects.get","storage.objects.delete"};
         public bool Authenticated = true;
         protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellation)
         {
             Requests++;
+            if (MissingBucket) return Task.FromResult(new HttpResponseMessage(HttpStatusCode.NotFound));
             Authenticated &= request.Headers.Authorization != null && request.Headers.Authorization.Scheme == "Bearer" && request.Headers.Authorization.Parameter == "offline-storage-token";
+            if (request.Method == HttpMethod.Get && request.RequestUri.AbsolutePath.EndsWith("/iam/testPermissions",StringComparison.Ordinal)) return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK) {Content=new StringContent(new JObject {["permissions"]=new JArray(AvailabilityPermissions)}.ToString())});
             if (request.Method == HttpMethod.Post)
             {
                 Uploads++;
@@ -73,6 +77,20 @@ internal static partial class Program
             new HttpClient(handler), cancellation => Task.FromResult("offline-storage-token"));
     }
     private static byte[] FictionalPdf() { return Encoding.ASCII.GetBytes("%PDF-1.7\nfictional test attachment"); }
+
+    private static async Task StorageReadOnlyReadinessTests()
+    {
+        var handler=new IsolatedStorageHandler();var storage=OfflineStorage(handler,StorageSettings());
+        var report=await storage.CheckAvailabilityAsync(CancellationToken.None);
+        Assert((bool)report["available"] && (string)report["verification"]=="readOnlyIam" && !(bool)report["clientRulesVerified"] && handler.Requests==1 && handler.Uploads==0 && handler.Deletes==0 && handler.Downloads==0 && handler.Authenticated);
+        handler.AvailabilityPermissions=new[] {"storage.objects.get"};
+        await Reject<FirebaseException>(()=>storage.CheckAvailabilityAsync(CancellationToken.None));
+        handler.MissingBucket=true;
+        try { await storage.CheckAvailabilityAsync(CancellationToken.None); throw new Exception("Missing bucket was accepted."); }
+        catch (FirebaseException error) { Assert(error.Message.Contains("offline-bucket.test") && error.Message.Contains("Firebase Console > Storage") && error.Message.Contains("settings were not changed")); }
+        Assert(handler.Uploads==0 && handler.Deletes==0);
+        var disabled=new IsolatedStorageHandler();await Reject<FirebaseException>(()=>OfflineStorage(disabled,StorageSettings(false)).CheckAvailabilityAsync(CancellationToken.None));Assert(disabled.Requests==0);
+    }
 
     private static async Task FirebaseStorageTransportTests()
     {
@@ -171,6 +189,15 @@ internal static partial class Program
         Assert(((JArray)companySubmission["attachmentIds"]).Values<string>().Contains(submissionFileId));
         Assert((await companyService.DownloadTaskFileAsync(submissionFileId, CancellationToken.None)).Content.SequenceEqual(FictionalPdf()));
 
+        // An uploaded document is sufficient work evidence; it must not require a fabricated URL.
+        var fileOnlyTask = (JObject)task.DeepClone(); fileOnlyTask["status"] = "In Progress";
+        fileOnlyTask["submissions"] = new JArray(); fileOnlyTask["id"] = "file-only";
+        db.Records["tasks/file-only"] = fileOnlyTask;
+        await Reject<FirebaseException>(() => studentService.SubmitAsync("file-only", "", "", "forged.pdf", CancellationToken.None));
+        await studentService.SubmitWithAttachmentAsync("file-only", "", "", "work.pdf", "application/pdf", FictionalPdf(), CancellationToken.None);
+        Assert((string)db.Records["tasks/file-only"]["status"] == "Submitted");
+        Assert((string)db.Records["tasks/file-only"]["submissions"][0]["link"] == "");
+
         var wrongCompany = TaskActor.FromVerifiedProfile("company-2", "companySupervisor", JObject.Parse("{\"role\":\"companySupervisor\",\"isActive\":true,\"companySupervisorId\":\"SUP-2\"}"));
         var wrongCompanyService = new TaskService(setting, new HttpClient(db), wrongCompany, ct => Task.FromResult("isolated-test-token"), fileStorage);
         int uploadsBefore = storageHandler.Uploads;
@@ -197,11 +224,63 @@ internal static partial class Program
 
     private static async Task RunFirebaseFileStorageTests()
     {
+        await Test("Supabase private bytes preserve legacy Firebase routing, create-only uploads and safe failures", SupabasePrivateStorageTests);
+        await Test("Storage readiness checks IAM without creating or deleting an object", StorageReadOnlyReadinessTests);
         await Test("private Firebase Storage transport uploads, downloads and deletes only through isolated HTTP doubles", FirebaseStorageTransportTests);
         await Test("file size, extension, MIME and signature validation rejects unsafe uploads before network", FirebaseStorageValidationTests);
         await Test("duplicate and interrupted object uploads use create-only semantics and attempt safe cleanup", FirebaseStorageDuplicateAndInterruptedTests);
         await Test("disabled Firebase Storage blocks reads and writes before any request", FirebaseStorageDisabledTests);
         await Test("task file metadata links to verified task relationships and denies other students and companies", TaskFileAuthorizationAndMetadataTests);
         await Test("failed Storage upload never creates ready Realtime Database metadata", FailedStorageUploadDoesNotCreateMetadata);
+    }
+
+    private static async Task SupabasePrivateStorageTests()
+    {
+        var settings = StorageSettings();
+        settings["FileStorageProvider"] = "supabase";
+        settings["SupabaseStorageUrl"] = "https://offline-storage.supabase.co";
+        settings["SupabaseStorageBucket"] = "internship-files";
+        settings["SupabaseStorageLiveWritesEnabled"] = "true";
+        bool publicBucket = false, duplicate = false; int uploads = 0, deletes = 0, legacyReads = 0;
+        var handler = new Handler { Respond = request =>
+        {
+            if (request.RequestUri.Host == "storage.googleapis.com") { legacyReads++; return new HttpResponseMessage(HttpStatusCode.OK) { Content = new ByteArrayContent(FictionalPdf()) }; }
+            Assert(request.Headers.GetValues("apikey").Single() == "sb_secret_offline_only" && request.Headers.Authorization == null);
+            string path = request.RequestUri.AbsolutePath;
+            if (path.Contains("/bucket/")) return Response(new JObject { ["id"] = "internship-files", ["public"] = publicBucket }.ToString());
+            Assert(!path.Contains("/public/"));
+            if (request.Method == HttpMethod.Post) { uploads++; Assert(request.Headers.GetValues("x-upsert").Single() == "false"); return duplicate ? new HttpResponseMessage(HttpStatusCode.Conflict) : Response("{}"); }
+            if (request.Method == HttpMethod.Delete) { deletes++; return Response("{}"); }
+            return new HttpResponseMessage(HttpStatusCode.OK) { Content = new ByteArrayContent(FictionalPdf()) };
+        }};
+        var storage = new FirebaseFileStorageService(k => settings.ContainsKey(k) ? settings[k] : null, new HttpClient(handler), ct => Task.FromResult("offline-storage-token"), () => "sb_secret_offline_only", new HttpClient(handler));
+        Assert((string)(await storage.CheckAvailabilityAsync(CancellationToken.None))["provider"] == "supabase");
+        var file = await storage.UploadAsync("uims/tasks/unique", "guide.pdf", "application/pdf", FictionalPdf(), CancellationToken.None);
+        Assert(file.Provider == "supabase" && file.Sha256.Length == 64);
+        Assert((await storage.DownloadAsync(file.ObjectPath, file.Provider, CancellationToken.None)).SequenceEqual(FictionalPdf()));
+        await storage.DownloadAsync("uims/legacy/file", "", CancellationToken.None); Assert(legacyReads == 1);
+        await storage.DeleteObjectAsync(file.ObjectPath, file.Provider, CancellationToken.None); Assert(deletes == 1);
+        duplicate = true; await Reject<FirebaseException>(() => storage.UploadAsync("uims/tasks/unique", "guide.pdf", "application/pdf", FictionalPdf(), CancellationToken.None)); Assert(deletes == 1);
+        publicBucket = true; await Reject<FirebaseException>(() => storage.CheckAvailabilityAsync(CancellationToken.None));
+        await Reject<FirebaseException>(() => storage.DownloadAsync("../private", "supabase", CancellationToken.None));
+        await Reject<FirebaseException>(() => storage.DownloadAsync("uims/%2e%2e/private", "supabase", CancellationToken.None));
+        await Reject<FirebaseException>(() => storage.DownloadAsync("uims/private", "unknown", CancellationToken.None));
+        var missing = new FirebaseFileStorageService(k => settings.ContainsKey(k) ? settings[k] : null, new HttpClient(handler), null, () => null, new HttpClient(handler));
+        await Reject<FirebaseException>(() => missing.CheckAvailabilityAsync(CancellationToken.None));
+        Assert(uploads == 2);
+        publicBucket = false; duplicate = false;
+        var db = new TaskDatabaseHandler();
+        db.Records["placements/place-1"] = JObject.Parse("{\"studentId\":\"ST-1\",\"companySupervisorId\":\"SUP-1\",\"companyId\":\"CO-1\",\"status\":\"confirmed\"}");
+        db.Records["tasks/task-1"] = JObject.Parse("{\"id\":\"task-1\",\"studentId\":\"ST-1\",\"placementId\":\"place-1\",\"assignedBy\":\"SUP-1\",\"title\":\"Offline task\",\"status\":\"In Progress\",\"submissions\":[]}");
+        foreach (var pair in EnabledTaskSettings()) if (!settings.ContainsKey(pair.Key)) settings[pair.Key] = pair.Value;
+        Func<string,string> setting = k => settings.ContainsKey(k) ? settings[k] : null;
+        var company = TaskActor.FromVerifiedProfile("company-uid", "companySupervisor", JObject.Parse("{\"role\":\"companySupervisor\",\"isActive\":true,\"companySupervisorId\":\"SUP-1\",\"companyId\":\"CO-1\"}"));
+        var tasks = new TaskService(setting, new HttpClient(db), company, ct => Task.FromResult("isolated-test-token"), storage);
+        var uploaded = await tasks.UploadTaskAttachmentAsync("task-1", "guide.pdf", "application/pdf", FictionalPdf(), CancellationToken.None);
+        string id = (string)uploaded["attachment"]["id"];
+        Assert((string)db.Records["fileAttachments/" + id]["storageProvider"] == "supabase");
+        Assert((await tasks.DownloadTaskFileAsync(id, CancellationToken.None)).Content.SequenceEqual(FictionalPdf()));
+        var wrong = TaskActor.FromVerifiedProfile("other", "student", JObject.Parse("{\"role\":\"student\",\"isActive\":true,\"studentId\":\"ST-2\"}"));
+        await Reject<FirebaseException>(() => new TaskService(setting, new HttpClient(db), wrong, ct => Task.FromResult("isolated-test-token"), storage).DownloadTaskFileAsync(id, CancellationToken.None));
     }
 }

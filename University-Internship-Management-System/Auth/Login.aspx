@@ -1,3 +1,5 @@
+
+
 <%@ Page Title="Sign In | UIMS" Language="C#" AutoEventWireup="true" Async="true" EnableViewState="false" CodeBehind="Login.aspx.cs" Inherits="University_Internship_Management_System.Auth.Login" %>
 <!DOCTYPE html>
 <html lang="en">
@@ -7,7 +9,7 @@
     <meta name="robots" content="noindex, nofollow" />
     <title>Sign In | UIMS</title>
     <link runat="server" href="~/Assets/shared/colors.css" rel="stylesheet" />
-    <link runat="server" href="~/Assets/auth/auth.css" rel="stylesheet" />
+    <link runat="server" href="~/Assets/auth/auth.css" rel="stylesheet" /><link href="../Assets/auth/login-card.css?v=20261024-card-login" rel="stylesheet" />
 </head>
 <body class="auth-page">
     <svg class="auth-sprite" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
@@ -36,39 +38,61 @@
 </header>
     <form id="form1" runat="server" class="auth-layout" novalidate="novalidate">
         <asp:HiddenField ID="CsrfToken" runat="server" ClientIDMode="Static" />
-        <div class="auth-shell">
-        <section class="auth-campus" aria-labelledby="campusTitle">
-            <img class="auth-campus__image" src="../Assets/auth/just-campus.jpg" alt="The library courtyard at Jordan University of Science and Technology" fetchpriority="high" />
-            <div class="auth-campus__overlay"></div>
-            <a class="auth-campus__wordmark" href="../Default.aspx" aria-label="UIMS home">UIMS<span>JUST INTERNSHIPS</span></a>
-
-
-
-
-
-        </section>
-        <main class="auth-panel">
-            <div class="auth-panel__inner" id="loginContent">
-                <a class="auth-brand" href="https://www.just.edu.jo/" target="_blank" rel="noopener noreferrer">
-                    <img src="../Assets/shared/images/just-logo.png" width="72" height="72" alt="Official JUST emblem" />
-                    <span><strong>Jordan University of<br />Science and Technology</strong><span lang="ar" dir="rtl">&#1580;&#1575;&#1605;&#1593;&#1577; &#1575;&#1604;&#1593;&#1604;&#1608;&#1605; &#1608;&#1575;&#1604;&#1578;&#1603;&#1606;&#1608;&#1604;&#1608;&#1580;&#1610;&#1575; &#1575;&#1604;&#1571;&#1585;&#1583;&#1606;&#1610;&#1577;</span></span>
-                </a>
-                <div class="auth-welcome">
-                    <h2>Welcome Back</h2>
-                    <p>Sign in to your internship workspace.</p>
+        <main class="app">
+    <section class="stage" aria-label="JUST university access card">
+      <div class="orbits" aria-hidden="true"></div><div class="grid-dots" aria-hidden="true"></div>
+<div class="card-workspace" id="workspace">
+        <div class="card-aura" aria-hidden="true"></div>
+        <div class="float-sleeve">
+          <div class="card-tilt" id="cardTilt">
+            <div class="card-flipper" id="cardFlipper">
+              <article class="id-card front" aria-label="JUST university ID card">
+                <div class="card-top">
+                  <div class="card-logo">
+                    <div class="logo-disc"><img src="../Assets/shared/images/just-logo.png" alt=""/></div>
+                    <div><strong>JUST</strong><small>JORDAN UNIVERSITY OF SCIENCE &amp; TECHNOLOGY</small></div>
+                  </div>
+                  <span class="card-ribbon">JUST · UNIVERSITY ACCESS</span>
                 </div>
+                <div class="card-body">
+                  <img class="card-watermark" src="../Assets/shared/images/just-logo.png" alt="" aria-hidden="true"/>
+                  <div class="card-section">UNIVERSITY ACCESS</div>
+                  <div class="student-title">University ID</div>
+                  <div class="card-values">
+                    <div class="card-detail">
+                      <div class="detail-field" id="previewEmailField"><label>UNIVERSITY EMAIL</label><span class="value placeholder" id="previewEmail">student@just.edu.jo</span></div>
+                      <div class="detail-field" id="previewPasswordField"><label>ACCESS PASSWORD</label><span class="value dots placeholder" id="previewPassword">••••••••</span></div>
+                    </div>
+                    <div class="student-photo" aria-hidden="true">
+                      <svg viewBox="0 0 100 115" xmlns="http://www.w3.org/2000/svg" role="presentation"><defs><linearGradient id="g" x2="1" y2="1"><stop stop-color="#83a9da"/><stop offset="1" stop-color="#acc8eb"/></linearGradient></defs><circle cx="50" cy="42" r="22" fill="url(#g)"/><path d="M6 115c0-31 18-48 44-48s44 17 44 48" fill="url(#g)"/><circle cx="79" cy="16" r="28" fill="#fff" opacity=".25"/></svg>
+                    </div>
+                  </div>
+                  <div class="card-footer"><span class="chip"><b></b> SECURE UNIVERSITY ACCESS</span><span class="micro">JUST · UIMS</span></div>
+                </div>
+              </article>
+              <article class="id-card back" aria-label="University card verification">
+                <div class="back-header"><span>JUST / UNIVERSITY ACCESS</span><span>✦</span></div>
+                <div class="back-center"><img src="../Assets/shared/images/just-logo.png" alt=""/><strong>JUST</strong><small id="cardAuthStatus" role="status" aria-live="polite">Secure sign-in</small></div>
+                <div class="back-foot"><span>INTERNSHIP MANAGEMENT</span><span>SECURE SIGN-IN</span></div>
+              </article>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+<section class="login-panel" aria-label="Sign in"><div class="login-center" id="loginContent">
                 <div class="auth-fields">
-                    <div class="auth-field">
+                    <div class="field auth-field">
                         <label for="Email">Email address</label>
-                        <div class="auth-input-wrap">
+                        <div class="input-wrap auth-input-wrap">
                             <svg class="auth-icon" aria-hidden="true"><use href="#icon-mail" /></svg>
                             <asp:TextBox ID="Email" runat="server" ClientIDMode="Static" TextMode="Email" CssClass="auth-input" MaxLength="254" autocomplete="username" placeholder="Enter your email address" aria-describedby="emailError" />
                         </div>
                         <span id="emailError" class="auth-field-error" aria-live="polite"><asp:Literal ID="EmailError" runat="server" Mode="Encode" /></span>
                     </div>
-                    <div class="auth-field">
+                    <div class="field auth-field">
                         <label for="Password">Password</label>
-                        <div class="auth-input-wrap">
+                        <div class="input-wrap auth-input-wrap">
                             <svg class="auth-icon" aria-hidden="true"><use href="#icon-lock" /></svg>
                             <asp:TextBox ID="Password" runat="server" ClientIDMode="Static" TextMode="Password" CssClass="auth-input" autocomplete="current-password" placeholder="Enter your password" aria-describedby="passwordError" />
                             <button class="auth-eye" type="button" data-toggle="Password" aria-controls="Password" aria-label="Show password" aria-pressed="false"><svg class="auth-icon" aria-hidden="true"><use href="#icon-eye" /></svg></button>
@@ -77,13 +101,9 @@
                     </div>
                     <div class="auth-options"><button id="ForgotPassword" type="button" class="auth-link" aria-haspopup="dialog" aria-controls="forgotPasswordDialog">Forgot Password?</button></div>
                     <div id="authMessage" class="auth-message" role="status" aria-live="polite"><asp:Literal ID="AuthMessage" runat="server" Mode="Encode" /></div>
-                    <asp:Button ID="SignIn" runat="server" ClientIDMode="Static" Text="Sign In" CssClass="auth-button" OnClick="SignIn_Click" CausesValidation="false" data-action="login" data-loading="Signing in..." />
-                    <p class="auth-account-note">Use the account provided by your administrator.</p>
+                    <asp:Button ID="SignIn" runat="server" ClientIDMode="Static" Text="Login" CssClass="auth-button" OnClick="SignIn_Click" CausesValidation="false" data-action="login" data-loading="Signing in..." />
                 </div>
-                <div class="auth-footer"><svg class="auth-icon" aria-hidden="true"><use href="#icon-shield" /></svg><span>Authorized university users only</span></div>
-            </div>
-        </main>
-        </div>
+</div></section></main>
         <dialog id="forgotPasswordDialog" class="auth-dialog auth-reset-dialog" aria-labelledby="resetTitle" aria-describedby="resetDescription">
             <button type="button" class="auth-dialog__close" data-close-reset="true" aria-label="Close password reset">
                 <svg class="auth-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M6 18 18 6" /></svg>
@@ -139,14 +159,13 @@
             <asp:Button ID="SaveChanges" runat="server" ClientIDMode="Static" Text="Save Changes" CssClass="auth-button" OnClick="SaveChanges_Click" CausesValidation="false" data-action="change" data-loading="Saving changes..." />
             <p id="firstChangeStatus" class="auth-message" role="status" tabindex="-1" hidden="hidden"></p>
             <p class="auth-dialog__note"><svg class="auth-icon" aria-hidden="true"><use href="#icon-lock" /></svg> Update your temporary password to continue securely.</p>
-            <p id="firstLoginPreviewNotice" class="auth-preview-note" hidden="hidden">Design preview only. Firebase is not connected and no password will be saved.</p>
-            <a id="exitPasswordPreview" class="auth-link auth-preview-back" href="Login.aspx" hidden="hidden">Back to Login</a>
         </dialog>
         <noscript><p class="auth-noscript">Enable JavaScript for password visibility controls and the secure first-login dialog.</p></noscript>
     </form>
     <footer class="auth-public-footer"><span>&copy; <%= DateTime.Now.Year %> Jordan University of Science and Technology.</span><span>University Internship Management System.</span></footer>
 
-<script src="../Js_project/firebase-client.js?v=20261023-tab-sessions" defer="defer"></script>
-<script src="../Js_project/Auth/auth.js?v=20261022-real-login" defer="defer"></script>
+<script src="../Js_project/Auth/login-card.js?v=20261024-card-login" defer="defer"></script>
+<script src="../Js_project/firebase-client.js?v=20261024-logout-session" defer="defer"></script>
+<script src="../Js_project/Auth/auth.js?v=20261024-card-login" defer="defer"></script>
 </body>
 </html>

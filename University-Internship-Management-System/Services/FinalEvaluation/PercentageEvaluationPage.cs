@@ -53,7 +53,7 @@ namespace University_Internship_Management_System.Services.FinalEvaluation
         protected void ConfirmSubmission_Click(object sender, EventArgs e) { operation = "submit"; }
         protected void ApproveReview_Click(object sender, EventArgs e) { operation = "approve"; }
         protected void RequestRevision_Click(object sender, EventArgs e) { operation = "revision"; }
-        protected void btnLogout_Click(object sender, EventArgs e) { FormsAuthentication.SignOut(); Session.Clear(); Session.Abandon(); Response.Redirect("~/Auth/Login.aspx", false); Context.ApplicationInstance.CompleteRequest(); }
+        protected void btnLogout_Click(object sender, EventArgs e) { University_Internship_Management_System.Shared.LoginSession.End(Context); Session.Clear(); Session.Abandon(); Response.Redirect(ResolveUrl("~/Auth/Login.aspx?account=new"), false); Context.ApplicationInstance.CompleteRequest(); }
         private static string H(string value) { return HttpUtility.HtmlEncode(value ?? ""); }
         protected virtual void BindStatistics(int? assigned, int? drafts, int? awaiting, int? approved)
         {

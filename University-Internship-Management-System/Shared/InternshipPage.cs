@@ -38,7 +38,7 @@ namespace University_Internship_Management_System.Shared
                 if (!string.IsNullOrEmpty(Uid))
                 {
                     var profile = Db.GetObject("users/" + FirebaseDb.Key(Uid));
-                    if (profile != null && S(profile["role"]) == Role && (bool?)profile["isActive"] != false)
+                    if (profile != null && FirebaseSignInService.CanonicalRole(S(profile["role"])) == FirebaseSignInService.CanonicalRole(Role) && (bool?)profile["isActive"] != false)
                         Profile = profile;
                 }
             }

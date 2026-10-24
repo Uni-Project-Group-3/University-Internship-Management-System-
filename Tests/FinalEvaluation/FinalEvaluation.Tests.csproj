@@ -39,6 +39,7 @@
     <Compile Include="FinalReportWorkflowTests.cs" />
     <Compile Include="AcademicAssignmentTests.cs" />
     <Compile Include="FinalReportPreflight.cs" />
+    <Compile Include="StudentIntegrationAudit.cs" />
     <Compile Include="FirebaseDemoRepositoryTests.cs" />
     <Compile Include="PercentageRequirementsTests.cs" />
     <Compile Include="PercentageSecurityTests.cs" />

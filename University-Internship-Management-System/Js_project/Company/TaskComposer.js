@@ -14,7 +14,16 @@
     back.type = next.type = 'button'; back.className = 'btn btn-light'; next.className = 'btn custom-btn-primary'; back.textContent = 'Back'; next.textContent = 'Next →';
     footer.insertBefore(back, by('publishTaskBtn')); footer.append(next);
     modal.querySelector('.modal-body').prepend(tabs);
-    let step = 0, questions = [], previewUrls = [], saving = false;
+    let step = 0, questions = [], previewUrls = [], saving = false, recovering = false, recoveredDefinition = null;
+    const disabledBeforeSave = new Map();
+    function lockControls() {
+        for (const el of disabledBeforeSave.keys()) if (!el.isConnected) disabledBeforeSave.delete(el);
+        const locked = saving || recovering;
+        for (const el of [...tabs.querySelectorAll("button"), back, next, ...panels.flatMap(p => [...p.querySelectorAll("input,textarea,select,button")])]) {
+            if (locked) { if (!disabledBeforeSave.has(el)) disabledBeforeSave.set(el, el.disabled); el.disabled = true; }
+            else if (disabledBeforeSave.has(el)) { el.disabled = disabledBeforeSave.get(el); disabledBeforeSave.delete(el); }
+        }
+    }
     const questionId = () => 'Q-' + crypto.randomUUID();
     function go(index) {
         step = index; panels.forEach((p, n) => p.hidden = n !== step);
@@ -22,9 +31,9 @@
         back.hidden = !step; next.hidden = step === 4; by('publishTaskBtn').hidden = step !== 4;
         if (step === 4) showReview(); modal.querySelector('.modal-body').scrollTop = 0;
     }
-    titles.forEach((title, index) => { const b = document.createElement('button'); b.type = 'button'; b.textContent = title; b.onclick = () => { if (!saving && (index <= step || validateThrough(index - 1))) go(index); }; tabs.append(b); });
-    back.onclick = () => { if (!saving) go(step - 1); };
-    next.onclick = () => { if (!saving && validateThrough(step)) go(step + 1); };
+    titles.forEach((title, index) => { const b = document.createElement('button'); b.type = 'button'; b.textContent = title; b.onclick = () => { if (!saving && !recovering && (index <= step || validateThrough(index - 1))) go(index); }; tabs.append(b); });
+    back.onclick = () => { if (!saving && !recovering) go(step - 1); };
+    next.onclick = () => { if (!saving && !recovering && validateThrough(step)) go(step + 1); };
     const exam = document.createElement('div'); exam.id = 'composerExamFields'; exam.hidden = true;
     exam.innerHTML = '<div class="compose-exam-settings"><label>Exam title *<input id="composeExamTitle" maxlength="180" class="form-control" /></label><label>Exam instructions<textarea id="composeExamInstructions" maxlength="4000" class="form-control" rows="2"></textarea></label><div class="row"><label class="col-md-6">Opening date &amp; time *<input id="composeExamOpens" type="datetime-local" class="form-control" /></label><label class="col-md-6">Closing date &amp; time *<input id="composeExamCloses" type="datetime-local" class="form-control" /></label></div><small id="composeExamZone"></small><div class="row"><label class="col-md-6">Duration (minutes) *<input id="composeExamDuration" type="number" min="1" max="600" value="30" class="form-control" /></label><label class="col-md-6">Allowed attempts *<input id="composeExamAttempts" type="number" min="1" max="10" value="1" class="form-control" /></label></div></div><div class="compose-question-toolbar"><h6>Questions</h6><button type="button" id="composeAddQuestion" class="btn btn-light">+ Add question</button></div><div id="composeQuestions"></div><p id="composeExamError" class="field-error" role="alert"></p>';
     panels[2].append(exam); by('composeExamZone').textContent = 'Timezone: ' + Intl.DateTimeFormat().resolvedOptions().timeZone;
@@ -79,6 +88,7 @@
         by('composeExamError').textContent = message; return valid;
     }
     function validateThrough(index) {
+        if(index>=0){const start=by('newTaskStart'),deadline=by('newTaskDeadline');if(!start.value||!deadline.value||Date.parse(start.value)>=Date.parse(deadline.value)){go(0);start.required=true;TaskDialogs.validate(panels[0]);by('createTaskError').hidden=false;by('createTaskError').textContent='Choose a start date and time before the deadline.';start.focus();return false;}}
         if (index >= 0) { let valid = true; for (const id of ['newTaskTitle', 'newTaskDescription', 'newTaskCriteria', 'newTaskDeadline', 'newTaskMaximum']) valid = fieldValid(id, 'Complete this field with a valid value.') && valid; if (!valid) { go(0); return false; } }
         if (index >= 1 && !by('studentChips').children.length) { by('studentSelectionError').textContent = 'Select at least one authorized student.'; go(1); by('studentSearch').focus(); return false; }
         if (index >= 2 && !validateExam()) { go(2); return false; }
@@ -91,35 +101,78 @@
         for (const [label, text] of items) { const p = document.createElement('p'), strong = document.createElement('strong'); strong.textContent = label + ': '; p.append(strong, document.createTextNode(text)); review.append(p); }
         questions.forEach((q, i) => { const p = document.createElement('p'); p.textContent = (i + 1) + '. ' + q.prompt + ' · ' + q.points + ' points'; review.append(p); });
     }
-    function draft(images) { return { title: by('composeExamTitle').value.trim(), instructions: by('composeExamInstructions').value.trim(), opensAt: new Date(by('composeExamOpens').value).toISOString(), closesAt: new Date(by('composeExamCloses').value).toISOString(), durationMinutes: Number(by('composeExamDuration').value), attemptLimit: Number(by('composeExamAttempts').value), questions: questions.map(q => ({ id: q.id, type: q.type, prompt: q.prompt.trim(), points: q.points, imageFileId: images[q.id] || '', ...(q.type === 'multipleChoice' ? { options: q.options.map((text, i) => ({ id: 'option-' + (i + 1), text: text.trim() })), correctOptionId: 'option-' + (q.answer + 1) } : { correctAnswer: q.answer === 'true' }) })) }; }
-    async function call(action, data) { const r = await fetch('../TaskExamsApi.ashx?action=' + action, { method: 'POST', credentials: 'same-origin', signal: AbortSignal.timeout(65000), headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) }); const result = await r.json(); if (!r.ok) throw new Error(result.message || 'Exam operation failed.'); return result; }
+    function draft(images) { if (recoveredDefinition) { const copy = JSON.parse(JSON.stringify(recoveredDefinition)); copy.questions.forEach(q => q.imageFileId = images[q.id] || ""); return copy; } return { title: by('composeExamTitle').value.trim(), instructions: by('composeExamInstructions').value.trim(), opensAt: new Date(by('composeExamOpens').value).toISOString(), closesAt: new Date(by('composeExamCloses').value).toISOString(), durationMinutes: Number(by('composeExamDuration').value), attemptLimit: Number(by('composeExamAttempts').value), questions: questions.map(q => ({ id: q.id, type: q.type, prompt: q.prompt.trim(), points: q.points, imageFileId: images[q.id] || '', ...(q.type === 'multipleChoice' ? { options: q.options.map((text, i) => ({ id: 'option-' + (i + 1), text: text.trim() })), correctOptionId: 'option-' + (q.answer + 1) } : { correctAnswer: q.answer === 'true' }) })) }; }
+    async function call(action, data) { const r = await fetch('../TaskExamsApi.ashx?action=' + action, { method: data ? 'POST' : 'GET', credentials: 'same-origin', cache:'no-store', signal: AbortSignal.timeout(65000), headers: data ? { 'Content-Type': 'application/json' } : {}, body: data ? JSON.stringify(data) : undefined }); const result = await r.json(); if (!r.ok) throw new Error(result.message || 'Exam operation failed.'); return result; }
+    const preview=document.createElement('button');preview.type='button';preview.className='btn btn-light';preview.textContent='Preview examination';panels[2].append(preview);
+    preview.onclick=()=>{if(!by("configureTaskExam").checked||!validateThrough(2))return;const content=document.createElement('div');for(const [index,q]of questions.entries()){const box=document.createElement('section'),title=document.createElement('h3');title.textContent=(index+1)+'. '+q.prompt+' · '+q.points+' points';box.append(title);if(q.file){const img=document.createElement('img'),url=URL.createObjectURL(q.file);img.src=url;img.alt='Question illustration';img.style.maxWidth='100%';img.onload=()=>URL.revokeObjectURL(url);box.append(img);}for(const text of q.type==='multipleChoice'?q.options:['True','False']){const line=document.createElement('p');line.textContent=text;box.append(line);}content.append(box);}TaskDialogs.open('Examination preview',content,{confirm:'Done',cancel:'Back to builder'});};
+    function sameDefinition(existing, desired) {
+        if (!existing) return false;
+        const normalize = definition => ({title:definition.title,instructions:definition.instructions || '',opensAt:Date.parse(definition.opensAt),closesAt:Date.parse(definition.closesAt),durationMinutes:Number(definition.durationMinutes),attemptLimit:Number(definition.attemptLimit),questions:(Array.isArray(definition.questions) ? definition.questions : (definition.questionOrder || Object.keys(definition.questions || {})).map(id => definition.questions[id])).map(q => ({id:q.id,type:q.type,prompt:q.prompt,points:Number(q.points),imageFileId:q.imageFileId || '',...(q.type === 'trueFalse' ? {correctAnswer:q.correctAnswer} : {options:q.options.map(option=>({id:option.id,text:option.text})),correctOptionId:q.correctOptionId})}))});
+        return JSON.stringify(normalize(existing)) === JSON.stringify(normalize(desired));
+    }
     const saved = new Map();
-    async function createExams(tasks, batchId) {
-        if (!by('configureTaskExam').checked) return;
+    async function createExams(tasks, batchId, progress = () => {}) {
+        const outcomes = [];
+        if (!by('configureTaskExam').checked) return outcomes;
         for (const task of tasks) {
-            by('publishTaskBtn').textContent = 'Saving examination…';
-            let state = saved.get(task.id);
-            const created = await call('create', { ...draft({}), taskId: task.id, placementId: task.placementId, creationKey: batchId });
-            if (!state) state = { id: created.id, images: {} };
-            state.revision = created.exam.draftRevision; state.published = created.exam.status === 'published';
-            for (const [id, q] of Object.entries(created.exam.draft?.questions || {})) if (q.imageFileId) state.images[id] = q.imageFileId;
-            saved.set(task.id, state);
-            if (state.published) continue;
-            for (const q of questions) if (q.file && !state.images[q.id]) {
-                const form = new FormData(); form.append('examId', state.id); form.append('questionId', q.id); form.append('file', q.file);
-                const metadata = await new Promise((resolve, reject) => { const xhr = new XMLHttpRequest(); xhr.open('POST', '../TaskExamsApi.ashx?action=image'); xhr.upload.onprogress = e => { by('publishTaskBtn').textContent = e.lengthComputable ? 'Uploading image ' + Math.round(e.loaded * 100 / e.total) + '%' : 'Uploading image…'; }; xhr.onerror = () => reject(new Error('Image upload interrupted. Retry to continue.')); xhr.onload = () => { try { const result = JSON.parse(xhr.responseText); xhr.status >= 200 && xhr.status < 300 ? resolve(result) : reject(new Error(result.message || 'Image upload failed.')); } catch { reject(new Error('Image upload returned an unreadable response.')); } }; xhr.send(form); }); state.images[q.id] = metadata.id;
-            }
-            const updated = await call('save', { examId: state.id, revision: state.revision, draft: draft(state.images) }); state.revision = updated.draftRevision;
-            by('publishTaskBtn').textContent = 'Publishing examination…'; await call('publish', { examId: state.id }); state.published = true;
+            try {
+                if (saved.get(task.id)?.published) { outcomes.push({ taskId: task.id, success: true }); progress(task, 'Published'); continue; }
+                progress(task, 'Saving exam');
+                by('publishTaskBtn').textContent = 'Saving examination…';
+                let state = saved.get(task.id);
+                const created = await call('create', { ...draft({}), taskId: task.id, placementId: task.placementId, creationKey: batchId });
+                if (!state) state = { id: created.id, images: {} };
+                state.revision = created.exam.draftRevision; state.published = created.exam.status === 'published';
+                for (const [id, q] of Object.entries(created.exam.draft?.questions || {})) if (q.imageFileId) state.images[id] = q.imageFileId;
+                saved.set(task.id, state);
+                if (state.published) { outcomes.push({ taskId: task.id, success: true }); progress(task, 'Published'); continue; }
+                for (const q of questions) if (q.file && !state.images[q.id]) {
+                    const form = new FormData(); form.append('examId', state.id); form.append('questionId', q.id); form.append('file', q.file);
+                    const metadata = await new Promise((resolve, reject) => { const xhr = new XMLHttpRequest(); xhr.open('POST', '../TaskExamsApi.ashx?action=image'); xhr.upload.onprogress = e => { by('publishTaskBtn').textContent = e.lengthComputable ? 'Uploading image ' + Math.round(e.loaded * 100 / e.total) + '%' : 'Uploading image…'; }; xhr.timeout = 65000; xhr.ontimeout = () => reject(new Error('Image upload timed out. Retry to continue.')); xhr.onerror = () => reject(new Error('Image upload interrupted. Retry to continue.')); xhr.onload = () => { try { const result = JSON.parse(xhr.responseText); xhr.status >= 200 && xhr.status < 300 ? resolve(result) : reject(new Error(result.message || 'Image upload failed.')); } catch { reject(new Error('Image upload returned an unreadable response.')); } }; xhr.send(form); }); state.images[q.id] = metadata.id;
+                }
+                for (const q of questions) if (q.expectedFile && !state.images[q.id]) throw new Error('Reselect question image: ' + q.expectedFile.name);
+                const desired = draft(state.images), current = await call('exam&examId=' + encodeURIComponent(state.id));
+                if (!sameDefinition(current.draft, desired)) {
+                    if (current.status === 'published') throw new Error('The published examination differs from this saved plan. Supervisor review is required.');
+                    const updated = await call('save', { examId: state.id, revision: current.draftRevision, draft: desired }); state.revision = updated.draftRevision;
+                }
+
+                by('publishTaskBtn').textContent = 'Publishing examination…'; await call('publish', { examId: state.id }); state.published = true;
+                outcomes.push({ taskId: task.id, success: true }); progress(task, 'Published');
+            } catch (error) { outcomes.push({ taskId: task.id, success: false, message: error.message }); progress(task, 'Retry required: ' + error.message); }
         }
+        return outcomes;
     }
     async function checkAvailability() {
         const urls = [];
-        if (by('configureTaskExam').checked) urls.push('../TaskExamsApi.ashx?action=list');
-        if (by('createTaskResources').files.length || (by('configureTaskExam').checked && questions.some(q => q.file))) urls.push('../TasksApi.ashx?action=storageAvailability');
+        if (by('configureTaskExam').checked) urls.push('../TaskExamsApi.ashx?action=readiness&images=' + questions.some(q => q.file || q.expectedFile));
+        if (by('createTaskResources').files.length) urls.push('../TasksApi.ashx?action=storageAvailability');
         for (const url of urls) { const response = await fetch(url, { credentials: 'same-origin', cache: 'no-store', signal: AbortSignal.timeout(65000) }); if (!response.ok) { const error = await response.json(); throw new Error(error.message || 'The required Firebase service is unavailable. Nothing new was created.'); } }
     }
-    window.TaskComposer = { validate: () => validateThrough(3), checkAvailability, createExams, setBusy(value) { saving = value; tabs.querySelectorAll('button').forEach(b => b.disabled = value); back.disabled = next.disabled = value; panels.forEach(p => p.querySelectorAll('input,textarea,select,button').forEach(el => el.disabled = value)); }, reset() { saved.clear(); questions = []; previewUrls.forEach(URL.revokeObjectURL); previewUrls = []; by('composeExamTitle').value = ''; by('composeExamInstructions').value = ''; by('composeExamOpens').value = ''; by('composeExamCloses').value = ''; exam.hidden = true; renderQuestions(); go(0); } };
-    modal.classList.add('task-compose-wizard'); modal.addEventListener('show.bs.modal', () => { if (!saving) go(0); });
+    function applyOperation(operation) {
+        recoveredDefinition = operation.plan.exam || null;
+        for (const q of questions) q.expectedFile = (operation.plan.questionImages || []).find(file => file.questionId === q.id);
+        for (const row of operation.progress || []) saved.set(row.taskId, { id: row.examId, images: row.images || {}, published: row.examPublished });
+    }
+    function restore(operation) {
+        const definition = operation.plan.exam;
+        by('configureTaskExam').checked = !!definition; exam.hidden = !definition;
+        if (definition) {
+            const localDate = value => { const date = new Date(value); return new Date(date.getTime() - date.getTimezoneOffset() * 60000).toISOString().slice(0, 16); };
+            for (const [id, value] of Object.entries({composeExamTitle:definition.title,composeExamInstructions:definition.instructions || '',composeExamOpens:localDate(definition.opensAt),composeExamCloses:localDate(definition.closesAt),composeExamDuration:definition.durationMinutes,composeExamAttempts:definition.attemptLimit})) by(id).value = value;
+            questions = definition.questions.map(q => ({ id:q.id,type:q.type,prompt:q.prompt,points:q.points,options:(q.options || []).map(option => option.text),answer:q.type === 'trueFalse' ? String(q.correctAnswer) : q.options.findIndex(option => option.id === q.correctOptionId),file:null }));
+        } else questions = [];
+        renderQuestions(); applyOperation(operation); go(4); recovering = true; lockControls();
+    }
+    window.TaskComposer = { validate: () => validateThrough(3), checkAvailability, createExams,
+        snapshot() { return by('configureTaskExam').checked ? draft({}) : null; },
+        questionFiles() { return questions.filter(q => q.file).map(q => ({questionId:q.id,file:q.file})); },
+        setQuestionFile(id, file) { const question = questions.find(q => q.id === id); if (question) question.file = file; },
+        applyOperation, restore,
+        setBusy(value) { saving = value; lockControls(); },
+        setRecovery(value) { recovering = value; lockControls(); },
+        reset() { recoveredDefinition = null; recovering = saving = false; lockControls(); saved.clear(); questions = []; previewUrls.forEach(URL.revokeObjectURL); previewUrls = []; by('composeExamTitle').value = ''; by('composeExamInstructions').value = ''; by('composeExamOpens').value = ''; by('composeExamCloses').value = ''; exam.hidden = true; renderQuestions(); go(0); }
+    };
+    modal.classList.add('task-compose-wizard'); modal.addEventListener('show.bs.modal', () => { if (!saving) { go(recovering ? 4 : 0); lockControls(); } });
     renderQuestions(); go(0);
 }());

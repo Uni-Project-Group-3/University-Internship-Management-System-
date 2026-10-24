@@ -33,9 +33,10 @@
             if (internships.has(chosen)) by('internshipFilter').value = chosen;
             document.querySelectorAll('.trainees-stat strong').forEach((el, i) => { el.textContent = [data.statistics.total, data.statistics.training, data.statistics.completed, data.statistics.assignedTasks][i]; el.removeAttribute('aria-label'); });
             document.querySelector('.trainees-filters').disabled = false; document.querySelector('.trainees-data-badge').textContent = 'Live Firebase records';
-            notice.textContent = 'Connected to Firebase. Only confirmed placements at your company are shown.'; render();
+            notice.textContent = ''; notice.style.display = 'none'; render();
             if (by('companyTraineeDialog').open && selected) { const id = selected.id; const latest = records.find(r => r.id === id); if (!latest) by('companyTraineeDialog').close(); }
         } catch (error) {
+            notice.style.removeProperty('display');
             notice.textContent = error.message + ' Retrying automatically.';
             document.querySelector('.trainees-data-badge').textContent = 'Connection interrupted';
             document.querySelectorAll('.trainees-stat strong').forEach(el => el.textContent = '—');

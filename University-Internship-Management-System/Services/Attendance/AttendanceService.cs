@@ -15,13 +15,16 @@ namespace UIMS.Attendance
     {
         private readonly AttendanceFirebase database;
         private readonly Func<byte[]> qrSigningKey;
+        private readonly AttendanceConfiguration configuration;
         public AttendanceService() : this(new AttendanceFirebase()) { }
         // حقن الاتصال يسمح باختبار القواعد دون الوصول إلى Firebase الحقيقي.
         public AttendanceService(AttendanceFirebase database) : this(database, LoadQrSigningKey) { }
-        public AttendanceService(AttendanceFirebase database, Func<byte[]> qrSigningKey)
+        public AttendanceService(AttendanceFirebase database, Func<byte[]> qrSigningKey) : this(database, qrSigningKey, new AttendanceConfiguration()) { }
+        public AttendanceService(AttendanceFirebase database, Func<byte[]> qrSigningKey, AttendanceConfiguration configuration)
         {
             this.database = database ?? throw new ArgumentNullException(nameof(database));
             this.qrSigningKey = qrSigningKey ?? throw new ArgumentNullException(nameof(qrSigningKey));
+            this.configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
         }
 
         private static byte[] LoadQrSigningKey()
@@ -152,7 +155,7 @@ namespace UIMS.Attendance
                 // لا نصحح UID تلقائيًا؛ اختلاف الربط يحتاج مراجعة المسؤول دون كشف بيانات الحساب.
                 if (Text(actor, "firebaseUid") != verifiedUid)
                     throw new UIMS.Services.FirebaseException(403, "Your Firebase login is verified, but its UID does not match the attendance record. Ask the project administrator to review the attendance UID mapping. No data was changed.");
-                if (Flag(actor, "isTestData") && !new AttendanceConfiguration().IsAuthorizedIntegrationActor(role, id, verifiedUid))
+                if (Flag(actor, "isTestData") && !configuration.AuthenticatedWritesEnabled && !configuration.IsAuthorizedIntegrationActor(role, id, verifiedUid))
                     throw new UIMS.Services.FirebaseException(403, "This test attendance identity is not approved for the verified Firebase login.");
             }
             return actor;
@@ -336,7 +339,7 @@ namespace UIMS.Attendance
             foreach (var entry in schedules.Properties())
             {
                 var schedule = entry.Value;
-                if (!(schedule is JObject) || schedule["isTrainingDay"] == null || schedule["isTrainingDay"].Type != JTokenType.Boolean) continue;
+                if (!CanDeriveScheduleHistory(schedule as JObject, assignment, assignmentId, entry.Name, Now())) continue;
                 if (records[entry.Name] is JObject || Text(schedule, "assignmentId") != assignmentId ||
                     Text(schedule, "attendanceDate") != entry.Name || string.CompareOrdinal(entry.Name, Today()) > 0) continue;
                 bool training = Flag(schedule, "isTrainingDay");
@@ -351,6 +354,33 @@ namespace UIMS.Attendance
             foreach (var record in records.Properties())
                 if (record.Value is JObject) ((JObject)record.Value).Remove("qrState");
             return records;
+        }
+
+        // Display-only derivation must meet the same calendar/date boundaries as QR use.
+        // A malformed or unapproved/missing calendar is never evidence of absence.
+        public static bool CanDeriveScheduleHistory(JObject schedule, JObject assignment, string assignmentId, string date, long now)
+        {
+            DateTime day, first, last;
+            if (schedule == null || assignment == null || string.IsNullOrWhiteSpace(assignmentId) ||
+                Text(schedule, "assignmentId") != assignmentId || Text(schedule, "attendanceDate") != date ||
+                Text(schedule, "timeZone") != "Asia/Amman" || Number(schedule, "version") <= 0 ||
+                schedule["isTrainingDay"]?.Type != JTokenType.Boolean ||
+                !DateTime.TryParseExact(date,"yyyy-MM-dd",CultureInfo.InvariantCulture,DateTimeStyles.None,out day) ||
+                !DateTime.TryParseExact(Text(assignment,"startDate"),"yyyy-MM-dd",CultureInfo.InvariantCulture,DateTimeStyles.None,out first) ||
+                !DateTime.TryParseExact(Text(assignment,"endDate"),"yyyy-MM-dd",CultureInfo.InvariantCulture,DateTimeStyles.None,out last) ||
+                first > last || day < first || day > last) return false;
+            try
+            {
+                var zone = TimeZoneInfo.FindSystemTimeZoneById("Jordan Standard Time");
+                string today = TimeZoneInfo.ConvertTime(DateTimeOffset.FromUnixTimeMilliseconds(now),zone).ToString("yyyy-MM-dd",CultureInfo.InvariantCulture);
+                if (string.CompareOrdinal(date,today)>0) return false;
+                if (!Flag(schedule,"isTrainingDay")) return true;
+                long start = Number(schedule,"scheduledStartAt"), end = Number(schedule,"scheduledEndAt");
+                return start > 0 && end > start && end < now &&
+                    TimeZoneInfo.ConvertTime(DateTimeOffset.FromUnixTimeMilliseconds(start),zone).ToString("yyyy-MM-dd",CultureInfo.InvariantCulture)==date &&
+                    TimeZoneInfo.ConvertTime(DateTimeOffset.FromUnixTimeMilliseconds(end),zone).ToString("yyyy-MM-dd",CultureInfo.InvariantCulture)==date;
+            }
+            catch (ArgumentOutOfRangeException) { return false; }
         }
 
         // نحافظ على توقيع الاستدعاء السابق؛ التدرج اختياري لصفحات الحضور فقط.
@@ -378,10 +408,46 @@ namespace UIMS.Attendance
             return c;
         }
 
-        // لا ينشئ الطالب رمزًا لنفسه؛ يعرض فقط الرمز الذي أصدره مشرفه.
-        public Task<JObject> CreateQr(string studentId, string action, bool localDemo)
+        // Issuing a token never records check-in/out; only the assigned supervisor can scan it.
+        public async Task<JObject> CreateQr(string studentId, string action, bool localDemo, string verifiedUid = "")
         {
-            return ReadIssuedQr(studentId, action, localDemo);
+            if (action != "checkIn" && action != "checkOut") throw new InvalidOperationException("Choose check-in or check-out.");
+            await Identity("student", studentId, verifiedUid, localDemo);
+            await CheckEnabled();
+            var context = await Context(studentId, null);
+            CheckLocalTestContext(context, localDemo);
+            string path = "attendance/" + context.AssignmentId + "/" + context.Date;
+            for (int retry = 0; retry < 3; retry++)
+            {
+                var snapshot = await database.Read(path);
+                context.Record = snapshot.Data;
+                long now = Now();
+                CheckAction(context, action, now);
+                byte[] nonce = new byte[16];
+                using (var random = RandomNumberGenerator.Create()) random.GetBytes(nonce);
+                var state = new JObject
+                {
+                    ["studentId"] = studentId, ["assignmentId"] = context.AssignmentId,
+                    ["companyId"] = Text(context.Assignment, "companyId"),
+                    ["supervisorId"] = Text(context.Assignment, "companySupervisorId"),
+                    ["date"] = context.Date, ["action"] = action, ["version"] = Number(context.Schedule, "version"),
+                    ["issuedAt"] = now, ["expiresAt"] = now + 120000, ["localDemo"] = localDemo,
+                    ["nonce"] = BitConverter.ToString(nonce).Replace("-", ""), ["status"] = "issued"
+                };
+                string token = PersistentToken(state);
+                var row = (JObject)snapshot.Data.DeepClone();
+                if (row["qrState"] != null && !(row["qrState"] is JObject))
+                    throw new InvalidOperationException("Stored QR state is inconsistent. No data was overwritten.");
+                row["assignmentId"] = context.AssignmentId; row["studentId"] = studentId;
+                row["companyId"] = Text(context.Assignment, "companyId");
+                row["companySupervisorId"] = Text(context.Assignment, "companySupervisorId");
+                row["attendanceDate"] = context.Date; row["isTestData"] = Flag(context.Student, "isTestData");
+                if (row["qrState"] == null) row["qrState"] = new JObject();
+                row["qrState"][action] = state;
+                if (await Save(path, row, snapshot.Etag))
+                    return new JObject { ["token"] = token, ["expiresAt"] = state["expiresAt"], ["serverNow"] = now };
+            }
+            throw new InvalidOperationException("Attendance changed while issuing QR. Refresh and try again.");
         }
 
         // هذا الحاجز يخص التجربة بدون Login؛ لا يسمح باستعمال حسابات أو تكليفات حقيقية.

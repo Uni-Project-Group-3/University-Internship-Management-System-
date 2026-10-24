@@ -17,7 +17,7 @@ using Newtonsoft.Json.Linq;
 namespace UIMS.Services
 {
     /// <summary>Private Firebase Storage transport. Authorization to task records is enforced by TaskService.</summary>
-    public sealed class FirebaseFileStorageService
+    public sealed partial class FirebaseFileStorageService
     {
         public const int MaximumFileBytes = 10 * 1024 * 1024;
         private const string StorageScope = "https://www.googleapis.com/auth/devstorage.read_write";
@@ -27,15 +27,43 @@ namespace UIMS.Services
         private readonly Func<CancellationToken, Task<string>> tokenProvider;
 
         public FirebaseFileStorageService(Func<string, string> setting, HttpClient client = null,
-            Func<CancellationToken, Task<string>> tokenProvider = null)
+            Func<CancellationToken, Task<string>> tokenProvider = null, Func<string> supabaseSecretProvider = null, HttpClient supabaseClient = null)
         {
             this.setting = setting ?? throw new ArgumentNullException(nameof(setting));
             this.client = client ?? new HttpClient { Timeout = TimeSpan.FromSeconds(45) };
             this.tokenProvider = tokenProvider ?? GetStorageTokenAsync;
+            this.supabaseSecretProvider = supabaseSecretProvider ?? (() => Environment.GetEnvironmentVariable("UIMS_SUPABASE_SECRET_KEY"));
+            this.supabaseClient = supabaseClient ?? SupabaseTransport;
+        }
+
+        // Read-only IAM inspection; no probe object is created or deleted.
+        public async Task<JObject> CheckAvailabilityAsync(CancellationToken cancellation)
+        {
+            if (UseSupabase) return await SupabaseAvailability(cancellation).ConfigureAwait(false);
+            if (UploadProvider != "firebase") throw new FirebaseException(503, "Unsupported upload storage provider.");
+            EnsureEnabled(true);
+            var required = new[] {"storage.objects.create", "storage.objects.get", "storage.objects.delete"};
+            string query = string.Join("&", required.Select(permission => "permissions=" + Uri.EscapeDataString(permission)));
+            var uri = new Uri("https://storage.googleapis.com/storage/v1/b/" + Uri.EscapeDataString(Bucket()) + "/iam/testPermissions?" + query);
+            using (var request = await AuthorizedRequestAsync(HttpMethod.Get,uri,cancellation).ConfigureAwait(false))
+            using (var response = await client.SendAsync(request,cancellation).ConfigureAwait(false))
+            {
+                if (response.StatusCode == HttpStatusCode.NotFound) throw new FirebaseException(404,"Storage permission verification returned 404 for the configured bucket '" + Bucket() + "'. In Firebase Console > Storage, verify that this exact bucket is provisioned, then verify the server identity's access in Google Cloud Console. A working Realtime Database does not verify Storage availability. No upload was attempted; settings were not changed.");
+                if (response.StatusCode == HttpStatusCode.Forbidden || response.StatusCode == HttpStatusCode.Unauthorized) throw new FirebaseException(403,"The existing server identity could not inspect the configured Storage bucket permissions. Check its current IAM access; no upload was attempted.");
+                await EnsureResponseAsync(response,"permission verification").ConfigureAwait(false);
+                JObject result; try { result = JObject.Parse(await response.Content.ReadAsStringAsync().ConfigureAwait(false)); }
+                catch (Newtonsoft.Json.JsonException) { throw new FirebaseException(502,"Storage permission verification returned an invalid response."); }
+                var granted = (result["permissions"] as JArray ?? new JArray()).Values<string>().ToList();
+                var missing = required.Where(permission => !granted.Contains(permission)).ToList();
+                if (missing.Count > 0) throw new FirebaseException(403,"The existing Storage bucket has not granted the server the required permissions: " + string.Join(", ",missing) + ". No file was uploaded.");
+                return new JObject { ["available"] = true, ["verification"] = "readOnlyIam", ["permissions"] = new JArray(granted), ["clientRulesVerified"] = false };
+            }
         }
 
         public async Task<StoredFile> UploadAsync(string objectPath, string fileName, string contentType, byte[] bytes, CancellationToken cancellation)
         {
+            if (UseSupabase) return await SupabaseUpload(objectPath, fileName, contentType, bytes, cancellation).ConfigureAwait(false);
+            if (UploadProvider != "firebase") throw new FirebaseException(503, "Unsupported upload storage provider.");
             EnsureEnabled(true);
             ValidateObjectPath(objectPath);
             string safeName = SanitizeFileName(fileName);
@@ -110,7 +138,10 @@ namespace UIMS.Services
             }
         }
 
-        public async Task DeleteObjectAsync(string objectPath, CancellationToken cancellation)
+        public Task DeleteObjectAsync(string objectPath, CancellationToken cancellation)
+        { return DeleteObjectAsync(objectPath, UploadProvider, cancellation); }
+
+        private async Task DeleteFirebaseObjectAsync(string objectPath, CancellationToken cancellation)
         {
             EnsureEnabled(true);
             ValidateObjectPath(objectPath);
@@ -234,13 +265,21 @@ namespace UIMS.Services
             int status = (int)response.StatusCode;
             if (response.StatusCode == HttpStatusCode.Unauthorized || response.StatusCode == HttpStatusCode.Forbidden)
                 throw new FirebaseException(403, "Firebase Storage denied the " + operation + ". Check trusted server IAM and Storage Rules; no public access was attempted.");
-            if (response.StatusCode == HttpStatusCode.NotFound) throw new FirebaseException(404, "The requested file does not exist in Firebase Storage.");
+            if (response.StatusCode == HttpStatusCode.NotFound)
+            {
+                if (string.Equals(operation, "upload", StringComparison.OrdinalIgnoreCase))
+                    throw new FirebaseException(404, "The configured Firebase Storage bucket was not found. Create the bucket in Firebase Console or update FirebaseStorageBucket in Web.config to the exact bucket name shown under Storage > Files.");
+                if (string.Equals(operation, "download", StringComparison.OrdinalIgnoreCase))
+                    throw new FirebaseException(404, "The requested file does not exist in Firebase Storage.");
+                throw new FirebaseException(404, "The Firebase Storage bucket or requested object was not found during " + operation + ".");
+            }
             throw new FirebaseException(status >= 500 ? 502 : status, "Firebase Storage " + operation + " failed (HTTP " + status.ToString(CultureInfo.InvariantCulture) + ").");
         }
     }
 
     public sealed class StoredFile
     {
+        public string Provider { get; set; } = "firebase";
         public string ObjectPath { get; set; }
         public string FileName { get; set; }
         public string ContentType { get; set; }

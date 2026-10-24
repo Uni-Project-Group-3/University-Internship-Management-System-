@@ -6,6 +6,7 @@ using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using University_Internship_Management_System.Models.FinalEvaluation;
 using University_Internship_Management_System.Services.FinalEvaluation;
 
@@ -15,6 +16,97 @@ internal static partial class Program
     private static FirebaseFinalEvaluationConfiguration OfflineFirebaseConfiguration() { return new FirebaseFinalEvaluationConfiguration(OfflineFirebaseRoot); }
     private static int passed;
     private static int failed;
+    private sealed class AttendancePostWorker : System.Web.Hosting.SimpleWorkerRequest
+    {
+        internal AttendancePostWorker() : base("/", System.IO.Path.GetTempPath(), "MyAttendance.aspx", "", new System.IO.StringWriter()) { }
+        public override string GetHttpVerbName() => "POST";
+        public override string GetRemoteAddress() => "127.0.0.1";
+        public override string GetLocalAddress() => "127.0.0.1";
+    }
+    private static async Task AuthenticatedAttendanceScopeTests()
+    {
+        var previous=System.Web.HttpContext.Current;
+        var config=new UIMS.Attendance.AttendanceConfiguration(k=>k=="AttendanceProductionWritesEnabled"?"true":null);
+        var flags=System.Reflection.BindingFlags.NonPublic|System.Reflection.BindingFlags.Instance;
+        var field=typeof(UIMS.Attendance.AttendanceConfiguration).GetField("WriteRequest",System.Reflection.BindingFlags.Static|System.Reflection.BindingFlags.NonPublic);
+        object slot=field.GetValue(null); var property=slot.GetType().GetProperty("Value"); object old=property.GetValue(slot);
+        var actorType=typeof(UIMS.Attendance.AttendanceConfiguration).GetNestedType("VerifiedWriteRequest",System.Reflection.BindingFlags.NonPublic);
+        var actor=Activator.CreateInstance(actorType,true);
+        Action<string,string> set=(key,value)=>actorType.GetField(key,flags).SetValue(actor,value);
+        string today=UIMS.Attendance.AttendanceService.Today();
+        var row=new JObject{["assignmentId"]="A",["attendanceDate"]=today,["studentId"]="S",["companyId"]="C",["companySupervisorId"]="CS",["isTestData"]=true};
+        try {
+            System.Web.HttpContext.Current=new System.Web.HttpContext(new AttendancePostWorker());
+            set("Uid","verified-S");set("Role","student");set("Id","S");set("Action","qr"); property.SetValue(slot,actor);
+            config.EnsureWriteScope("attendance/A/"+today,row);
+            set("Id","OTHER"); await Reject<UIMS.Services.FirebaseException>(()=>{config.EnsureWriteScope("attendance/A/"+today,row);return Task.CompletedTask;});
+            set("Id","S");set("Action","scan");await Reject<UIMS.Services.FirebaseException>(()=>{config.EnsureWriteScope("attendance/A/"+today,row);return Task.CompletedTask;});
+            set("Role","company");set("Id","CS");set("Uid","verified-CS");config.EnsureWriteScope("attendance/A/"+today,row);
+            set("Id","OTHER");await Reject<UIMS.Services.FirebaseException>(()=>{config.EnsureWriteScope("attendance/A/"+today,row);return Task.CompletedTask;});
+        } finally {property.SetValue(slot,old);System.Web.HttpContext.Current=previous;}
+    }
+    private sealed class QrMemoryDatabase : UIMS.Attendance.AttendanceFirebase
+    {
+        internal readonly Dictionary<string,JObject> Rows = new Dictionary<string,JObject>();
+        internal int Writes;
+        internal int RejectNextSaves;
+        public override Task<UIMS.Attendance.AttendanceSnapshot> Read(string path) => Task.FromResult(new UIMS.Attendance.AttendanceSnapshot { Data = Rows.ContainsKey(path) ? (JObject)Rows[path].DeepClone() : new JObject(), Etag = "offline" });
+        public override Task<bool> SaveIfUnchanged(string path, JObject data, string etag) { if (RejectNextSaves > 0) { RejectNextSaves--; return Task.FromResult(false); } Writes++; Rows[path] = (JObject)data.DeepClone(); return Task.FromResult(true); }
+    }
+    private static async Task StudentQrIssuanceTests()
+    {
+        var db = new QrMemoryDatabase(); string day = UIMS.Attendance.AttendanceService.Today();
+        string path = "attendance/A/" + day;
+        db.Rows["settings"] = new JObject { ["enabled"] = true };
+        db.Rows["students/S"] = new JObject { ["status"] = "active", ["firebaseUid"] = "uid-S", ["activeAssignmentId"] = "A" };
+        db.Rows["trainingAssignments/A"] = new JObject { ["status"]="active", ["studentId"]="S", ["companyId"]="C", ["companySupervisorId"]="CS", ["requiredHours"]=300, ["startDate"]=day, ["endDate"]=day };
+        db.Rows["companies/C"] = new JObject { ["status"]="active" };
+        db.Rows["companySupervisors/CS"] = new JObject { ["status"]="active", ["companyId"]="C", ["firebaseUid"]="uid-CS" };
+        db.Rows["schedules/A/"+day] = new JObject { ["assignmentId"]="A", ["attendanceDate"]=day, ["timeZone"]="Asia/Amman", ["version"]=1, ["isTrainingDay"]=true, ["scheduledStartAt"]=DateTimeOffset.Parse(day+"T09:00:00+03:00").ToUnixTimeMilliseconds(), ["scheduledEndAt"]=DateTimeOffset.Parse(day+"T16:00:00+03:00").ToUnixTimeMilliseconds() };
+        db.Rows[path] = new JObject { ["assignmentId"]="A", ["studentId"]="S", ["companyId"]="C", ["companySupervisorId"]="CS", ["attendanceDate"]=day, ["isTestData"]=true, ["historicalNote"]="preserve", ["approvedMinutes"]=2405 };
+        var original = (JObject)db.Rows[path].DeepClone();
+        // Existing verified accounts can retain historical test labels in authenticated operation.
+        foreach(string labelled in new[]{"students/S","trainingAssignments/A","companies/C","companySupervisors/CS","schedules/A/"+day}) db.Rows[labelled]["isTestData"]=true;
+        var isolatedService = new UIMS.Attendance.AttendanceService(db, () => Enumerable.Repeat((byte)7,32).ToArray());
+        await Reject<UIMS.Services.FirebaseException>(()=>isolatedService.CreateQr("S","checkIn",false,"uid-S")); Assert(db.Writes==0);
+        var service = new UIMS.Attendance.AttendanceService(db, () => Enumerable.Repeat((byte)7,32).ToArray(), new UIMS.Attendance.AttendanceConfiguration(key=>key=="AttendanceProductionWritesEnabled"?"true":null));
+        await Reject<UIMS.Services.FirebaseException>(()=>service.CreateQr("S","checkIn",false,"foreign-uid")); Assert(db.Writes==0);
+        await Reject<InvalidOperationException>(()=>service.CreateQr("S","checkOut",false,"uid-S")); Assert(db.Writes==0);
+        var qr = await service.CreateQr("S","checkIn",false,"uid-S");
+        Assert(!string.IsNullOrWhiteSpace((string)qr["token"]) && (long)qr["expiresAt"]-(long)qr["serverNow"]==120000);
+        Assert((long)db.Rows[path]["approvedMinutes"]==2405 && (string)db.Rows[path]["historicalNote"]=="preserve" && db.Rows[path]["checkInAt"]==null);
+        string first=(string)qr["token"];
+        qr=await service.CreateQr("S","checkIn",false,"uid-S"); Assert(first!=(string)qr["token"]);
+        var issued = await service.IssueStudentQrs("CS",new JArray("S"),"checkIn",false,"uid-CS");
+        Assert(((JArray)issued["issued"]).Count==1 && ((JArray)issued["failed"]).Count==0 && db.Rows[path]["checkInAt"]==null);
+        foreach(var property in original.Properties()) Assert(JToken.DeepEquals(property.Value,db.Rows[path][property.Name]));
+        // A separate historical row must remain byte-for-byte equivalent throughout the cycle.
+        string oldPath="attendance/A/2020-01-01";
+        db.Rows[oldPath]=new JObject { ["workedMinutes"]=2405, ["hoursApprovalStatus"]="approved", ["checkInAt"]=1000, ["checkOutAt"]=144301000 };
+        var history=(JObject)db.Rows[oldPath].DeepClone();
+        qr=await service.ReadIssuedQr("S","checkIn",false);
+        await Reject<UIMS.Services.FirebaseException>(()=>service.Scan("OTHER",(string)qr["token"],false));
+        // Replace just the signature with another syntactically valid signature.
+        string valid=(string)qr["token"], tampered=valid.Substring(0,valid.LastIndexOf('.')+1)+System.Web.HttpServerUtility.UrlTokenEncode(new byte[32]);
+        await Reject<InvalidOperationException>(()=>service.Scan("CS",tampered,false));
+        db.RejectNextSaves=1;
+        var scanned=await service.Scan("CS",valid,false);
+        Assert((string)scanned["action"]=="checkIn" && (string)scanned["record"]["status"]=="checkedIn" && scanned["record"]["qrState"]==null);
+        long checkIn=(long)db.Rows[path]["checkInAt"];
+        Assert(checkIn>0 && db.Rows[path]["checkOutAt"]==null);
+        await Reject<InvalidOperationException>(()=>service.Scan("CS",valid,false));
+        // Simulate elapsed server time in the isolated database; no production clock or data changes.
+        db.Rows[path]["checkInAt"]=UIMS.Attendance.AttendanceService.Now()-125000;
+        checkIn=(long)db.Rows[path]["checkInAt"];
+        qr=await service.CreateQr("S","checkOut",false,"uid-S");
+        scanned=await service.Scan("CS",(string)qr["token"],false);
+        var record=(JObject)scanned["record"];
+        Assert((string)scanned["action"]=="checkOut" && (string)record["status"]=="completed");
+        Assert((long)record["checkInAt"]==checkIn && (long)record["workedMinutes"]==((long)record["checkOutAt"]-checkIn)/60000 && (long)record["workedMinutes"]==2);
+        Assert((string)record["hoursApprovalStatus"]=="pending" && (long)record["approvedMinutes"]==2405);
+        await Reject<InvalidOperationException>(()=>service.Scan("CS",(string)qr["token"],false));
+        Assert(JToken.DeepEquals(history,db.Rows[oldPath]));
+    }
     private static void Assert(bool condition) { if (!condition) throw new Exception("Assertion failed."); }
     private static async Task Reject<T>(Func<Task> action) where T : Exception
     {
@@ -158,6 +250,8 @@ internal static partial class Program
         private readonly Dictionary<string, Newtonsoft.Json.Linq.JToken> records = new Dictionary<string, Newtonsoft.Json.Linq.JToken>(StringComparer.Ordinal);
         private readonly Dictionary<string, int> versions = new Dictionary<string, int>(StringComparer.Ordinal);
         private readonly HashSet<string> active = new HashSet<string>(StringComparer.Ordinal);
+        public bool LoseAttendanceAcknowledgmentOnce;
+        public bool ConflictAttendanceOnce;
         public void Enable(string uid) { active.Add(uid); }
         public void Seed(string path, string json) { records[path] = Newtonsoft.Json.Linq.JToken.Parse(json); }
         public Task<bool> IsActiveAuthenticationUidAsync(string uid) { return Task.FromResult(active.Contains(uid)); }
@@ -186,12 +280,15 @@ internal static partial class Program
         }
         public Task<bool> CompareWriteAsync(string path, object value, string etag)
         {
+            if(path=="uimsAttendance" && ConflictAttendanceOnce){ConflictAttendanceOnce=false;return Task.FromResult(false);}
             int version; if (!versions.TryGetValue(path, out version)) version = 0;
             Newtonsoft.Json.Linq.JToken current; records.TryGetValue(path, out current);
             string expected = current == null ? "null_etag" : "\"v" + version + "\"";
             if (!string.Equals(expected, etag, StringComparison.Ordinal)) return Task.FromResult(false);
             records[path] = value as Newtonsoft.Json.Linq.JToken ?? Newtonsoft.Json.Linq.JToken.FromObject(value);
-            versions[path] = version + 1; return Task.FromResult(true);
+            versions[path] = version + 1;
+            if(path=="uimsAttendance" && LoseAttendanceAcknowledgmentOnce){LoseAttendanceAcknowledgmentOnce=false;throw new UIMS.Services.FirebaseException(503,"Offline simulated lost attendance acknowledgement; retry the same operation.");}
+            return Task.FromResult(true);
         }
     }
 
@@ -204,17 +301,35 @@ internal static partial class Program
         db.Seed("users/other-student-auth", "{\"role\":\"student\",\"isActive\":true,\"studentId\":\"ST-202\",\"department\":\"Computer Science\",\"academicSupervisorId\":\"AS-4\"}");
         db.Seed("users/other-company-auth", "{\"role\":\"companySupervisor\",\"isActive\":true,\"companyId\":\"CO-10\",\"companySupervisorId\":\"CS-10\"}");
         db.Seed("opportunities/OP-9", "{\"id\":\"OP-9\",\"companyId\":\"CO-9\",\"companyName\":\"Example Co\",\"status\":\"published\",\"department\":\"Computer Science\",\"deadline\":\"2030-01-01\",\"startDate\":\"2030-02-01\",\"durationWeeks\":12,\"requiredHours\":240,\"seats\":2,\"acceptedCount\":0}");
-        var service = new UIMS.Services.ApplicationWorkflowService(db);
+        var service = new UIMS.Services.ApplicationWorkflowService(db,()=>true);
         string id = await service.ApplyAsync("student-auth", Newtonsoft.Json.Linq.JObject.Parse("{\"opportunityId\":\"OP-9\",\"phone\":\"0790000000\",\"cvLink\":\"https://example.test/cv\"}"));
         Assert((string)(await db.ReadAsync("applications/" + id) as Newtonsoft.Json.Linq.JObject)?["studentId"] == "ST-101");
         await Reject<UIMS.Services.FirebaseException>(() => service.ApplyAsync("student-auth", Newtonsoft.Json.Linq.JObject.Parse("{\"opportunityId\":\"OP-9\",\"phone\":\"0790000000\",\"cvLink\":\"https://example.test/cv\"}")));
         await Reject<UIMS.Services.FirebaseException>(() => service.DecideAsync("other-company-auth", id, "accepted", ""));
         await service.DecideAsync("company-auth", id, "accepted", "Accepted for the placement");
         Assert((string)(await db.ReadAsync("applications/" + id) as Newtonsoft.Json.Linq.JObject)?["status"] == "accepted");
+        await Reject<UIMS.Services.FirebaseException>(()=>service.ConfirmOfferAsync("student-auth",id));
+        Assert(await db.ReadAsync("placementClaims/ST-101")==null && await db.ReadAsync("placements/PLC-"+id)==null);
+        db.Seed("assignments/conflict","{\"studentId\":\"ST-101\",\"academicSupervisorId\":\"AS-OTHER\",\"active\":true}");
+        await Reject<UIMS.Services.FirebaseException>(()=>service.ConfirmOfferAsync("student-auth",id));
+        Assert(await db.ReadAsync("placementClaims/ST-101")==null);
+        db.Seed("assignments/conflict","{\"studentId\":\"ST-101\",\"academicSupervisorId\":\"AS-OTHER\",\"active\":false}");
+        string plannedId="PLC-"+id;
+        var state=new JObject{["companies"]=new JObject{["CO-9"]=new JObject{["status"]="active"}},["companySupervisors"]=new JObject{["CS-3"]=new JObject{["status"]="active",["companyId"]="CO-9"}},
+            ["schedules"]=new JObject{[plannedId]=new JObject{["2030-02-01"]=new JObject{["assignmentId"]=plannedId,["attendanceDate"]="2030-02-01",["timeZone"]="Asia/Amman",["version"]=1,["isTrainingDay"]=true,["scheduledStartAt"]=DateTimeOffset.Parse("2030-02-01T09:00:00+03:00").ToUnixTimeMilliseconds(),["scheduledEndAt"]=DateTimeOffset.Parse("2030-02-01T16:00:00+03:00").ToUnixTimeMilliseconds()}}},["attendance"]=new JObject{["unchanged"]=new JObject{["minutes"]=2405}}};
+        db.Seed("uimsAttendance",state.ToString());
+        db.ConflictAttendanceOnce=true;db.LoseAttendanceAcknowledgmentOnce=true;
+        await Reject<UIMS.Services.FirebaseException>(()=>service.ConfirmOfferAsync("student-auth",id));
+        Assert((string)(await db.ReadAsync("applications/"+id))["status"]=="accepted");
         string placementId = await service.ConfirmOfferAsync("student-auth", id);
         Assert((string)(await db.ReadAsync("placements/" + placementId) as Newtonsoft.Json.Linq.JObject)?["studentId"] == "ST-101");
         Assert((string)(await db.ReadAsync("applications/" + id) as Newtonsoft.Json.Linq.JObject)?["status"] == "confirmed");
         Assert(await service.ConfirmOfferAsync("student-auth", id) == placementId);
+        Assert(await new UIMS.Services.ApplicationWorkflowService(db,()=>false).ConfirmOfferAsync("student-auth",id)==placementId);
+        var attendance=await db.ReadAsync("uimsAttendance");Assert((string)attendance["students"]["ST-101"]["firebaseUid"]=="student-auth" && (string)attendance["provisioningClaims"][plannedId]["assignmentId"]==plannedId);
+        Assert(JToken.DeepEquals(state["schedules"],attendance["schedules"]) && JToken.DeepEquals(state["attendance"],attendance["attendance"]));
+        ((JObject)attendance["provisioningClaims"]).Remove(plannedId);db.Seed("uimsAttendance",attendance.ToString());
+        Assert(await service.ConfirmOfferAsync("student-auth",id)==plannedId && (await db.ReadAsync("uimsAttendance"))["provisioningClaims"][plannedId]!=null);
         await Reject<UIMS.Services.FirebaseException>(() => service.ConfirmOfferAsync("other-student-auth", id));
         await Reject<UIMS.Services.FirebaseException>(() => service.DecideAsync("company-auth", id, "rejected", "late"));
     }
@@ -233,7 +348,7 @@ internal static partial class Program
             if (request.Method == HttpMethod.Get)
             {
                 Newtonsoft.Json.Linq.JToken value;
-                if (path == "tasks" || path == "users" || path == "placements")
+                if (path == "tasks" || path == "users" || path == "placements" || path == "taskExams" || path == "fileAttachments" || (path.StartsWith("taskExamAnswerKeys/creationOperations/", StringComparison.Ordinal) && !Records.ContainsKey(path)))
                 {
                     var all = new Newtonsoft.Json.Linq.JObject();
                     string prefix = path + "/";
@@ -381,6 +496,13 @@ internal static partial class Program
 
     private static int Main(string[] args)
     {
+        if(args.Length==3 && args[0]=="--database-export-readonly")
+        {try{return ExportDatabaseReadOnly(args[1],args[2]).GetAwaiter().GetResult();}catch(Exception error){Console.WriteLine("Read-only export blocked: "+error.GetType().Name+". No production writes.");return 2;}}
+        if (args.Length == 3 && args[0] == "--student-integration-readonly")
+        {
+            try { return StudentIntegrationAudit(args[1],args[2]).GetAwaiter().GetResult(); }
+            catch(Exception error) { Console.WriteLine("Read-only audit blocked: " + error.GetType().Name + ". No account status inferred; no production writes. Inspect authorized server diagnostics.");return 2; }
+        }
         if (args.Length == 2 && args[0] == "--final-report-readonly-preflight") return FinalReportPreflight(args[1]).GetAwaiter().GetResult();
         try { Run().GetAwaiter().GetResult(); Console.WriteLine(passed + " tests passed; " + failed + " failed. No network requests or Firebase writes were made."); return failed == 0 ? 0 : 1; }
         catch (Exception e) { Console.Error.WriteLine(e); return 1; }
@@ -432,6 +554,58 @@ internal static partial class Program
         await Test("task submissions preserve array and keyed-object history and enforce ownership/concurrency", TaskSubmissionCompatibilityTests);
         await Test("task board positions persist independently with authorization, retries, ordering and ETag conflicts", TaskBoardTests);
         await RunFirebaseFileStorageTests();
+        await Test("logout expires current identity, role and first-login cookies without expiring another role", () => {
+            var oldContext=System.Web.HttpContext.Current;var oldPrincipal=System.Threading.Thread.CurrentPrincipal;
+            try {
+                var context=new System.Web.HttpContext(new AttendancePostWorker());System.Web.HttpContext.Current=context;
+                context.User=new System.Security.Principal.GenericPrincipal(new System.Web.Security.FormsIdentity(new System.Web.Security.FormsAuthenticationTicket(2,"current-student",DateTime.Now,DateTime.Now.AddMinutes(30),false,"student")),new[]{"student"});
+                University_Internship_Management_System.Shared.LoginSession.End(context);
+                foreach(string name in University_Internship_Management_System.Shared.LoginSession.CookieNames("student")){var cookie=context.Response.Cookies[name];Assert(cookie!=null && cookie.Value=="" && cookie.Expires<DateTime.Now && cookie.HttpOnly);}
+                Assert(!context.Response.Cookies.AllKeys.Contains(".UIMS.Role.companySupervisor") && !context.User.Identity.IsAuthenticated);
+            } finally {System.Web.HttpContext.Current=oldContext;System.Threading.Thread.CurrentPrincipal=oldPrincipal;}
+            return Task.CompletedTask;
+        });
+        await Test("authenticated attendance admits linked historical test labels but denies foreign student and supervisor writes and student scans", AuthenticatedAttendanceScopeTests);
+        await Test("student and supervisor issue signed QR without recording attendance or altering approved minutes; foreign UID and premature checkout rejected", StudentQrIssuanceTests);
+        await Test("supervisor QR actions allow before/after shift hours while enforcing training days and check-in/out order", () =>
+        {
+            string day=UIMS.Attendance.AttendanceService.Today();
+            long start=DateTimeOffset.Parse(day+"T09:00:00+03:00").ToUnixTimeMilliseconds(),end=DateTimeOffset.Parse(day+"T16:00:00+03:00").ToUnixTimeMilliseconds();
+            var context=new UIMS.Attendance.AttendanceContext{AssignmentId="A1",Date=day,Assignment=new JObject{["studentId"]="S1",["companyId"]="C1",["companySupervisorId"]="CS1",["startDate"]=day,["endDate"]=day},Record=new JObject(),Schedule=new JObject{["assignmentId"]="A1",["attendanceDate"]=day,["timeZone"]="Asia/Amman",["version"]=1,["isTrainingDay"]=true,["scheduledStartAt"]=start,["scheduledEndAt"]=end}};
+            UIMS.Attendance.AttendanceService.CheckAction(context,"checkIn",start-3600000);
+            UIMS.Attendance.AttendanceService.CheckAction(context,"checkIn",end+3600000);
+            Action<string> denied=action=>{try{UIMS.Attendance.AttendanceService.CheckAction(context,action,UIMS.Attendance.AttendanceService.Now());}catch(InvalidOperationException){return;}throw new Exception("Invalid attendance transition accepted.");};
+            denied("checkOut");denied("invalid");
+            context.Record=new JObject{["assignmentId"]="A1",["attendanceDate"]=day,["studentId"]="S1",["companyId"]="C1",["companySupervisorId"]="CS1",["checkInAt"]=UIMS.Attendance.AttendanceService.Now()-60000};
+            UIMS.Attendance.AttendanceService.CheckAction(context,"checkOut",UIMS.Attendance.AttendanceService.Now());denied("checkIn");
+            context.Schedule["isTrainingDay"]=false;denied("checkOut");
+            return Task.CompletedTask;
+        });
+        await Test("attendance onboarding preserves history/calendar, rejects cross-student conflicts, freezes 2023301 and is idempotent", AttendanceOnboardingBoundaryTests);
+        await Test("Auth audit keeps permission failures unverified and reconciliation does not infer enabled users", () =>
+        {
+            var denied=UIMS.Services.StudentAuthAuditFailure.Describe(403,"","offline-project","PermissionDenied");Assert(!(bool)denied["verified"] && (string)denied["state"]=="unverified" && (string)denied["requiredPermission"]=="firebaseauth.users.get");
+            Assert((string)UIMS.Services.StudentAuthAuditFailure.Describe(403,"ACCESS_TOKEN_SCOPE_INSUFFICIENT","offline","PermissionDenied")["category"]=="oauthScope");
+            var snapshot=JObject.Parse("{\"users\":{\"uid1\":{\"studentId\":\"S1\",\"role\":\"student\",\"isActive\":true}},\"placements\":{},\"uimsAttendance\":{\"students\":{\"2023301\":{\"status\":\"active\"}}}}");
+            var before=snapshot.ToString();var report=ReconcileStudentSnapshot(snapshot,new JObject{["uid1"]=denied},DateTimeOffset.UtcNow.ToUnixTimeMilliseconds());
+            Assert((int)report["studentCount"]==2 && (int)report["counts"]["ready"]==0 && (int)report["counts"]["authUnverified"]==2 && snapshot.ToString()==before);
+            Assert(report["students"].OfType<JObject>().Single(r=>(string)r["studentId"]=="2023301").Value<bool>("frozen"));
+            return Task.CompletedTask;
+        });
+        await Test("attendance absence derivation rejects malformed, future and out-of-assignment calendars without writes", () =>
+        {
+            var assignment=JObject.Parse("{\"startDate\":\"2026-10-01\",\"endDate\":\"2026-10-31\"}");
+            long start=DateTimeOffset.Parse("2026-10-23T09:00:00+03:00").ToUnixTimeMilliseconds();
+            long end=DateTimeOffset.Parse("2026-10-23T16:00:00+03:00").ToUnixTimeMilliseconds();
+            var schedule=new JObject{["assignmentId"]="TA-OFFLINE",["attendanceDate"]="2026-10-23",["timeZone"]="Asia/Amman",["version"]=1,["isTrainingDay"]=true,["scheduledStartAt"]=start,["scheduledEndAt"]=end};
+            Func<JObject,JObject,long,bool> eligible=(s,a,n)=>UIMS.Attendance.AttendanceService.CanDeriveScheduleHistory(s,a,"TA-OFFLINE","2026-10-23",n);
+            Assert(eligible(schedule,assignment,end+1));Assert(!eligible(schedule,assignment,end));Assert(!eligible(schedule,assignment,start-86400000));
+            foreach(var field in new[]{"assignmentId","attendanceDate","timeZone","version","scheduledStartAt","scheduledEndAt","isTrainingDay"})
+            {var broken=(JObject)schedule.DeepClone();broken[field]="invalid";Assert(!eligible(broken,assignment,end+1));}
+            var outside=(JObject)assignment.DeepClone();outside["startDate"]="2026-10-24";Assert(!eligible(schedule,outside,end+1));
+            var dayOff=(JObject)schedule.DeepClone();dayOff["isTrainingDay"]=false;dayOff.Remove("scheduledStartAt");dayOff.Remove("scheduledEndAt");Assert(eligible(dayOff,assignment,end+1));
+            Assert(!eligible(schedule,null,end+1));return Task.CompletedTask;
+        });
         await RunTaskExamTests();
         await RunFinalReportTests();
         await RunWeeklyReportTests();

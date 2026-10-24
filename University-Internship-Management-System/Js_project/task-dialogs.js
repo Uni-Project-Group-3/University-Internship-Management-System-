@@ -50,7 +50,7 @@
         const text = document.createElement('span'); text.textContent = options.error ? 'Tasks could not be loaded. The board is unavailable until the connection is restored.' : options.loading ? 'Loading your task board…' : 'Your four task columns are ready. Assigned tasks will appear here.'; notice.append(text);
         if (options.error) { notice.classList.add('board-state-error'); const retry = document.createElement('button'); retry.type = 'button'; retry.className = 'btn btn-outline-primary btn-sm'; retry.textContent = 'Retry connection'; retry.onclick = () => host.dispatchEvent(new CustomEvent('task-board-retry')); notice.append(retry); }
         const grid = document.createElement('div'); grid.className = 'task-board-columns';
-        for (const [id, title] of [['todo', 'To Do'], ['inProgress', 'In Progress'], ['review', 'Awaiting Review'], ['done', 'Done']]) {
+        for (const [id, title] of [['todo', 'New / Pending'], ['inProgress', 'In Progress'], ['review', 'Review'], ['done', 'Complete']]) {
             const column = document.createElement('section'); column.className = 'task-board-column board-shell-column'; column.dataset.columnId = id;
             const header = document.createElement('header'), heading = document.createElement('h5'), count = document.createElement('span'); heading.textContent = title; count.textContent = options.error || options.loading ? '—' : '0'; count.setAttribute('aria-label', options.error || options.loading ? 'Task count unavailable' : '0 tasks'); header.append(heading, count);
             const zone = document.createElement('div'); zone.className = 'task-board-dropzone';

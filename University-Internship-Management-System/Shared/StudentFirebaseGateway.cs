@@ -1,5 +1,6 @@
 using System;
 using System.Configuration;
+using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
@@ -61,6 +62,8 @@ namespace University_Internship_Management_System.Shared
                             });
                     }
                 }
+                if (!string.Equals(FirebaseApp.DefaultInstance.Options.ProjectId, firebaseConfiguration.ProjectId, StringComparison.Ordinal))
+                    throw new UIMS.Services.FirebaseException(503, "The existing Firebase Admin instance targets another project. Restart with the current approved project configuration; no accounts were queried or changed.");
                 return FirebaseAuth.DefaultInstance;
             }
         }
@@ -221,6 +224,36 @@ namespace University_Internship_Management_System.Shared
             catch (UIMS.Services.FirebaseException) { FirebaseReadDiagnostics.Finish("firebase.auth.get_user", timer, "configuration_or_policy_error"); throw; }
             catch (FirebaseAuthException error) { FirebaseReadDiagnostics.Finish("firebase.auth.get_user", timer, "firebase_auth_error"); throw new RepositoryException("Firebase Authentication lookup failed. Verify Admin SDK access and network configuration.", error); }
             catch (Exception error) { FirebaseReadDiagnostics.Finish("firebase.auth.get_user", timer, "network_or_credentials_error"); throw new RepositoryException("Firebase Authentication lookup failed. Verify server credentials and network connectivity.", error); }
+        }
+
+        // Explicit administrative READ-ONLY metadata audit. No password hashes or tokens
+        // are returned. Permission failures are not treated as disabled/missing accounts.
+        public async Task<JObject> ReadAuthenticationMetadataAsync(string uid)
+        {
+            StudentManagementService.Key(uid);
+            try
+            {
+                var record = await Authentication.GetUserAsync(uid).ConfigureAwait(false);
+                return new JObject { ["state"] = record.Disabled ? "disabled" : "enabled", ["uid"] = record.Uid, ["email"] = record.Email, ["verified"] = true };
+            }
+            catch (FirebaseAuthException error) when (error.AuthErrorCode == AuthErrorCode.UserNotFound)
+            { return new JObject { ["state"] = "missing", ["verified"] = true }; }
+            catch (FirebaseAuthException error)
+            {
+                int status = error.HttpResponse == null ? 0 : (int)error.HttpResponse.StatusCode;
+                string reason = "";
+                if (error.HttpResponse?.Content != null)
+                {
+                    try { var body = JObject.Parse(await error.HttpResponse.Content.ReadAsStringAsync().ConfigureAwait(false));
+                        foreach (var item in body.SelectTokens("error.details[*].reason"))
+                            if (new[] {"ACCESS_TOKEN_SCOPE_INSUFFICIENT","SERVICE_DISABLED","API_KEY_SERVICE_BLOCKED","API_KEY_HTTP_REFERRER_BLOCKED","IAM_PERMISSION_DENIED","CONSUMER_INVALID"}.Contains(item.ToString())) reason = item.ToString();
+                    } catch (JsonException) { }
+                }
+                return UIMS.Services.StudentAuthAuditFailure.Describe(status,reason,firebaseConfiguration.ProjectId,error.ErrorCode.ToString());
+            }
+            catch (UIMS.Services.FirebaseException) { throw; }
+            catch (Exception error) when (error is InvalidOperationException || error is System.IO.IOException || error is System.Security.SecurityException || error is Google.Apis.Auth.OAuth2.Responses.TokenResponseException)
+            { return UIMS.Services.StudentAuthAuditFailure.Describe(0,"CREDENTIAL_INITIALIZATION",firebaseConfiguration.ProjectId,error.GetType().Name); }
         }
 
         public async Task WriteAsync(string path, object value)

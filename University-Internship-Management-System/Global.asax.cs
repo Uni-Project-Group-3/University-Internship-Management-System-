@@ -10,6 +10,13 @@ namespace University_Internship_Management_System
 {
     public class Global : HttpApplication
     {
+        protected void Application_EndRequest(object sender, EventArgs e)
+        {
+            // A late page-load redirect must not turn logout into automatic session restoration.
+            if ((bool?)Context.Items["Uims.SignedOut"] == true && Response.IsRequestBeingRedirected)
+                Response.RedirectLocation = VirtualPathUtility.ToAbsolute("~/Auth/Login.aspx?account=new");
+        }
+
         protected void Application_PostAuthenticateRequest(object sender, EventArgs e)
         {
             // A tab may carry its own signed Forms Authentication ticket. Never trust a UID/role supplied by the browser.
