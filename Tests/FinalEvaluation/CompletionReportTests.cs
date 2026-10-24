@@ -21,12 +21,15 @@ internal static partial class Program
         internal int Calls;
         public Task<VerifiedCompletionReportData> GetAsync(string id, string student, string policy, string version) { Calls++; return Task.FromResult(Value); }
     }
-    private sealed class ReportStorage : IPrivateCompletionReportStorage
+    private sealed class ReportStorage : IProviderCompletionReportStorage
     {
         internal readonly InMemoryPrivateCompletionReportStorage Inner = new InMemoryPrivateCompletionReportStorage();
         internal bool FailPut, FailRead, CorruptRead;
         internal int Puts, Reads, Deletes;
         internal string LastKey;
+        public string UploadProvider { get; set; }
+        internal string LastReadProvider;
+        public Task<byte[]> ReadAsync(string key, string provider) { LastReadProvider = provider; return ReadAsync(key); }
         public Task PutNewAsync(string key, byte[] bytes) { Puts++; LastKey = key; if (FailPut) throw new IOException("Simulated object-storage failure."); return Inner.PutNewAsync(key, bytes); }
         public async Task<byte[]> ReadAsync(string key) { Reads++; if (FailRead) throw new IOException("Simulated object-read failure."); var bytes = await Inner.ReadAsync(key); if (CorruptRead) bytes[bytes.Length - 8] ^= 1; return bytes; }
         public Task DeleteIfHashMatchesAsync(string key, string hash) { Deletes++; return Inner.DeleteIfHashMatchesAsync(key, hash); }
@@ -69,6 +72,20 @@ internal static partial class Program
     }
     private static async Task RunCompletionReportTests()
     {
+        await Test("completion report retains Supabase provider and downloads using persisted provider", async () => {
+            var f = await ReportSetup(); f.Storage.UploadProvider = "supabase";
+            var document = await f.Service().GenerateAsync("fictional-internship");
+            Assert(document.StorageProvider == "supabase" && f.Storage.LastReadProvider == "supabase");
+            f.Storage.UploadProvider = "firebase";
+            await f.Service("fictional-student").DownloadForStudentAsync("fictional-internship", document.DocumentId);
+            Assert(f.Storage.LastReadProvider == "supabase");
+        });
+        await Test("legacy completion report without provider remains Firebase compatible", async () => {
+            var f = await ReportSetup(); var document = await f.Service().GenerateAsync("fictional-internship");
+            f.Storage.UploadProvider = "supabase";
+            await f.Service("fictional-student").DownloadForStudentAsync("fictional-internship", document.DocumentId);
+            Assert(f.Storage.LastReadProvider == null);
+        });
         await Test("report generates a valid private PDF and matching issued metadata for Approved completion", async () => {
             var f = await ReportSetup(); var document = await f.Service().GenerateAsync("fictional-internship");
             var stored = await f.Storage.ReadAsync(document.StorageObjectPath); CompletionReportPdfRenderer.ValidatePdf(stored);

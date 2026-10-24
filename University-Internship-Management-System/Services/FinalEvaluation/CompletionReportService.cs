@@ -47,6 +47,11 @@ namespace University_Internship_Management_System.Services.FinalEvaluation
         // Cleanup only this attempt's exact object/hash, never a parent or unrelated object.
         Task DeleteIfHashMatchesAsync(string objectKey, string sha256);
     }
+    public interface IProviderCompletionReportStorage : IPrivateCompletionReportStorage
+    {
+        string UploadProvider { get; }
+        Task<byte[]> ReadAsync(string objectKey, string provider);
+    }
     public interface ICompletionDocumentMetadataRepository
     { Task CreateIssuedCompletionReportAsync(CompletionDocument document); }
     public sealed class CompletionReportDownload
@@ -103,7 +108,7 @@ namespace University_Internship_Management_System.Services.FinalEvaluation
             CompletionReportPdfRenderer.ValidatePdf(bytes);
             var document = new CompletionDocument { InternshipId = internshipId, DocumentId = documentId, StudentId = review.StudentId,
                 IssuerId = user.UserId, PolicyId = review.PolicyId, PolicyVersion = review.PolicyVersion, DocumentType = CompletionReportValidation.ReportType,
-                StorageObjectPath = CompletionReportValidation.ObjectKey(internshipId, documentId), ContentType = "application/pdf", Sha256 = CompletionReportValidation.Hash(bytes), ByteLength = bytes.LongLength,
+                StorageProvider = (storage as IProviderCompletionReportStorage)?.UploadProvider, StorageObjectPath = CompletionReportValidation.ObjectKey(internshipId, documentId), ContentType = "application/pdf", Sha256 = CompletionReportValidation.Hash(bytes), ByteLength = bytes.LongLength,
                 Status = DocumentStatus.Issued, CreatedAtUtc = generatedAt, IssuedAtUtc = generatedAt, CompletionApprovedAtUtc = review.ReviewedAtUtc };
             CompletionReportValidation.Metadata(document);
             // Recheck permission and approval before publishing; approval is terminal in this module.
@@ -113,7 +118,7 @@ namespace University_Internship_Management_System.Services.FinalEvaluation
             await storage.PutNewAsync(document.StorageObjectPath, (byte[])bytes.Clone()).ConfigureAwait(false);
             try
             {
-                VerifyBytes(document, await storage.ReadAsync(document.StorageObjectPath).ConfigureAwait(false));
+                VerifyBytes(document, await ReadStoredAsync(document).ConfigureAwait(false));
                 await metadata.CreateIssuedCompletionReportAsync(document).ConfigureAwait(false);
             }
             catch (Exception)
@@ -127,7 +132,7 @@ namespace University_Internship_Management_System.Services.FinalEvaluation
                 {
                     CompletionReportValidation.Metadata(persisted);
                     if (JsonConvert.SerializeObject(persisted) != JsonConvert.SerializeObject(document)) throw new ConflictException();
-                    VerifyBytes(persisted, await storage.ReadAsync(persisted.StorageObjectPath).ConfigureAwait(false));
+                    VerifyBytes(persisted, await ReadStoredAsync(persisted).ConfigureAwait(false));
                     return persisted;
                 }
                 try { await storage.DeleteIfHashMatchesAsync(document.StorageObjectPath, document.Sha256).ConfigureAwait(false); }
@@ -147,10 +152,12 @@ namespace University_Internship_Management_System.Services.FinalEvaluation
             CompletionReportValidation.Metadata(document);
             if (document.InternshipId != internshipId || document.DocumentId != documentId || document.StudentId != review.StudentId || document.PolicyId != review.PolicyId ||
                 document.PolicyVersion != review.PolicyVersion || document.CompletionApprovedAtUtc != review.ReviewedAtUtc) throw new UnauthorizedAccessException();
-            var bytes = await storage.ReadAsync(document.StorageObjectPath).ConfigureAwait(false); VerifyBytes(document, bytes);
+            var bytes = await ReadStoredAsync(document).ConfigureAwait(false); VerifyBytes(document, bytes);
             await Authorize(internshipId, false, review.StudentId).ConfigureAwait(false);
             return new CompletionReportDownload { Content = (byte[])bytes.Clone(), FileName = "internship-completion-report-" + documentId + ".pdf" };
         }
+        private Task<byte[]> ReadStoredAsync(CompletionDocument document)
+        { var providerStorage = storage as IProviderCompletionReportStorage; return providerStorage == null ? storage.ReadAsync(document.StorageObjectPath) : providerStorage.ReadAsync(document.StorageObjectPath, document.StorageProvider); }
         private static void VerifyBytes(CompletionDocument document, byte[] bytes)
         {
             CompletionReportPdfRenderer.ValidatePdf(bytes);
@@ -167,7 +174,7 @@ namespace University_Internship_Management_System.Services.FinalEvaluation
         {
             if (document == null) throw new InvalidOperationException("An issued completion report is not available.");
             FinalEvaluationValidation.Document(document); DocumentId(document.DocumentId);
-            if (document.Status != DocumentStatus.Issued || document.DocumentType != ReportType || document.ContentType != "application/pdf" ||
+            if ((!string.IsNullOrEmpty(document.StorageProvider) && document.StorageProvider != "firebase" && document.StorageProvider != "supabase") || document.Status != DocumentStatus.Issued || document.DocumentType != ReportType || document.ContentType != "application/pdf" ||
                 document.StorageObjectPath != ObjectKey(document.InternshipId, document.DocumentId) || document.Sha256 == null || !Regex.IsMatch(document.Sha256, "\\A[0-9a-f]{64}\\z") ||
                 !document.ByteLength.HasValue || document.ByteLength <= 0 || !document.CompletionApprovedAtUtc.HasValue || document.CompletionApprovedAtUtc == default(DateTimeOffset) ||
                 document.CreatedAtUtc == default(DateTimeOffset) || document.CreatedAtUtc < document.CompletionApprovedAtUtc || document.IssuedAtUtc != document.CreatedAtUtc) throw new ArgumentException("Completion report metadata is incomplete or invalid.");

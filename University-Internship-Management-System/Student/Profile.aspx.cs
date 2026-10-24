@@ -27,8 +27,37 @@ namespace University_Internship_Management_System.Student
 
             cvUpload.Attributes["accept"] = ".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document";
 
+            if (Request.QueryString["download"] == "cv")
+            { RegisterAsyncTask(new PageAsyncTask(DownloadCvAsync)); return; }
             if (!IsPostBack)
                 RegisterAsyncTask(new PageAsyncTask(LoadProfileAsync));
+        }
+
+        private bool fileResponse;
+        protected override void Render(HtmlTextWriter writer)
+        { if (!fileResponse) base.Render(writer); }
+        private async Task DownloadCvAsync()
+        {
+            fileResponse = true;
+            try
+            {
+                var profile = await GetVerifiedProfileAsync();
+                string uid = Context.User.Identity.Name;
+                string path = Text(profile, "cvObjectPath");
+                if (!path.StartsWith("uims/student-cvs/" + StudentManagementService.Key(uid) + "/", StringComparison.Ordinal))
+                    throw new UIMS.Services.FirebaseException(404, "No saved CV is available.");
+                var storage = new UIMS.Services.FirebaseFileStorageService(key => ConfigurationManager.AppSettings[key]);
+                byte[] bytes = await storage.DownloadAsync(path, Text(profile, "cvStorageProvider"), Response.ClientDisconnectedToken);
+                if (bytes.LongLength != (long?)profile["cvSizeBytes"] || University_Internship_Management_System.Services.FinalEvaluation.CompletionReportValidation.Hash(bytes) != Text(profile, "cvSha256"))
+                    throw new UIMS.Services.FirebaseException(409, "The saved CV failed integrity verification.");
+                Response.Clear(); Response.ContentType = Text(profile, "cvContentType");
+                Response.Cache.SetNoStore(); Response.AddHeader("X-Content-Type-Options", "nosniff");
+                Response.AddHeader("Content-Disposition", "attachment; filename*=UTF-8''" + Uri.EscapeDataString(UIMS.Services.FirebaseFileStorageService.SanitizeFileName(Text(profile, "cvFileName"))));
+                Response.OutputStream.Write(bytes, 0, bytes.Length);
+            }
+            catch (UIMS.Services.FirebaseException error) { Response.Clear(); Response.StatusCode = error.StatusCode; Response.ContentType = "text/plain"; Response.Write(error.Message); }
+            catch (Exception) { Response.Clear(); Response.StatusCode = 503; Response.ContentType = "text/plain"; Response.Write("Your CV could not be downloaded. Sign in again or contact your administrator."); }
+            Context.ApplicationInstance.CompleteRequest();
         }
 
         protected void btnSave_Click(object sender, EventArgs e)
@@ -133,6 +162,7 @@ namespace University_Internship_Management_System.Student
                     uploadedFileName = stored.FileName;
                     previousPath = Text(profile, "cvObjectPath");
 
+                    updates["cvStorageProvider"] = stored.Provider;
                     updates["cvObjectPath"] = stored.ObjectPath;
                     updates["cvFileName"] = stored.FileName;
                     updates["cvContentType"] = stored.ContentType;
@@ -145,7 +175,7 @@ namespace University_Internship_Management_System.Student
 
                 if (hasNewCv && !string.IsNullOrWhiteSpace(previousPath) && !string.Equals(previousPath, Text(profile, "cvObjectPath"), StringComparison.Ordinal))
                 {
-                    try { await storage.DeleteObjectAsync(previousPath, CancellationToken.None); }
+                    try { await storage.DeleteObjectAsync(previousPath, Text(profile, "cvStorageProvider"), CancellationToken.None); }
                     catch (Exception) { }
                 }
 
