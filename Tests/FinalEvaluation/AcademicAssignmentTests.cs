@@ -38,5 +38,68 @@ internal static partial class Program
             await Reject<FirebaseException>(()=>service.SaveAsync("admin",input("AC",new[]{"S1"},"duplicate")));
             await Reject<FirebaseException>(()=>service.LoadAsync("prof"));var view=await service.LoadAsync("admin");Assert(!view["students"].ToString().Contains("(Demo)"));
         });
+
+        await Test("new supervisor chooses one major, additional members persist, second major is rejected", async () => {
+            var db = await GroupFixture(); var service = new AcademicAssignmentService(db, uid => Task.FromResult(true));
+            var before = await service.LoadAsync("admin"); Assert(before["professors"].Any(p => (string)p["id"] == "AC" && (string)p["department"] == ""));
+            var first = await service.SaveAsync("admin", GroupInput("create", "S1")); string groupId = (string)first["groupId"];
+            Assert((string)(await db.ReadAsync("users/prof/assignedMajorId")) == "computerscience");
+            var add = GroupInput("add", "S2"); add["groupId"] = groupId; await service.SaveAsync("admin", add);
+            Assert(((JObject)await db.ReadAsync("groups/" + groupId + "/students")).Count == 2);
+            var wrong = GroupInput("second-major", "S3"); wrong["department"] = "softwareEngineering";
+            await Reject<FirebaseException>(() => service.SaveAsync("admin", wrong));
+            Assert(await db.ReadAsync("groups/GRP-second-major") is JValue);
+            var view = await service.LoadAsync("admin"); Assert((string)view["professors"].Single(p => (string)p["id"] == "AC")["department"] == "computerscience");
+            Assert(AcademicAssignmentService.AssignedStudentIds("prof", (JObject)db.Root["users"], (JObject)db.Root["groups"], (JObject)db.Root["supervisorAssignments"], new JObject()).OrderBy(x => x).SequenceEqual(new[] { "S1", "S2" }));
+        });
+        await Test("group validation rejects cross-college, disabled accounts, conflicting legacy links and occupied groups without partial writes", async () => {
+            foreach (string scenario in new[] { "college", "disabled", "unfinished", "deleting", "legacy", "group", "empty", "reserved" }) {
+                var db = await GroupFixture(); var service = new AcademicAssignmentService(db, uid => Task.FromResult(true));
+                if (scenario == "college") { await db.WriteAsync("users/prof/collegeId", "C1"); await db.WriteAsync("users/S2/collegeId", "C2"); }
+                if (scenario == "disabled") await db.WriteAsync("users/S2/isActive", false);
+                if (scenario == "unfinished") await db.WriteAsync("users/S2/accountSetupStatus", "pending");
+                if (scenario == "deleting") await db.WriteAsync("users/S2/deletionStatus", "pending");
+                if (scenario == "legacy") await db.WriteAsync("assignments/old", new { studentId = "S2", academicSupervisorId = "OTHER", active = true });
+                if (scenario == "group") await db.WriteAsync("groups/existing", new { department = "computerScience", academicSupervisorId = "OTHER", students = new { S2 = true } });
+                var input = GroupInput(scenario, "S1", "S2");
+                if (scenario == "empty") input["studentIds"] = new JArray();
+                if (scenario == "reserved") input["requestId"] = "current";
+                await Reject<FirebaseException>(() => service.SaveAsync("admin", input));
+                Assert(db.Root["supervisorAssignments"] == null && db.Root["users"]["S1"]["academicSupervisorId"] == null);
+                Assert(db.Root["academicAssignmentOperations"]?["current"] == null);
+            }
+        });
+        await Test("academic monitor resolves UID aliases, ignores inactive links and excludes conflicting student ownership", async () => {
+            var db = await GroupFixture();
+            await db.WriteAsync("assignments/old", new { studentId = "S1", academicSupervisorId = "prof", active = true });
+            await db.WriteAsync("supervisorAssignments/current", new { studentId = "S1", academicSupervisorId = "AC", active = true });
+            var users = (JObject)db.Root["users"]; var groups = new JObject(); var current = (JObject)db.Root["supervisorAssignments"]; var legacy = (JObject)db.Root["assignments"];
+            Assert(AcademicAssignmentService.AssignedStudentIds("prof", users, groups, current, legacy).SequenceEqual(new[] { "S1" }));
+            legacy["stale"] = JObject.FromObject(new { studentId = "S1", academicSupervisorId = "OTHER", active = false });
+            Assert(AcademicAssignmentService.AssignedStudentIds("prof", users, groups, current, legacy).Length == 1);
+            legacy["stale"]["active"] = true;
+            Assert(AcademicAssignmentService.AssignedStudentIds("prof", users, groups, current, legacy).Length == 0);
+            Assert(AcademicAssignmentService.AssignedStudentIds("admin", users, groups, current, new JObject()).Length == 0);
+        });
+        await Test("assignment reservations prevent competing writes and a non-coordinator cannot save", async () => {
+            var db = await GroupFixture(); var service = new AcademicAssignmentService(db, uid => Task.FromResult(true));
+            await db.WriteAsync("academicAssignmentOperations/current", new { requestId = "another", actorUid = "admin", digest = "pending" });
+            await Reject<FirebaseException>(() => service.SaveAsync("admin", GroupInput("blocked", "S1")));
+            Assert(db.Root["supervisorAssignments"] == null);
+            await Reject<FirebaseException>(() => service.SaveAsync("prof", GroupInput("forbidden", "S1")));
+            await Reject<FirebaseException>(() => new AcademicAssignmentService(db, uid => Task.FromResult(false)).SaveAsync("admin", GroupInput("inactive", "S1")));
+        });
+    }
+
+    private static JObject GroupInput(string request, params string[] ids) {
+        return new JObject { ["requestId"] = request, ["name"] = "CS Group", ["department"] = "computerScience", ["supervisorId"] = "AC", ["studentIds"] = new JArray(ids) };
+    }
+    private static async Task<AssignmentDb> GroupFixture() {
+        var db = new AssignmentDb();
+        await db.WriteAsync("users/admin", new { role = "coordinator", isActive = true });
+        await db.WriteAsync("users/prof", new { role = "academicSupervisor", academicSupervisorId = "AC", fullName = "Professor", isActive = true });
+        await db.WriteAsync("users/other", new { role = "academicSupervisor", academicSupervisorId = "OTHER", isActive = true });
+        foreach (string id in new[] { "S1", "S2", "S3" }) await db.WriteAsync("users/" + id, new { role = "student", studentId = id, fullName = "Student " + id, majorId = id == "S3" ? "softwareEngineering" : "computerScience", isActive = true });
+        return db;
     }
 }
