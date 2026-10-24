@@ -34,6 +34,7 @@ namespace UIMS.Tasks
                     if (method == "GET")
                     {
                         if (action == "placements") await WriteJsonAsync(context, await service.ListCompanyPlacementsAsync(cancellation).ConfigureAwait(false)).ConfigureAwait(false);
+                        else if (action == "taskSuggestions") await WriteJsonAsync(context, await service.TaskSuggestionsAsync(context.Request.QueryString["placementId"], context.Request.QueryString["weekStart"], context.Request.QueryString["weekEnd"], cancellation).ConfigureAwait(false)).ConfigureAwait(false);
                         else if (action == "companyReports") await WriteJsonAsync(context, await service.ListCompanyReportsAsync(cancellation).ConfigureAwait(false)).ConfigureAwait(false);
                         else if (action == "academicReports") await WriteJsonAsync(context, await service.ListAcademicReportsAsync(cancellation).ConfigureAwait(false)).ConfigureAwait(false);
                         else if (action == "studentReports") await WriteJsonAsync(context, await service.ListStudentReportsAsync(cancellation).ConfigureAwait(false)).ConfigureAwait(false);
@@ -72,9 +73,9 @@ namespace UIMS.Tasks
                         {
                             int week; if (!int.TryParse(context.Request.Form["weekNumber"], NumberStyles.None, CultureInfo.InvariantCulture, out week)) throw new UIMS.Services.FirebaseException(400, "Choose a training week number.");
                             result = await service.SubmitAsync(context.Request.Form["placementId"], week, context.Request.Form["weekStart"], context.Request.Form["weekEnd"],
-                                file.FileName, file.ContentType, bytes, context.Request.Form["companyComments"], cancellation).ConfigureAwait(false);
+                                file.FileName, file.ContentType, bytes, context.Request.Form["companyComments"], cancellation, ParseTaskSelection(context)).ConfigureAwait(false);
                         }
-                        else if (action == "resubmit") result = await service.ResubmitAsync(context.Request.Form["reportId"], file.FileName, file.ContentType, bytes, context.Request.Form["companyComments"], cancellation).ConfigureAwait(false);
+                        else if (action == "resubmit") result = await service.ResubmitAsync(context.Request.Form["reportId"], file.FileName, file.ContentType, bytes, context.Request.Form["companyComments"], cancellation, ParseTaskSelection(context)).ConfigureAwait(false);
                         else throw new UIMS.Services.FirebaseException(400, "Unknown weekly report upload action.");
                         await WriteJsonAsync(context, result).ConfigureAwait(false); return;
                     }
@@ -82,8 +83,9 @@ namespace UIMS.Tasks
                     if (context.Request.ContentLength < 0 || context.Request.ContentLength > 32768) throw new UIMS.Services.FirebaseException(413, "Weekly report review request is too large.");
                     JObject body;
                     using (var reader = new StreamReader(context.Request.InputStream, context.Request.ContentEncoding)) body = JObject.Parse(await reader.ReadToEndAsync().ConfigureAwait(false));
-                    if (action != "review") throw new UIMS.Services.FirebaseException(400, "Unknown weekly report action.");
-                    var review = await service.ReviewAsync((string)body["reportId"], (string)body["revisionId"], (string)body["decision"], (string)body["feedback"], (string)body["requestId"], cancellation).ConfigureAwait(false);
+                    if (action != "review" && action != "discussion") throw new UIMS.Services.FirebaseException(400, "Unknown weekly report action.");
+                    if (action == "discussion") { await WriteJsonAsync(context, await service.AddDiscussionAsync(body, cancellation).ConfigureAwait(false)).ConfigureAwait(false); return; }
+                    var review = await service.ReviewAsync((string)body["reportId"], (string)body["revisionId"], (string)body["decision"], (string)body["feedback"], (string)body["requestId"], cancellation, (decimal?)body["academicScore"], (string)body["descriptiveRating"]).ConfigureAwait(false);
                     await WriteJsonAsync(context, review).ConfigureAwait(false);
                 }
             }
@@ -97,6 +99,8 @@ namespace UIMS.Tasks
             }
         }
         private static bool Enabled(string key) { return string.Equals(WebConfigurationManager.AppSettings[key], "true", StringComparison.OrdinalIgnoreCase); }
+        private static JArray ParseTaskSelection(HttpContext context)
+        { string value = context.Request.Form["taskIds"]; return string.IsNullOrWhiteSpace(value) ? null : JArray.Parse(value); }
         private static void ValidateSameOrigin(HttpContext context)
         {
             Uri origin; string raw = context.Request.Headers["Origin"];

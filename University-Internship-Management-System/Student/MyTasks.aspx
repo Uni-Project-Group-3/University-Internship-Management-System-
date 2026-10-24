@@ -1,4 +1,4 @@
-﻿<%@ Page Language="C#" AutoEventWireup="true" CodeBehind="MyTasks.aspx.cs" Inherits="University_Internship_Management_System.Student.MyTasks" %>
+<%@ Page Language="C#" AutoEventWireup="true" CodeBehind="MyTasks.aspx.cs" Inherits="University_Internship_Management_System.Student.MyTasks" %>
 
 <!DOCTYPE html>
 <html lang="en">
@@ -11,7 +11,8 @@
 
         <link href="../Assets/shared/colors.css" rel="stylesheet" />
         <link href="../Assets/student/MyTasks.css?v=20261022-task-board" rel="stylesheet" />
-    </head>
+        <link href="../Assets/shared/workflow-ui.css?v=20261023" rel="stylesheet" />
+</head>
     <body data-demo-role="student">
         <form id="form1" runat="server">
             <div class="app">
@@ -149,7 +150,7 @@
                                     </i>
                                 </div>
                                 <div class="stat-details">
-                                    <h3>4</h3>
+                                    <h3>&#8212;</h3>
                                     <span>Total Tasks</span>
                                 </div>
                             </div>
@@ -159,7 +160,7 @@
                                     </i>
                                 </div>
                                 <div class="stat-details">
-                                    <h3>1</h3>
+                                    <h3>&#8212;</h3>
                                     <span>In Progress</span>
                                 </div>
                             </div>
@@ -169,7 +170,7 @@
                                     </i>
                                 </div>
                                 <div class="stat-details">
-                                    <h3>1</h3>
+                                    <h3>&#8212;</h3>
                                     <span>Awaiting Review</span>
                                 </div>
                             </div>
@@ -179,7 +180,7 @@
                                     </i>
                                 </div>
                                 <div class="stat-details">
-                                    <h3 class="text-danger">1</h3>
+                                    <h3 class="text-danger">&#8212;</h3>
                                     <span class="text-danger fw-semibold">Revision Requested</span>
                                 </div>
                             </div>
@@ -195,9 +196,10 @@
                             <div class="filter-box">
                                 <select id="taskFilter" aria-label="Filter by task status" class="form-select">
                                     <option value="all">All Statuses</option>
-                                    <option value="assigned">In Progress</option>
+                                    <option value="assigned">New</option>
+                                    <option value="inprogress">In Progress</option>
                                     <option value="submitted">Awaiting Review</option>
-                                    <option value="revision">Revision Requested</option>
+                                    <option value="revision">Not complete</option>
                                     <option value="completed">Completed</option>
                                 </select>
                             </div>
@@ -205,8 +207,7 @@
 
                         <!-- TASK LIST -->
                         <div class="task-board-toolbar" id="taskBoardToolbar">
-                            <label for="boardPlacementSelect">Internship placement</label>
-                            <select id="boardPlacementSelect" class="form-select" aria-label="Select internship task board"></select>
+                            <label class="board-filter-field" for="boardPlacementSelect">Internship placement<select id="boardPlacementSelect" class="form-select" aria-label="Select internship task board"></select></label>
                             <div class="btn-group" role="group" aria-label="Task view">
                                 <button type="button" class="btn btn-primary" id="boardModeButton" aria-pressed="true">Board</button>
                                 <button type="button" class="btn btn-outline-primary" id="listModeButton" aria-pressed="false">List</button>
@@ -233,43 +234,58 @@
 
             <!-- ============ SUBMIT MODAL ============ -->
             <div class="modal" id="submitModal" tabindex="-1" aria-hidden="true">
-                <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+                <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable student-task-dialog">
                     <div class="modal-content custom-modal">
                         <div class="modal-header pb-0 border-0 pt-4 px-4">
                             <h5 class="modal-title fw-bold template-style-12">Submit Work</h5>
                             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
                             </button>
                         </div>
+                        <nav class="student-task-tabs" role="tablist" aria-label="Task sections">
+                            <button type="button" role="tab" id="studentTabDetails" data-student-tab="details" aria-controls="studentPanelDetails" aria-selected="true">Details</button>
+                            <button type="button" role="tab" id="studentTabSubmission" data-student-tab="submission" aria-controls="studentPanelSubmission" aria-selected="false">Submission</button>
+                            <button type="button" role="tab" id="studentTabExam" data-student-tab="exam" aria-controls="studentPanelExam" aria-selected="false">Exam</button>
+                            <button type="button" role="tab" id="studentTabFiles" data-student-tab="files" aria-controls="studentPanelFiles" aria-selected="false">Files</button>
+                            <button type="button" role="tab" id="studentTabHistory" data-student-tab="history" aria-controls="studentPanelHistory" aria-selected="false">History</button>
+                        </nav>
                         <div class="modal-body p-4">
-                            <p class="text-muted mb-4 template-style-13">Provide your work details, repository links, or attach files for supervisor review.</p>
-
-                            <div id="modalError" class="alert alert-danger custom-alert template-style-14">
+                            <div id="modalError" role="alert" class="alert alert-danger custom-alert template-style-14">
                             </div>
-
+                            <section id="studentPanelDetails" role="tabpanel" aria-labelledby="studentTabDetails" data-student-panel="details">
+                            <div id="studentTaskInstructions" class="student-task-summary"></div>
                             <div id="studentTaskEvaluation" class="alert alert-success" role="status" hidden>
-                                <strong>Institution evaluation</strong>
+                                <strong>Company task grade</strong>
                                 <div class="mt-2">Score: <span id="studentTaskScore"></span> / <span id="studentTaskMaximum"></span></div>
                                 <p id="studentTaskFeedback" class="mb-0 mt-2"></p>
                             </div>
-
+                            </section>
+                            <section id="studentPanelSubmission" role="tabpanel" aria-labelledby="studentTabSubmission" data-student-panel="submission" hidden>
+                            <h6 class="fw-bold">Submit your work</h6>
+                            <p class="text-muted">Describe what you completed. Add an optional work link for your company supervisor.</p>
                             <div class="mb-4">
-                                <label class="form-label custom-label">Work Description <span class="text-danger">*</span>
+                                <label for="workDesc" class="form-label custom-label">Work Description <span class="text-danger">*</span>
                                 </label>
-                                <div id="studentSubmissionHistory" class="text-muted small"></div><div id="studentTaskAttachments" class="small mb-3" aria-live="polite"></div><textarea id="workDesc" class="form-control custom-input" rows="4" placeholder="Describe what you completed...">
+                                <textarea id="workDesc" class="form-control custom-input" rows="6" placeholder="Describe what you completed..." aria-required="true">
                                 </textarea>
                             </div>
 
                             <div class="mb-4">
-                                <label class="form-label custom-label">Link (GitHub / Drive) <span class="text-danger">*</span>
+                                <label for="workLink" class="form-label custom-label">Work link (optional)
                                 </label>
                                 <input type="url" id="workLink" class="form-control custom-input" placeholder="https://github.com/..." />
                             </div>
 
                             <div class="mb-2">
-                                <label class="form-label custom-label">Attach File (Optional)</label>
+                                <label for="workFile" class="form-label custom-label">Attach file (optional)</label>
                                 <input type="file" id="workFile" class="form-control custom-input" accept=".pdf,.docx,.xlsx,.pptx,.txt,.png,.jpg,.jpeg" />
                                 <small class="text-muted mt-2 d-block template-style-15">Optional: PDF, DOCX, XLSX, PPTX, TXT, PNG or JPEG · maximum 10 MiB. Files are stored privately in Firebase Storage.</small>
                             </div>
+                            </section>
+                            <section id="studentPanelExam" role="tabpanel" aria-labelledby="studentTabExam" data-student-panel="exam" hidden>
+                                <div id="taskExamWorkspace"><p id="taskExamNotice" class="notice" role="status">Open this tab to load the exam linked to this task.</p><div id="taskExamList" class="exam-list"></div></div>
+                            </section>
+                            <section id="studentPanelFiles" role="tabpanel" aria-labelledby="studentTabFiles" data-student-panel="files" hidden><h6 class="fw-bold">Resources and submitted files</h6><div id="studentTaskAttachments" aria-live="polite"></div></section>
+                            <section id="studentPanelHistory" role="tabpanel" aria-labelledby="studentTabHistory" data-student-panel="history" hidden><h6 class="fw-bold">Submissions and instruction history</h6><div id="studentSubmissionHistory"></div></section>
                         </div>
                         <div class="modal-footer border-0 pb-4 px-4">
                             <button type="button" class="btn btn-light custom-btn-light" data-bs-dismiss="modal">Cancel</button>
@@ -282,7 +298,12 @@
         </form>
         <script src="../Scripts/bootstrap.bundle.min.js">
         </script>
-        <script src="../Js_project/Student/MyTasks.js?v=20261022-file-storage">
+        <link href="../Assets/task-workspace.css?v=20261023-task-connection" rel="stylesheet" />
+        <script src="../Js_project/firebase-client.js?v=20261023-task-connection"></script>
+        <script src="../Js_project/task-dialogs.js?v=20261023-task-connection"></script>
+        <script src="../Js_project/Student/TaskExams.js?v=20261023-task-connection"></script>
+        <script src="../Js_project/workflow-dialogs.js?v=20261023"></script>
+        <script src="../Js_project/Student/MyTasks.js?v=20261023-workflow">
         </script>
     </body>
 </html>

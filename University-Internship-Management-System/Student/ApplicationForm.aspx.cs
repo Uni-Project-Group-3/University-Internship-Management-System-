@@ -1,107 +1,80 @@
-using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
-using System.Collections.Generic;
-using System.IO;
 using System.Linq;
-using System.Net.Http;
-using System.Text;
-using System.Text.RegularExpressions;
-using System.Web.UI;
+using University_Internship_Management_System.Shared;
 
 namespace University_Internship_Management_System.Student
 {
     // Student: apply to an opportunity (Firebase: /applications)
-    public partial class ApplicationForm : System.Web.UI.Page
+    public partial class ApplicationForm : InternshipPage
     {
-        JObject user;     // the signed-in user
-        JObject pageData;
-        string userId;
+        protected override string Role { get { return "student"; } }
 
-        protected void Page_Load(object sender, EventArgs e)
+        protected override JObject BuildView()
         {
-            userId = Context.User?.Identity?.IsAuthenticated == true ? Context.User.Identity.Name : null;
-            if (!string.IsNullOrWhiteSpace(userId))
+            return UimsData.StudentView(Db, Uid, Profile);
+        }
+
+        protected override void Handle(string action, JObject data)
+        {
+            if (action == "apply") Apply(data);
+            else base.Handle(action, data);
+        }
+
+        void Apply(JObject d)
+        {
+            string studentId = S(Profile["studentId"]);
+            string major = S(Profile["department"]) != "" ? S(Profile["department"]) : S(Profile["majorId"]);
+            if (studentId == "") throw new AppError("Your account has no student number.");
+
+            string opportunityId = FirebaseDb.Key(S(d["opportunityId"]));
+            var opportunity = Db.GetObject("opportunities/" + opportunityId);
+            if (opportunity == null || !UimsData.IsOpenFor(opportunity, major))
+                throw new AppError("This opportunity is not open for your specialization.");
+
+            var mine = Db.List("applications").Where(a => S(a["studentId"]) == studentId).ToList();
+            if (mine.Any(a => S(a["opportunityId"]) == opportunityId))
+                throw new AppError("You already applied to this opportunity.");
+            if (mine.Any(a => S(a["status"]) == "confirmed"))
+                throw new AppError("You already confirmed an internship offer.");
+
+            string phone = S(d["phone"]).Trim();
+            string cvLink = S(d["cvLink"]).Trim();
+            string portfolio = S(d["portfolioLink"]).Trim();
+            if (phone == "") throw new AppError("Enter your phone number.");
+            if (!IsUrl(cvLink)) throw new AppError("Enter a valid CV link (https://...).");
+            if (portfolio != "" && !IsUrl(portfolio)) throw new AppError("Enter a valid portfolio link.");
+
+            string id = FirebaseDb.NewId("APP");
+            var application = new JObject
             {
-                try { pageData = new UIMS.Services.ApplicationWorkflowService().LoadStudentAsync(userId).GetAwaiter().GetResult(); }
-                catch (Exception error) { pageData = Unavailable(error.Message); }
-                user = pageData["user"] as JObject;
-            }
+                ["id"] = id,
+                ["opportunityId"] = opportunityId,
+                ["companyId"] = S(opportunity["companyId"]),
+                ["companyName"] = S(opportunity["companyName"]),
+                ["studentId"] = studentId,
+                ["studentUid"] = Uid,
+                ["studentName"] = S(Profile["fullName"]),
+                ["phone"] = phone,
+                ["cvLink"] = cvLink,
+                ["portfolioLink"] = portfolio,
+                ["motivation"] = S(d["motivation"]).Trim(),
+                ["reason"] = "",
+                ["status"] = "pending",
+                ["createdAt"] = FirebaseDb.Now
+            };
 
-            // A save sent by the page JavaScript
-            string action = Request.Headers["X-Action"];
-            if (action == null) return;
-            if (user == null) Reply(new { error = "Please sign in again." });
-
-            try
+            Db.Update("", new JObject
             {
-                JObject data = JObject.Parse(new StreamReader(Request.InputStream).ReadToEnd());
-                if (action == "apply") new UIMS.Services.ApplicationWorkflowService().ApplyAsync(userId, data).GetAwaiter().GetResult();
-                else Reply(new { error = "This application action is not supported." });
-                pageData = new UIMS.Services.ApplicationWorkflowService().LoadStudentAsync(userId).GetAwaiter().GetResult();
-                Reply(LoadData());
-            }
-            catch (UIMS.Services.FirebaseException error) { Response.StatusCode = error.StatusCode; Reply(new { error = error.Message }); }
-            catch (University_Internship_Management_System.Shared.FirebaseLoginException error) { Response.StatusCode = 403; Reply(new { error = error.Message }); }
-            catch (Exception error) { Trace.Warn("ApplicationForm", error.GetType().Name); Response.StatusCode = 503; Reply(new { error = "The application request could not be completed. Check Firebase availability and retry." }); }
+                ["applications/" + id] = application,
+                ["opportunities/" + opportunityId + "/applicantsCount"] = Int(opportunity["applicantsCount"]) + 1
+            });
         }
 
-        // ================= Data for the page =================
-        // The student's applications + open opportunities for the student's specialization
-        JObject LoadData()
+        static bool IsUrl(string value)
         {
-            return pageData;
+            Uri uri;
+            return Uri.TryCreate(value, UriKind.Absolute, out uri) && (uri.Scheme == "http" || uri.Scheme == "https");
         }
-
-        private JObject Unavailable(string message)
-        {
-            return new JObject { ["user"] = new JObject { ["role"] = "student", ["fullName"] = Context.User.Identity.Name, ["mustChangePassword"] = false },
-                ["users"] = new JArray(), ["companies"] = new JArray(), ["opportunities"] = new JArray(), ["applications"] = new JArray(),
-                ["placements"] = new JArray(), ["tasks"] = new JArray(), ["submissions"] = new JArray(), ["progress"] = new JArray(), ["messages"] = new JArray(),
-                ["connectionError"] = string.IsNullOrWhiteSpace(message) ? "Firebase data could not be loaded." : message };
-        }
-
-        // Sends JSON back to the page JavaScript and stops the page here
-        void Reply(object data)
-        {
-            Response.Clear();
-            Response.ContentType = "application/json";
-            Response.Write(JsonConvert.SerializeObject(data));
-            Response.End();
-        }
-
-        // ================= Connect the page JavaScript =================
-        // The page JavaScript reads its data from window.UimsDemo (it was demo-store.js).
-        // Here we put a small script in its place that gives the data from Firebase
-        // and sends every save back to this page.
-        protected override void Render(HtmlTextWriter writer)
-        {
-            StringWriter html = new StringWriter();
-            base.Render(new HtmlTextWriter(html));
-
-            string data = JsonConvert.SerializeObject(LoadData()).Replace("</", "<\\/");
-            string script = "<script>" + PageScript.Replace("DATA", data) + "</script>";
-
-            writer.Write(Regex.Replace(html.ToString(), @"<script[^>]*demo-store\.js[^>]*></script>", m => script));
-        }
-
-        const string PageScript = @"
-var data = DATA;
-window.UimsDemo = {
-    departments: ['Computer Science', 'Computer Engineering', 'Software Engineering', 'Computer Information Systems', 'Cybersecurity', 'Data Science & AI', 'Network Engineering & Security'],
-    enabled: function () { return true; },
-    view: function () { return data; },
-    current: function () { return data && data.user; },
-    logout: function () { data = null; },
-    transaction: function (action, payload) {
-        var request = new XMLHttpRequest();
-        request.open('POST', location.href, false);
-        request.setRequestHeader('X-Action', action);
-        request.send(JSON.stringify(payload));
-        var reply = JSON.parse(request.responseText);
-        if (reply.error) throw new Error(reply.error);
-        data = reply;
-    }
-};";
     }
 }

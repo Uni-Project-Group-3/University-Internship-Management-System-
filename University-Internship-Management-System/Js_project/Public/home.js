@@ -1,3 +1,4 @@
+
 'use strict';
 /**
  * @license
@@ -17,7 +18,7 @@
        Coordinates: x = east(+), z = south(+)/north(-), y = up. Metres. Eye height is added automatically.
        Stage durations: change holdVh (viewing time) / travelVh (walking time) – units are viewport heights.
        Text height never changes camera timing: a hold simply grows if its content is taller than holdVh. */
-const JOURNEY={eyeHeight:1.7,horizontalFovDeg:62,fovLimits:[36,70],scrollSmoothing:10,travelVh:[65,145,38,38,55,110,100,145],holdVh:[34,90,8,420,6,70,110,65,110],stages:[{"id":"gateIntro","pos":[19,23],"look":[16,11,0]},{"id":"gateOverview","pos":[0,100],"look":[0,6,0]},{"id":"walkwayOverview","pos":[0,-57],"look":[0,3.1,-120]},{"id":"opportunityColumn","pos":[5.25,-58],"look":[7.6,2.7,-58]},{"id":"courtyardReturn","pos":[0,-57],"look":[0,3.1,-120]},{"id":"platformVideo","pos":[-2,-94],"look":[0,5,-118]},{"id":"facultyQuestions","pos":[87,-104],"look":[87,7.6,-129.6]},{"id":"facultyReveal","pos":[110,-52],"look":[110,7,-136]},{"id":"campusFooter","pos":[110,-40],"look":[110,0,-41.4]}],travel:[{"via":[],"viaLook":[]},{"via":[[6.8,30],[6.8,-12],[1,-42]],"viaLook":[]},{"via":[[1,-57]],"viaLook":[]},{"via":[[1,-57]],"viaLook":[]},{"via":[[-2,-75]],"viaLook":[]},{"via":[[9,-94],[24,-105],[45,-108],[64,-104],[78,-91]],"viaLook":[]},{"via":[],"viaLook":[]},{"via":[],"viaLook":[]}] };
+const JOURNEY={eyeHeight:1.7,horizontalFovDeg:56,fovLimits:[32,62],scrollSmoothing:6,travelVh:[65,145,38,38,55,110,100,145],holdVh:[34,90,250,420,120,70,110,65,110],stages:[{"id":"gateIntro","pos":[19,23],"look":[16,11,0]},{"id":"gateOverview","pos":[0,100],"look":[0,6,0]},{"id":"walkwayOverview","pos":[0,-57],"look":[0,3.1,-120]},{"id":"opportunityColumn","pos":[5.25,-58],"look":[7.6,2.7,-58]},{"id":"courtyardReturn","pos":[0,-57],"look":[-9,3.4,-120]},{"id":"platformVideo","pos":[-2,-94],"look":[0,5,-118]},{"id":"facultyQuestions","pos":[87,-104],"look":[87,7.6,-129.6]},{"id":"facultyReveal","pos":[110,-52],"look":[110,7,-136]},{"id":"campusFooter","pos":[110,-40],"look":[110,0,-41.4]}],travel:[{"via":[],"viaLook":[]},{"via":[[6.8,30],[6.8,-12],[1,-42]],"viaLook":[]},{"via":[[1,-57]],"viaLook":[]},{"via":[[1,-57]],"viaLook":[]},{"via":[[-2,-75]],"viaLook":[]},{"via":[[9,-94],[24,-105],[45,-108],[64,-104],[78,-91]],"viaLook":[]},{"via":[],"viaLook":[]},{"via":[],"viaLook":[]}] };
 
 /* 1b. ARCHITECTURAL DIMENSIONS – all values are ESTIMATES scaled from the reference photographs
        (gate photo: ~25 px per metre assumed from a tower diameter of ~7.6 m). Not surveyed. */
@@ -60,6 +61,7 @@ const RM = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
 const IS_SMALL = matchMedia('(max-width: 800px)').matches;
 function mulberry(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
 let rnd = mulberry(20260);
+// Keep the original campus colour saturation.
 const C = hex => new T.Color(hex).convertSRGBToLinear();          // sRGB hex → linear working colour (r128 colour management)
 const lerp=(a,b,t)=>a+(b-a)*t, clamp=(x,a,b)=>Math.min(b,Math.max(a,x));
 const smoother=t=>{t=clamp(t,0,1);return t*t*t*(t*(t*6-15)+10)};
@@ -518,7 +520,7 @@ function poseAt(seg,s){const t=clamp((s-seg.start)/Math.max(1,seg.len),0,1);
   }
   if(seg.type==='hold'){J.posV.copy(J.hold[seg.i].pos);J.lookV.copy(J.hold[seg.i].look);if(seg.i===3){const dy=flyerProgress(t)*flyerGeometry().spacing;J.posV.y-=dy;J.lookV.y-=dy;}return}
   // Short velocity ramps only at actual stops; constant speed in the middle.
-  const edge=.08, ramp=t<edge?t*t/(2*edge):t>1-edge?1-edge-(1-t)*(1-t)/(2*edge):t-edge/2;
+  const edge=.16, ramp=t<edge?t*t/(2*edge):t>1-edge?1-edge-(1-t)*(1-t)/(2*edge):t-edge/2;
   const e=RM()?(t<.5?0:1):ramp/(1-edge),tr=J.travel[seg.i];tr.pos.getPointAt(e,J.posV);
   // Interpolate viewing orientation, rather than dragging a distant look target past the camera.
   const a=J.hold[seg.i],b=J.hold[seg.i+1],m=new T.Matrix4(),qa=new T.Quaternion(),qb=new T.Quaternion();
@@ -533,8 +535,8 @@ function updateJourneyFromScroll(dt){
   J.cam.position.copy(J.posV);J.cam.up.set(0,1,0);
   // Offset projection reserves sky space without raising the viewer above eye level.
   const stage=seg.type==='hold'?seg.i:seg.i+clamp((J.cur-seg.start)/seg.len,0,1);
-  const reserve=Math.max(0,1-Math.abs(stage))*0.08;const side=innerWidth>700?Math.max(0,1-Math.abs(stage-1))*.25+Math.max(0,1-Math.abs(stage-6))*.20:0;
-  const w=innerWidth,h=innerHeight;const faqSpace=Math.max(0,1-Math.abs(stage-6))*(innerWidth>700?0:.32);
+  const reserve=Math.max(0,1-Math.abs(stage))*0.08;const side=innerWidth>700?Math.max(0,1-Math.abs(stage-1))*.25+Math.max(0,1-Math.abs(stage-6))*.20+Math.max(0,1-Math.abs(stage-2))*.2+Math.max(0,1-Math.abs(stage-4))*.2:0;
+  const w=innerWidth,h=innerHeight;const faqSpace=Math.max(0,1-Math.abs(stage-6))*(innerWidth>700?0:.32)+(Math.max(0,1-Math.abs(stage-2))+Math.max(0,1-Math.abs(stage-4)))*(innerWidth>700?0:.3);
   const mobileAbout=innerWidth<=700?Math.max(0,1-Math.abs(stage-1))*.2:0;
   J.cam.setViewOffset(w,h,-(reserve+side)*w,(-reserve-faqSpace+mobileAbout)*h,w,h);
   J.cam.lookAt(J.lookV);const nextDirection=new T.Vector3();J.cam.getWorldDirection(nextDirection);
@@ -558,7 +560,7 @@ function showFallback(msg){document.getElementById('fallback').hidden=false;if(m
   try{renderer=new T.WebGLRenderer({canvas:document.getElementById('scene'),antialias:true,powerPreference:'high-performance'})}catch(e){return showFallback(e)}
   if(!renderer.getContext())return showFallback('no webgl');
   window.__renderer=renderer;maxAniso=Math.min(8,renderer.capabilities.getMaxAnisotropy());
-  renderer.setPixelRatio(Math.min(devicePixelRatio,1.1));
+  renderer.setPixelRatio(Math.min(devicePixelRatio,IS_SMALL?1.25:1.5));
   renderer.outputEncoding=T.sRGBEncoding;renderer.toneMapping=T.ACESFilmicToneMapping;renderer.toneMappingExposure=.8;
   renderer.shadowMap.enabled=true;renderer.shadowMap.type=T.PCFSoftShadowMap;
   try{
@@ -575,7 +577,7 @@ function showFallback(msg){document.getElementById('fallback').hidden=false;if(m
     const pm=new T.PMREMGenerator(renderer);scene.environment=pm.fromScene(envScene,.04).texture;pm.dispose();
     scene.add(new T.HemisphereLight(C('#cfe0f0'),C('#b4a584'),.45));
     const sun=new T.DirectionalLight(C('#fff0d8'),2.0),sdir=new T.Vector3(-.45,.78,.5).normalize();
-    sun.castShadow=true;renderer.shadowMap.autoUpdate=false;sun.shadow.mapSize.set(1024,1024);Object.assign(sun.shadow.camera,{left:-160,right:160,top:160,bottom:-160,near:10,far:380});
+    sun.castShadow=true;renderer.shadowMap.autoUpdate=false;sun.shadow.mapSize.set(IS_SMALL?1024:2048,IS_SMALL?1024:2048);Object.assign(sun.shadow.camera,{left:-160,right:160,top:160,bottom:-160,near:10,far:380});
     sun.shadow.camera.updateProjectionMatrix();sun.shadow.bias=-.0004;sun.shadow.normalBias=.06;sun.shadow.radius=3;scene.add(sun,sun.target);
     makeMaterials();
     buildMainGate();buildCampusCourtyard();buildITFaculty();buildLandscape();buildVideoScreen();
@@ -604,6 +606,16 @@ function showFallback(msg){document.getElementById('fallback').hidden=false;if(m
 const CONFIG={
   videoSrc:'',            // <- put your video URL here, e.g. 'media/just-internships.mp4'
   videoPoster:'',
+  videoCaptions:'',      // <- WebVTT captions file for the process video (TO BE SUPPLIED)
+  process:[              // Platform workflow from the UIMS project brief (not JUST's rules)
+   ['Your account is created','The internship coordinator creates your student account and assigns you to an academic supervisor. At first login you replace the temporary password.'],
+   ['Find and apply','After login, browse opportunities matched to your college and major, read the full details and apply through a separate application form.'],
+   ['Receive a decision','The company supervisor accepts or rejects your application. Track its status and confirm one offer only.'],
+   ['Work through tasks','Your company supervisor sets tasks and deadlines. Submit your work, read the feedback and resubmit if changes are requested.'],
+   ['Evaluation and hours','Your company and academic supervisors each prepare a final evaluation. Training hours follow an approval process; they are never automatic.'],
+   ['Completion is approved','The coordinator reviews both evaluations against university requirements and approves completion. You then receive your Internship Completion Report as a PDF.']],
+  colleges:['Medicine','Engineering','Science & Arts','Pharmacy','Dentistry','Agriculture','Veterinary Medicine','Architecture','Information Technology','Applied Sciences','Nursing'],   // faculties listed at just.edu.jo/aboutjust/Pages/Highlights.aspx
+  programs:{'Information Technology':['Computer Engineering (five-year program)','Computer Science (four-year program)','Network Engineering and Security (five-year program)','Software Engineering (four-year program)','Data Science']},   // just.edu.jo/cit/Pages/Welcome-Message.aspx. Other faculties: TO BE SUPPLIED
   links:{login:'../Auth/Login.aspx',contact:'../Contact.aspx'},   // <- e.g. login:'Login.aspx', contact:'mailto:...'. Empty = shows a "not connected" note.
   opportunities:[        // SAMPLE DATA – replace with live data. Company names are fictional.
    {field:'Software Engineering',company:'Nexora Systems',mono:'N',deadline:'15 Dec 2026',seats:6,hours:'240 hours',accent:'#e4eae4'},
@@ -627,10 +639,21 @@ const CONFIG={
   <div class="fbody"><p class="flyer-description">${({"Software Engineering":"Develop practical software skills through a structured training placement.","Data & Analytics":"Explore data, reporting and analytical thinking in a professional setting.","Network & Security":"Build practical experience with networks and information security."})[o.field]||"Explore a practical training placement in your field."}</p><dl><div class="row"><dt>Deadline</dt><dd>${o.deadline}</dd></div><div class="row"><dt>Seats</dt><dd>${o.seats} available</dd></div><div class="row"><dt>Training</dt><dd>${o.hours}</dd></div></dl></div>
   <div class="ffoot"><a class="btn" href="#login" data-link="login">Sign in to explore</a><span class="stamp">SAMPLE</span></div></article>`).join('');
  $('#faq').innerHTML=CONFIG.faq.map((f,i)=>`<details${i==0?' open':''}><summary>${f[0]}</summary><p>${f[1]}</p></details>`).join('');
+ /* process stepper (driven by scroll progress through its hold) + faculties */
+ const stepsEl=$('#steps');
+ stepsEl.innerHTML=CONFIG.process.map((s,i)=>`<li><button type="button" data-step="${i}"><span class="n">0${i+1}</span><span>${s[0]}</span></button><p>${s[1]}</p></li>`).join('');
+ window.updateSteps=function(){const J=window.__just&&window.__just.J;if(!J)return;const g=J.segs.find(s=>s.type==='hold'&&s.i===2);if(!g)return;const N=CONFIG.process.length,n=Math.min(N-1,Math.max(0,Math.floor((J.cur-g.start)/g.len*N)));
+  stepsEl.querySelectorAll('li').forEach((li,i)=>{li.classList.toggle('on',i===n);li.querySelector('button').setAttribute('aria-current',i===n?'step':'false')})};
+ stepsEl.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;const J=window.__just.J,g=J.segs.find(s=>s.type==='hold'&&s.i===2);scrollTo({top:g.start+(+b.dataset.step+.5)/CONFIG.process.length*g.len,behavior:RM()?'auto':'smooth'})});
+ let fsel=CONFIG.colleges.indexOf('Information Technology');const facEl=$('#fac'),specEl=$('#spec');
+ facEl.innerHTML=CONFIG.colleges.map((c,i)=>`<li><button type="button" data-f="${i}" aria-pressed="${i===fsel}">${c}</button></li>`).join('');
+ function drawSpec(){const c=CONFIG.colleges[fsel],p=CONFIG.programs[c];specEl.innerHTML=`<h3>${c}</h3>`+(p?`<ul>${p.map(x=>`<li>${x}</li>`).join('')}</ul><p class="src">Programs as listed on the faculty's page at just.edu.jo.</p>`:`<p class="tbs">Specializations for this faculty are to be supplied.</p>`)}
+ facEl.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;fsel=+b.dataset.f;facEl.querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed',x===b));drawSpec()});drawSpec();
+ if(/preview/.test(location.search))document.documentElement.classList.add('preview');
  /* accordion: one open at a time */
  $$('#faq details').forEach(d=>d.addEventListener('toggle',()=>{if(d.open)$$('#faq details').forEach(o=>{if(o!==d)o.open=false})}));
  /* stops */
- const STOPS=[['gateIntro',0,'p0','Welcome'],['gateOverview',1,'p1','About'],['opportunityColumn',3,'p2','Opportunities'],['platformVideo',5,'vid','Video'],['facultyQuestions',6,'p4','Q&A'],['campusFooter',8,'footer','Footer']];
+ const STOPS=[['gateIntro',0,'p0','Welcome'],['gateOverview',1,'p1','About'],['walkwayOverview',2,'pP','Process'],['opportunityColumn',3,'p2','Opportunities'],['courtyardReturn',4,'pC','Colleges'],['platformVideo',5,'vid','Video'],['facultyQuestions',6,'p4','Q&A'],['campusFooter',8,'footer','Footer']];
  const dots=$('.dots');dots.innerHTML=STOPS.map(s=>`<button type="button" data-go="${s[0]}" aria-label="${s[3]}" title="${s[3]}"></button>`).join('');
  const toast=(m)=>{const t=$('#toast');t.textContent=m;t.classList.add('show');clearTimeout(toast.h);toast.h=setTimeout(()=>t.classList.remove('show'),3200)};
  function goTo(name){const J=window.__just&&window.__just.J;if(!J)return;const s=J.segs.find(s=>s.type==='hold'&&window.__just.JOURNEY.stages[s.i].id===name);if(s)scrollTo({top:s.start,behavior:RM()?'auto':'smooth'})}
@@ -639,13 +662,13 @@ const CONFIG={
   else{const u=CONFIG.links[a.dataset.link];if(u)location.href=u;else toast('Prototype: the '+a.dataset.link+' link is not connected yet (CONFIG.links.'+a.dataset.link+').')}});
  /* video */
  const vid=$('#vid'),vph=$('#vph');
- function setVideo(src){vph.hidden=true;let v=vid.querySelector('video');if(!v){v=document.createElement('video');v.controls=true;v.playsInline=true;v.preload='metadata';v.setAttribute('aria-label','Campus video');vid.appendChild(v)}v.src=src;if(CONFIG.videoPoster)v.poster=CONFIG.videoPoster}
+ function setVideo(src){vph.hidden=true;let v=vid.querySelector('video');if(!v){v=document.createElement('video');v.controls=true;v.playsInline=true;v.preload='metadata';v.setAttribute('aria-label','Campus video');vid.appendChild(v)}v.src=src;if(CONFIG.videoPoster)v.poster=CONFIG.videoPoster;if(CONFIG.videoCaptions&&!v.querySelector('track')){const k=document.createElement('track');Object.assign(k,{kind:'captions',src:CONFIG.videoCaptions,srclang:'en',label:'English',default:true});v.appendChild(k)}}
  if(CONFIG.videoSrc)setVideo(CONFIG.videoSrc);
  $('#vfile').addEventListener('change',e=>{const f=e.target.files[0];if(f)setVideo(URL.createObjectURL(f))});
  window.campusVideo={set:setVideo};
  /* per-frame update */
- const P={p0:$('#p0'),p1:$('#p1'),p2:$('#p2'),vid:vid,p4:$('#p4'),footer:$('#campus-footer'),vcap:$('#vcap')};
- const cs=[[0,'p0'],[1,'p1'],[3,'p2'],[5,'vid'],[6,'p4'],[8,'footer']];
+ const P={p0:$('#p0'),p1:$('#p1'),pP:$('#pP'),pC:$('#pC'),p2:$('#p2'),vid:vid,p4:$('#p4'),footer:$('#campus-footer'),vcap:$('#vcap')};
+ const cs=[[0,'p0'],[1,'p1'],[2,'pP'],[3,'p2'],[4,'pC'],[5,'vid'],[6,'p4'],[8,'footer']];
  const cornerV=new THREE.Vector3();
  function op(s,i){const r=i===5?.025:.32;return Math.max(0,Math.min(1,(r-Math.abs(s-i))/(i===5?.02:.2)))}
  
@@ -662,7 +685,7 @@ const CONFIG={
  }
 
  window.updateUI=function(stage){
-  projectFlyers(stage);
+  projectFlyers(stage);if(window.updateSteps)window.updateSteps();
   const header=document.querySelector('.nav');const atFooter=stage>7.25;header.classList.toggle('at-footer',atFooter);header.inert=atFooter;
   let cur=null,best=0;
   cs.forEach(([i,k],n)=>{const o=k==='footer'?Math.max(0,Math.min(1,(stage-7.35)/.5)):op(stage,i),el=P[k];el.style.opacity=o;const on=o>0.02;el.style.visibility=on?'visible':'hidden';el.classList.toggle('on',on);
@@ -671,7 +694,7 @@ const CONFIG={
   P.vcap.style.opacity=op(stage,5);P.vcap.style.visibility=op(stage,5)>.02?'visible':'hidden';
   vid.inert=op(stage,5)<.5;const playback=vid.querySelector('video');if(vid.inert&&playback&&!playback.paused)playback.pause();
   $$('.dots button').forEach((b,n)=>b.setAttribute('aria-current',n===cur));
-  $$('.nav a.lnk').forEach(a=>a.setAttribute('aria-current',(a.dataset.go==='opportunityColumn'&&cur===2)||(a.dataset.go==='gateOverview'&&cur===1)||(a.dataset.go==='facultyQuestions'&&cur===4)));
+  $$('.nav a.lnk').forEach(a=>a.setAttribute('aria-current',cur!==null&&a.dataset.go===STOPS[cur][0]));
   /* align HTML video to the projected 3D screen */
   if(op(stage,5)>.02&&window.campusMedia){const J=window.__just.J,m=window.campusMedia.screen,cam=J.cam;cam.updateMatrixWorld();
    let x0=1e9,x1=-1e9,y0=1e9,y1=-1e9;[[-1,-1],[1,1]].forEach(([a,b])=>{cornerV.set(a*4.175,5+b*2.325,m.position.z+.135);cornerV.project(cam);const X=(cornerV.x+1)/2*innerWidth,Y=(1-cornerV.y)/2*innerHeight;x0=Math.min(x0,X);x1=Math.max(x1,X);y0=Math.min(y0,Y);y1=Math.max(y1,Y)});

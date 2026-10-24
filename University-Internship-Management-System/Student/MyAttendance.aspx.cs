@@ -29,9 +29,10 @@ namespace University_Internship_Management_System.Student
             {
                 string action = attendanceRequest.Action;
 
-                string studentId = attendanceRequest.ResolveIdentity("student", action);
+                string studentId = await attendanceRequest.ResolveIdentityAsync("student", action);
                 string uid = attendanceRequest.VerifiedUid ?? "";
-                var student = await attendanceService.Identity("student", studentId, uid, LocalDemoAllowed);
+                var student = await attendanceService.Identity("student", studentId, uid, LocalDemoAllowed,
+                    action == "load" ? attendanceRequest.VerifiedProfile : null);
                 await attendanceRequest.StartLoad("student", studentId, student);
 
                 JObject data;
@@ -74,7 +75,7 @@ namespace University_Internship_Management_System.Student
             {
                 ["student"] = state.Student, ["hasAssignment"] = true, ["assignment"] = state.Assignment,
                 ["company"] = state.Company, ["supervisor"] = state.Supervisor, ["today"] = state.Date,
-                ["schedule"] = state.Schedule, ["record"] = state.Record, ["earlyRequest"] = state.Request,
+                ["schedule"] = state.Schedule, ["record"] = AttendanceService.ForDisplay(state.Record), ["earlyRequest"] = state.Request,
                 ["history"] = new JArray(state.AttendanceHistory.Properties().Where(p => p.Value is JObject)
                     .OrderByDescending(p => p.Name).Select(p => p.Value)),
                 ["approvedMinutes"] = state.ApprovedMinutes, ["canCheckIn"] = state.CanCheckIn,

@@ -6,6 +6,8 @@ using System.Threading.Tasks;
 using System.Web;
 using System.Web.UI;
 using System.Web.SessionState;
+using System.Web.Security;
+using System.Security.Principal;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
@@ -44,6 +46,7 @@ namespace UIMS.Attendance
         private TraceContext Trace { get { return page.Trace; } }
         public string AttendanceCsrfToken { get; private set; }
         public string VerifiedUid { get; private set; }
+        public JObject VerifiedProfile { get; private set; }
         public bool LocalDemoAllowed { get; private set; }
         public bool IsApiRequest { get { return isApi; } }
         public string Action { get { return Request.Form["action"] ?? ""; } }
@@ -64,6 +67,8 @@ namespace UIMS.Attendance
             // وضع التطوير محصور بنفس الجهاز، ولا يمكن تفعيله من رابط أو حقل بالمتصفح.
             LocalDemoAllowed = AttendanceConfiguration.IsLocalDevelopment(HttpContext.Current);
             isApi = Request.QueryString["attendanceApi"] == "1";
+            // نحافظ على رد JSON برمز 401 بدلاً من تحويله إلى صفحة Login بواسطة Forms Authentication.
+            if (isApi) Response.SuppressFormsAuthenticationRedirect = true;
             AttendanceCsrfToken = isApi ? Request.Form["csrf"] : CreateCsrfToken();
         }
 
@@ -149,6 +154,9 @@ namespace UIMS.Attendance
 
         public async Task Execute(Func<Task<JObject>> handleAction)
         {
+            var previousWriteRequest = AttendanceConfiguration.WriteRequest.Value;
+            // كائن خاص بالطلب؛ تعبّأ هويته فقط بعد تحقق Firebase والـ Role.
+            AttendanceConfiguration.WriteRequest.Value = new AttendanceConfiguration.VerifiedWriteRequest();
             var timing = LocalDemoAllowed ? new AttendanceTiming() : null;
             AttendanceTiming.Current.Value = timing;
             try
@@ -171,10 +179,11 @@ namespace UIMS.Attendance
                 JObject data = await handleAction();
                 jsonResponse = JsonConvert.SerializeObject(new { success = true, data = data });
             }
+            catch (University_Internship_Management_System.Shared.FirebaseLoginException error) { WriteError(error.Message, error.StatusCode); }
             catch (UIMS.Services.FirebaseException error) { WriteError(error.Message, error.StatusCode); }
             catch (InvalidOperationException error) { WriteError(error.Message, 400); }
             catch (HttpRequestException) { WriteError("Firebase could not complete the request. Check server access and permissions. No successful save was confirmed.", 502); }
-            catch (TaskCanceledException) { WriteError("Firebase timed out. Refresh to check the stored state before retrying.", 504); }
+            catch (OperationCanceledException) { WriteError("Firebase timed out. Refresh to check the stored state before retrying.", 504); }
             catch (Exception error)
             {
                 Trace.Warn("Attendance", "Attendance request failed: " + error.GetType().Name);
@@ -182,6 +191,7 @@ namespace UIMS.Attendance
             }
             finally
             {
+                AttendanceConfiguration.WriteRequest.Value = previousWriteRequest;
                 if (LocalDemoAllowed)
                 {
                     if (streaming)
@@ -204,6 +214,14 @@ namespace UIMS.Attendance
 
         public string ResolveIdentity(string role, string action)
         {
+            // نحافظ على التوقيع القديم؛ الصفحتان تستخدمان النسخة غير المتزامنة.
+            return ResolveIdentityAsync(role, action).GetAwaiter().GetResult();
+        }
+
+        public async Task<string> ResolveIdentityAsync(string role, string action)
+        {
+            if (role != "student" && role != "company")
+                throw new UIMS.Services.FirebaseException(403, "Unsupported attendance role.");
             if (LocalDemoAllowed)
             {
                 // إعداد تجربة ثابت من السيرفر، وليس تسجيل دخول أو معرّفًا من المتصفح.
@@ -239,10 +257,87 @@ namespace UIMS.Attendance
                 return Session[key] as string ?? (role == "student" ? "att_demo_student_a" : "att_demo_supervisor_a");
             }
             string authorization = Request.Headers["Authorization"] ?? "";
-            if (!authorization.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase) || authorization.Length <= 7)
+            string token;
+            if (authorization.Length > 0)
+            {
+                if (!authorization.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase))
+                    throw new UIMS.Services.FirebaseException(401, "A valid Firebase sign-in token is required.");
+                token = authorization.Substring(7).Trim();
+            }
+            else
+            {
+                // نقبل توكن الجلسة الذي خزنه Login فقط مع Cookie دخول موثقة؛ لا نقبل UID من المتصفح.
+                token = page.User != null && page.User.Identity.IsAuthenticated
+                    ? Session["Uims.FirebaseIdToken"] as string : null;
+            }
+            if (string.IsNullOrWhiteSpace(token) || token.Length > 8192)
+            {
+                if (authorization.Length > 0 || !string.IsNullOrWhiteSpace(token))
+                    throw new UIMS.Services.FirebaseException(401, "The Firebase authentication session is invalid. Sign in again.");
+                return ResolveVerifiedIdentity(await ResolveFormsSessionAsync(role), role);
+            }
+            var identity = await new University_Internship_Management_System.Shared.FirebaseSignInService()
+                .VerifySessionAsync(token);
+            if (authorization.Length == 0 && !string.Equals(page.User.Identity.Name, identity.Uid, StringComparison.Ordinal))
+                throw new UIMS.Services.FirebaseException(401, "The Firebase session does not match the signed-in account. Sign in again.");
+            return ResolveVerifiedIdentity(identity, role);
+        }
+
+        private async Task<University_Internship_Management_System.Shared.FirebaseLoginResult> ResolveFormsSessionAsync(string role)
+        {
+            var principal = page.User;
+            var identity = principal?.Identity as FormsIdentity;
+            string expectedRole = role == "company" ? "companySupervisor" : "student";
+            if (identity == null || !identity.IsAuthenticated || identity.Ticket.Expired ||
+                string.IsNullOrWhiteSpace(identity.Name))
                 throw new UIMS.Services.FirebaseException(401, "Sign in with your Firebase account to access attendance.");
-            var identity = new University_Internship_Management_System.Shared.FirebaseSignInService()
-                .VerifySessionAsync(authorization.Substring(7).Trim()).GetAwaiter().GetResult();
+            string ticketRole = University_Internship_Management_System.Shared.FirebaseSignInService.CanonicalRole(identity.Ticket.UserData);
+            if (ticketRole != expectedRole || !principal.IsInRole(expectedRole))
+                throw new UIMS.Services.FirebaseException(403, "The signed-in account cannot access this attendance page.");
+            AttendanceFirebase.CheckKey(identity.Name);
+            var gateway = new University_Internship_Management_System.Shared.StudentFirebaseGateway();
+            try
+            {
+                var app = FirebaseAdmin.FirebaseApp.DefaultInstance;
+                if (app != null && app.Options.ProjectId != new UIMS.Services.FirebaseConfiguration().ProjectId)
+                    throw new UIMS.Services.FirebaseException(503, "Firebase Authentication is initialized for a different project.");
+                // Login العادي ينهي Session؛ نتحقق من الحساب الحي، ولا نعتبر Cookie وحدها كافية.
+                if (!await gateway.IsActiveAuthenticationUidAsync(identity.Name))
+                    throw new UIMS.Services.FirebaseException(401, "The Firebase account is unavailable or disabled. Sign in again.");
+                var account = await FirebaseAdmin.Auth.FirebaseAuth.DefaultInstance.GetUserAsync(identity.Name);
+                var profile = await gateway.ReadAsync("users/" + identity.Name) as JObject;
+                return ValidateFormsSession(principal, role, account.Uid, account.Disabled,
+                    account.TokensValidAfterTimestamp, profile);
+            }
+            catch (FirebaseAdmin.Auth.FirebaseAuthException)
+            {
+                throw new UIMS.Services.FirebaseException(503, "Firebase could not verify the server login session. Check server Authentication access.");
+            }
+        }
+
+        internal static University_Internship_Management_System.Shared.FirebaseLoginResult ValidateFormsSession(
+            IPrincipal principal, string role, string accountUid, bool disabled, DateTime validAfter, JObject profile)
+        {
+            var identity = principal?.Identity as FormsIdentity;
+            string expectedRole = role == "company" ? "companySupervisor" : role == "student" ? "student" : null;
+            if (expectedRole == null || identity == null || !identity.IsAuthenticated || identity.Ticket.Expired ||
+                string.IsNullOrWhiteSpace(identity.Name) || identity.Name != accountUid || disabled ||
+                identity.Ticket.IssueDate.ToUniversalTime() > DateTime.UtcNow.AddMinutes(1) ||
+                identity.Ticket.IssueDate.ToUniversalTime() < validAfter.ToUniversalTime())
+                throw new UIMS.Services.FirebaseException(401, "The Firebase login session expired, was revoked, or no longer matches the account. Sign in again.");
+            var verified = University_Internship_Management_System.Shared.FirebaseSignInService.ProfileResult(accountUid, profile);
+            string ticketRole = University_Internship_Management_System.Shared.FirebaseSignInService.CanonicalRole(identity.Ticket.UserData);
+            if (ticketRole != expectedRole || verified.Role != expectedRole || !principal.IsInRole(expectedRole) || verified.MustChangePassword)
+                throw new UIMS.Services.FirebaseException(403, "The current Firebase profile does not authorize this attendance page.");
+            return verified;
+        }
+
+        private string ResolveVerifiedIdentity(University_Internship_Management_System.Shared.FirebaseLoginResult identity, string role)
+        {
+            if (identity == null || string.IsNullOrWhiteSpace(identity.Uid) || identity.Profile == null)
+                throw new UIMS.Services.FirebaseException(401, "The verified Firebase identity is incomplete. Sign in again.");
+            if (identity.MustChangePassword)
+                throw new UIMS.Services.FirebaseException(403, "Change your temporary password before using attendance.");
             string requiredRole = role == "company" ? "companySupervisor" : "student";
             if (!string.Equals(identity.Role, requiredRole, StringComparison.Ordinal))
                 throw new UIMS.Services.FirebaseException(403, "Your Firebase account does not have permission for this attendance page.");
@@ -252,6 +347,15 @@ namespace UIMS.Attendance
                 throw new UIMS.Services.FirebaseException(403, "The Firebase user profile is missing its attendance business ID.");
             AttendanceFirebase.CheckKey(businessId);
             VerifiedUid = identity.Uid;
+            VerifiedProfile = (JObject)identity.Profile.DeepClone();
+            var writeRequest = AttendanceConfiguration.WriteRequest.Value;
+            if (writeRequest != null)
+            {
+                writeRequest.Uid = identity.Uid;
+                writeRequest.Role = role;
+                writeRequest.Id = businessId;
+                writeRequest.Action = Action;
+            }
             return businessId;
         }
 

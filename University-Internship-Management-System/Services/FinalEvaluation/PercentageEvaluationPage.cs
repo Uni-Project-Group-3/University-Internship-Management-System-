@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
@@ -22,6 +22,11 @@ namespace University_Internship_Management_System.Services.FinalEvaluation
     // Shared Web Forms orchestration only; authorization and persistence stay in C# workflows.
     public abstract class PercentageEvaluationPage : Page
     {
+        protected override void OnPreInit(EventArgs e)
+        {
+            UIMS.Services.FinalReportPageRoute.TransferIfEnabled(this, Academic ? "academicSupervisor" : "companySupervisor");
+            base.OnPreInit(e);
+        }
         private static readonly HttpClient FirebaseReadClient = new HttpClient { Timeout = TimeSpan.FromSeconds(15) };
         protected abstract bool Academic { get; }
         private string operation;
@@ -231,6 +236,15 @@ namespace University_Internship_Management_System.Services.FinalEvaluation
                 // A Draft/revision may be editable by status while still read-only in production until
                 // the trusted guard, approved policy and schema/write configuration are ready.
                 bool writesAvailable = string.IsNullOrWhiteSpace(context.WriteBlocker);
+                if (!context.IsDevelopment)
+                {
+                    try { new FirebaseFinalEvaluationConfiguration().EnsureWritesAllowed(); }
+                    catch (UIMS.Services.FirebaseException)
+                    {
+                        writesAvailable = false;
+                        availability.Text += " Firebase records are connected. Evaluation writes are disabled in configuration.";
+                    }
+                }
                 var companyWriteState = Academic ? null : await context.Workflow.GetCompanyWriteStateAsync(selection, revision);
                 bool recordAllowsEdit = companyWriteState != null && companyWriteState.CanEditDraft;
                 bool recordAllowsSubmit = companyWriteState != null && companyWriteState.CanSubmit;

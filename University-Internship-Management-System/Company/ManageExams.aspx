@@ -6,13 +6,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Task Exams | JUST Internships</title>
     <link href="../Assets/company/TaskExams.css" rel="stylesheet" />
+    <link href="../Assets/shared/workflow-ui.css?v=20261023" rel="stylesheet" />
 </head>
 <body>
     <main class="exam-shell">
-        <header class="exam-header"><div><a href="ManageTasks.aspx">← Manage Tasks</a><h1>Task Exams</h1><p>Create and publish versioned exams linked to existing placement tasks.</p></div><button id="newExam" class="primary" type="button">New exam</button></header>
-        <div id="notice" class="notice" role="status">Loading Firebase exam records…</div>
+        <header class="exam-header"><div><a href="ManageTasks.aspx">&larr; Manage Tasks</a><h1>Task Exams</h1><p>Create and publish versioned exams linked to existing placement tasks.</p></div><button id="newExam" class="primary" type="button">New exam</button></header>
+        <div id="notice" class="notice" role="status">Loading Firebase exam records&hellip;</div>
         <div class="exam-layout">
-            <section class="panel exam-list"><h2>Your exams</h2><div id="examList" class="stack"><p class="muted">Loading…</p></div></section>
+            <section class="panel exam-list"><h2>Your exams</h2><div id="examList" class="stack"><p class="muted">Loading&hellip;</p></div></section>
             <section class="panel editor" aria-labelledby="editorTitle">
                 <h2 id="editorTitle">Create exam draft</h2>
                 <form id="examForm">
@@ -29,6 +30,9 @@
             </section>
         </div>
     </main>
-    <script src="../Js_project/Company/TaskExams.js"></script>
+    <link href="../Assets/task-workspace.css" rel="stylesheet" />
+    <script src="../Js_project/firebase-client.js?v=20261023-live-review"></script>
+    <script src="../Js_project/task-dialogs.js?v=20261023-live-result"></script>
+    <script src="../Js_project/Company/TaskExams.js?v=20261023-live-result"></script>
 </body>
 </html>

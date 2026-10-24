@@ -12,6 +12,11 @@ namespace University_Internship_Management_System.Student
 {
     public partial class MyProgressEvaluation : Page
     {
+        protected override void OnPreInit(EventArgs e)
+        {
+            UIMS.Services.FinalReportPageRoute.TransferIfEnabled(this, "student");
+            base.OnPreInit(e);
+        }
         private bool downloadRequested, fileResponse;
         private bool demoSelectionChanged;
         protected void Page_Init(object sender, EventArgs e)

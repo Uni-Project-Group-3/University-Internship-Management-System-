@@ -39,7 +39,12 @@ namespace University_Internship_Management_System.Coordinator
             try
             {
                 if (!Request.IsAuthenticated) throw new UnauthorizedAccessException();
-                var gateway = new StudentFirebaseGateway();
+                var gateway = new StudentFirebaseGateway(new UIMS.Services.FirebaseConfiguration("true",
+                    new UIMS.Services.FirebaseConfiguration().ProjectId,
+                    new UIMS.Services.FirebaseConfiguration().DatabaseUrl,
+                    new UIMS.Services.FirebaseConfiguration().ApiKey,
+                    writes: "true", schemaValidated: "true", authenticationEnabled:
+                    new UIMS.Services.FirebaseConfiguration().AuthenticationEnabled ? "true" : "false"));
                 var coordinator = new StudentManagementService(gateway, gateway, new StudentCredentialMailer());
                 string actor = await coordinator.RequireCoordinatorAsync(User.Identity.Name);
                 authorized = true;
@@ -65,7 +70,11 @@ namespace University_Internship_Management_System.Coordinator
             catch (UnauthorizedAccessException)
             {
                 if (api) Respond(403, new { error = "Sign in with an active coordinator account." });
-                else authorized = true; // Allow the page shell/navigation to render; its data API remains coordinator-only.
+                else
+                {
+                    Response.Redirect(ResolveUrl("~/Auth/Login.aspx") + "?ReturnUrl=" + HttpUtility.UrlEncode(Request.RawUrl), false);
+                    Context.ApplicationInstance.CompleteRequest();
+                }
             }
             catch (Exception error)
             {

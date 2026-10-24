@@ -53,7 +53,7 @@ namespace UIMS.Tasks
             if (role == "companySupervisor")
             {
                 string supervisorId = University_Internship_Management_System.Shared.StudentManagementService.Text(profile, "companySupervisorId");
-                if (supervisorId.Length == 0) supervisorId = mappedSupervisorId;
+                if (supervisorId.Length == 0) supervisorId = mappedSupervisorId ?? "";
                 if (supervisorId.Length == 0) throw new UIMS.Services.FirebaseException(403, "No company supervisor profile mapping for this verified Firebase UID was found.");
                 return new TaskActor(uid, role, null, supervisorId, University_Internship_Management_System.Shared.StudentManagementService.Text(profile, "companyId"));
             }
@@ -69,9 +69,9 @@ namespace UIMS.Tasks
     }
 
     // Uses the established top-level /tasks records and server-resolved actors.
-    public sealed class TaskService
+    public sealed partial class TaskService
     {
-        private static readonly HttpClient Client = new HttpClient { Timeout = TimeSpan.FromSeconds(20) };
+        private static readonly HttpClient Client = new HttpClient(new HttpClientHandler { MaxConnectionsPerServer = 12 }) { Timeout = TimeSpan.FromSeconds(20) };
         private static readonly Lazy<Task<GoogleCredential>> ServerCredential = new Lazy<Task<GoogleCredential>>(() => GoogleCredential.GetApplicationDefaultAsync());
         private static readonly ConcurrentDictionary<string, SemaphoreSlim> AssignmentLocks = new ConcurrentDictionary<string, SemaphoreSlim>();
         private readonly HttpClient client;
@@ -85,6 +85,7 @@ namespace UIMS.Tasks
         private readonly bool writesEnabled;
         private readonly bool schemaValidated;
         internal string ActorRole { get { return actor == null ? null : actor.Role; } }
+        internal Task<JObject> ChangesAsync(long previous, CancellationToken cancellation) { Ensure(false); return TaskChangeFeed.WaitAsync(previous, cancellation); }
 
         public TaskService() : this(k => WebConfigurationManager.AppSettings[k], Client, null, GetServerAccessTokenAsync) { }
         public TaskService(TaskActor verifiedActor) : this(k => WebConfigurationManager.AppSettings[k], Client, verifiedActor, GetServerAccessTokenAsync) { }
@@ -106,9 +107,7 @@ namespace UIMS.Tasks
 
         private static async Task<string> GetServerAccessTokenAsync(CancellationToken cancellation)
         {
-            var credential = (await ServerCredential.Value.ConfigureAwait(false)).CreateScoped("https://www.googleapis.com/auth/firebase.database");
-            cancellation.ThrowIfCancellationRequested();
-            return await credential.UnderlyingCredential.GetAccessTokenForRequestAsync().ConfigureAwait(false);
+            return await University_Internship_Management_System.Shared.FirebaseServerCredential.AccessTokenAsync(cancellation).ConfigureAwait(false);
         }
 
         private void Ensure(bool write, string requiredRole = null)
@@ -320,15 +319,22 @@ namespace UIMS.Tasks
             return null;
         }
 
+        public Task<JObject> CheckStorageAvailabilityAsync(CancellationToken cancellation)
+        {
+            Ensure(false, "companySupervisor");
+            cancellation.ThrowIfCancellationRequested();
+            throw new UIMS.Services.FirebaseException(503, "File uploads remain deferred until Firebase Storage is available. Tasks without files and filename-only final reports remain available.");
+        }
+
         public async Task<JObject> LoadAsync(string role, CancellationToken cancellation)
         {
             Ensure(false);
             if (role != actor.Role) throw new UIMS.Services.FirebaseException(403, "The requested task view does not match the verified account role.");
             // Imported tasks live at /tasks/{id}; legacy tasks link to placements by placementId.
             // Resolve those existing relations so old and new task records appear for the right roles.
-            var records = await ReadData("", cancellation).ConfigureAwait(false);
-            var placementRecords = await ReadAt("placements", "", cancellation).ConfigureAwait(false);
-            var userRecords = await ReadAt("users", "", cancellation).ConfigureAwait(false);
+            var taskRead = ReadData("", cancellation); var placementRead = ReadAt("placements", "", cancellation); var userRead = ReadAt("users", "", cancellation);
+            await Task.WhenAll(taskRead, placementRead, userRead).ConfigureAwait(false);
+            var records = await taskRead.ConfigureAwait(false); var placementRecords = await placementRead.ConfigureAwait(false); var userRecords = await userRead.ConfigureAwait(false);
             var placements = Rows(placementRecords.Data).Where(x => x.Value is JObject)
                 .ToDictionary(x => x.Name, x => (JObject)x.Value, StringComparer.Ordinal);
             var outputTasks = new JArray(); var outputSubs = new JArray(); var students = new JArray();
@@ -343,6 +349,7 @@ namespace UIMS.Tasks
                     var placementStatus = Text(row, "status");
                     var assignedStudent = Text(row, "studentId");
                     if (Text(row, "companySupervisorId") != actor.CompanySupervisorId ||
+                        (actor.CompanyId.Length > 0 && Text(row, "companyId") != actor.CompanyId) ||
                         (!placementStatus.Equals("active", StringComparison.OrdinalIgnoreCase) && !placementStatus.Equals("confirmed", StringComparison.OrdinalIgnoreCase)) || assignedStudent.Length == 0) continue;
                     var profile = FindStudentProfile(userRecords.Data, assignedStudent, assignedStudent);
                     if (profile == null || (Text(profile, "role").Length > 0 && University_Internship_Management_System.Shared.FirebaseSignInService.CanonicalRole(Text(profile, "role")) != "student")) continue;
@@ -385,14 +392,20 @@ namespace UIMS.Tasks
                     ["description"] = Text(task, "description"),
                     ["deadline"] = Text(task, "dueDate").Length > 0 ? Text(task, "dueDate") : Text(task, "deadline"),
                     ["criteria"] = Text(task, "evaluationCriteria"), ["feedback"] = Text(task, "feedback"),
-                    ["status"] = Status(status), ["rawStatus"] = status,
+                    ["status"] = Text(task, "archivedAt").Length > 0 ? "archived" : Status(status), ["rawStatus"] = status,
                     ["score"] = task["score"] == null ? JValue.CreateNull() : task["score"].DeepClone(),
                     ["maximum"] = Number(task, "maximumScore", 100)
                 });
+                ((JObject)outputTasks.Last)["batchId"] = task["batchId"];
+                ((JObject)outputTasks.Last)["extension"] = task["extension"]?.DeepClone();
+                ((JObject)outputTasks.Last)["instructionVersion"] = (int?)task["instructionVersion"] ?? 1;
+                ((JObject)outputTasks.Last)["instructionVersions"] = task["instructionVersions"]?.DeepClone();
+                ((JObject)outputTasks.Last)["archived"] = Text(task, "archivedAt").Length > 0;
+                ((JObject)outputTasks.Last)["notifications"] = new JArray((task["notifications"] as JObject ?? new JObject()).Properties().Where(n => Text(n.Value, "recipientRole") == role).Select(n => n.Value.DeepClone()));
                 ((JObject)outputTasks.Last)["attachmentIds"] = task["attachmentIds"] == null ? new JArray() : task["attachmentIds"].DeepClone();
             }
             return new JObject { ["role"] = role, ["identity"] = role == "student" ? actor.StudentId : actor.CompanySupervisorId,
-                ["tasks"] = outputTasks, ["submissions"] = outputSubs, ["students"] = students };
+                ["tasks"] = outputTasks, ["submissions"] = outputSubs, ["students"] = students, ["serverNow"] = DateTimeOffset.UtcNow.ToString("o") };
         }
 
         public async Task<JObject> LoadBoardAsync(string placementId, CancellationToken cancellation)
@@ -408,7 +421,9 @@ namespace UIMS.Tasks
             string defaultColumn = board["columns"].Children<JProperty>()
                 .OrderBy(x => (int)x.Value["order"]).ThenBy(x => x.Name, StringComparer.Ordinal)
                 .Select(x => x.Name).First();
+            if (board["columns"]["todo"] != null) defaultColumn = "todo";
             var visibleTasks = Rows(taskRecords).Where(x => x.Value is JObject && Text((JObject)x.Value, "placementId") == placementId)
+                .Where(x => Text(x.Value, "archivedAt").Length == 0)
                 .Where(x => TaskBelongsToPlacement((JObject)x.Value, placement)).OrderBy(x => x.Name, StringComparer.Ordinal).ToList();
             var positions = (JObject)board["positions"];
             var cards = new JArray();
@@ -446,6 +461,7 @@ namespace UIMS.Tasks
 
             var task = (await ReadAt("tasks", taskId, cancellation).ConfigureAwait(false)).Data;
             if (task.Count == 0) throw new UIMS.Services.FirebaseException(404, "Task not found.");
+            RequireTaskOpen(task);
             if (Text(task, "placementId") != placementId || !TaskBelongsToPlacement(task, placement))
                 throw new UIMS.Services.FirebaseException(403, "This task does not belong to the selected placement.");
 
@@ -469,6 +485,7 @@ namespace UIMS.Tasks
             var positions = (JObject)board["positions"];
             string defaultColumn = board["columns"].Children<JProperty>().OrderBy(x => (int)x.Value["order"])
                 .ThenBy(x => x.Name, StringComparer.Ordinal).Select(x => x.Name).First();
+            if (board["columns"]["todo"] != null) defaultColumn = "todo";
             var ordering = related.Select(x => new BoardItem { Id = x.Name,
                 ColumnId = positions[x.Name] == null ? defaultColumn : Text((JObject)positions[x.Name], "columnId"),
                 Order = positions[x.Name] == null ? 0 : ReadBoardOrder((JObject)positions[x.Name]) }).ToList();
@@ -502,6 +519,34 @@ namespace UIMS.Tasks
                 ["actorUid"] = actor.Uid, ["completedAt"] = board["updatedAt"].DeepClone() };
             await WriteAt("taskBoards", "PUT", placementId, board, current.ETag, cancellation).ConfigureAwait(false);
             return new JObject { ["success"] = true, ["placementId"] = placementId, ["taskId"] = taskId, ["duplicate"] = false };
+        }
+
+        public async Task<JObject> ReorderColumnsAsync(string placementId, JArray columnIds, string operationId, CancellationToken cancellation)
+        {
+            Ensure(true, "companySupervisor"); CheckKey(placementId); CheckKey(operationId);
+            var placement = (await ReadAt("placements", placementId, cancellation).ConfigureAwait(false)).Data;
+            EnsureBoardPlacementAccess(placement, placementId);
+            var current = await ReadAt("taskBoards", placementId, cancellation).ConfigureAwait(false); var board = NormalizeBoard(current.Data, placementId);
+            var columns = (JObject)board["columns"];
+            if (columnIds == null || columnIds.Count != columns.Count || columnIds.Any(x => x.Type != JTokenType.String) || columnIds.Values<string>().Distinct().Count() != columns.Count || columnIds.Values<string>().Any(id => columns[id] == null))
+                throw new UIMS.Services.FirebaseException(400, "Include every existing column exactly once.");
+            string fingerprint = "columns:" + string.Join(",", columnIds.Values<string>());
+            var operations = (JObject)board["operations"]; var previous = operations[operationId] as JObject;
+            if (previous != null) { if (Text(previous, "fingerprint") != fingerprint) throw new UIMS.Services.FirebaseException(409, "Operation ID already belongs to a different board change."); return new JObject { ["success"] = true, ["duplicate"] = true }; }
+            string oldDefault = columns.Properties().OrderBy(c => (int)c.Value["order"]).First().Name;
+            if (columns["todo"] != null) oldDefault = "todo";
+            var positions = (JObject)board["positions"];
+            var tasks = await ReadData("", cancellation).ConfigureAwait(false); int legacyOrder = 0;
+            foreach (var task in tasks.Properties().Where(t => t.Value is JObject && Text(t.Value, "placementId") == placementId && TaskBelongsToPlacement((JObject)t.Value, placement)).OrderBy(t => t.Name, StringComparer.Ordinal))
+            {
+                if (positions[task.Name] == null) positions[task.Name] = new JObject { ["columnId"] = oldDefault, ["order"] = legacyOrder * 1024 };
+                legacyOrder++;
+            }
+            for (int i = 0; i < columnIds.Count; i++) columns[(string)columnIds[i]]["order"] = i;
+            board["updatedAt"] = DateTimeOffset.UtcNow.ToString("o"); board["updatedByUid"] = actor.Uid;
+            operations[operationId] = new JObject { ["fingerprint"] = fingerprint, ["actorUid"] = actor.Uid, ["completedAt"] = board["updatedAt"] };
+            await WriteAt("taskBoards", "PUT", placementId, board, current.ETag, cancellation).ConfigureAwait(false);
+            return new JObject { ["success"] = true };
         }
 
         private void EnsureBoardPlacementAccess(JObject placement, string placementId)
@@ -600,6 +645,7 @@ namespace UIMS.Tasks
             Ensure(true, "student"); CheckKey(assignmentId);
             var current = await Read(assignmentId, cancellation).ConfigureAwait(false); var row = current.Data;
             await EnsureStudentOwnsTaskAsync(row, cancellation).ConfigureAwait(false);
+            RequireTaskOpen(row);
             var currentStatus = Status(Text(row, "status"));
             if (currentStatus == "inprogress") return new JObject { ["success"] = true };
             if (currentStatus != "assigned") throw new UIMS.Services.FirebaseException(409, "This task cannot be started in its current status.");
@@ -627,28 +673,35 @@ namespace UIMS.Tasks
             {
                 var current = await Read(assignmentId, cancellation).ConfigureAwait(false); var task = current.Data;
                 await EnsureStudentOwnsTaskAsync(task, cancellation).ConfigureAwait(false);
+                RequireSubmissionDeadline(task);
                 var status = Status(Text(task, "status"));
                 if (status != "inprogress" && status != "revision") throw new UIMS.Services.FirebaseException(409, "Start the task first, or wait until the supervisor requests a revision.");
                 var history = TaskSubmissionHistory.Read(task["submissions"]);
                 int revision = history.NextRevision;
                 var submission = new JObject { ["description"] = description.Trim(), ["link"] = link.Trim(),
                     ["fileName"] = (fileName ?? "").Trim(), ["submittedAt"] = DateTimeOffset.UtcNow.ToString("o", CultureInfo.InvariantCulture) };
+                submission["instructionVersion"] = (int?)task["instructionVersion"] ?? 1;
+                submission["deadlineAtSubmission"] = task["dueDate"]?.DeepClone();
                 if (attachmentIds != null && attachmentIds.Count > 0) submission["attachmentIds"] = new JArray(attachmentIds);
                 history.Append(submission);
                 task["submissions"] = history.ToJson(); task["status"] = "Submitted";
+                AddTaskActivity(task, "submitted", "Student submission " + revision.ToString(CultureInfo.InvariantCulture) + " is ready for review.");
                 await Write("PUT", assignmentId, task, current.ETag, cancellation).ConfigureAwait(false);
                 return new JObject { ["success"] = true, ["revision"] = revision };
             }
             finally { gate.Release(); }
         }
 
-        public async Task<JObject> CreateAsync(string title, string description, string deadline, string placementId, string criteria, int maximum, CancellationToken cancellation)
+        public Task<JObject> CreateAsync(string title, string description, string deadline, string placementId, string criteria, int maximum, CancellationToken cancellation)
+        { return CreateInstanceAsync(title, description, deadline, placementId, criteria, maximum, null, cancellation); }
+
+        private async Task<JObject> CreateInstanceAsync(string title, string description, string deadline, string placementId, string criteria, int maximum, string batchId, CancellationToken cancellation)
         {
             Ensure(true, "companySupervisor");
             if (string.IsNullOrWhiteSpace(title) || title.Trim().Length > 150 || string.IsNullOrWhiteSpace(description) || description.Trim().Length > 3000 || string.IsNullOrWhiteSpace(criteria) || criteria.Trim().Length > 500 || maximum < 1 || maximum > 1000)
                 throw new UIMS.Services.FirebaseException(400, "Complete the task title, requirements, criteria and a score from 1 to 1000.");
             CheckKey(placementId);
-            DateTime parsed; if (!DateTime.TryParseExact(deadline, new[] { "yyyy-MM-dd", "yyyy-MM-ddTHH:mm", "o" }, CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal, out parsed)) throw new UIMS.Services.FirebaseException(400, "Choose a valid task deadline.");
+            DateTimeOffset parsed; if (!DateTimeOffset.TryParse(deadline, CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal, out parsed)) throw new UIMS.Services.FirebaseException(400, "Choose a valid task deadline.");
             var placement = (await ReadAt("placements", placementId, cancellation).ConfigureAwait(false)).Data;
             var student = Text(placement, "studentId");
             var placementStatus = Text(placement, "status");
@@ -661,17 +714,175 @@ namespace UIMS.Tasks
             if (actor.CompanyId.Length > 0 && Text(placement, "companyId").Length > 0 && Text(placement, "companyId") != actor.CompanyId)
                 throw new UIMS.Services.FirebaseException(403, "The placement belongs to a different company.");
             string taskId = "UIMS-TASK-" + DateTime.UtcNow.ToString("yyyyMMddHHmmss", CultureInfo.InvariantCulture) + "-" + Guid.NewGuid().ToString("N").Substring(0, 8).ToUpperInvariant();
+            if (batchId != null) taskId = "BULK-" + batchId + "-" + placementId;
             var task = new JObject { ["id"] = taskId, ["title"] = title.Trim(), ["description"] = description.Trim(),
                 ["studentId"] = student, ["placementId"] = placementId, ["assignedBy"] = actor.CompanySupervisorId, ["assignedAt"] = DateTime.UtcNow.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
-                ["dueDate"] = parsed.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture), ["status"] = "Assigned", ["isDemo"] = false,
+                ["dueDate"] = parsed.ToUniversalTime().ToString("o", CultureInfo.InvariantCulture), ["status"] = "Assigned", ["isDemo"] = false,
                 ["evaluationCriteria"] = criteria.Trim(), ["maximumScore"] = maximum, ["submissions"] = new JArray() };
+            if (batchId != null) task["batchId"] = batchId;
+            string creationSignature;
+            using (var hash = System.Security.Cryptography.SHA256.Create())
+                creationSignature = Convert.ToBase64String(hash.ComputeHash(Encoding.UTF8.GetBytes(new JArray(title.Trim(), description.Trim(), parsed.ToUniversalTime().ToString("o"), criteria.Trim(), maximum, placementId).ToString(Formatting.None))));
+            task["creationSignature"] = creationSignature;
+            AddTaskActivity(task, "assigned", "A new task was assigned to you.");
             var current = await Read(taskId, cancellation).ConfigureAwait(false);
+            if (batchId != null && current.Data.Count > 0)
+            {
+                await EnsureCompanyOwnsTaskAsync(current.Data, cancellation).ConfigureAwait(false);
+                if (Text(current.Data, "batchId") != batchId || Text(current.Data, "placementId") != placementId)
+                    throw new UIMS.Services.FirebaseException(409, "Batch ID conflicts with an existing task.");
+                if (Text(current.Data, "creationSignature") != creationSignature)
+                    throw new UIMS.Services.FirebaseException(409, "This batch was already used with different task content. Finish the original operation before creating a new assignment.");
+                return new JObject { ["success"] = true, ["id"] = taskId, ["reused"] = true };
+            }
             if (current.Data.Count > 0) throw new UIMS.Services.FirebaseException(409, "A task with this generated ID already exists. Try again.");
             await Write("PUT", taskId, task, "null_etag", cancellation).ConfigureAwait(false);
             return new JObject { ["success"] = true, ["id"] = taskId };
         }
 
-        public async Task<JObject> ReviewAsync(string assignmentId, string action, int score, string feedback, CancellationToken cancellation)
+        private static DateTimeOffset TaskDeadline(JObject task)
+        {
+            string raw = FirstText(task, "dueDate", "deadline"); DateTimeOffset date;
+            if (!DateTimeOffset.TryParse(raw, CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal, out date)) return DateTimeOffset.MaxValue;
+            return raw.Length == 10 ? date.AddDays(1) : date;
+        }
+        private static void RequireSubmissionDeadline(JObject task)
+        { RequireTaskOpen(task); if (DateTimeOffset.UtcNow >= TaskDeadline(task)) throw new UIMS.Services.FirebaseException(409, "The submission deadline has passed. Request an extension."); }
+        private static void RequireTaskOpen(JObject task)
+        { if (Text(task, "archivedAt").Length > 0) throw new UIMS.Services.FirebaseException(409, "This task is archived and is available as read-only history."); }
+        private static bool HasTaskGrade(JObject task)
+        { return task["score"] != null && task["score"].Type != JTokenType.Null || Status(Text(task, "status")) == "completed"; }
+        private static string FutureDeadline(string value)
+        {
+            DateTimeOffset date;
+            if (!DateTimeOffset.TryParse(value, CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal, out date) || date <= DateTimeOffset.UtcNow)
+                throw new UIMS.Services.FirebaseException(400, "Choose a future deadline including date, time and timezone.");
+            return date.ToUniversalTime().ToString("o", CultureInfo.InvariantCulture);
+        }
+        private void AddTaskActivity(JObject task, string kind, string detail)
+        {
+            var history = task["activity"] as JObject ?? new JObject();
+            history[Guid.NewGuid().ToString("N")] = new JObject { ["kind"] = kind, ["detail"] = detail, ["actorUid"] = actor.Uid, ["at"] = DateTimeOffset.UtcNow.ToString("o"), ["studentId"] = task["studentId"] };
+            task["activity"] = history;
+            task["updatedAt"] = DateTimeOffset.UtcNow.ToString("o", CultureInfo.InvariantCulture);
+            var notifications = task["notifications"] as JObject ?? new JObject();
+            notifications[Guid.NewGuid().ToString("N")] = new JObject { ["kind"] = kind, ["message"] = detail, ["createdAt"] = DateTimeOffset.UtcNow.ToString("o"), ["recipientRole"] = actor.Role == "student" ? "companySupervisor" : "student", ["recipientId"] = actor.Role == "student" ? task["assignedBy"] : task["studentId"] };
+            task["notifications"] = notifications;
+        }
+        public async Task<JObject> BulkCreateAsync(JObject input, CancellationToken cancellation)
+        {
+            Ensure(true, "companySupervisor"); string batch = (string)input["batchId"]; CheckKey(batch);
+            if (string.IsNullOrWhiteSpace(batch) || batch.Length > 80) throw new UIMS.Services.FirebaseException(400, "A stable batch identifier is required.");
+            var ids = input["placementIds"] as JArray;
+            if (ids == null || ids.Count == 0 || ids.Count > 200) throw new UIMS.Services.FirebaseException(400, "Select between 1 and 200 placements.");
+            if (ids.Any(id => id.Type != JTokenType.String) || input["maximum"]?.Type != JTokenType.Integer) throw new UIMS.Services.FirebaseException(400, "Placements must be identifiers and maximum score must be a whole number.");
+            var results = new JArray();
+            foreach (string placement in ids.Values<string>().Distinct())
+            {
+                try { var result = await CreateInstanceAsync((string)input["title"], (string)input["description"], (string)input["deadline"], placement, (string)input["criteria"], (int?)input["maximum"] ?? 0, batch, cancellation).ConfigureAwait(false); result["placementId"] = placement; results.Add(result); }
+                catch (UIMS.Services.FirebaseException ex) { results.Add(new JObject { ["placementId"] = placement, ["success"] = false, ["message"] = ex.Message }); }
+            }
+            return new JObject { ["batchId"] = batch, ["results"] = results, ["success"] = results.All(r => (bool?)r["success"] == true) };
+        }
+        public async Task<JObject> EditAsync(JObject input, CancellationToken cancellation)
+        {
+            Ensure(true, "companySupervisor"); string id = (string)input["taskId"]; CheckKey(id);
+            var origin = await Read(id, cancellation).ConfigureAwait(false); await EnsureCompanyOwnsTaskAsync(origin.Data, cancellation).ConfigureAwait(false);
+            string title = (string)input["title"], description = (string)input["description"], criteria = (string)input["criteria"];
+            if (string.IsNullOrWhiteSpace(title) || title.Length > 150 || string.IsNullOrWhiteSpace(description) || description.Length > 3000 || string.IsNullOrWhiteSpace(criteria) || criteria.Length > 500)
+                throw new UIMS.Services.FirebaseException(400, "Title, description and instructions are required within their field limits.");
+            string due = FutureDeadline((string)input["deadline"]);
+            bool resubmit = (bool?)input["resubmit"] == true;
+            var targets = new List<string> { id };
+            if ((bool?)input["all"] == true)
+            {
+                string batch = Text(origin.Data, "batchId"); if (batch.Length == 0) throw new UIMS.Services.FirebaseException(400, "This task has no bulk assignment group.");
+                var records = await ReadData("", cancellation).ConfigureAwait(false);
+                targets = records.Properties().Where(r => r.Value is JObject && Text(r.Value, "batchId") == batch && Text(r.Value, "assignedBy") == actor.CompanySupervisorId).Select(r => r.Name).ToList();
+            }
+            var affected = new JArray(); var excluded = new JArray(); var failed = new JArray();
+            foreach (string target in targets)
+            {
+                try
+                {
+                var current = await Read(target, cancellation).ConfigureAwait(false); var row = current.Data;
+                await EnsureCompanyOwnsTaskAsync(row, cancellation).ConfigureAwait(false);
+                RequireTaskOpen(row);
+                if (HasTaskGrade(row)) { excluded.Add(target); continue; }
+                string individualDeadline = input["deadlines"] is JObject ? (string)input["deadlines"][target] : null;
+                string effectiveDue = individualDeadline == null ? due : FutureDeadline(individualDeadline);
+                if (resubmit && TaskSubmissionHistory.Read(row["submissions"]).HasSubmissions && DateTimeOffset.Parse(effectiveDue, CultureInfo.InvariantCulture) == TaskDeadline(row))
+                    throw new UIMS.Services.FirebaseException(400, "Choose a different future deadline for the student's new submission.");
+                var versions = InstructionHistory(row["instructionVersions"]);
+                int version = (int?)row["instructionVersion"] ?? 1;
+                versions[version.ToString(CultureInfo.InvariantCulture)] = new JObject { ["title"] = row["title"], ["description"] = row["description"], ["evaluationCriteria"] = row["evaluationCriteria"], ["dueDate"] = row["dueDate"], ["attachmentIds"] = row["attachmentIds"]?.DeepClone(), ["savedAt"] = DateTimeOffset.UtcNow.ToString("o") };
+                row["instructionVersions"] = versions; row["instructionVersion"] = version + 1;
+                if (row["originalDeadline"] == null) row["originalDeadline"] = (row["dueDate"] ?? row["deadline"])?.DeepClone();
+                row["title"] = title.Trim(); row["description"] = description.Trim(); row["evaluationCriteria"] = criteria.Trim(); row["dueDate"] = effectiveDue;
+                if (resubmit && TaskSubmissionHistory.Read(row["submissions"]).HasSubmissions) row["status"] = "Revision Needed";
+                AddTaskActivity(row, resubmit ? "resubmissionRequested" : "instructionsUpdated", "Supervisor updated task instructions and deadline.");
+                await Write("PUT", target, row, current.ETag, cancellation).ConfigureAwait(false); affected.Add(target);
+                }
+                catch (UIMS.Services.FirebaseException error) { failed.Add(new JObject { ["taskId"] = target, ["message"] = error.Message }); }
+            }
+            return new JObject { ["success"] = failed.Count == 0, ["affected"] = affected, ["excluded"] = excluded, ["failed"] = failed };
+        }
+        public async Task<JObject> ExtensionAsync(JObject input, CancellationToken cancellation)
+        {
+            Ensure(true); string id = (string)input["taskId"]; CheckKey(id);
+            var current = await Read(id, cancellation).ConfigureAwait(false); var row = current.Data;
+            var extension = row["extension"] as JObject;
+            if (actor.Role == "student")
+            {
+                await EnsureStudentOwnsTaskAsync(row, cancellation).ConfigureAwait(false);
+                RequireTaskOpen(row);
+                if (DateTimeOffset.UtcNow < TaskDeadline(row) || HasTaskGrade(row) || Status(Text(row, "status")) == "submitted") throw new UIMS.Services.FirebaseException(409, "Extensions are available for overdue work awaiting submission.");
+                if (extension != null && (Text(extension, "status") == "pending" || Text(extension, "status") == "rejected")) throw new UIMS.Services.FirebaseException(409, "A request is already pending or was finally rejected.");
+                string reason = (string)input["reason"];
+                if (string.IsNullOrWhiteSpace(reason) || reason.Length > 3000) throw new UIMS.Services.FirebaseException(400, "Enter an extension reason up to 3000 characters.");
+                extension = new JObject { ["status"] = "pending", ["reason"] = reason.Trim(), ["proposedDeadline"] = FutureDeadline((string)input["deadline"]), ["oldDeadline"] = (row["dueDate"] ?? row["deadline"])?.DeepClone(), ["requestedAt"] = DateTimeOffset.UtcNow.ToString("o") };
+            }
+            else if (actor.Role == "companySupervisor")
+            {
+                await EnsureCompanyOwnsTaskAsync(row, cancellation).ConfigureAwait(false);
+                RequireTaskOpen(row);
+                if (extension == null || Text(extension, "status") != "pending") throw new UIMS.Services.FirebaseException(409, "No pending extension request exists.");
+                bool approve = (bool?)input["approve"] == true; string reason = (string)input["reason"] ?? "";
+                if ((!approve && string.IsNullOrWhiteSpace(reason)) || reason.Length > 3000) throw new UIMS.Services.FirebaseException(400, "Provide a rejection reason up to 3000 characters.");
+                extension["status"] = approve ? "approved" : "rejected"; extension["decisionReason"] = reason.Trim(); extension["decidedAt"] = DateTimeOffset.UtcNow.ToString("o"); extension["decidedBy"] = actor.Uid;
+                if (approve) { string due = FutureDeadline((string)input["deadline"]); extension["approvedDeadline"] = due; row["dueDate"] = due; }
+            }
+            else throw new UIMS.Services.FirebaseException(403, "This role cannot decide task extensions.");
+            row["extension"] = extension;
+            var history = row["extensionHistory"] as JObject ?? new JObject(); history[Guid.NewGuid().ToString("N")] = extension.DeepClone(); row["extensionHistory"] = history;
+            AddTaskActivity(row, "extension" + Text(extension, "status"), Text(extension, "reason"));
+            await Write("PUT", id, row, current.ETag, cancellation).ConfigureAwait(false);
+            return new JObject { ["success"] = true, ["extension"] = extension };
+        }
+
+        public async Task<JObject> ArchiveAsync(string taskId, CancellationToken cancellation)
+        {
+            Ensure(true, "companySupervisor"); CheckKey(taskId);
+            var current = await Read(taskId, cancellation).ConfigureAwait(false); var task = current.Data;
+            await EnsureCompanyOwnsTaskAsync(task, cancellation).ConfigureAwait(false);
+            if (Text(task, "archivedAt").Length > 0) return new JObject { ["success"] = true, ["duplicate"] = true };
+            task["archivedAt"] = DateTimeOffset.UtcNow.ToString("o"); task["archivedBy"] = actor.Uid;
+            AddTaskActivity(task, "archived", "The supervisor archived this task. Your saved work and grades remain available.");
+            await Write("PUT", taskId, task, current.ETag, cancellation).ConfigureAwait(false);
+            return new JObject { ["success"] = true };
+        }
+
+        private static JObject InstructionHistory(JToken value)
+        {
+            if (value is JObject) return (JObject)value.DeepClone();
+            var result = new JObject(); var array = value as JArray;
+            if (array != null) for (int index = 0; index < array.Count; index++)
+                if (array[index] != null && array[index].Type != JTokenType.Null)
+                    result[index.ToString(CultureInfo.InvariantCulture)] = array[index].DeepClone();
+            return result;
+        }
+
+        public async Task<JObject> ReviewAsync(string assignmentId, string action, int score, string feedback, CancellationToken cancellation, string revisionDeadline = null)
         {
             Ensure(true, "companySupervisor"); CheckKey(assignmentId);
             if (action != "revision" && action != "grade") throw new UIMS.Services.FirebaseException(400, "Invalid task review action.");
@@ -682,15 +893,30 @@ namespace UIMS.Tasks
             {
                 var current = await Read(assignmentId, cancellation).ConfigureAwait(false); var task = current.Data;
                 await EnsureCompanyOwnsTaskAsync(task, cancellation).ConfigureAwait(false);
+                RequireTaskOpen(task);
                 var submissions = TaskSubmissionHistory.Read(task["submissions"]);
                 if (Status(Text(task, "status")) != "submitted" || !submissions.HasSubmissions)
                     throw new UIMS.Services.FirebaseException(409, "Only a task with a saved student submission can be reviewed.");
                 var maximum = Number(task, "maximumScore", 100);
                 if (action == "grade" && (score < 0 || score > maximum))
                     throw new UIMS.Services.FirebaseException(400, "The score must be between 0 and " + maximum.ToString(CultureInfo.InvariantCulture) + ".");
+                var previousFeedback = task["feedback"]?.DeepClone();
                 task["feedback"] = feedback.Trim();
-                if (action == "revision") task["status"] = "Revision Needed";
-                else { task["score"] = score; task["status"] = "Completed"; }
+                if (action == "revision")
+                {
+                    string due = FutureDeadline(revisionDeadline);
+                    if (task["originalDeadline"] == null) task["originalDeadline"] = task["dueDate"]?.DeepClone();
+                    AddTaskActivity(task, "resubmissionRequested", "New submission requested. Previous deadline: " + Text(task, "dueDate") + "; new deadline: " + due);
+                    task["dueDate"] = due; task["status"] = "Revision Needed";
+                }
+                else
+                {
+                    var grades = task["gradeHistory"] as JObject ?? new JObject();
+                    if (HasTaskGrade(task) && !grades.HasValues) grades["legacy"] = new JObject { ["score"] = task["score"]?.DeepClone(), ["maximumScore"] = task["maximumScore"]?.DeepClone(), ["feedback"] = previousFeedback };
+                    grades[Guid.NewGuid().ToString("N")] = new JObject { ["score"] = score, ["maximumScore"] = maximum, ["feedback"] = feedback.Trim(), ["submissionRevision"] = submissions.Records.Last()["revision"], ["gradedAt"] = DateTimeOffset.UtcNow.ToString("o"), ["gradedBy"] = actor.Uid };
+                    task["gradeHistory"] = grades; task["score"] = score; task["status"] = "Completed";
+                    AddTaskActivity(task, "graded", "Your task was graded by the company supervisor.");
+                }
                 await Write("PUT", assignmentId, task, current.ETag, cancellation).ConfigureAwait(false);
                 return new JObject { ["success"] = true };
             }
@@ -702,6 +928,7 @@ namespace UIMS.Tasks
             Ensure(true, "student"); CheckKey(taskId);
             var task = (await Read(taskId, cancellation).ConfigureAwait(false)).Data;
             await EnsureStudentOwnsTaskAsync(task, cancellation).ConfigureAwait(false);
+            RequireSubmissionDeadline(task);
             var status = Status(Text(task, "status"));
             if (status != "inprogress" && status != "revision") throw new UIMS.Services.FirebaseException(409, "Start the task first, or wait until the supervisor requests a revision.");
             string id = UIMS.Services.FirebaseFileStorageService.CreateFileId();
@@ -727,6 +954,18 @@ namespace UIMS.Tasks
             Ensure(true, "companySupervisor"); CheckKey(taskId);
             var current = await Read(taskId, cancellation).ConfigureAwait(false); var task = current.Data;
             await EnsureCompanyOwnsTaskAsync(task, cancellation).ConfigureAwait(false);
+            RequireTaskOpen(task);
+            if (HasTaskGrade(task)) throw new UIMS.Services.FirebaseException(409, "Resources are locked after this task is graded.");
+            UIMS.Services.FirebaseFileStorageService.ValidateFile(fileName, contentType, bytes);
+            string fingerprint;
+            using (var hash = System.Security.Cryptography.SHA256.Create()) fingerprint = BitConverter.ToString(hash.ComputeHash(bytes)).Replace("-", "").ToLowerInvariant();
+            foreach (var existingId in (task["attachmentIds"] as JArray ?? new JArray()).Values<string>())
+            {
+                CheckKey(existingId);
+                var metadata = (await ReadAt("fileAttachments", existingId, cancellation).ConfigureAwait(false)).Data;
+                if (Text(metadata, "status") == "ready" && Text(metadata, "purpose") == "taskAttachment" && Text(metadata, "taskId") == taskId && Text(metadata, "sha256") == fingerprint && Text(metadata, "fileName") == fileName)
+                    return new JObject { ["success"] = true, ["attachment"] = PublicFileMetadata(metadata), ["reused"] = true };
+            }
             string id = UIMS.Services.FirebaseFileStorageService.CreateFileId();
             var stored = await UploadAndRegisterAsync(taskId, task, id, "taskAttachment", fileName, contentType, bytes, cancellation).ConfigureAwait(false);
             try
@@ -1046,11 +1285,13 @@ namespace UIMS.Tasks
             string role = University_Internship_Management_System.Shared.FirebaseSignInService.CanonicalRole(identity.Ticket.UserData);
             if (role == null || !context.User.IsInRole(role)) throw new UIMS.Services.FirebaseException(403, "The signed-in account does not have a task role.");
             var gateway = new University_Internship_Management_System.Shared.StudentFirebaseGateway(configuration);
+            context.Items["TaskApiStage"] = "verify-authentication-uid";
             if (!await gateway.IsActiveAuthenticationUidAsync(identity.Name).ConfigureAwait(false))
                 throw new UIMS.Services.FirebaseException(401, "The Firebase Authentication UID no longer exists or is disabled.");
             cancellation.ThrowIfCancellationRequested();
 
             string key = University_Internship_Management_System.Shared.StudentManagementService.Key(identity.Name);
+            context.Items["TaskApiStage"] = "read-verified-profile";
             var profile = await gateway.ReadAsync("users/" + key).ConfigureAwait(false) as JObject;
             if (profile == null || !profile.HasValues)
                 throw new UIMS.Services.FirebaseException(403, "The authenticated account has no matching /users/{uid} profile.");
@@ -1058,6 +1299,7 @@ namespace UIMS.Tasks
             string mappedSupervisorId = null;
             if (role == "companySupervisor" && string.IsNullOrWhiteSpace((string)profile["companySupervisorId"]))
             {
+                context.Items["TaskApiStage"] = "resolve-company-supervisor";
                 // Existing attendance records define this UID mapping; require exactly one active match.
                 var supervisors = await gateway.ReadAsync("companySupervisors").ConfigureAwait(false) as JObject;
                 var matches = supervisors == null ? new List<JProperty>() : supervisors.Properties().Where(item =>
@@ -1067,6 +1309,7 @@ namespace UIMS.Tasks
                 mappedSupervisorId = matches[0].Name;
             }
             cancellation.ThrowIfCancellationRequested();
+            context.Items["TaskApiStage"] = "build-verified-task-actor";
             return TaskActor.FromVerifiedProfile(identity.Name, role, profile, mappedSupervisorId, allowAcademicSupervisor);
         }
     }
@@ -1075,29 +1318,41 @@ namespace UIMS.Tasks
     {
         public static async Task<JObject> DispatchAsync(TaskService service, string method, string action, JObject data, CancellationToken cancellation)
         {
+            if (method == "GET" && action == "trainees") return await service.LoadTraineesAsync(cancellation).ConfigureAwait(false);
             if (service == null) throw new ArgumentNullException(nameof(service));
             data = data ?? new JObject();
             if (string.Equals(method, "GET", StringComparison.OrdinalIgnoreCase) && action == "board")
                 return await service.LoadBoardAsync((string)data["placementId"], cancellation).ConfigureAwait(false);
             if (string.Equals(method, "GET", StringComparison.OrdinalIgnoreCase) && action == "attachments")
                 return await service.ListTaskFilesAsync((string)data["taskId"], cancellation).ConfigureAwait(false);
+            if (string.Equals(method, "GET", StringComparison.OrdinalIgnoreCase) && action == "storageAvailability")
+                return await service.CheckStorageAvailabilityAsync(cancellation).ConfigureAwait(false);
             if (string.Equals(method, "GET", StringComparison.OrdinalIgnoreCase) && string.IsNullOrEmpty(action))
                 return await service.LoadAsync(service.ActorRole, cancellation).ConfigureAwait(false);
             if (!string.Equals(method, "POST", StringComparison.OrdinalIgnoreCase)) throw new UIMS.Services.FirebaseException(405, "Unsupported task request.");
+            if (action == "bulkCreate") return await service.BulkCreateAsync(data, cancellation).ConfigureAwait(false);
+            if (action == "edit") return await service.EditAsync(data, cancellation).ConfigureAwait(false);
+            if (action == "extension") return await service.ExtensionAsync(data, cancellation).ConfigureAwait(false);
+            if (action == "archive") return await service.ArchiveAsync((string)data["taskId"], cancellation).ConfigureAwait(false);
+            if (action == "columns") return await service.ReorderColumnsAsync((string)data["placementId"], data["columnIds"] as JArray, (string)data["operationId"], cancellation).ConfigureAwait(false);
             if (action == "move" && service.ActorRole == "companySupervisor") return await service.MoveBoardTaskAsync((string)data["placementId"], (string)data["taskId"], (string)data["columnId"], (string)data["beforeTaskId"], (string)data["operationId"], cancellation).ConfigureAwait(false);
             if (action == "start" && service.ActorRole == "student") return await service.StartAsync((string)data["assignmentId"], cancellation).ConfigureAwait(false);
             if (action == "submit" && service.ActorRole == "student") return await service.SubmitAsync((string)data["assignmentId"], (string)data["description"], (string)data["link"], (string)data["fileName"], cancellation).ConfigureAwait(false);
             if (action == "create" && service.ActorRole == "companySupervisor") return await service.CreateAsync((string)data["title"], (string)data["description"], (string)data["deadline"], (string)data["placementId"], (string)data["criteria"], (int?)data["maximum"] ?? 0, cancellation).ConfigureAwait(false);
-            if (action == "review" && service.ActorRole == "companySupervisor") return await service.ReviewAsync((string)data["assignmentId"], (string)data["reviewAction"], (int?)data["score"] ?? 0, (string)data["feedback"] ?? "", cancellation).ConfigureAwait(false);
+            if (action == "review" && service.ActorRole == "companySupervisor") return await service.ReviewAsync((string)data["assignmentId"], (string)data["reviewAction"], (int?)data["score"] ?? 0, (string)data["feedback"] ?? "", cancellation, (string)data["deadline"]).ConfigureAwait(false);
             throw new UIMS.Services.FirebaseException(403, "This task operation is not permitted for the verified account role.");
         }
 
         public override async Task ProcessRequestAsync(HttpContext context)
         {
+            context.Response.SuppressFormsAuthenticationRedirect = true;
             context.Response.Cache.SetNoStore(); context.Response.ContentType = "application/json";
             try
             {
+                if (context.User?.Identity?.IsAuthenticated != true)
+                    throw new UIMS.Services.FirebaseException(401, "Your sign-in expired. Sign in again to load your tasks.");
                 var config = new UIMS.Services.FirebaseConfiguration();
+                context.Items["TaskApiStage"] = "validate-firebase-authentication";
                 config.EnsureAuthenticationEnabled();
                 using (var timeout = CancellationTokenSource.CreateLinkedTokenSource(context.Response.ClientDisconnectedToken))
                 {
@@ -1145,7 +1400,14 @@ namespace UIMS.Tasks
                     else if (!string.Equals(method, "GET", StringComparison.OrdinalIgnoreCase)) throw new UIMS.Services.FirebaseException(405, "Unsupported task request.");
 
                     var actor = await TaskActorResolver.ResolveAsync(context, cancellation).ConfigureAwait(false);
+                    context.Items["TaskApiStage"] = "execute-authorized-task-operation";
                     var service = new TaskService(actor);
+                    if (method == "GET" && action == "changes")
+                    {
+                        long previous; if (!long.TryParse(context.Request.QueryString["version"], out previous)) previous = -1;
+                        var changes = await service.ChangesAsync(previous, cancellation).ConfigureAwait(false);
+                        await context.Response.Output.WriteAsync(changes.ToString(Formatting.None)).ConfigureAwait(false); return;
+                    }
                     if (string.Equals(method, "GET", StringComparison.OrdinalIgnoreCase) && action == "download")
                     {
                         var download = await service.DownloadTaskFileAsync((string)data["fileId"], cancellation).ConfigureAwait(false);
@@ -1167,9 +1429,25 @@ namespace UIMS.Tasks
             catch (JsonException) { WriteError(context, 400, "Invalid task request JSON."); }
             catch (Exception error)
             {
-                System.Diagnostics.Trace.TraceWarning("Tasks API failed: {0}", error.GetType().Name);
-                WriteError(context, 503, "Task service is unavailable. Check trusted server Firebase credentials and database connectivity.");
+                string reference = RecordFailure(context, error);
+                WriteError(context, 503, "Task service is unavailable. Reference: " + reference + ".");
             }
+        }
+
+        private static string RecordFailure(HttpContext context, Exception error)
+        {
+            string reference = Guid.NewGuid().ToString("N");
+            var details = new StringBuilder(DateTimeOffset.UtcNow.ToString("o") + " reference=" + reference + " stage=" + Convert.ToString(context.Items["TaskApiStage"]) + Environment.NewLine);
+            for (var current = error; current != null; current = current.InnerException)
+            {
+                details.AppendLine("type=" + current.GetType().FullName + " hresult=" + current.HResult.ToString(CultureInfo.InvariantCulture));
+                // Do not log exception messages, HTTP bodies, profiles, credentials or tokens.
+                details.AppendLine(current.StackTrace);
+            }
+            System.Diagnostics.Trace.TraceWarning("Tasks API failed; reference={0}; type={1}", reference, error.GetType().Name);
+            try { System.IO.File.AppendAllText(context.Server.MapPath("~/App_Data/task-diagnostics.log"), details.ToString()); }
+            catch (Exception loggingError) { System.Diagnostics.Trace.TraceWarning("Task diagnostics unavailable: {0}", loggingError.GetType().Name); }
+            return reference;
         }
 
         private static void ValidateSameOrigin(HttpContext context)
@@ -1198,6 +1476,7 @@ namespace UIMS.Tasks
 
         private static void WriteError(HttpContext context, int status, string message)
         {
+            context.Response.SuppressFormsAuthenticationRedirect = true;
             context.Response.StatusCode = status; context.Response.TrySkipIisCustomErrors = true;
             context.Response.Write(new JObject { ["success"] = false, ["message"] = message }.ToString(Formatting.None));
         }

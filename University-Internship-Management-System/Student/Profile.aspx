@@ -1,4 +1,4 @@
-<%@ Page Language="C#" AutoEventWireup="true" CodeBehind="Profile.aspx.cs" Inherits="University_Internship_Management_System.Student.Profile" %>
+<%@ Page Language="C#" Async="true" AutoEventWireup="true" CodeBehind="Profile.aspx.cs" Inherits="University_Internship_Management_System.Student.Profile" %>
 <!DOCTYPE html>
 
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en">
@@ -58,8 +58,8 @@
                         <button type="button" class="icon-btn" disabled="disabled" aria-label="Notifications unavailable" title="Notifications are not connected yet"><svg class="bi bi-bell nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M4 17h16l-2-4V9a6 6 0 0 0-12 0v4l-2 4Zm6 4h4M12 1v2"/></svg></button>
                         <details class="dropdown" id="accountMenu">
                             <summary class="user-chip" aria-label="Student account menu">
-                                <span class="avatar"><span id="lblInitials" aria-hidden="true"><svg class="bi bi-person nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="12" cy="7" r="4"/><path d="M4 21v-2a8 8 0 0 1 16 0v2"/></svg></span></span>
-                                <span class="name"><span id="lblUserName">Student account</span><span class="role">Student</span></span>
+                                <span class="avatar"><span id="lblInitials" runat="server" aria-hidden="true">ST</span></span>
+                                <span class="name"><span id="lblUserName" runat="server">Student account</span><span class="role">Student</span></span>
                                 <svg class="bi bi-chevron-down small nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="m6 9 6 6 6-6"/></svg>
                             </summary>
                             <ul class="dropdown-menu dropdown-menu-end">
@@ -92,14 +92,13 @@
                             aria-label="Profile summary">
 
                             <div class="profile-avatar" aria-hidden="true">
-                                ST
+                                <asp:Literal ID="litSummaryInitials" runat="server" Mode="Encode" />
                             </div>
 
-                            <h2>Student Profile</h2>
+                            <h2><asp:Literal ID="litSummaryName" runat="server" Mode="Encode" /></h2>
 
                             <p class="profile-summary-text">
-                                Your academic details will appear here
-                                once your account is connected.
+                                <asp:Literal ID="litSummaryDetails" runat="server" Mode="Encode" />
                             </p>
 
                             <div class="profile-summary-divider"></div>
@@ -132,35 +131,35 @@
                                     <div class="profile-detail">
                                         <dt>Full Name</dt>
                                         <dd>
-                                            <span id="litFullName">Not connected</span>
+                                            <asp:Literal ID="litFullName" runat="server" Mode="Encode" />
                                         </dd>
                                     </div>
 
                                     <div class="profile-detail">
                                         <dt>Student ID</dt>
                                         <dd>
-                                            <span id="litStudentId">Not connected</span>
+                                            <asp:Literal ID="litStudentId" runat="server" Mode="Encode" />
                                         </dd>
                                     </div>
 
                                     <div class="profile-detail">
                                         <dt>Major</dt>
                                         <dd>
-                                            <span id="litMajor">Not connected</span>
+                                            <asp:Literal ID="litMajor" runat="server" Mode="Encode" />
                                         </dd>
                                     </div>
 
                                     <div class="profile-detail">
                                         <dt>Required Training Hours</dt>
                                         <dd>
-                                            <span id="litRequiredHours">Not connected</span>
+                                            <asp:Literal ID="litRequiredHours" runat="server" Mode="Encode" />
                                         </dd>
                                     </div>
 
                                     <div class="profile-detail profile-detail-wide">
                                         <dt>University Email</dt>
                                         <dd>
-                                            <span id="litUniversityEmail">Not connected</span>
+                                            <asp:Literal ID="litUniversityEmail" runat="server" Mode="Encode" />
                                         </dd>
                                     </div>
                                 </dl>
@@ -169,7 +168,7 @@
                                     <div class="profile-field">
                                         <label for="txtPhone">Phone Number</label>
 
-                                        <input id="txtPhone" name="phone" type="tel" maxlength="25" autocomplete="tel" placeholder="Enter your phone number" aria-describedby="phoneHelp" title="Enter 7 to 25 characters using numbers, spaces, +, parentheses, dots or hyphens." pattern="[+0-9() .\-]{7,25}" />
+                                        <asp:TextBox ID="txtPhone" runat="server" ClientIDMode="Static" TextMode="Phone" MaxLength="25" autocomplete="tel" placeholder="Enter your phone number" aria-describedby="phoneHelp" title="Enter 7 to 25 characters using numbers, spaces, +, parentheses, dots or hyphens." pattern="[+0-9() .\-]{7,25}" />
 
                                         <span id="phoneHelp" class="profile-help">
                                             Include your country code
@@ -180,7 +179,7 @@
                                     <div class="profile-field">
                                         <label for="txtCity">City</label>
 
-                                        <input id="txtCity" name="city" type="text" maxlength="80" autocomplete="address-level2" placeholder="Enter your city" />
+                                        <asp:TextBox ID="txtCity" runat="server" ClientIDMode="Static" MaxLength="80" autocomplete="address-level2" placeholder="Enter your city" />
                                     </div>
 
                                 </div>
@@ -206,23 +205,23 @@
                                 <div class="profile-form-grid">
 
                                     <div class="profile-field profile-field-wide">
-                                        <label for="cvFile">CV File</label>
-
-                                        <input id="cvFile" name="cvFile" type="file" accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document" aria-describedby="cvHelp" />
-
-                                        <span id="cvHelp" class="profile-help">Choose a PDF or Word document. File selection is available, but uploading and saving are not connected yet.</span>
+                                        <label for="cvUpload">CV File</label>
+                                        <asp:FileUpload ID="cvUpload" runat="server" ClientIDMode="Static" aria-describedby="cvHelp" />
+                                        <span id="cvHelp" class="profile-help">PDF, DOC, or DOCX, up to 10 MiB. Uploads are stored privately in Firebase Storage.</span>
+                                        <asp:Literal ID="litCvStatus" runat="server" Mode="Encode" />
+                                        <asp:Button ID="btnUploadCv" runat="server" ClientIDMode="Static" CssClass="profile-save" Text="Upload CV" OnClick="btnUploadCv_Click" CausesValidation="false" aria-describedby="profileAvailability" />
                                     </div>
 
                                     <div class="profile-field profile-field-wide">
                                         <label for="txtPortfolioUrl">Portfolio Link</label>
 
-                                        <input id="txtPortfolioUrl" name="portfolioUrl" type="url" maxlength="2000" title="Enter a complete link starting with https://" pattern="https://.+" aria-describedby="portfolioHelp" placeholder="https://example.com/my-portfolio" /><span id="portfolioHelp" class="profile-help">Use a complete HTTPS link.</span>
+                                        <asp:TextBox ID="txtPortfolioUrl" runat="server" ClientIDMode="Static" TextMode="Url" MaxLength="2000" title="Enter a complete link starting with https://" pattern="https://.+" aria-describedby="portfolioHelp" placeholder="https://example.com/my-portfolio" /><span id="portfolioHelp" class="profile-help">Use a complete HTTPS link.</span>
                                     </div>
 
                                 </div>
                             </section>
 
-                            <div id="pnlMessage" class="profile-message" role="note"><p id="profileAvailability">Profile data is not connected yet. You can try the fields and select a CV file, but changes and files cannot be saved or uploaded yet. Your academic details will appear once your account is connected.</p></div>
+                            <div id="pnlMessage" runat="server" class="profile-message" role="status"><p id="profileAvailability"><asp:Literal ID="litProfileMessage" runat="server" Mode="Encode" /></p></div>
 
                             <footer class="profile-actions">
                                 <p>
@@ -230,7 +229,7 @@
                                     updated by your coordinator.
                                 </p>
 
-                                <button id="btnSave" type="button" class="profile-save" disabled aria-describedby="profileAvailability" enctype="multipart/form-data">Save Changes</button>
+                                <asp:Button ID="btnSave" runat="server" ClientIDMode="Static" CssClass="profile-save" Text="Save Changes" OnClick="btnSave_Click" aria-describedby="profileAvailability" />
                             </footer>
 
                         </div>

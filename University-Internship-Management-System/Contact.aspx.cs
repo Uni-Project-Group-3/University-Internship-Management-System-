@@ -9,82 +9,100 @@ using System.Web.UI;
 
 namespace University_Internship_Management_System
 {
-    // Contact Us: anyone can send a message to the internship coordinator (Firebase: /messages)
+    // Contact Us (public page): anyone can send a message to the internship coordinator.
+    // Every message is saved in Firebase under /messages/{id} with status "unread".
     public partial class Contact : Page
     {
-        private string DatabaseUrl { get { var firebase = new UIMS.Services.FirebaseConfiguration(); firebase.EnsureEnabled(); return firebase.DatabaseUrl; } }
+        static readonly HttpClient client = new HttpClient();
 
-        HttpClient client = new HttpClient();
+        // Read straight from Web.config, so the global FirebaseEnabled /
+        // FirebaseLiveWritesEnabled switches (used by other features) do not block Contact Us
+        static string DatabaseUrl
+        {
+            get
+            {
+                string url = System.Configuration.ConfigurationManager.AppSettings["FirebaseDatabaseUrl"]
+                          ?? System.Configuration.ConfigurationManager.AppSettings["FirebaseUrl"];
+                if (string.IsNullOrEmpty(url)) throw new InvalidOperationException("FirebaseDatabaseUrl is missing in Web.config.");
+                return url.TrimEnd('/');
+            }
+        }
 
         protected void Page_Load(object sender, EventArgs e)
         {
-            // A message sent by the page JavaScript
-            string action = Request.Headers["X-Action"];
-            if (action != "contact") return;
+            // contact-demo.js sends a POST with the header X-Action: contact
+            if (Request.HttpMethod != "POST" || Request.Headers["X-Action"] != "contact") return;
 
-            JObject data = JObject.Parse(new StreamReader(Request.InputStream).ReadToEnd());
-            SendMessage(data);
-            Reply(new { sent = true });
+            object result;
+            try
+            {
+                JObject data = JObject.Parse(new StreamReader(Request.InputStream).ReadToEnd());
+                string error = SaveMessage(data);
+                result = error == null ? (object)new { sent = true } : new { error };
+            }
+            catch (Exception ex)
+            {
+                // TEMP: show the real reason while testing (remove before going live)
+                result = new { error = "The message could not be sent: " + ex.GetBaseException().Message };
+            }
+
+            Reply(result);
         }
 
-        // The page is public, so there is no signed-in user and no data to load
-        JObject LoadData()
+        // ================= Save the message =================
+        // Returns an error text, or null when the message was saved
+        string SaveMessage(JObject data)
         {
+            string name = Text(data["name"]);
+            string email = Text(data["email"]);
+            string subject = Text(data["subject"]);
+            string message = Text(data["message"]);
+
+            if (name == "" || email == "" || subject == "" || message == "")
+                return "Please fill in all fields.";
+
+            if (email.Length > 254 || !Regex.IsMatch(email, @"^[^@\s]+@[^@\s]+\.[^@\s]+$"))
+                return "Enter a valid email address.";
+
+            if (name.Length > 100 || subject.Length > 150 || message.Length > 2000)
+                return "The message is too long.";
+
+            string id = "msg-" + Guid.NewGuid().ToString("N").Substring(0, 12);
+
+            Put("messages/" + id, new JObject
+            {
+                ["id"] = id,
+                ["name"] = name,
+                ["email"] = email,
+                ["subject"] = subject,
+                ["message"] = message,
+                ["status"] = "unread",
+                ["reply"] = "",
+                ["createdAt"] = DateTime.UtcNow.ToString("o")
+            });
+
             return null;
         }
 
-        // ================= Send message =================
-        void SendMessage(JObject data)
+        static string Text(JToken value)
         {
-            string name = ((string)data["name"] ?? "").Trim();
-            string email = ((string)data["email"] ?? "").Trim();
-            string subject = ((string)data["subject"] ?? "").Trim();
-            string message = ((string)data["message"] ?? "").Trim();
-
-            if (name == "" || email == "" || subject == "" || message == "")
-            {
-                Reply(new { error = "Please fill in all fields." });
-            }
-
-            if (!Regex.IsMatch(email, @"^[^@\s]+@[^@\s]+\.[^@\s]+$"))
-            {
-                Reply(new { error = "Enter a valid email address." });
-            }
-
-            if (name.Length > 100 || subject.Length > 150 || message.Length > 2000)
-            {
-                Reply(new { error = "The message is too long." });
-            }
-
-            string id = "msg-" + Guid.NewGuid().ToString("N").Substring(0, 10);
-
-            var newMessage = new
-            {
-                id = id,
-                name = name,
-                email = email,
-                subject = subject,
-                message = message,
-                status = "unread",
-                reply = "",
-                createdAt = DateTime.UtcNow.ToString("o")
-            };
-
-            Put("messages/" + id, newMessage);
+            return ((string)value ?? "").Trim();
         }
 
         // ================= Firebase =================
-        JObject Get(string path)
+        void Put(string path, object value)
         {
-            string json = client.GetStringAsync(DatabaseUrl + "/" + path + ".json").Result;
-            return json == "null" ? new JObject() : JObject.Parse(json);
+            var body = new StringContent(JsonConvert.SerializeObject(value), Encoding.UTF8, "application/json");
+            client.PutAsync(Url(path), body).Result.EnsureSuccessStatusCode();
         }
 
-        void Put(string path, object data)
+        // The visitor is not signed in, so the SERVER signs the request with the database secret
+        // (Web.config: <add key="FirebaseSecret" value="..." />). Firebase rules do not block it.
+        string Url(string path)
         {
-            new UIMS.Services.FirebaseConfiguration().EnsureWritesAllowed();
-            string body = JsonConvert.SerializeObject(data);
-            client.PutAsync(DatabaseUrl + "/" + path + ".json", new StringContent(body, Encoding.UTF8, "application/json")).Wait();
+            string url = DatabaseUrl + "/" + path + ".json";
+            string secret = System.Configuration.ConfigurationManager.AppSettings["FirebaseSecret"];
+            return string.IsNullOrEmpty(secret) ? url : url + "?auth=" + Uri.EscapeDataString(secret);
         }
 
         // Sends JSON back to the page JavaScript and stops the page here
@@ -97,24 +115,20 @@ namespace University_Internship_Management_System
         }
 
         // ================= Connect the page JavaScript =================
-        // The page JavaScript reads its data from window.UimsDemo (it was demo-store.js).
-        // Here we put a small script in its place that gives the data from Firebase
-        // and sends every save back to this page.
+        // Replaces demo-store.js with a small window.UimsDemo that posts back to this page.
+        // The page is public, so there is no data to load (null).
         protected override void Render(HtmlTextWriter writer)
         {
             StringWriter html = new StringWriter();
             base.Render(new HtmlTextWriter(html));
 
-            string data = JsonConvert.SerializeObject(LoadData()).Replace("</", "<\\/");
-            string script = "<script>" + PageScript.Replace("DATA", data) + "</script>";
-
+            string script = "<script>" + PageScript.Replace("DATA", "null") + "</script>";
             writer.Write(Regex.Replace(html.ToString(), @"<script[^>]*demo-store\.js[^>]*></script>", m => script));
         }
 
         const string PageScript = @"
 var data = DATA;
 window.UimsDemo = {
-    departments: ['Computer Science', 'Computer Engineering', 'Software Engineering', 'Computer Information Systems', 'Cybersecurity', 'Data Science & AI', 'Network Engineering & Security'],
     enabled: function () { return true; },
     view: function () { return data; },
     current: function () { return data && data.user; },

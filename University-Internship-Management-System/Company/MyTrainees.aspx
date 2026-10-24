@@ -1,4 +1,4 @@
-<%@ Page Language="C#" AutoEventWireup="true" CodeBehind="MyTrainees.aspx.cs" Inherits="University_Internship_Management_System.Company.MyTrainees" %>
+<%@ Page Language="C#" AutoEventWireup="true" Async="true" CodeBehind="MyTrainees.aspx.cs" Inherits="University_Internship_Management_System.Company.MyTrainees" %>
 <!DOCTYPE html>
 <html lang="en">
 <head runat="server">
@@ -6,8 +6,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>My Trainees | JUST Internships</title>
     <link runat="server" href="~/Assets/shared/colors.css" rel="stylesheet" />
-    
-    <link runat="server" href="~/Assets/company/my-trainees.css?v=20261021-original-ui" rel="stylesheet" />
+
+    <link runat="server" href="~/Assets/company/my-trainees.css?v=20261023-cards" rel="stylesheet" />
 </head>
 <body class="app-page trainees-page role-shell" data-demo-role="company">
     <form id="form1" runat="server">
@@ -72,15 +72,15 @@
                         <div><p class="trainees-eyebrow">PEOPLE &amp; PROGRESS</p><h1>My Trainees</h1><p>Support the students training at your company, from their first day to their final evaluation.</p></div>
                         <span class="trainees-workspace"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="7" width="16" height="13" rx="2"/><path d="M9 7V4h6v3M4 12h16M10 12v3h4v-3"/></svg>Company workspace</span>
                     </header>
-                    <div class="trainees-notice" id="traineesAvailability" role="note"><span class="trainees-notice-icon" aria-hidden="true">i</span><div><strong>Your trainee workspace is ready.</strong><p>Company records are not connected yet. Counts, search, filters, and trainee actions will become available once the data is connected.</p></div><span class="trainees-preview-tag">Design preview</span></div>
+                    <div class="trainees-notice" id="traineesAvailability" role="note"><span class="trainees-notice-icon" aria-hidden="true">i</span><div><strong>Loading your company trainees…</strong><p>Loading confirmed placements from Firebase.</p></div><span class="trainees-preview-tag">Firebase</span></div>
                     <section class="trainees-stats" aria-label="Trainee summary">
                         <article class="trainees-stat"><div><span>Total trainees</span><span class="trainees-stat-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><path d="M3 20v-3a6 6 0 0 1 12 0v3m1-15a3 3 0 0 1 0 6m2 3a5 5 0 0 1 3 5v1"/></svg></span></div><strong aria-label="Unavailable">&#8212;</strong><p>Across your company&#8217;s internships</p></article>
                         <article class="trainees-stat"><div><span>Currently training</span><span class="trainees-stat-icon trainees-stat-icon--active" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="m10 8 6 4-6 4V8Z"/></svg></span></div><strong aria-label="Unavailable">&#8212;</strong><p>Active training placements</p></article>
                         <article class="trainees-stat"><div><span>Completed training</span><span class="trainees-stat-icon trainees-stat-icon--complete" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="m8 12 3 3 5-6"/></svg></span></div><strong aria-label="Unavailable">&#8212;</strong><p>Finished training placements</p></article>
-                        <article class="trainees-stat"><div><span>Awaiting evaluation</span><span class="trainees-stat-icon trainees-stat-icon--pending" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4V2h6v2M9 10h6m-6 4h4m-4 4h3"/></svg></span></div><strong aria-label="Unavailable">&#8212;</strong><p>Company evaluations still to submit</p></article>
+                        <article class="trainees-stat"><div><span>Assigned tasks</span><span class="trainees-stat-icon trainees-stat-icon--pending" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4V2h6v2M9 10h6m-6 4h4m-4 4h3"/></svg></span></div><strong aria-label="Unavailable">&#8212;</strong><p>Tasks saved for your trainees</p></article>
                     </section>
                     <section class="trainees-card" aria-labelledby="traineesListTitle">
-                        <div class="trainees-card-heading"><div><h2 id="traineesListTitle">Your trainees</h2><p>Students accepted into internships published by your company.</p></div><span class="trainees-data-badge"><span aria-hidden="true"></span>Data not connected</span></div>
+                        <div class="trainees-card-heading"><div><h2 id="traineesListTitle">Your trainees</h2><p>Students accepted into internships published by your company.</p></div><span class="trainees-data-badge"><span aria-hidden="true"></span>Loading records</span></div>
                         <fieldset class="trainees-filters" disabled="disabled" aria-describedby="traineesAvailability"><legend class="trainees-sr-only">Search and filter trainees, available after data connection</legend>
                             <div class="trainees-search"><label for="traineeSearch">Search trainees</label><div><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10" cy="10" r="6"/><path d="m15 15 5 5"/></svg><input id="traineeSearch" type="search" placeholder="Search by name or student ID" /></div></div>
                             <div class="trainees-filter"><label for="internshipFilter">Internship</label><select id="internshipFilter"><option>All internships</option></select></div>
@@ -90,7 +90,7 @@
                         <footer class="trainees-list-footer"><span>Records unavailable</span><div class="trainees-pagination" aria-label="Trainee list pagination"><button type="button" disabled="disabled" aria-label="Previous page">&#8592;</button><span aria-label="Page unavailable">&#8212;</span><button type="button" disabled="disabled" aria-label="Next page">&#8594;</button></div></footer>
                     </section>
                     <dialog id="companyTraineeDialog" class="trainees-details" aria-label="Trainee details"><header><h2>Trainee details</h2><button type="button" data-close aria-label="Close trainee details">&times;</button></header>
-                        <div class="trainees-details-body"><p class="trainees-details-note">This is an empty layout preview. Select a real trainee after integration to view their information.</p><dl class="trainees-info"><div><dt>Full name</dt><dd>Not connected</dd></div><div><dt>Student ID</dt><dd>Not connected</dd></div><div><dt>University / Major</dt><dd>Not connected</dd></div><div><dt>Internship</dt><dd>Not connected</dd></div><div><dt>Company supervisor</dt><dd>Not connected</dd></div><div><dt>Training period</dt><dd>Not connected</dd></div></dl><div class="trainees-details-actions"><div><h3>Training &amp; evaluation</h3><p id="traineeProgressSummary"></p><label>Training date<input id="approvedHoursDate" type="date" required /></label><label>Explicitly approved hours<input id="approvedHoursValue" type="number" min="0.25" max="24" step="0.25" required /></label><p>Hours are approved separately from task completion. Demonstration approval only.</p><button type="button" id="saveApprovedHours">Record approved hours</button></div><div><button type="button" id="viewTraineeProgress">View training progress</button><button type="button" id="openTraineeEvaluation">Evaluate trainee</button></div></div></div>
+                        <div class="trainees-details-body"><p class="trainees-details-note">Select a trainee to view authorized Firebase records.</p><dl class="trainees-info"><div><dt>Full name</dt><dd>Not connected</dd></div><div><dt>Student ID</dt><dd>Not connected</dd></div><div><dt>University / Major</dt><dd>Not connected</dd></div><div><dt>Internship</dt><dd>Not connected</dd></div><div><dt>Company supervisor</dt><dd>Not connected</dd></div><div><dt>Training period</dt><dd>Not connected</dd></div></dl><div class="trainees-details-actions"><div><h3>Training &amp; evaluation</h3><p id="traineeProgressSummary"></p><label>Training date<input id="approvedHoursDate" type="date" required /></label><label>Explicitly approved hours<input id="approvedHoursValue" type="number" min="0.25" max="24" step="0.25" required /></label><p>Hours are approved separately from task completion. </p><button type="button" id="saveApprovedHours">Record approved hours</button></div><div><button type="button" id="viewTraineeProgress">View training progress</button><button type="button" id="openTraineeEvaluation">Evaluate trainee</button></div></div></div>
                     </dialog>
                     <div class="trainees-guidance"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 8 4v5c0 5-8 9-8 9s-8-4-8-9V7l8-4Z"/><path d="m8 12 3 3 5-6"/></svg><p><strong>A focused view of your training team.</strong> This page is intended for trainees accepted into your company&#8217;s internships. Applications and candidate decisions belong to the recruitment stage.</p></div>
                     <footer class="trainees-footer"><span>UIMS &middot; JUST Internships</span><span>Company workspace</span></footer>
@@ -99,7 +99,7 @@
             </div>
         </div>
     </form>
-    <script src="../Js_project/Demo/demo-store.js?v=20261021-original-ui"></script>
+
 <script>
         (() => {
             "use strict";
@@ -162,6 +162,6 @@
             mobile.addEventListener("change", () => setSidebar(false));
         })();
     </script>
-<script src="../Js_project/Company/my-trainees.js?v=20261021-original-ui"></script>
+<script src="../Js_project/Company/my-trainees.js?v=20261023-cards"></script>
 </body>
 </html>

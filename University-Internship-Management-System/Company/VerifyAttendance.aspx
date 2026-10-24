@@ -69,7 +69,7 @@
                             <ul class="dropdown-menu dropdown-menu-end">
                                 <li><a href="CompanySupervisorAccount.aspx" class="dropdown-item"><i class="bi bi-person me-2"></i>Account</a></li>
                                 <li><hr class="dropdown-divider" /></li>
-                                <li><button type="button" class="dropdown-item" disabled title="Authentication is not connected on this preview page">Log out (not connected)</button></li>
+                                <li><a id="attendanceLogout" class="dropdown-item" href="../Auth/Login.aspx">Log out</a></li>
                             </ul>
                         </div>
                     </div>
@@ -114,6 +114,6 @@
     <script src="../Js_project/firebase-client.js"></script>
     <script src="../Scripts/bootstrap.bundle.min.js"></script>
     <script src="../Js_project/Company/attendance-jsqr.js"></script>
-    <script src="../Js_project/Company/verify-attendance.js?v=ui-simple2"></script>
+    <script src="../Js_project/Company/verify-attendance.js?v=20261023-camera-errors"></script>
 </body>
 </html>

@@ -4,6 +4,7 @@ let supervisorData = null;
 let loading = false;
 let saving = false;
 let dataVersion = 0;
+let serverSessionVerified = false;
 let refreshAfterLoad = false;
 let cameraStream = null;
 let cameraOpening = false;
@@ -89,6 +90,7 @@ function addCell(row, value) {
 
 // الطلبات تذهب إلى C# بنفس الصفحة؛ التوكن السري الخاص بقاعدة البيانات لا يصل للمتصفح.
 async function api(action, values, onProgress) {
+    if (action === "load") serverSessionVerified = false;
     const url = new URL(window.location.href);
     url.search = "?attendanceApi=1";
     const body = new URLSearchParams(Object.assign({
@@ -97,7 +99,23 @@ async function api(action, values, onProgress) {
     }, values || {}));
     if (action === "load" && onProgress) body.set("stream", "1");
     const localDevelopment = JSON.parse(document.getElementById("attendanceBootstrap").textContent).localDemo;
-    const idToken = localDevelopment ? null : await window.UimsFirebase.getIdToken();
+    let idToken = null;
+    let useServerSession = false;
+    if (!localDevelopment) {
+        try {
+            idToken = await window.UimsFirebase.getIdToken();
+            if (typeof idToken !== "string" || !idToken.trim())
+                throw new Error("The Firebase authentication session is incomplete. Sign in again.");
+        } catch (error) {
+            const missingSession = error && error.message === "Sign in with your Firebase account to load attendance.";
+            // القراءة أولاً؛ C# يوثق توكن Session ويطابق UID ودور المشرف، ولا يكتفي بالـ Cookie.
+            if (!missingSession || (action !== "load" && !serverSessionVerified)) {
+                serverSessionVerified = false;
+                throw error;
+            }
+            useServerSession = true;
+        }
+    }
     const controller = new AbortController();
     const timeout = setTimeout(function () { controller.abort(); }, 130000);
     try {
@@ -149,7 +167,11 @@ async function api(action, values, onProgress) {
             if (action === "scan") scannerDiagnostic("response.rejected", { status: response.status });
             throw new Error(result && result.message || "Attendance request failed.");
         }
+        if (useServerSession && action === "load") serverSessionVerified = true;
         return result.data;
+    } catch (error) {
+        serverSessionVerified = false;
+        throw error;
     } finally { clearTimeout(timeout); }
 }
 function connected(data, name) {
@@ -237,6 +259,9 @@ async function loadSupervisor() {
             disconnected(error);
             document.getElementById("recordRows").removeAttribute("aria-busy");
             if (!supervisorData) {
+                // انتهى الطلب بالفشل؛ لا نترك الواجهة توحي بأن التحميل ما زال جاريًا.
+                document.getElementById("assignedStudents").textContent = "Assigned trainees could not be loaded.";
+                document.getElementById("requestStatus").textContent = "Unavailable";
                 document.getElementById("requestList").textContent = "Requests could not be loaded.";
                 const row = document.createElement("tr"), cell = document.createElement("td");
                 cell.colSpan = 7; cell.textContent = "Attendance could not be loaded."; row.append(cell);
@@ -418,7 +443,8 @@ function stopCamera() {
 
 function scanFrame(timestamp) {
     if (!cameraStream) return;
-    if (!saving && timestamp - lastFrameAt > 250 && video.readyState >= 2) {
+    try {
+    if (!saving && timestamp - lastFrameAt > 250 && video.readyState >= 2 && video.videoWidth > 0 && video.videoHeight > 0) {
         lastFrameAt = timestamp;
         const started = scannerDiagnosticsEnabled ? performance.now() : 0;
         // نحتفظ بتفاصيل الرمز الطويل؛ تصغير الإطار كان يضيّع المربعات الصغيرة.
@@ -452,7 +478,14 @@ function scanFrame(timestamp) {
             if (decoded.startsWith("UIMSATT1:")) processToken(decoded);
         }
     }
-    frameId = requestAnimationFrame(scanFrame);
+    } catch (error) {
+        // خطأ قراءة الإطار يجب أن يحرر الكاميرا ويتيح إعادة المحاولة، لا أن يوقف المسح بصمت.
+        scannerDiagnostic("frame.failed", { errorType: error.name });
+        stopCamera();
+        showNotice("The camera frame could not be processed. Open the camera again to retry. No attendance confirmation was received.", true);
+        return;
+    }
+    if (cameraStream) frameId = requestAnimationFrame(scanFrame);
 }
 
 document.getElementById("openCamera").addEventListener("click", async function () {
@@ -506,7 +539,10 @@ document.getElementById("issueQrButton").addEventListener("click", function () {
         const row = document.createElement("p"), label = document.createElement("label");
         const checkbox = document.createElement("input");
         checkbox.type = "checkbox"; checkbox.value = student.id; checkbox.name = "qrStudent";
-        label.append(checkbox, " " + student.name); row.append(label); list.append(row);
+        // رقم الطالب يميّز الحساب الصحيح عند تشابه الأسماء أو وجود أكثر من مشرف.
+        label.append(checkbox, " " + student.name + " · Student ID: " + student.id +
+            " · Assignment: " + student.assignmentId);
+        row.append(label); list.append(row);
     });
     document.getElementById("selectAllQrStudents").checked = false;
     document.getElementById("issueQrStatus").textContent = "";
@@ -525,7 +561,9 @@ document.getElementById("confirmIssueQr").addEventListener("click", async functi
     try {
         const result = await api("issueQr", { studentIds: JSON.stringify(ids), attendanceAction: document.getElementById("issuedQrAction").value });
         status.textContent = result.issued.length + " QR codes issued. Each student can now open their own QR.";
-        if (result.failed.length) status.textContent += " Not issued: " + result.failed.map(function (row) { return row.message; }).join("; ");
+        if (result.failed.length) status.textContent += " Not issued: " + result.failed.map(function (row) {
+            return "Student " + row.studentId + ": " + row.message;
+        }).join("; ");
     } catch (error) { status.textContent = error.message; }
     finally { saving = false; this.disabled = false; }
 });

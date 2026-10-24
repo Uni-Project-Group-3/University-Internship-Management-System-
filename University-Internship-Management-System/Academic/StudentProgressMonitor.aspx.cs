@@ -1,3 +1,4 @@
+using University_Internship_Management_System.Shared;
 using System;
 using System.Collections.Generic;
 using System.Net;
@@ -9,13 +10,14 @@ namespace University_Internship_Management_System.Academic
 {
     public partial class StudentProgressMonitor : Page
     {
-        private static string FirebaseUrl { get { var firebase = new UIMS.Services.FirebaseConfiguration(); firebase.EnsureEnabled(); return firebase.DatabaseUrl + "/"; } }
+        private static string FirebaseUrl { get { return AuthenticatedFirebaseClient.DatabaseUrl; } }
 
-        // حساب المشرف الأكاديمي الحالي (للتجربة)
-        private string currentSupervisorId = "AS001";
+        private string CurrentSupervisorId { get { return User.Identity.Name; } }
 
+        protected void Page_Init(object sender, EventArgs e) { Session["FirebasePageBinding"] = true; ViewStateUserKey = Session.SessionID; }
         protected void Page_Load(object sender, EventArgs e)
         {
+            AuthenticatedFirebaseClient.RequireRole(Context, "academicSupervisor");
             if (!IsPostBack)
             {
                 LoadAssignedStudents();
@@ -26,98 +28,111 @@ namespace University_Internship_Management_System.Academic
         {
             try
             {
-                using (WebClient client = new WebClient())
+                using (WebClient client = new AuthenticatedFirebaseClient { Encoding = System.Text.Encoding.UTF8 })
                 {
-                    client.Encoding = System.Text.Encoding.UTF8;
                     JavaScriptSerializer serializer = new JavaScriptSerializer();
 
-                    string assignJson = client.DownloadString(FirebaseUrl + "supervisorAssignments.json");
-                    string usersJson = client.DownloadString(FirebaseUrl + "users.json");
-                    string hoursJson = client.DownloadString(FirebaseUrl + "trainingHours.json");
-                    string tasksJson = client.DownloadString(FirebaseUrl + "tasks.json");
+                    string assignmentsJson = DownloadSafe(client, "assignments.json");
+                    string usersJson = DownloadSafe(client, "users.json");
+                    string placementsJson = DownloadSafe(client, "placements.json");
+                    string tasksJson = DownloadSafe(client, "tasks.json");
+                    string attendanceJson = DownloadSafe(client, "uimsAttendance/attendance.json");
 
-                    var assignments = serializer.Deserialize<Dictionary<string, Dictionary<string, string>>>(assignJson ?? "{}");
-                    var users = serializer.Deserialize<Dictionary<string, Dictionary<string, string>>>(usersJson ?? "{}");
-                    var hours = serializer.Deserialize<Dictionary<string, Dictionary<string, string>>>(hoursJson ?? "{}");
-                    var tasks = serializer.Deserialize<Dictionary<string, Dictionary<string, string>>>(tasksJson ?? "{}");
+                    var allAssignments = ParseJson<Dictionary<string, AssignmentData>>(serializer, assignmentsJson) ?? new Dictionary<string, AssignmentData>();
+                    var users = ParseJson<Dictionary<string, UserData>>(serializer, usersJson) ?? new Dictionary<string, UserData>();
+                    var placements = ParseJson<Dictionary<string, PlacementData>>(serializer, placementsJson) ?? new Dictionary<string, PlacementData>();
+                    var tasks = ParseJson<Dictionary<string, TaskData>>(serializer, tasksJson) ?? new Dictionary<string, TaskData>();
+                    var attendance = ParseJson<Dictionary<string, Dictionary<string, AttendanceRecord>>>(serializer, attendanceJson) ?? new Dictionary<string, Dictionary<string, AttendanceRecord>>();
 
-                    List<StudentRow> studentsList = new List<StudentRow>();
-                    int activeCount = 0;
-                    int completedTasksCount = 0;
-
-                    // 1. إيجاد الطلاب التابعين لهذا المشرف فقط
-                    foreach (var assign in assignments)
+                    List<string> myStudentIds = new List<string>();
+                    foreach (var a in allAssignments.Values)
                     {
-                        if (assign.Value != null &&
-                            assign.Value.ContainsKey("academicSupervisorId") &&
-                            assign.Value["academicSupervisorId"] == currentSupervisorId)
+                        if (a != null && a.academicSupervisorId == CurrentSupervisorId && !myStudentIds.Contains(a.studentId))
                         {
-                            string sId = assign.Value.ContainsKey("studentId") ? assign.Value["studentId"] : "";
-
-                            if (sId != "" && users.ContainsKey(sId))
-                            {
-                                activeCount++;
-                                var studentData = users[sId];
-                                StudentRow row = new StudentRow();
-                                row.StudentId = sId;
-                                row.StudentName = studentData.ContainsKey("fullName") ? studentData["fullName"] : "Unknown";
-                                row.Major = studentData.ContainsKey("major") ? studentData["major"] : "Not Specified";
-
-                                int reqHours = 300;
-                                if (studentData.ContainsKey("requiredTrainingHours")) int.TryParse(studentData["requiredTrainingHours"], out reqHours);
-                                row.RequiredHours = reqHours;
-
-                                // حساب الساعات المعتمدة لهذا الطالب
-                                int appHours = 0;
-                                foreach (var h in hours)
-                                {
-                                    if (h.Value != null && h.Value.ContainsKey("studentId") && h.Value["studentId"] == sId)
-                                    {
-                                        if (h.Value.ContainsKey("status") && h.Value["status"] == "Approved")
-                                        {
-                                            int hr = 0;
-                                            if (h.Value.ContainsKey("hours")) int.TryParse(h.Value["hours"], out hr);
-                                            appHours += hr;
-                                        }
-                                    }
-                                }
-                                row.ApprovedHours = appHours;
-
-                                // حساب مهام الطالب
-                                int totalT = 0;
-                                int compT = 0;
-                                foreach (var t in tasks)
-                                {
-                                    if (t.Value != null && t.Value.ContainsKey("studentId") && t.Value["studentId"] == sId)
-                                    {
-                                        totalT++;
-                                        if (t.Value.ContainsKey("status") && (t.Value["status"] == "Evaluated" || t.Value["status"] == "Completed"))
-                                        {
-                                            compT++;
-                                            completedTasksCount++;
-                                        }
-                                    }
-                                }
-
-                                row.TaskPercentage = totalT > 0 ? (compT * 100) / totalT : 0;
-                                studentsList.Add(row);
-                            }
+                            myStudentIds.Add(a.studentId);
                         }
                     }
 
-                    // ربط البيانات بالشاشة
-                    rptStudents.DataSource = studentsList;
+                    int activeInternships = 0;
+                    int completedTasks = 0;
+                    List<StudentRow> tableRows = new List<StudentRow>();
+
+                    foreach (string sId in myStudentIds)
+                    {
+                        StudentRow row = new StudentRow { StudentId = sId, StudentName = "Unknown", Major = "N/A", RequiredHours = 300, HasDelays = false };
+
+                        foreach (var u in users.Values)
+                        {
+                            if (u != null && u.role == "student" && u.studentId == sId)
+                            {
+                                row.StudentName = u.fullName;
+                                row.Major = u.majorId ?? u.department ?? "N/A";
+                                break;
+                            }
+                        }
+
+                        bool isActive = false;
+                        foreach (var p in placements.Values)
+                        {
+                            if (p != null && p.studentId == sId)
+                            {
+                                row.RequiredHours = p.requiredHours > 0 ? p.requiredHours : 300;
+                                if (p.status == "active") { activeInternships++; isActive = true; }
+                            }
+                        }
+
+                        int totalApprovedMinutes = 0;
+                        foreach (var placementAttendance in attendance.Values)
+                        {
+                            if (placementAttendance == null) continue;
+                            foreach (var day in placementAttendance.Values)
+                            {
+                                if (day != null && day.studentId == sId && day.hoursApprovalStatus == "approved")
+                                {
+                                    totalApprovedMinutes += day.workedMinutes;
+                                }
+                            }
+                        }
+                        row.ApprovedHours = totalApprovedMinutes / 60;
+
+                        int totalTasks = 0;
+                        int compTasks = 0;
+                        foreach (var t in tasks.Values)
+                        {
+                            if (t != null && t.studentId == sId)
+                            {
+                                totalTasks++;
+                                if (t.status == "Completed")
+                                {
+                                    compTasks++;
+                                    completedTasks++;
+                                }
+                                else if (!string.IsNullOrEmpty(t.dueDate))
+                                {
+                                    DateTime dDate;
+                                    if (DateTime.TryParse(t.dueDate, out dDate) && dDate < DateTime.Now)
+                                    {
+                                        row.HasDelays = true;
+                                    }
+                                }
+                            }
+                        }
+                        if (totalTasks > 0) row.TaskPercentage = (int)Math.Round((double)compTasks / totalTasks * 100);
+
+                        if (isActive && row.ApprovedHours == 0 && row.TaskPercentage == 0) row.HasDelays = true;
+
+                        tableRows.Add(row);
+                    }
+
+                    rptStudents.DataSource = tableRows;
                     rptStudents.DataBind();
 
-                    lblAssignedStudents.Text = studentsList.Count.ToString();
-                    lblActiveInternships.Text = activeCount.ToString();
-                    lblCompletedTasks.Text = completedTasksCount.ToString();
+                    lblAssignedStudents.Text = myStudentIds.Count.ToString();
+                    lblActiveInternships.Text = activeInternships.ToString();
+                    lblCompletedTasks.Text = completedTasks.ToString();
                 }
             }
-            catch (Exception ex)
-            {
-                lblMessage.Text = "Error loading data: " + ex.Message;
-            }
+            catch (Exception ex) { lblMessage.Text = "Error loading data: " + ex.Message; }
         }
 
         protected void rptStudents_ItemCommand(object source, RepeaterCommandEventArgs e)
@@ -125,88 +140,157 @@ namespace University_Internship_Management_System.Academic
             if (e.CommandName == "ViewDetails")
             {
                 string studentId = e.CommandArgument.ToString();
+                RequireStudentScope(studentId);
                 hfCurrentStudentId.Value = studentId;
+                lblFeedbackMsg.Text = "";
 
                 try
                 {
-                    using (WebClient client = new WebClient())
+                    using (WebClient client = new AuthenticatedFirebaseClient { Encoding = System.Text.Encoding.UTF8 })
                     {
-                        client.Encoding = System.Text.Encoding.UTF8;
                         JavaScriptSerializer serializer = new JavaScriptSerializer();
 
-                        // جلب اسم الطالب
-                        string usersJson = client.DownloadString(FirebaseUrl + "users/" + studentId + ".json");
-                        var studentData = serializer.Deserialize<Dictionary<string, string>>(usersJson ?? "{}");
-                        lblDetName.Text = studentData != null && studentData.ContainsKey("fullName") ? studentData["fullName"] : studentId;
-
-                        // تصفير الرسالة وحقل النص القديم
-                        txtFeedback.Text = "";
-                        lblFeedbackMsg.Text = "";
-
-                        // جلب الملاحظات القديمة (إن وجدت)
-                        string notesJson = client.DownloadString(FirebaseUrl + "academicNotes.json");
-                        var notes = serializer.Deserialize<Dictionary<string, Dictionary<string, string>>>(notesJson ?? "{}");
-                        foreach (var n in notes)
+                        string usersJson = DownloadSafe(client, "users.json");
+                        var users = ParseJson<Dictionary<string, UserData>>(serializer, usersJson) ?? new Dictionary<string, UserData>();
+                        lblDetName.Text = studentId;
+                        foreach (var u in users.Values)
                         {
-                            if (n.Value != null && n.Value.ContainsKey("studentId") && n.Value["studentId"] == studentId)
+                            if (u != null && u.role == "student" && u.studentId == studentId) { lblDetName.Text = u.fullName; break; }
+                        }
+
+                        string placementsJson = DownloadSafe(client, "placements.json");
+                        var placements = ParseJson<Dictionary<string, PlacementData>>(serializer, placementsJson) ?? new Dictionary<string, PlacementData>();
+                        int reqHours = 300;
+                        foreach (var p in placements.Values)
+                        {
+                            if (p != null && p.studentId == studentId)
                             {
-                                txtFeedback.Text = n.Value.ContainsKey("note") ? n.Value["note"] : "";
+                                reqHours = p.requiredHours > 0 ? p.requiredHours : 300;
+                                break;
                             }
                         }
-                    }
+                        lblDetReqHours.Text = reqHours.ToString();
 
-                    // أمر لفتح النافذة المنبثقة
-                    ScriptManager.RegisterStartupScript(this, GetType(), "ShowModal", "document.getElementById('studentDetails').showModal();", true);
+                        string attendanceJson = DownloadSafe(client, "uimsAttendance/attendance.json");
+                        var attendance = ParseJson<Dictionary<string, Dictionary<string, AttendanceRecord>>>(serializer, attendanceJson) ?? new Dictionary<string, Dictionary<string, AttendanceRecord>>();
+                        int totalApprovedMinutes = 0;
+                        foreach (var placementAttendance in attendance.Values)
+                        {
+                            if (placementAttendance == null) continue;
+                            foreach (var day in placementAttendance.Values)
+                            {
+                                if (day != null && day.studentId == studentId && day.hoursApprovalStatus == "approved")
+                                {
+                                    totalApprovedMinutes += day.workedMinutes;
+                                }
+                            }
+                        }
+                        lblDetAppHours.Text = (totalApprovedMinutes / 60).ToString();
+
+                        string tasksJson = DownloadSafe(client, "tasks.json");
+                        var tasks = ParseJson<Dictionary<string, TaskData>>(serializer, tasksJson) ?? new Dictionary<string, TaskData>();
+                        List<TaskRow> studentTasks = new List<TaskRow>();
+
+                        foreach (var t in tasks.Values)
+                        {
+                            if (t != null && t.studentId == studentId)
+                            {
+                                string subLink = "";
+                                if (t.submissions != null && t.submissions.Count > 0)
+                                {
+                                    subLink = t.submissions[0].link ?? "";
+                                }
+
+                                studentTasks.Add(new TaskRow
+                                {
+                                    Title = t.title ?? "Untitled",
+                                    Status = t.status ?? "Pending",
+                                    Score = t.score != null ? t.score.ToString() + " / " + (t.maximumScore ?? 100).ToString() : "Not Graded",
+                                    SubmissionLink = subLink
+                                });
+                            }
+                        }
+
+                        if (studentTasks.Count > 0)
+                        {
+                            rptTasks.DataSource = studentTasks;
+                            rptTasks.DataBind();
+                            rptTasks.Visible = true;
+                            lblNoTasks.Visible = false;
+                        }
+                        else
+                        {
+                            rptTasks.Visible = false;
+                            lblNoTasks.Visible = true;
+                        }
+
+                        string feedbackJson = DownloadSafe(client, $"academicFeedback/{studentId}.json");
+                        txtFeedback.Text = (!string.IsNullOrEmpty(feedbackJson) && feedbackJson != "null") ? feedbackJson.Trim('"') : "";
+                    }
                 }
                 catch { }
+
+                ScriptManager.RegisterStartupScript(this, GetType(), "OpenModal", "document.getElementById('studentDetails').showModal();", true);
             }
         }
 
         protected void btnSaveFeedback_Click(object sender, EventArgs e)
         {
             string studentId = hfCurrentStudentId.Value;
+            RequireStudentScope(studentId);
             string feedback = txtFeedback.Text.Trim();
-
-            if (string.IsNullOrEmpty(studentId) || string.IsNullOrEmpty(feedback)) return;
+            if (string.IsNullOrEmpty(studentId)) return;
 
             try
             {
-                string noteId = "NOTE_" + DateTime.Now.Ticks;
-                var newNote = new Dictionary<string, string>
+                using (WebClient client = new AuthenticatedFirebaseClient { Encoding = System.Text.Encoding.UTF8 })
                 {
-                    { "noteId", noteId },
-                    { "studentId", studentId },
-                    { "academicSupervisorId", currentSupervisorId },
-                    { "note", feedback },
-                    { "createdAt", DateTime.Now.ToString("yyyy-MM-dd") }
-                };
-
-                using (WebClient client = new WebClient())
-                {
-                    client.Encoding = System.Text.Encoding.UTF8;
-                    client.Headers[HttpRequestHeader.ContentType] = "application/json";
-                    string jsonData = new JavaScriptSerializer().Serialize(newNote);
-                    new UIMS.Services.FirebaseConfiguration().EnsureWritesAllowed(); client.UploadString(FirebaseUrl + "academicNotes/" + noteId + ".json", "PUT", jsonData);
+                    client.UploadString(FirebaseUrl + $"academicFeedback/{studentId}.json", "PUT", new JavaScriptSerializer().Serialize(feedback));
                 }
-
-                lblFeedbackMsg.Text = "Feedback saved successfully!";
-                ScriptManager.RegisterStartupScript(this, GetType(), "KeepModalOpen", "document.getElementById('studentDetails').showModal();", true);
+                lblFeedbackMsg.ForeColor = System.Drawing.Color.Green;
+                lblFeedbackMsg.Text = "Feedback saved successfully.";
+                ScriptManager.RegisterStartupScript(this, GetType(), "KeepOpen", "document.getElementById('studentDetails').showModal();", true);
             }
             catch (Exception ex)
             {
-                lblFeedbackMsg.Text = "Error saving: " + ex.Message;
                 lblFeedbackMsg.ForeColor = System.Drawing.Color.Red;
+                lblFeedbackMsg.Text = "Error saving feedback: " + ex.Message;
+                ScriptManager.RegisterStartupScript(this, GetType(), "KeepOpen", "document.getElementById('studentDetails').showModal();", true);
             }
         }
 
-        public class StudentRow
+        private void RequireStudentScope(string studentId)
         {
-            public string StudentId { get; set; }
-            public string StudentName { get; set; }
-            public string Major { get; set; }
-            public int ApprovedHours { get; set; }
-            public int RequiredHours { get; set; }
-            public int TaskPercentage { get; set; }
+            University_Internship_Management_System.Services.FinalEvaluation.FirebaseKey.Require(studentId);
+            using (var client = new AuthenticatedFirebaseClient())
+            {
+                var assignments = Newtonsoft.Json.Linq.JObject.Parse(client.DownloadString(FirebaseUrl + "assignments.json"));
+                if (!System.Linq.Enumerable.Any(assignments.Properties(), p => (string)p.Value["studentId"] == studentId && (string)p.Value["academicSupervisorId"] == CurrentSupervisorId && (bool?)p.Value["active"] != false))
+                    throw new System.Web.HttpException(403, "This student is not currently assigned to you.");
+            }
         }
+        private string DownloadSafe(WebClient client, string path) { return client.DownloadString(FirebaseUrl + path); }
+        private T ParseJson<T>(JavaScriptSerializer serializer, string json) { if (string.IsNullOrEmpty(json) || json == "null") return default(T); return serializer.Deserialize<T>(json); }
+
+        public class AssignmentData { public string academicSupervisorId { get; set; } public string studentId { get; set; } }
+        public class UserData { public string fullName { get; set; } public string role { get; set; } public string studentId { get; set; } public string department { get; set; } public string majorId { get; set; } }
+        public class PlacementData { public string studentId { get; set; } public string status { get; set; } public int requiredHours { get; set; } }
+
+        public class TaskData
+        {
+            public string studentId { get; set; }
+            public string status { get; set; }
+            public string title { get; set; }
+            public string dueDate { get; set; }
+            public int? score { get; set; }
+            public int? maximumScore { get; set; }
+            public List<SubmissionData> submissions { get; set; }
+        }
+        public class SubmissionData { public string link { get; set; } }
+
+        public class AttendanceRecord { public string studentId { get; set; } public string hoursApprovalStatus { get; set; } public int workedMinutes { get; set; } }
+        public class StudentRow { public string StudentId { get; set; } public string StudentName { get; set; } public string Major { get; set; } public int ApprovedHours { get; set; } public int RequiredHours { get; set; } public int TaskPercentage { get; set; } public bool HasDelays { get; set; } }
+
+        public class TaskRow { public string Title { get; set; } public string Status { get; set; } public string Score { get; set; } public string SubmissionLink { get; set; } }
     }
 }

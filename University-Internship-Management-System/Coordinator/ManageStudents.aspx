@@ -1,10 +1,9 @@
 <%@ Page Language="C#" AutoEventWireup="true" async="true" CodeBehind="ManageStudents.aspx.cs" Inherits="University_Internship_Management_System.Coordinator.ManageStudents" %>
-<!DOCTYPE html>
-<html lang="en"><head runat="server"><meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" /><title>Manage Students | UIMS</title><link runat="server" href="~/Assets/shared/colors.css" rel="stylesheet" />    <link runat="server" href="~/Assets/coordinator/manage-students.css?v=20261022-complete" rel="stylesheet" />
+<!DOCTYPE html><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head runat="server"><meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" /><title>Manage Students | UIMS</title><link runat="server" href="~/Assets/shared/colors.css" rel="stylesheet" />    <link runat="server" href="~/Assets/coordinator/manage-students.css?v=20261023-unified" rel="stylesheet" />
 </head>
-<body class="dashboard-direct app-page completion-page" data-page="manage-students"><form id="form1" runat="server"><div class="app-layout">            <aside class="dash-sidebar" id="dashboardSidebar" aria-label="Coordinator navigation">
+<body class="dashboard-direct app-page completion-page management-page" data-page="manage-students"><form id="form1" runat="server"><div class="app-layout">            <aside class="dash-sidebar" id="dashboardSidebar" aria-label="Coordinator navigation">
                 <a href="<%= ResolveUrl("~/Coordinator/CoordinatorDashboard.aspx") %>" class="dash-brand">
-                    <span class="dash-brand-logo">J</span>
+                    <img class="dash-brand-logo" src="../Assets/shared/images/JUST-Logo-01.png" alt="JUST logo" width="48" height="48" />
                     <span class="dash-brand-text">
                         <strong>JUST</strong>
                         <span>Internships</span>
@@ -90,9 +89,7 @@
                             </details>
                         </div>
                     </header><main class="app-content" id="manageStudentsPage">
-    <p class="completion-eyebrow">STUDENT RECORDS</p>
-    <h1>Manage Students</h1>
-    <p class="completion-subtitle">Create student accounts and follow academic information, supervision and completion.</p>
+    <header class="management-hero"><div><p class="completion-eyebrow">STUDENT RECORDS</p><h1>Manage Students</h1><p class="completion-subtitle">Create student accounts and follow academic information, supervision and completion.</p></div><a class="management-hero-action" href="#studentListTitle">Student directory <span aria-hidden="true">&#8599;</span></a></header>
     <asp:HiddenField ID="studentCsrf" runat="server" ClientIDMode="Static" />
     <asp:HiddenField ID="studentPageState" runat="server" ClientIDMode="Static" />
     <asp:Label ID="studentListMessage" runat="server" ClientIDMode="Static" role="status" CssClass="student-page-message" />
@@ -100,7 +97,7 @@
         Email delivery is unavailable. Students can still be saved; no welcome email will be sent.
     </asp:Panel>
     <section class="completion-panel" aria-labelledby="studentListTitle">
-        <header><div><h2 id="studentListTitle">Student accounts</h2><p>Account actions preserve university records and academic history.</p></div>
+        <header><div><h2 id="studentListTitle">Student accounts</h2><p>Deleting an account clears its linked history. Official university records are retained.</p></div>
             <div class="student-list-actions">
                 <asp:Button ID="refreshStudentsButton" runat="server" Text="Refresh" CausesValidation="false"
                     CssClass="completion-button completion-button--secondary" OnClick="RefreshStudents_Click" />
@@ -144,7 +141,7 @@
     <header class="completion-dialog-header"><h2 id="studentDeleteTitle">Delete student?</h2><button type="button" class="completion-close" data-close="" aria-label="Cancel deletion">&times;</button></header>
     <div class="completion-dialog-body">
         <p>Delete the login and account profile for <strong id="studentDeleteName"></strong>?</p>
-        <p>This permanently removes their Firebase login and users profile. University records and academic history will be retained.</p>
+        <p>This permanently removes their login, profile, applications, placements, tasks, evaluations and attendance history. Official university records remain so a recreated account starts fresh.</p>
         <asp:HiddenField ID="studentDeleteUid" runat="server" ClientIDMode="Static" />
         <div class="student-form-actions">
             <button type="button" class="completion-button completion-button--secondary" data-close="">Cancel</button>

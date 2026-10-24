@@ -19,7 +19,7 @@
     <link href="../Content/bootstrap.min.css" rel="stylesheet" />
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet" />
     <link href="../Assets/shared/colors.css" rel="stylesheet" />
-    <link href="../Assets/student/application-form.css?v=20261021-original-ui" rel="stylesheet" />
+    <link href="../Assets/student/application-form.css?v=20261023-modern" rel="stylesheet" />
 </head>
 <body class="standalone-shell" data-demo-role="student">
     <form id="applicationForm" runat="server">
@@ -82,22 +82,45 @@
                 </header>
                 <p id="navbarNotice" class="navbar-notice" role="status" hidden></p>
         <main class="application-page">
-            <a class="back-link" href="ExploreOpportunities.aspx">&larr; Back to opportunities</a>
+            <a class="back-link" href="ExploreOpportunities.aspx"><i class="bi bi-arrow-left"></i> Back to opportunities</a>
+
             <header class="page-heading">
-                <p class="eyebrow">JUST / STUDENT WORKSPACE</p>
-                <h1>Application Form</h1>
-                <p>Introduce yourself and take the next step in your internship journey.</p>
+                <div class="heading-text">
+                    <p class="eyebrow"><i class="bi bi-send"></i> JUST / STUDENT WORKSPACE</p>
+                    <h1>Application Form</h1>
+                    <p>Introduce yourself and take the next step in your internship journey.</p>
+                </div>
+                <div class="heading-progress" aria-live="polite">
+                    <div class="progress-ring" id="progressRing" style="--value: 0">
+                        <span id="progressPercent">0%</span>
+                    </div>
+                    <div>
+                        <strong id="progressTitle">Let's get started</strong>
+                        <small id="progressText">0 of 3 steps complete</small>
+                    </div>
+                </div>
             </header>
 
-            <div class="preview-notice">Frontend preview — your information will not be saved or sent.</div>
+            <div class="preview-notice" id="previewNotice"><i class="bi bi-info-circle"></i> Frontend preview — your information will not be saved or sent.</div>
             <div id="invalidOpportunity" class="invalid-opportunity" role="alert" hidden>
-                Please select a valid opportunity from <a href="ExploreOpportunities.aspx">Explore Opportunities</a> before continuing.
+                <span class="alert-icon"><i class="bi bi-exclamation-triangle"></i></span>
+                <div>
+                    <strong>No opportunity selected</strong>
+                    <p>Please select a valid opportunity from <a href="ExploreOpportunities.aspx">Explore Opportunities</a> before continuing.</p>
+                </div>
+            </div>
+            <div id="alreadyApplied" class="already-applied" role="status" hidden>
+                <span class="alert-icon"><i class="bi bi-check2-circle"></i></span>
+                <div>
+                    <strong>You already applied to this opportunity</strong>
+                    <p>Follow its status in <a href="MyApplications.aspx">My Applications</a>.</p>
+                </div>
             </div>
 
             <div class="row g-4 align-items-start">
                 <div class="col-lg-8">
                     <fieldset id="applicationFields" disabled>
-                        <section class="form-section" aria-labelledby="personalHeading">
+                        <section class="form-section" data-step="personal" aria-labelledby="personalHeading">
                             <div class="section-heading">
                                 <span class="section-number" aria-hidden="true">01</span>
                                 <div><h2 id="personalHeading">Personal information</h2><p>Use your university contact details. Fields marked * are required.</p></div>
@@ -106,44 +129,65 @@
                             <div class="row g-3">
                                 <div class="col-md-6">
                                     <label for="fullName" class="form-label">Full name *</label>
-                                    <input id="fullName" name="fullName" class="form-control" type="text" autocomplete="name" maxlength="100" required />
+                                    <div class="input-icon">
+                                        <i class="bi bi-person"></i>
+                                        <input id="fullName" name="fullName" class="form-control" type="text" autocomplete="name" maxlength="100" required />
+                                    </div>
                                 </div>
                                 <div class="col-md-6">
                                     <label for="studentNumber" class="form-label">Student ID *</label>
-                                    <input id="studentNumber" name="studentNumber" class="form-control" type="text" maxlength="30" required />
+                                    <div class="input-icon">
+                                        <i class="bi bi-person-badge"></i>
+                                        <input id="studentNumber" name="studentNumber" class="form-control" type="text" maxlength="30" required />
+                                    </div>
                                 </div>
                                 <div class="col-md-6">
                                     <label for="email" class="form-label">University email *</label>
-                                    <input id="email" name="email" class="form-control" type="email" autocomplete="email" maxlength="150" required />
+                                    <div class="input-icon">
+                                        <i class="bi bi-envelope"></i>
+                                        <input id="email" name="email" class="form-control" type="email" autocomplete="email" maxlength="150" required />
+                                    </div>
                                 </div>
                                 <div class="col-md-6">
                                     <label for="phone" class="form-label">Phone number *</label>
-                                    <input id="phone" name="phone" class="form-control" type="tel" autocomplete="tel" maxlength="25" required />
+                                    <div class="input-icon">
+                                        <i class="bi bi-telephone"></i>
+                                        <input id="phone" name="phone" class="form-control" type="tel" autocomplete="tel" maxlength="25" placeholder="07X XXX XXXX" required />
+                                    </div>
                                 </div>
                                 <div class="col-12">
                                     <label for="major" class="form-label">Specialization *</label>
-                                    <select id="major" name="major" class="form-select" required>
-                                        <option value="">Select your specialization</option>
-                                        <option>Computer Science</option>
-                                        <option>Software Engineering</option>
-                                        <option>Cybersecurity</option>
-                                    </select>
-                                    <p class="field-help">University and college: JUST · Information Technology</p>
+                                    <div class="input-icon">
+                                        <i class="bi bi-mortarboard"></i>
+                                        <select id="major" name="major" class="form-select" required>
+                                            <option value="">Select your specialization</option>
+                                            <option>Computer Science</option>
+                                            <option>Software Engineering</option>
+                                            <option>Cybersecurity</option>
+                                        </select>
+                                    </div>
+                                    <p class="field-help"><i class="bi bi-bank"></i> University and college: JUST · Information Technology</p>
                                 </div>
                             </div>
                         </section>
 
-                        <section class="form-section" aria-labelledby="supportHeading">
+                        <section class="form-section" data-step="supporting" aria-labelledby="supportHeading">
                             <div class="section-heading">
                                 <span class="section-number" aria-hidden="true">02</span>
                                 <div><h2 id="supportHeading">Supporting information</h2><p>Share a little about your skills and interests.</p></div>
                             </div>
                             <label for="cvLink" class="form-label">CV link *</label>
-                            <input id="cvLink" name="cvLink" class="form-control" type="url" placeholder="https://" maxlength="500" aria-describedby="cvHelp" required />
-                            <p id="cvHelp" class="field-help">Use a shareable link that the company supervisor can access.</p>
+                            <div class="input-icon">
+                                <i class="bi bi-file-earmark-person"></i>
+                                <input id="cvLink" name="cvLink" class="form-control" type="url" placeholder="https://" maxlength="500" aria-describedby="cvHelp" required />
+                            </div>
+                            <p id="cvHelp" class="field-help"><i class="bi bi-link-45deg"></i> Use a shareable link that the company supervisor can access.</p>
 
                             <label for="portfolioLink" class="form-label">Portfolio or GitHub link <span>(optional)</span></label>
-                            <input id="portfolioLink" name="portfolioLink" class="form-control" type="url" placeholder="https://" maxlength="500" />
+                            <div class="input-icon">
+                                <i class="bi bi-github"></i>
+                                <input id="portfolioLink" name="portfolioLink" class="form-control" type="url" placeholder="https://" maxlength="500" />
+                            </div>
 
                             <div class="message-label">
                                 <label for="motivation" class="form-label">Why are you interested? <span>(optional)</span></label>
@@ -152,18 +196,23 @@
                             <textarea id="motivation" name="motivation" class="form-control" rows="5" maxlength="1000" placeholder="Tell the team about your interests, relevant skills, and what you hope to learn."></textarea>
                         </section>
 
-                        <section class="form-section" aria-label="Review application">
-                            <div class="form-check">
-                                <input id="confirmInformation" name="confirmInformation" class="form-check-input" type="checkbox" required />
-                                <label for="confirmInformation" class="form-check-label">I confirm that the information I provided is accurate. *</label>
+                        <section class="form-section review-section" data-step="review" aria-label="Review application">
+                            <div class="section-heading">
+                                <span class="section-number" aria-hidden="true">03</span>
+                                <div><h2>Review &amp; submit</h2><p>Check your details, then confirm they are accurate.</p></div>
                             </div>
+                            <label class="confirm-box" for="confirmInformation">
+                                <input id="confirmInformation" name="confirmInformation" class="form-check-input" type="checkbox" required />
+                                <span>I confirm that the information I provided is accurate. *</span>
+                            </label>
                             <div class="form-actions">
                                 <a href="ExploreOpportunities.aspx" class="cancel-link">Cancel</a>
-                                <button type="submit" class="primary-button">Preview application <span aria-hidden="true">&rarr;</span></button>
+                                <button type="submit" class="primary-button"><span id="submitLabel">Preview application</span> <i class="bi bi-arrow-right"></i></button>
                             </div>
                         </section>
                     </fieldset>
                     <div id="previewResult" class="preview-result" role="status" tabindex="-1" hidden>
+                        <div class="result-icon"><i class="bi bi-check-lg"></i></div>
                         <h2>Your application is ready for review</h2>
                         <p id="previewSummary"></p>
                         <p>This was a preview only. No application has been submitted or saved.</p>
@@ -172,16 +221,35 @@
                 </div>
 
                 <aside class="col-lg-4" aria-labelledby="opportunityHeading">
-                    <div class="opportunity-summary">
-                        <p class="eyebrow">YOUR SELECTED OPPORTUNITY</p>
-                        <h2 id="opportunityHeading">Select an opportunity</h2>
-                        <p id="companyName" class="company-name"></p>
-                        <dl>
-                            <div><dt>Location</dt><dd id="opportunityLocation">—</dd></div>
-                            <div><dt>Specialization</dt><dd id="opportunityMajor">—</dd></div>
-                            <div><dt>Duration</dt><dd id="opportunityDuration">—</dd></div>
-                        </dl>
-                        <p class="summary-note">The company supervisor reviews your application. Applying does not confirm an internship offer.</p>
+                    <div class="summary-sticky">
+                        <div class="opportunity-summary">
+                            <div class="summary-head">
+                                <p class="eyebrow">YOUR SELECTED OPPORTUNITY</p>
+                                <div class="summary-title">
+                                    <span class="company-mark" id="opportunityMark" aria-hidden="true"><i class="bi bi-briefcase"></i></span>
+                                    <div class="min-w-0">
+                                        <h2 id="opportunityHeading">Select an opportunity</h2>
+                                        <p id="companyName" class="company-name"></p>
+                                    </div>
+                                </div>
+                            </div>
+                            <dl>
+                                <div><dt><i class="bi bi-geo-alt"></i> Location</dt><dd id="opportunityLocation">—</dd></div>
+                                <div><dt><i class="bi bi-mortarboard"></i> Specialization</dt><dd id="opportunityMajor">—</dd></div>
+                                <div><dt><i class="bi bi-hourglass-split"></i> Duration</dt><dd id="opportunityDuration">—</dd></div>
+                                <div><dt><i class="bi bi-calendar-event"></i> Deadline</dt><dd id="opportunityDeadline">—</dd></div>
+                            </dl>
+                            <p class="summary-note"><i class="bi bi-info-circle"></i> The company supervisor reviews your application. Applying does not confirm an internship offer.</p>
+                        </div>
+
+                        <div class="checklist-card">
+                            <h3>Application checklist</h3>
+                            <ul class="checklist" id="checklist">
+                                <li data-check="personal"><span class="check-dot"><i class="bi bi-check"></i></span> Personal information</li>
+                                <li data-check="supporting"><span class="check-dot"><i class="bi bi-check"></i></span> CV link added</li>
+                                <li data-check="review"><span class="check-dot"><i class="bi bi-check"></i></span> Information confirmed</li>
+                            </ul>
+                        </div>
                     </div>
                 </aside>
             </div>
@@ -191,6 +259,6 @@
         </div>
     </form>
     <script src="../Scripts/bootstrap.bundle.min.js"></script>
-    <script src="../Js_project/Student/application-form.js?v=20261021-original-ui"></script>
+    <script src="../Js_project/Student/application-form.js?v=20261023-modern"></script>
 </body>
 </html>

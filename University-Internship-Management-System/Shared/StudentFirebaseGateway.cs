@@ -17,23 +17,24 @@ namespace University_Internship_Management_System.Shared
 {
     public sealed class StudentFirebaseGateway : IStudentDatabase, ICompanyAuthentication
     {
-        private static readonly HttpClient Client = new HttpClient { Timeout = TimeSpan.FromSeconds(8) };
-        private static readonly GoogleAdcAccessTokenProvider DefaultTokens = new GoogleAdcAccessTokenProvider();
+        private static readonly HttpClient Client = new HttpClient(new HttpClientHandler { MaxConnectionsPerServer = 12 }) { Timeout = TimeSpan.FromSeconds(8) };
         private static readonly TimeSpan OperationTimeout = TimeSpan.FromSeconds(8);
         private static readonly TimeSpan AuthenticationLookupTimeout = TimeSpan.FromSeconds(15);
         private static readonly object Initialization = new object();
         private readonly UIMS.Services.FirebaseConfiguration firebaseConfiguration;
         private readonly IAccessTokenProvider tokens;
         private readonly CancellationToken requestCancellation;
-        public StudentFirebaseGateway() : this(new UIMS.Services.FirebaseConfiguration(), DefaultTokens, CancellationToken.None) { }
+        public StudentFirebaseGateway() : this(new UIMS.Services.FirebaseConfiguration(), null, CancellationToken.None) { }
         public StudentFirebaseGateway(UIMS.Services.FirebaseConfiguration configuration)
-            : this(configuration, DefaultTokens, CancellationToken.None) { }
+            : this(configuration, null, CancellationToken.None) { }
         public StudentFirebaseGateway(UIMS.Services.FirebaseConfiguration configuration, IAccessTokenProvider tokenProvider)
             : this(configuration, tokenProvider, CancellationToken.None) { }
         public StudentFirebaseGateway(UIMS.Services.FirebaseConfiguration configuration, IAccessTokenProvider tokenProvider, CancellationToken cancellationToken)
         {
             firebaseConfiguration = configuration ?? throw new ArgumentNullException(nameof(configuration));
-            tokens = tokenProvider ?? throw new ArgumentNullException(nameof(tokenProvider));
+            // Default callers retain the main-branch shared credential cache. The page
+            // integration can inject its bounded provider so request cancellation applies.
+            tokens = tokenProvider;
             requestCancellation = cancellationToken;
         }
         private CancellationTokenSource CreateOperationCancellation()
@@ -115,10 +116,16 @@ namespace University_Internship_Management_System.Shared
             if (!Uri.TryCreate(configured, UriKind.Absolute, out baseUri) || baseUri.Scheme != "https" ||
                 !string.IsNullOrEmpty(baseUri.Query) || !string.IsNullOrEmpty(baseUri.UserInfo))
                 throw new InvalidOperationException("Configure a valid HTTPS FirebaseDatabaseUrl.");
-            var cancellable = tokens as ICancellableAccessTokenProvider;
-            string token = cancellable == null
-                ? await tokens.GetAccessTokenAsync().ConfigureAwait(false)
-                : await cancellable.GetAccessTokenAsync(cancellationToken).ConfigureAwait(false);
+            string token;
+            if (tokens == null)
+                token = await FirebaseServerCredential.AccessTokenAsync(cancellationToken).ConfigureAwait(false);
+            else
+            {
+                var cancellable = tokens as ICancellableAccessTokenProvider;
+                token = cancellable == null
+                    ? await tokens.GetAccessTokenAsync().ConfigureAwait(false)
+                    : await cancellable.GetAccessTokenAsync(cancellationToken).ConfigureAwait(false);
+            }
             var request = new HttpRequestMessage(method, configured.TrimEnd('/') + "/" + path + ".json");
             request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
             if (value != null) request.Content = new StringContent(JsonConvert.SerializeObject(value), Encoding.UTF8, "application/json");
@@ -257,6 +264,7 @@ namespace University_Internship_Management_System.Shared
         {
             using (var request = await RequestAsync(HttpMethod.Put, path, value).ConfigureAwait(false))
             {
+                if (value == null) request.Content = new StringContent("null", Encoding.UTF8, "application/json");
                 request.Headers.TryAddWithoutValidation("if-match", etag);
                     using (var response = await Client.SendAsync(request).ConfigureAwait(false))
                 {

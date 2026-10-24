@@ -4,6 +4,8 @@
     {
         protected global::System.Web.UI.WebControls.LinkButton btnLogout;
         protected global::System.Web.UI.WebControls.Literal NavName;
+        protected global::System.Web.UI.WebControls.Literal AccountConnection;
+        protected global::System.Web.UI.WebControls.Literal UniversitySummary;
         protected global::System.Web.UI.HtmlControls.HtmlForm form1;
         protected global::System.Web.UI.WebControls.Literal ProfileInitials;
         protected global::System.Web.UI.WebControls.Literal ProfileName;
@@ -17,6 +19,9 @@
         protected global::System.Web.UI.WebControls.Literal DisplayPhone;
         protected global::System.Web.UI.WebControls.Literal DisplayEmail;
         protected global::System.Web.UI.WebControls.Literal DisplayOffice;
+        protected global::System.Web.UI.WebControls.Literal UniversityName;
+        protected global::System.Web.UI.WebControls.Literal CollegeDepartment;
+        protected global::System.Web.UI.WebControls.Literal CoordinatorId;
         protected global::System.Web.UI.WebControls.Panel EditProfileFields;
         protected global::System.Web.UI.WebControls.Literal ValidationError;
         protected global::System.Web.UI.WebControls.TextBox FullName;
