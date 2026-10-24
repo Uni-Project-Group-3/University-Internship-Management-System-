@@ -11,6 +11,7 @@
     <link href="../Assets/company/verify-attendance.css?v=20261024-scanner-flash" rel="stylesheet" />
 <link href="../Assets/shared/workspace-identity.css?v=20261024-refine" rel="stylesheet" />
 <script src="../Js_project/workspace-navigation-unified.js?v=20261024-refine" defer></script>
+<link href="../Assets/company/company-hero.css?v=20261024-blue" rel="stylesheet" />
 </head>
 <body>
     <form id="attendanceForm" runat="server">
@@ -48,7 +49,7 @@
 
 
 <main class="content attendance-content">
-    <div class="page-heading"><div><p class="eyebrow">COMPANY WORKSPACE</p><h1>Verify Attendance</h1><p>Scan attendance and review your trainees.</p></div><span class="date-chip" id="connectionStatus">Connecting&#8230;</span></div>
+    <div class="page-heading company-reference-hero"><div><p class="eyebrow">COMPANY WORKSPACE</p><h1>Verify Attendance</h1><p>Scan attendance and review your trainees.</p></div><span class="date-chip" id="connectionStatus">Connecting&#8230;</span></div>
     <span id="modeMessage" class="visually-hidden"></span>
     <div class="panel-heading"><span id="assignedStudents" class="section-note">Loading assigned students&#8230;</span><div class="attendance-actions"><button id="issueQrButton" type="button" class="primary-action" disabled>Issue student QR codes</button><button id="refreshAttendance" type="button" class="text-action">Refresh records</button></div></div>
     <div id="pageNotice" class="page-notice" role="status" hidden></div>
