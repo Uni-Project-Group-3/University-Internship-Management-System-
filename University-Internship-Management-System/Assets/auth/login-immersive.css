@@ -1,0 +1,165 @@
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,400;0,500;1,400&family=Manrope:wght@400;500;600;700;800&display=swap');
+
+/* Login canvas. The physical card's transforms and animation remain in login-card.css. */
+body.auth-page{background:#102c40;color:#f0eee4;font-family:Manrope,'Segoe UI',sans-serif;min-height:100svh;isolation:isolate;background-image:radial-gradient(ellipse at 18% 54%,#28536a70,transparent 48%),radial-gradient(ellipse at 95% 90%,#74877522,transparent 45%)}
+.auth-page::before{content:'';position:fixed;inset:0;z-index:-1;pointer-events:none;background:linear-gradient(115deg,transparent 58%,#ffffff03 58%,#ffffff03 58.1%,transparent 58.1%)}
+.auth-page .nav.campus-public-nav{font-family:Manrope,sans-serif;background:#1d3c60;box-shadow:0 12px 34px #07152130}
+.auth-page .auth-layout{display:flex;align-items:center;flex:1;padding:135px clamp(28px,6vw,110px) 42px}
+.auth-page .app{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(320px,.8fr);align-items:center;gap:clamp(48px,7vw,130px);width:100%;max-width:1280px;min-height:0;margin:0 auto;border:0;border-radius:0;box-shadow:none;background:transparent;overflow:visible}
+.auth-page .stage{min-height:560px;padding:0;overflow:visible;background:none;justify-content:center}
+.auth-page .stage::before{inset:18% -15% -5%;background:radial-gradient(ellipse,#648aaf23,transparent 65%)}
+.auth-page .stage .orbits{width:420px;height:420px;inset:100px auto auto 12%;border-color:#adc3c511;box-shadow:0 0 0 45px #ffffff02,0 0 0 90px #ffffff02,0 0 0 135px #ffffff01}
+.auth-page .stage .grid-dots{left:-50px;bottom:30px;opacity:.1}
+.auth-page .access-intro{position:relative;z-index:1;margin-bottom:22px}
+.auth-page .access-eyebrow{display:block;color:#b8c6b2;font-size:9px;font-weight:700;letter-spacing:.22em;line-height:1.8}
+.auth-page .access-intro h1{font-family:Fraunces,Georgia,serif;font-weight:400;font-size:clamp(44px,4.5vw,68px);line-height:1.06;letter-spacing:-.045em;margin:18px 0;color:#f4efe2}
+.auth-page .access-intro h1 em{font-weight:400;color:#c5cfac}
+.auth-page .access-intro p{font-size:12px;line-height:1.8;color:#a8bbc6;margin:0}
+.auth-page .card-workspace{min-height:320px;width:100%;margin:12px 0 0;flex:0 0 auto}
+.auth-page .float-sleeve{width:min(100%,470px)}
+.auth-page .access-caption{display:flex;align-items:center;gap:9px;font-size:8px;letter-spacing:.18em;color:#8da6b4;margin:12px 0 0 5px}
+.auth-page .access-status-dot{width:5px;height:5px;border-radius:50%;background:#b7c69e;box-shadow:0 0 12px #b7c69e60}
+.auth-page .login-panel{padding:30px 0 30px clamp(26px,4vw,64px);background:transparent;border-left:1px solid #c3d0cb25;min-width:0;justify-content:center}
+.auth-page .login-center{padding:0;margin:0;width:100%;max-width:390px}
+.auth-page .signin-heading h2{font-family:Fraunces,Georgia,serif;font-size:clamp(40px,3.9vw,58px);font-weight:400;line-height:1.08;letter-spacing:-.04em;color:#f2edde;margin:17px 0 18px}
+.auth-page .signin-heading h2 em{font-weight:400;color:#c5cfac}
+.auth-page .signin-heading>p{color:#a8bbc6;font-size:12px;line-height:1.8;margin:0 0 34px}
+.auth-page .login-panel .auth-field>label{font-family:Manrope,sans-serif;color:#d7e1e2;font-size:10px;font-weight:600;letter-spacing:.03em;margin-bottom:10px}
+.auth-page .login-panel .input-wrap{background:#ffffff05;border:1px solid #b2c6cf35;border-radius:8px;min-height:55px;transition:border-color .2s,background .2s}
+.auth-page .login-panel .input-wrap:focus-within{background:#ffffff09;border-color:#c5cfac;box-shadow:0 0 0 3px #c5cfac10}
+.auth-page .login-panel .auth-input{font-family:Manrope,sans-serif;color:#f3efe3;font-size:12px;font-weight:500;caret-color:#c5cfac;color-scheme:dark}
+.auth-page .login-panel .auth-input::placeholder{color:#819ba9;font-weight:400}
+.auth-page .login-panel .auth-input:-webkit-autofill{-webkit-text-fill-color:#f3efe3;-webkit-box-shadow:0 0 0 1000px #18374a inset;caret-color:#c5cfac}
+.auth-page .login-panel .auth-icon{color:#91aab7}
+.auth-page .login-panel .auth-eye{background:transparent;color:#91aab7}
+.auth-page .login-panel .auth-eye:hover{background:#ffffff0c}
+.auth-page .login-panel .auth-link{color:#c5cfac;font-size:11px;font-weight:500}
+.auth-page .login-panel .auth-options{margin:0 0 25px}
+.auth-page .login-panel .auth-button{width:100%;min-height:55px;background:#c5cfac;border:1px solid #d1d9bd;border-radius:8px;box-shadow:0 8px 26px #00000015;color:#183142;font:700 12px Manrope,sans-serif;transition:background .2s,transform .2s}
+.auth-page .login-panel .auth-button:hover{background:#d8dfc5;transform:translateY(-1px)}
+.auth-page .login-panel .auth-button:disabled{opacity:.65;transform:none}
+.auth-page .login-panel a[target='_blank']{color:#9fb4bf;font-size:10px;line-height:1.7;text-underline-offset:4px}
+.auth-page .signin-note{display:flex;justify-content:center;align-items:center;gap:7px;margin:25px 0 0;font-size:9px;letter-spacing:.025em;color:#839fab}
+.auth-page .signin-note .auth-icon{width:13px;height:13px}
+.auth-page .login-panel .auth-field-error,.auth-page .login-panel .auth-message{color:#ffb5aa}
+.auth-page .login-panel .auth-message:empty{display:none}
+.auth-page .auth-public-footer{background:transparent;border-top:1px solid #bfd0d019;color:#7f9ba9;padding:19px 6%;display:flex;justify-content:space-between;font-family:Manrope,sans-serif;font-size:9px;gap:16px}
+.auth-page :is(a,button,input):focus-visible{outline-color:#c5cfac}
+@media(min-width:1000px) and (max-height:800px){.auth-page .auth-layout{padding-top:125px;padding-bottom:25px}.auth-page .stage{min-height:480px}.auth-page .access-intro h1{font-size:49px}.auth-page .card-workspace{min-height:285px}.auth-page .float-sleeve{width:min(100%,430px)}.auth-page .signin-heading h2{font-size:46px}}
+@media(max-width:950px){.auth-page .auth-layout{padding:145px 35px 45px}.auth-page .app{gap:35px;grid-template-columns:minmax(0,1fr) minmax(300px,.9fr)}.auth-page .stage{min-height:470px}.auth-page .card-workspace{min-height:250px}.auth-page .login-panel{padding-left:28px}.auth-page .card-ribbon{font-size:6px}.auth-page .access-intro h1{font-size:45px}}
+@media(max-width:700px){.auth-page .nav.campus-public-nav{top:10px;left:10px;right:10px;border-radius:16px;padding:14px 16px;gap:12px;flex-wrap:wrap}.auth-page .nav.campus-public-nav .brand img{width:230px;height:37px}.auth-page .nav.campus-public-nav nav{width:100%;overflow:auto}.auth-page .nav.campus-public-nav nav ul{justify-content:space-between;gap:2px}.auth-page .nav.campus-public-nav .lnk{padding:9px 10px;font-size:10px}.auth-page .nav.campus-public-nav .lnk.login{margin-left:0;padding:9px 12px}.auth-page .auth-layout{padding:165px 26px 35px}.auth-page .app{grid-template-columns:1fr;gap:28px}.auth-page .stage{min-height:0;padding:0}.auth-page .access-intro{margin-bottom:0}.auth-page .access-intro h1{font-size:43px}.auth-page .card-workspace{min-height:265px;margin-top:15px}.auth-page .float-sleeve{width:min(100%,390px)}.auth-page .access-caption{margin-top:0}.auth-page .login-panel{padding:30px 0 0;border-left:0;border-top:1px solid #c3d0cb25}.auth-page .login-center{max-width:none}.auth-page .signin-heading h2{font-size:43px}.auth-page .signin-heading h2 br{display:none}.auth-page .signin-heading>p{margin-bottom:26px}.auth-page .auth-public-footer{flex-direction:column;align-items:flex-start;padding:18px 26px;line-height:1.7;gap:5px}}
+@media(prefers-reduced-motion:reduce){.auth-page .login-panel .auth-button{transition:none;transform:none}}
+
+/* Homepage navigation, scoped to this standalone sign-in page. */
+.auth-page .nav.campus-public-nav{position:fixed;top:18px;left:24px;right:24px;z-index:100;display:flex;align-items:center;justify-content:space-between;gap:24px;padding:17px 28px;border:1px solid #ffffff26;border-radius:22px;color:#fff;backdrop-filter:blur(12px)}
+.auth-page .campus-public-nav .brand{display:flex;align-items:center;flex:0 0 auto}
+.auth-page .campus-public-nav .brand img{display:block;width:270px;max-width:100%;height:45px;object-fit:contain}
+.auth-page .campus-public-nav nav ul{display:flex;align-items:center;gap:7px;list-style:none;margin:0;padding:0}
+.auth-page .campus-public-nav .lnk{display:block;padding:10px 12px;border-radius:30px;font-size:12px;font-weight:600;text-decoration:none;color:#e3ebf6;white-space:nowrap;transition:background .18s}
+.auth-page .campus-public-nav .lnk:hover{background:#ffffff12;color:white}
+.auth-page .campus-public-nav .lnk.login{background:#fff;color:#173753;padding:11px 20px;margin-left:9px}
+.auth-page .campus-public-nav a:focus-visible{outline:2px solid #b8d4f6;outline-offset:3px}
+@media(max-width:700px){.auth-page .nav.campus-public-nav{top:10px;left:10px;right:10px;border-radius:16px;padding:14px 16px;gap:12px;flex-wrap:wrap}.auth-page .campus-public-nav .brand img{width:230px;height:37px}.auth-page .campus-public-nav nav{width:100%;overflow:auto}.auth-page .campus-public-nav nav ul{justify-content:space-between;gap:2px}.auth-page .campus-public-nav .lnk{padding:9px 8px;font-size:10px}.auth-page .campus-public-nav .lnk.login{margin-left:0;padding:9px 10px}}
+@media(max-width:550px){.auth-page .float-sleeve{height:260px;aspect-ratio:auto}.auth-page .card-workspace{min-height:300px}.auth-page .nav.campus-public-nav nav{overflow:visible}.auth-page .campus-public-nav nav ul{display:grid;grid-template-columns:1fr 1fr;gap:4px}.auth-page .campus-public-nav .lnk{text-align:center}.auth-page .auth-layout{padding-top:205px}.auth-page .card-ribbon{font-size:5px}.auth-page .card-logo small{max-width:130px}.auth-page .signin-heading h2 br{display:block}}
+@media(min-width:551px){.auth-page .float-sleeve{min-height:330px;aspect-ratio:auto}.auth-page .card-workspace{min-height:350px}}
+
+/* Restore the university ID card as the main visual; presentation only. */
+.auth-page .app{grid-template-columns:minmax(0,1.3fr) minmax(320px,.8fr);gap:clamp(36px,5vw,85px)}
+.auth-page .access-intro{margin-bottom:12px}
+.auth-page .access-intro h1{font-size:clamp(38px,3.4vw,50px);margin:13px 0}
+.auth-page .card-workspace{min-height:410px;margin:18px 0 0;overflow:visible}
+.auth-page .float-sleeve{width:min(100%,600px);height:auto;min-height:375px;aspect-ratio:1.6/1}
+.auth-page .card-top{height:84px;padding:18px 25px}
+.auth-page .card-body{height:calc(100% - 84px);padding:23px 26px 20px}
+.auth-page .card-logo strong{font-size:22px}
+.auth-page .card-logo small{font-size:9px}
+.auth-page .card-ribbon{font-size:9px}
+.auth-page .student-title{font-size:21px;margin-bottom:16px}
+.auth-page .card-section{font-size:9px;line-height:1.6}
+.auth-page .detail-field label{font-size:10px}
+.auth-page .detail-field .value{font-size:15px}
+.auth-page .detail-field .dots{font-size:19px}
+.auth-page .student-photo{width:100px;height:116px}
+.auth-page .card-values{grid-template-columns:minmax(0,1fr) 100px}
+.auth-page .access-caption{margin-top:10px}
+@media(min-width:701px) and (max-width:1050px){.auth-page .app{grid-template-columns:minmax(0,1.1fr) minmax(290px,.9fr);gap:30px}.auth-page .float-sleeve{min-height:325px}.auth-page .card-workspace{min-height:365px}.auth-page .card-logo small{font-size:7px}.auth-page .card-ribbon{font-size:6px}.auth-page .student-title{font-size:17px}.auth-page .detail-field .value{font-size:12px}.auth-page .card-top{padding:15px}.auth-page .card-body{padding:18px}.auth-page .student-photo{width:76px;height:90px}.auth-page .card-values{grid-template-columns:minmax(0,1fr) 76px}}
+@media(max-width:700px){.auth-page .app{grid-template-columns:1fr;gap:28px}.auth-page .float-sleeve{width:min(100%,520px);min-height:330px;aspect-ratio:auto}.auth-page .card-workspace{min-height:370px}.auth-page .access-intro h1{font-size:40px}.auth-page .card-logo small{font-size:7px}.auth-page .card-ribbon{font-size:6px}.auth-page .student-title{font-size:18px}.auth-page .card-section{font-size:7px}.auth-page .detail-field .value{font-size:12px}}
+@media(max-width:420px){.auth-page .float-sleeve{min-height:290px}.auth-page .card-workspace{min-height:325px}.auth-page .card-top{height:65px;padding:12px}.auth-page .card-body{height:calc(100% - 65px);padding:14px}.auth-page .card-logo strong{font-size:17px}.auth-page .card-logo small{font-size:6px;max-width:125px}.auth-page .card-ribbon{font-size:5px}.auth-page .student-title{font-size:15px;margin-bottom:10px}.auth-page .student-photo{width:68px;height:79px}.auth-page .card-values{grid-template-columns:minmax(0,1fr) 68px;gap:10px}.auth-page .detail-field label{font-size:8px}.auth-page .detail-field .value{font-size:10px}.auth-page .detail-field .dots{font-size:15px}}
+/* Simplified copy and a consistent university navy palette. */
+body.auth-page{background:#172f53;background-image:radial-gradient(ellipse at 28% 54%,#27477155,transparent 60%)}
+.auth-page::before{display:none}
+.auth-page .nav.campus-public-nav{background:#1d3c60;border-color:#ffffff20}
+.auth-page .access-intro,.auth-page .access-caption{display:none}
+.auth-page .stage{min-height:520px}
+.auth-page .stage::before{background:radial-gradient(ellipse,#456b9c1a,transparent 65%)}
+.auth-page .stage .orbits{border-color:#a8bed510;box-shadow:0 0 0 45px #ffffff02,0 0 0 90px #ffffff01}
+.auth-page .card-workspace{margin:0;min-height:440px}
+.auth-page .id-card.front{background:linear-gradient(115deg,#172f53 5%,#1d3c60 55%,#315581 100%)}
+.auth-page .id-card.back{background:linear-gradient(135deg,#172f53,#24466f)}
+.auth-page .card-body{background:linear-gradient(112deg,transparent 40%,#7191bd12 40%,#7191bd12 66%,transparent 66%)}
+.auth-page .signin-heading>.access-eyebrow,.auth-page .signin-heading>p,.auth-page .signin-note{display:none}
+.auth-page .signin-heading h2{font-size:0;margin:0 0 34px;line-height:1.15}
+.auth-page .signin-heading h2::after{content:'Sign in';font-size:clamp(36px,3.4vw,48px);color:#f2edde;font-family:Fraunces,Georgia,serif;letter-spacing:-.035em}
+.auth-page .signin-heading h2>*{display:none}
+.auth-page .login-panel .input-wrap{background:#203d5b;border-color:#b2c6df35}
+.auth-page .login-panel .input-wrap:focus-within{background:#254462}
+.auth-page .login-panel .auth-input:-webkit-autofill{-webkit-box-shadow:0 0 0 1000px #203d5b inset}
+.auth-page .login-panel .auth-message{background:#ffb5aa0c;border-color:#ffb5aa35}
+@media(max-width:700px){.auth-page .stage{min-height:0}.auth-page .card-workspace{min-height:375px}.auth-page .signin-heading h2{margin-bottom:26px}}
+@media(max-width:420px){.auth-page .card-workspace{min-height:325px}}
+.auth-page .signin-heading h2{font-size:clamp(36px,3.4vw,48px);color:#f2edde}.auth-page .signin-heading h2::after{content:none}
+
+/* Neutral campus stone with the homepage navy identity. */
+body.auth-page{background:#eeeae1;color:#253f5b;background-image:radial-gradient(ellipse at 22% 48%,#f6efe3b0,transparent 58%),linear-gradient(125deg,#e5e0d5 0%,#f0eadf 55%,#e5e1d8 100%)}
+.auth-page .stage::before{background:radial-gradient(ellipse,#7e8a9920,transparent 68%)}
+.auth-page .stage .orbits{border-color:#536d8915;box-shadow:0 0 0 45px #536d8904,0 0 0 90px #536d8903}
+.auth-page .stage .grid-dots{opacity:.13;background-image:radial-gradient(#62718a 1px,transparent 1.1px)}
+.auth-page .card-aura{opacity:.3;filter:blur(24px)}
+.auth-page .login-panel{border-color:#77869b35}
+.auth-page .signin-heading h2{color:#253f5b}
+.auth-page .login-panel .auth-field>label{color:#344d68}
+.auth-page .login-panel .input-wrap{background:#f7f5eecc;border-color:#899aaf55;box-shadow:inset 0 1px 0 #ffffff50}
+.auth-page .login-panel .input-wrap:focus-within{background:#faf8f2;border-color:#1d3c60;box-shadow:0 0 0 3px #1d3c6012}
+.auth-page .login-panel .auth-input{color:#253f5b;caret-color:#1d3c60;color-scheme:light}
+.auth-page .login-panel .auth-input::placeholder{color:#7b8796}
+.auth-page .login-panel .auth-input:-webkit-autofill{-webkit-text-fill-color:#253f5b;-webkit-box-shadow:0 0 0 1000px #f3f0e8 inset;caret-color:#1d3c60}
+.auth-page .login-panel .auth-icon,.auth-page .login-panel .auth-eye{color:#6c819b}
+.auth-page .login-panel .auth-eye:hover{background:#1d3c6010}
+.auth-page .login-panel .auth-link{color:#1d3c60}
+.auth-page .login-panel .auth-button{background:#1d3c60;border-color:#1d3c60;color:#ffffff;box-shadow:0 8px 22px #1d3c601c}
+.auth-page .login-panel .auth-button:hover{background:#294d73}
+.auth-page .login-panel a[target='_blank']{color:#63758c}
+.auth-page .login-panel .auth-field-error,.auth-page .login-panel .auth-message{color:#9b3d35}
+.auth-page .login-panel .auth-message{background:#a14c3607;border-color:#a14c362e}
+.auth-page .auth-public-footer{color:#737f8d;border-color:#77869b26}
+.auth-page :is(a,button,input):focus-visible{outline-color:#1d3c60}
+/* Stronger sign-in result glow; existing success/error timing is unchanged. */
+.auth-page .is-success .id-card{border-color:#16a34a;animation:card-green-pulse .7s ease-in-out infinite alternate}
+.auth-page .is-error .id-card{border-color:#dc2626;animation:card-red-pulse .7s ease-in-out infinite alternate}
+@keyframes card-green-pulse{
+ from{box-shadow:0 0 0 3px #16a34abf,0 0 22px 6px #22c55e99,0 0 55px 16px #22c55e66,0 25px 55px #10253a40}
+ to{box-shadow:0 0 0 5px #16a34a,0 0 36px 12px #22c55ecc,0 0 90px 30px #22c55e88,0 25px 55px #10253a40}
+}
+@keyframes card-red-pulse{
+ from{box-shadow:0 0 0 3px #dc2626bf,0 0 22px 6px #ef444499,0 0 55px 16px #ef444466,0 25px 55px #10253a40}
+ to{box-shadow:0 0 0 5px #dc2626,0 0 36px 12px #ef4444cc,0 0 90px 30px #ef444488,0 25px 55px #10253a40}
+}
+@media(prefers-reduced-motion:reduce){
+ .auth-page .is-success .id-card{animation:none;box-shadow:0 0 0 4px #16a34a,0 0 30px 10px #22c55eaa,0 0 70px 24px #22c55e66}
+ .auth-page .is-error .id-card{animation:none;box-shadow:0 0 0 4px #dc2626,0 0 30px 10px #ef4444aa,0 0 70px 24px #ef444466}
+}
+/* Diffuse result glow: wider falloff and softer color. */
+@keyframes card-green-pulse{
+ from{box-shadow:0 0 0 2px #43865c80,0 0 55px 18px #54966b50,0 0 135px 50px #54966b3c,0 25px 55px #10253a30}
+ to{box-shadow:0 0 0 3px #43865c99,0 0 78px 28px #54966b68,0 0 175px 68px #54966b58,0 25px 55px #10253a30}
+}
+@keyframes card-red-pulse{
+ from{box-shadow:0 0 0 2px #ba3d3280,0 0 55px 18px #cc433650,0 0 135px 50px #cc43363c,0 25px 55px #10253a30}
+ to{box-shadow:0 0 0 3px #ba3d3299,0 0 78px 28px #cc433668,0 0 175px 68px #cc433658,0 25px 55px #10253a30}
+}
+.auth-page .is-success .id-card{border-color:#43865c}
+.auth-page .is-error .id-card{border-color:#ba3d32}
+@media(prefers-reduced-motion:reduce){
+ .auth-page .is-success .id-card{box-shadow:0 0 0 2px #43865c80,0 0 55px 18px #54966b58,0 0 155px 58px #54966b3c}
+ .auth-page .is-error .id-card{box-shadow:0 0 0 2px #ba3d3280,0 0 55px 18px #cc433658,0 0 155px 58px #cc43363c}
+}
