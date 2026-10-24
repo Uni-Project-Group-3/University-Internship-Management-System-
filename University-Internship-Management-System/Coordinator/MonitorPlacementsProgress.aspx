@@ -9,14 +9,19 @@
     <title>Monitor Placements &amp; Progress | JUST UIMS</title>
     <link runat="server" href="~/Assets/shared/colors.css" rel="stylesheet" />
     <link runat="server" href="~/Assets/coordinator/monitor-placements-progress.css" rel="stylesheet" />
-    <!-- DataTables CSS -->
-<link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css" />
-<!-- jQuery (مطلوب لعمل DataTables) -->
-<script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
-<!-- DataTables JS -->
-<script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
     <link runat="server" href="~/Assets/shared/role-sidebars.css?v=20261024-workspace" rel="stylesheet" />
     <link runat="server" href="~/Assets/shared/workspace-navigation.css?v=20261024-hide-search" rel="stylesheet" />
+    <style>
+        .panel-tools { display: flex; align-items: center; gap: 12px; margin-left: auto; }
+        .select-wrap {
+            display: inline-flex; align-items: center; gap: 8px;
+            background: #FFF; border: 1px solid var(--border, #DFE3EB);
+            border-radius: 10px; padding: 6px 12px; font-size: 0.88rem; color: var(--text, #242844);
+        }
+        .select-wrap select {
+            border: none; outline: none; background: transparent; font-family: inherit; font-size: inherit; color: inherit; cursor: pointer;
+        }
+    </style>
 </head>
 <body class="dashboard-direct app-page placements-page shared-workspace-shell">
 
@@ -83,10 +88,23 @@
 
                     <!-- Table Panel -->
                     <section class="monitor-panel">
-                        <div class="monitor-panel-heading">
+                        <div class="monitor-panel-heading" style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;">
                             <div>
                                 <h2 id="directoryTitle">Placement overview</h2>
                                 <p style="color: var(--text-secondary); font-size: 0.9rem; margin: 4px 0 0;">One clear view of every student's training journey.</p>
+                            </div>
+
+                            <!-- عنصر الفلتر الجديد -->
+                            <div class="panel-tools">
+                                <label class="select-wrap">
+                                    <svg class="ic" style="width: 16px; height: 16px;"><use href="#i-filter"/></svg>
+                                    <select id="statusFilter" aria-label="Filter by training status" onchange="filterTable()">
+                                        <option value="">All Statuses</option>
+                                        <option value="active">Active</option>
+                                        <option value="pending">Pending</option>
+                                        <option value="completed">Completed</option>
+                                    </select>
+                                </label>
                             </div>
                         </div>
 
@@ -139,6 +157,30 @@
         </div>
     </form>
     
+    <!-- كود الفلترة المباشر والآمن -->
+    <script>
+//@ts-nocheck
+        function filterTable() {
+            var filterVal = document.getElementById("statusFilter").value.toLowerCase();
+            var table = document.getElementById("placementsTable");
+            var trs = table.getElementsByTagName("tr");
+
+            for (var i = 1; i < trs.length; i++) {
+                var tr = trs[i];
+                var statusSpan = tr.querySelector(".status-track");
+                
+                if (statusSpan) {
+                    var statusText = statusSpan.textContent.trim().toLowerCase();
+                    
+                    if (filterVal === "" || statusText.includes(filterVal)) {
+                        tr.style.display = "";
+                    } else {
+                        tr.style.display = "none";
+                    }
+                }
+            }
+        }
+    </script>
     <script src="<%= ResolveUrl("~/Js_project/Public/workspace-navigation.js?v=20261024") %>" defer="defer"></script>
 </body>
 </html>

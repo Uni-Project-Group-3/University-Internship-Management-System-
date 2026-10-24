@@ -8,9 +8,20 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Assign Academic Supervisors | JUST UIMS</title>
     <link runat="server" href="~/Assets/shared/colors.css" rel="stylesheet" />
-   <link rel="stylesheet" type="text/css" href="../Assets/coordinator/Assign_Supervisors.css?v=2.0" />
+    <link rel="stylesheet" type="text/css" href="../Assets/coordinator/Assign_Supervisors.css?v=2.0" />
     <link runat="server" href="~/Assets/shared/role-sidebars.css?v=20261024-workspace" rel="stylesheet" />
     <link runat="server" href="~/Assets/shared/workspace-navigation.css?v=20261024-hide-search" rel="stylesheet" />
+    <style>
+        .panel-tools { display: flex; align-items: center; gap: 12px; margin-left: auto; }
+        .select-wrap {
+            display: inline-flex; align-items: center; gap: 8px;
+            background: #FFF; border: 1px solid var(--border, #DFE3EB);
+            border-radius: 10px; padding: 6px 12px; font-size: 0.88rem; color: var(--text, #242844);
+        }
+        .select-wrap select {
+            border: none; outline: none; background: transparent; font-family: inherit; font-size: inherit; color: inherit; cursor: pointer;
+        }
+    </style>
 </head>
 <body class="dashboard-direct app-page assign-supervisors-page shared-workspace-shell">
 
@@ -28,6 +39,7 @@
             <symbol id="i-building" viewBox="0 0 24 24"><path d="M3 21h18M5 21V8l7-4 7 4v13M9 12h2m2 0h2M9 16h2m2 0h2"/></symbol>
             <symbol id="i-inbox" viewBox="0 0 24 24"><path d="M3 13h5l1.5 3h5L16 13h5M5 5h14l2 8v6H3v-6l2-8Z"/></symbol>
             <symbol id="i-check" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m8 12 3 3 5-6"/></symbol>
+            <symbol id="i-filter" viewBox="0 0 24 24"><path d="M3 5h18l-7 8v6l-4-2v-4L3 5Z"/></symbol>
         </defs>
     </svg>
 
@@ -58,15 +70,28 @@
 
                     <!-- Assignments Panel -->
                     <section class="monitor-panel">
-                        <div class="monitor-panel-heading">
+                        <div class="monitor-panel-heading" style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;">
                             <div>
                                 <h2>Student Groups &amp; Supervisors</h2>
                                 <p>Manage group allocations and link academic supervisors.</p>
                             </div>
+
+                            <!-- فلتر التخصصات أو الأقسام -->
+                            <div class="panel-tools">
+                                <label class="select-wrap">
+                                    <svg class="ic" style="width: 16px; height: 16px;"><use href="#i-filter"/></svg>
+                                    <select id="departmentFilter" aria-label="Filter by department" onchange="filterGroupsTable()">
+                                        <option value="">All Departments</option>
+                                        <option value="Software Engineering">Software Engineering</option>
+                                        <option value="Computer Science">Computer Science</option>
+                                        <option value="Artificial Intelligence">Artificial Intelligence</option>
+                                    </select>
+                                </label>
+                            </div>
                         </div>
 
                         <div class="monitor-table-scroll">
-                            <table class="monitor-table">
+                            <table class="monitor-table" id="groupsTable">
                                 <thead>
                                     <tr>
                                         <th>Group ID / Name</th>
@@ -85,7 +110,7 @@
                                                     <span class="group-id">ID: <%# Eval("GroupId") %></span>
                                                     <asp:HiddenField ID="hfGroupId" runat="server" Value='<%# Eval("GroupId") %>' />
                                                 </td>
-                                                <td><%# Eval("Major") %></td>
+                                                <td class="dept-cell"><%# Eval("Major") %></td>
                                                 <td><strong><%# Eval("StudentCount") %></strong> Students</td>
                                                 <td>
                                                     <asp:DropDownList ID="ddlSupervisors" runat="server" CssClass="form-control-sm" DataSource='<%# GetSupervisorsList() %>' DataTextField="SupervisorName" DataValueField="SupervisorId" SelectedValue='<%# Eval("AssignedSupervisorId") %>'>
@@ -105,22 +130,47 @@
             </div>
         </div>
     </form>
-  <script>
-    document.addEventListener("DOMContentLoaded", function () {
-        const msg = document.getElementById('<%= lblMessage.ClientID %>');
-        if (msg && msg.innerText.trim() !== "") {
-            // إظهار الرسالة وتفعيل اختفائها التلقائي بعد 4 ثوانٍ
-            setTimeout(function () {
-                msg.style.transition = "all 0.5s ease";
-                msg.style.opacity = "0";
-                msg.style.transform = "translateY(-15px)";
-                setTimeout(function () {
-                    msg.style.display = "none";
-                }, 500);
-            }, 4000);
+
+    <script>
+        //@ts-nocheck
+        function filterGroupsTable() {
+            var selectElem = document.getElementById("departmentFilter");
+            var table = document.getElementById("groupsTable");
+            if (!selectElem || !table) return;
+
+            var filterVal = selectElem.value.toLowerCase().trim();
+            var trs = table.getElementsByTagName("tr");
+
+            for (var i = 1; i < trs.length; i++) {
+                var tr = trs[i];
+                var deptTd = tr.querySelector(".dept-cell");
+                
+                if (deptTd) {
+                    var deptText = deptTd.textContent.trim().toLowerCase();
+                    
+                    if (filterVal === "" || deptText.indexOf(filterVal) > -1) {
+                        tr.style.display = "";
+                    } else {
+                        tr.style.display = "none";
+                    }
+                }
+            }
         }
-    });
-  </script>
+
+        document.addEventListener("DOMContentLoaded", function () {
+            const msg = document.getElementById('<%= lblMessage.ClientID %>');
+            if (msg && msg.innerText.trim() !== "") {
+                setTimeout(function () {
+                    msg.style.transition = "all 0.5s ease";
+                    msg.style.opacity = "0";
+                    msg.style.transform = "translateY(-15px)";
+                    setTimeout(function () {
+                        msg.style.display = "none";
+                    }, 500);
+                }, 4000);
+            }
+        });
+    </script>
     <script src="<%= ResolveUrl("~/Js_project/Public/workspace-navigation.js?v=20261024") %>" defer="defer"></script>
 </body>
 </html>
