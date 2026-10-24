@@ -14,12 +14,14 @@ internal static partial class Program
         private readonly Dictionary<string, int> versions = new Dictionary<string, int>();
         internal string LoseResponseAt, FailBeforeAt;
         internal int Writes;
+        internal readonly Dictionary<string,int> ReadCounts = new Dictionary<string,int>();
         internal void Seed(string path, JObject value) { Values[path] = (JObject)value.DeepClone(); versions[path] = versions.ContainsKey(path) ? versions[path] + 1 : 1; }
         public Task<bool> IsActiveAuthenticationUidAsync(string uid) { return Task.FromResult(Values.ContainsKey("users/" + uid)); }
         public Task<JToken> ReadAsync(string path)
         {
             lock (Values)
             {
+                ReadCounts[path] = ReadCounts.ContainsKey(path) ? ReadCounts[path] + 1 : 1;
                 JObject value; if (Values.TryGetValue(path, out value)) return Task.FromResult<JToken>(value.DeepClone());
                 var map = new JObject(); foreach (var pair in Values.Where(p => p.Key.StartsWith(path + "/", StringComparison.Ordinal) && !p.Key.Substring(path.Length + 1).Contains('/'))) map[pair.Key.Substring(path.Length + 1)] = pair.Value.DeepClone();
                 return Task.FromResult<JToken>(map.HasValues ? map : null);
@@ -62,6 +64,75 @@ internal static partial class Program
     private static JObject FApprove(string revision) { var input = FInput("admin-final", revision); input["finalGrade"] = 91.5m; input["fileName"] = "completion-notice.pdf"; input["feedback"] = "Private admin notes"; return input; }
     private static async Task RunFinalReportTests()
     {
+        await Test("final list reuses request reads but observes changes on subsequent requests", async () => {
+            var db = FinalSeed(11); var placement=(JObject)await db.ReadAsync("placements/P");db.Seed("placements/P2",placement);db.ReadCounts.Clear();
+            var service=FinalService(db);await service.ListAsync("company","companySupervisor");
+            Assert(db.ReadCounts["users"] == 1 && db.ReadCounts["placements"] == 1 && db.ReadCounts["supervisorAssignments"] == 1 && db.Writes == 0);
+            var profile=(JObject)await db.ReadAsync("users/student");profile["fullName"]="Updated student name";db.Seed("users/student",profile);
+            var next=await service.ListAsync("company","companySupervisor");Assert((string)next["items"][0]["studentName"]=="Updated student name");
+        });
+        await Test("final private PDF generation persists provider and supports idempotent authorized downloads", async () => {
+            var db = FinalSeed(); var handler = new IsolatedStorageHandler(); var workflow = FinalService(db); workflow.ReportStorage = OfflineStorage(handler, StorageSettings());
+            db.Seed("tasks/T-PDF", new JObject { ["studentId"]="ST", ["placementId"]="P", ["title"]="Completed training task", ["status"]="Completed", ["score"]=88, ["maximumScore"]=100 });
+            var draftInput=FDraft();draftInput["useCalculatedGrade"]=true;
+            await workflow.ActAsync("company", "companySupervisor", "P", "save", draftInput);
+            var result = await workflow.GenerateDocumentAsync("company", "companySupervisor", "P", "draft");
+            Assert((string)result["record"]["draft"]["attachment"]["uploadStatus"] == "ready" && handler.Uploads == 1);
+            await workflow.GenerateDocumentAsync("company", "companySupervisor", "P", "draft"); Assert(handler.Uploads == 1);
+            var pdf = await workflow.DownloadDocumentAsync("company", "companySupervisor", "P", "draft"); Assert(pdf.ContentType == "application/pdf");
+            University_Internship_Management_System.Services.FinalEvaluation.CompletionReportPdfRenderer.ValidatePdf(pdf.Content);
+            using(var memory=new System.IO.MemoryStream(pdf.Content))using(var document=PdfSharp.Pdf.IO.PdfReader.Open(memory,PdfSharp.Pdf.IO.PdfDocumentOpenMode.Import))Assert(document.PageCount==1);
+            var preview = Environment.GetEnvironmentVariable("UIMS_FINAL_PDF_PREVIEW"); if (!string.IsNullOrWhiteSpace(preview)) System.IO.File.WriteAllBytes(preview, pdf.Content);
+            await Reject<FirebaseException>(() => workflow.DownloadDocumentAsync("student", "student", "P", "draft"));
+            await Reject<FirebaseException>(() => workflow.DownloadDocumentAsync("academic", "academicSupervisor", "P", "draft"));
+            var revision = await workflow.ActAsync("company", "companySupervisor", "P", "submit", FInput("submit-pdf"));
+            var academic = await workflow.DownloadDocumentAsync("academic", "academicSupervisor", "P", (string)revision["record"]["currentRevisionId"]);
+            Assert(pdf.Content.SequenceEqual(academic.Content));
+        });
+        await Test("final report list displays student identity and academic name from authorized profiles", async () => {
+            var db = FinalSeed(11); var profile = (JObject)await db.ReadAsync("users/student"); profile["fullName"] = "Assigned student"; profile["privateNote"] = "DO_NOT_DISCLOSE"; db.Seed("users/student", profile);
+            profile = (JObject)await db.ReadAsync("users/academic"); profile["fullName"] = "Assigned academic"; db.Seed("users/academic", profile);
+            var view = await FinalService(db).ReadAsync("company", "companySupervisor", "P");
+            Assert((string)view["studentName"] == "Assigned student" && (string)view["studentId"] == "ST" && (string)view["academicSupervisorName"] == "Assigned academic" && !view.ToString().Contains("DO_NOT_DISCLOSE") && db.Writes == 0);
+        });
+        await Test("automatic final grade normalizes task and latest released exam without double counting", async () => {
+            var db = FinalSeed(11); var service = FinalService(db);
+            db.Seed("tasks/T", new JObject { ["studentId"] = "ST", ["placementId"] = "P", ["title"] = "Ordinary task", ["status"] = "Completed", ["score"] = 8, ["maximumScore"] = 10 });
+            db.Seed("tasks/TE", new JObject { ["studentId"] = "ST", ["placementId"] = "P", ["title"] = "Linked exam task", ["status"] = "Completed", ["score"] = 100, ["maximumScore"] = 100 });
+            db.Seed("taskExams/E", new JObject { ["placementId"] = "P", ["taskId"] = "TE", ["title"] = "Assessment" });
+            db.Seed("taskExamAttempts/E/ST", new JObject { ["A"] = new JObject { ["status"] = "submitted", ["resultStatus"] = "released", ["score"] = 18, ["maximumScore"] = 20 } });
+            var source = await service.SourceSummaryAsync("company", "companySupervisor", "P");
+            Assert((decimal)source["gradeCalculation"]["percentage"] == 85m && (int)source["gradeCalculation"]["includedCount"] == 2);
+            var input = FDraft(); input["percentage"] = 1; input["useCalculatedGrade"] = true;
+            var saved = await service.ActAsync("company", "companySupervisor", "P", "save", input);
+            Assert((decimal)saved["record"]["draft"]["percentage"] == 85m && saved["record"]["draft"]["sourceSnapshot"] != null);
+            Assert((string)saved["status"] == "draft");
+        });
+        await Test("automatic final grade supports exams only and excludes a newer unreleased attempt", async () => {
+            var db = FinalSeed(11); var service = FinalService(db);
+            db.Seed("taskExams/E", new JObject { ["placementId"] = "P", ["title"] = "Assessment" });
+            db.Seed("taskExamAttempts/E/ST", new JObject { ["A"] = new JObject { ["status"] = "submitted", ["resultStatus"] = "released", ["score"] = 18, ["maximumScore"] = 20, ["submittedAt"] = "2030-04-01T10:00:00Z" } });
+            var source = await service.SourceSummaryAsync("company", "companySupervisor", "P"); Assert((decimal)source["gradeCalculation"]["percentage"] == 90m);
+            db.Seed("taskExamAttempts/E/ST", new JObject { ["A"] = new JObject { ["status"] = "submitted", ["resultStatus"] = "released", ["score"] = 18, ["maximumScore"] = 20, ["submittedAt"] = "2030-04-01T10:00:00Z" }, ["B"] = new JObject { ["status"] = "submitted", ["resultStatus"] = "pendingApproval", ["score"] = 998877, ["submittedAt"] = "2030-04-02T10:00:00Z" } });
+            source = await service.SourceSummaryAsync("company", "companySupervisor", "P"); Assert(source["gradeCalculation"]["percentage"].Type == JTokenType.Null && (int)source["gradeCalculation"]["excludedCount"] == 1 && !source.ToString().Contains("998877"));
+        });
+        await Test("automatic final grade supports tasks only and does not fabricate an empty grade", async () => {
+            var db = FinalSeed(11); var service = FinalService(db);
+            var none = await service.SourceSummaryAsync("company", "companySupervisor", "P"); Assert(none["gradeCalculation"]["percentage"].Type == JTokenType.Null);
+            db.Seed("tasks/T", new JObject { ["studentId"] = "ST", ["placementId"] = "P", ["status"] = "Completed", ["score"] = 4, ["maximumScore"] = 5 });
+            var source = await service.SourceSummaryAsync("company", "companySupervisor", "P"); Assert((decimal)source["gradeCalculation"]["percentage"] == 80m);
+        });
+        await Test("final source summary is automatic read-only and excludes private exam grades", async () => {
+            var db = FinalSeed(11); var service = FinalService(db);
+            db.Seed("tasks/T", new JObject { ["studentId"] = "ST", ["placementId"] = "P", ["title"] = "Verified task", ["status"] = "completed" });
+            db.Seed("taskExams/E", new JObject { ["placementId"] = "P", ["title"] = "Verified exam" });
+            db.Seed("taskExamAttempts/E/ST", new JObject { ["A"] = new JObject { ["status"] = "submitted", ["resultStatus"] = "pendingApproval", ["score"] = 998877, ["answers"] = "PRIVATE_ANSWER" } });
+            var summary = await service.SourceSummaryAsync("company", "companySupervisor", "P");
+            Assert((long)summary["approvedTrainingMinutes"] == 11 && summary["tasks"].Count() == 1 && summary["exams"].Count() == 1);
+            Assert(!summary.ToString().Contains("998877") && !summary.ToString().Contains("PRIVATE_ANSWER") && db.Writes == 0);
+            await Reject<FirebaseException>(() => service.SourceSummaryAsync("student", "student", "P"));
+        });
+
         await Test("final report weekly selection is placement-scoped, server-snapshotted, immutable and private until final approval", async () => {
             var db = FinalSeed(); var w = FinalService(db);
             var weekly = JObject.Parse("{\"placementId\":\"P\",\"studentId\":\"ST\",\"companyId\":\"CO\",\"companySupervisorId\":\"SUP\",\"weekNumber\":1,\"status\":\"approved\",\"currentRevisionId\":\"W1\",\"revisions\":{\"W1\":{\"companyComments\":\"Original weekly summary\",\"fileName\":\"weekly.docx\"}}}");

@@ -37,6 +37,14 @@ internal static partial class Program
             data = await service.ListAcademicReportsAsync(CancellationToken.None);
             Assert(data["assignedStudents"].Count() == 0);
         });
+        await Test("weekly premium PDF paginates long records and renders Arabic fields", async () => {
+            var method = typeof(WeeklyReportService).GetMethod("GeneratePdfReport", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static);
+            var tasks = new JArray(); for (int i = 0; i < 65; i++) tasks.Add(new JObject { ["title"] = "Training activity " + i, ["status"] = "Completed", ["dueDate"] = "2026-10-24" });
+            var bytes = (byte[])method.Invoke(null, new object[] { "ST-AR", "أنس غوانمة", new JObject { ["companyName"] = "شركة التدريب" }, "PL-AR", 3, "2026-10-19", "2026-10-24", "ملاحظات المشرف", tasks, new JObject { ["approvedTrainingHours"] = 12.5 }, new JArray() });
+            using (var memory = new MemoryStream(bytes)) using (var pdf = PdfSharp.Pdf.IO.PdfReader.Open(memory, PdfSharp.Pdf.IO.PdfDocumentOpenMode.Import)) Assert(pdf.PageCount >= 3 && pdf.PageCount < 12);
+            var preview = Environment.GetEnvironmentVariable("UIMS_WEEKLY_PREVIEW_PATH"); if (!string.IsNullOrWhiteSpace(preview)) File.WriteAllBytes(Path.ChangeExtension(preview, ".long.pdf"), bytes);
+            await Task.FromResult(0);
+        });
         await Test("weekly company roster exposes only assigned academic recipient names", async () => {
             var db = new WeeklyReportDb(); SeedWeekly(db);
             db.Set("users/AC-1", new JObject { ["role"] = "academicSupervisor", ["fullName"] = "Assigned academic", ["password"] = "PRIVATE_NEVER_RETURN" });

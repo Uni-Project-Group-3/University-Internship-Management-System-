@@ -50,8 +50,14 @@ namespace UIMS.Services
                 if (!Flag("FinalReportWorkflowEnabled") || !Flag("FinalReportWorkflowSchemaValidated")) throw new FirebaseException(503, "Final report workflow is awaiting verified private Rules, indexes and placement-to-attendance mappings. No workflow settings were enabled automatically.");
                 var workflow = new FinalReportWorkflow(new FirebaseApplicationDatabase(new StudentFirebaseGateway()));
                 string id = context.Request.QueryString["placementId"], action = context.Request.QueryString["action"] ?? "list";
+                if (context.Request.HttpMethod == "GET" && action == "download")
+                {
+                    var file = await workflow.DownloadDocumentAsync(identity.Name, role, id, context.Request.QueryString["revisionId"] ?? "draft");
+                    context.Response.Clear(); context.Response.ContentType = "application/pdf"; context.Response.Cache.SetNoStore(); context.Response.AddHeader("X-Content-Type-Options", "nosniff");
+                    context.Response.AddHeader("Content-Disposition", "attachment; filename*=UTF-8''" + Uri.EscapeDataString(file.FileName)); context.Response.BinaryWrite(file.Content); return;
+                }
                 JObject result;
-                if (context.Request.HttpMethod == "GET") result = action == "list" ? await workflow.ListAsync(identity.Name, role) : action == "detail" ? await workflow.ReadAsync(identity.Name, role, id) : action == "weeklyReports" ? await workflow.WeeklyReportsAsync(identity.Name, role, id) : throw new FirebaseException(400, "Unsupported report query.");
+                if (context.Request.HttpMethod == "GET") result = action == "list" ? await workflow.ListAsync(identity.Name, role) : action == "detail" ? await workflow.ReadAsync(identity.Name, role, id) : action == "weeklyReports" ? await workflow.WeeklyReportsAsync(identity.Name, role, id) : action == "sourceSummary" ? await workflow.SourceSummaryAsync(identity.Name, role, id) : throw new FirebaseException(400, "Unsupported report query.");
                 else if (context.Request.HttpMethod == "POST")
                 {
                     if (!Flag("FinalReportWorkflowWritesEnabled")) throw new FirebaseException(503, "Final report writes have not been authorized and enabled.");
@@ -61,9 +67,10 @@ namespace UIMS.Services
                     string body; using (var reader = new StreamReader(context.Request.InputStream)) body = await reader.ReadToEndAsync();
                     if (body.Length > 24576) throw new FirebaseException(413, "The final report request is too large.");
                     var input = JObject.Parse(body);
-                    var allowed = new[] { "requestId", "revisionId", "percentage", "comments", "companyResponse", "fileName", "feedback", "finalGrade", "expectedDraftVersion", "weeklyReportIds" };
+                    var allowed = new[] { "requestId", "revisionId", "percentage", "comments", "companyResponse", "fileName", "feedback", "finalGrade", "expectedDraftVersion", "weeklyReportIds", "useCalculatedGrade" };
                     foreach (var p in input.Properties()) if (Array.IndexOf(allowed, p.Name) < 0 || (p.Value is JContainer && p.Name != "weeklyReportIds")) throw new FirebaseException(400, "Unsupported report field; attachment bytes and paths are not accepted.");
-                    if (action == "reconcile") { await workflow.Reconcile(identity.Name, role, id); result = await workflow.ReadAsync(identity.Name, role, id); }
+                    if (action == "generatePdf") result = await workflow.GenerateDocumentAsync(identity.Name, role, id, (string)input["revisionId"] ?? "draft");
+                    else if (action == "reconcile") { await workflow.Reconcile(identity.Name, role, id); result = await workflow.ReadAsync(identity.Name, role, id); }
                     else result = await workflow.ActAsync(identity.Name, role, id, action, input);
                 }
                 else throw new FirebaseException(405, "Use GET or POST.");
