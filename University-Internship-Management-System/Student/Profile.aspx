@@ -1,4 +1,5 @@
 <%@ Page Language="C#" Async="true" AutoEventWireup="true" CodeBehind="Profile.aspx.cs" Inherits="University_Internship_Management_System.Student.Profile" %>
+<%@ Register Src="~/Shared/StudentSidebar.ascx" TagPrefix="shared" TagName="StudentSidebar" %>
 <!DOCTYPE html>
 
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en">
@@ -12,48 +13,18 @@
     
 
     <link runat="server"
-        href="~/Assets/student/profile.css?v=20261021-original-ui" rel="stylesheet" />
+        href="~/Assets/student/profile.css?v=20261024-student-hero" rel="stylesheet" />
+    <link runat="server" href="~/Assets/shared/account-form-design.css?v=20261024-hide-firebase-badge" rel="stylesheet" />
+    <link runat="server" href="~/Assets/shared/role-sidebars.css?v=20261023" rel="stylesheet" />
 </head>
 
-<body class="app-page role-shell" data-demo-role="student">
+<body class="app-page role-shell student-profile-page" data-demo-role="student">
     <form id="form1" runat="server" aria-describedby="profileAvailability" enctype="multipart/form-data">
         <div class="app">
-            <aside class="sidebar" id="StudentSidebar" aria-label="Student navigation" data-role-sidebar="true"><button class="sidebar-close" type="button" aria-label="Close navigation menu"><svg class="bi bi-x nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="m6 6 12 12M6 18 18 6"/></svg></button>
-                <a href="StudentDashboard.aspx" class="brand">
-                    <div class="brand-logo">J</div>
-                    <div class="brand-text"><strong>JUST</strong><span>Internships</span></div>
-                </a>
-
-                <ul class="side-nav" aria-label="Student pages">
-<li><a href="StudentDashboard.aspx"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m3 10 9-7 9 7v10h-6v-7H9v7H3V10Z"/></svg><span>Dashboard</span></a></li>
-<li><a href="ExploreOpportunities.aspx"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="m8 12 3 3 5-6"/></svg><span>Explore Opportunities</span></a></li>
-<li><a href="MyApplications.aspx"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="m8 12 3 3 5-6"/></svg><span>My Applications</span></a></li>
-<li><a href="ApplicationForm.aspx"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="m8 12 3 3 5-6"/></svg><span>Application Form</span></a></li>
-<li><a href="Profile.aspx" class="active" aria-current="page"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="7" r="3"/><path d="M5 21v-3a7 7 0 0 1 14 0v3"/></svg><span>My Profile</span></a></li>
-
-<li><a href="MyTasks.aspx"><svg class="nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M4 5h16v14H4zM8 9h8M8 13h6" /></svg><span>My Tasks</span></a></li>
-
-<li><a href="MyProgressEvaluation.aspx"><svg class="nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M4 5h16v14H4zM8 9h8M8 13h6" /></svg><span>My Progress &amp; Evaluation</span></a></li>
-</ul>
-
-                <div class="side-divider"></div>
-
-                <ul class="side-nav" role="list"><li><a href="../Contact.aspx"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="m8 12 3 3 5-6"/></svg><span>Help &amp; contact</span></a></li></ul>
-
-                <div class="side-promo">
-                    <svg class="bi bi-mortarboard-fill nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="m2 8 10-5 10 5-10 5L2 8Zm4 3v6c3 3 9 3 12 0v-6m4-3v9"/></svg>
-                    <p>Build your future<br />with real experience.</p>
-                    <a href="ExploreOpportunities.aspx">Explore opportunities &rarr;</a>
-                </div>
-            </aside>
-            <button type="button" class="sidebar-backdrop" aria-label="Close navigation menu" tabindex="-1"></button>
+            <shared:StudentSidebar ID="RoleNavigation" runat="server" SidebarId="StudentSidebar" />
             <div class="main">
                 <header class="topbar">
                     <button type="button" class="menu-btn" aria-label="Open navigation menu" aria-expanded="false" aria-controls="StudentSidebar"><svg class="bi bi-list nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M3 6h18M3 12h18M3 18h18"/></svg></button>
-                    <div class="search">
-                        <svg class="bi bi-search nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="10" cy="10" r="6"/><path d="m15 15 6 6"/></svg>
-                        <label class="nav-sr-only" for="navigationSearch">Search workspace</label><input id="navigationSearch" type="search" placeholder="Search for internships, companies, or skills..." disabled="disabled" aria-describedby="navigationAvailability" />
-                    </div>
                     <div class="topbar-actions">
                         <button type="button" class="icon-btn" disabled="disabled" aria-label="Notifications unavailable" title="Notifications are not connected yet"><svg class="bi bi-bell nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M4 17h16l-2-4V9a6 6 0 0 0-12 0v4l-2 4Zm6 4h4M12 1v2"/></svg></button>
                         <details class="dropdown" id="accountMenu">
@@ -69,7 +40,7 @@
                                 <li><button id="btnLogout" type="button" class="dropdown-item" disabled="disabled" title="Sign-in is not connected yet"><svg class="bi bi-box-arrow-right nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M10 3H3v18h7m4-15 6 6-6 6M8 12h12"/></svg>Log out</button></li>
                             </ul></details>
                     </div>
-                <span id="navigationAvailability" class="nav-sr-only">Workspace search and notifications require a connected account.</span></header>
+                </header>
                 <main class="app-content">
                 <div class="profile-page">
 
@@ -107,10 +78,6 @@
                                 Internship Management System
                             </span>
 
-                            <div class="profile-note">
-                                Academic information is managed by
-                                the university internship coordinator.
-                            </div>
                         </aside>
 
                         <div class="profile-sections">
@@ -206,10 +173,12 @@
 
                                     <div class="profile-field profile-field-wide">
                                         <label for="cvUpload">CV File</label>
-                                        <asp:FileUpload ID="cvUpload" runat="server" ClientIDMode="Static" aria-describedby="cvHelp" />
+                                        <div class="profile-file-picker-row">
+                                            <asp:FileUpload ID="cvUpload" runat="server" ClientIDMode="Static" CssClass="profile-file-input" aria-describedby="cvHelp" />
+                                            <label class="profile-save profile-file-picker" for="cvUpload">Choose File</label>
+                                            <span id="cvSelectedName" class="profile-file-name" aria-live="polite"><asp:Literal ID="litCvFileName" runat="server" Mode="Encode" /></span>
+                                        </div>
                                         <span id="cvHelp" class="profile-help">PDF, DOC, or DOCX, up to 10 MiB. Uploads are stored privately in Firebase Storage.</span>
-                                        <asp:Literal ID="litCvStatus" runat="server" Mode="Encode" />
-                                        <asp:Button ID="btnUploadCv" runat="server" ClientIDMode="Static" CssClass="profile-save" Text="Upload CV" OnClick="btnUploadCv_Click" CausesValidation="false" aria-describedby="profileAvailability" />
                                     </div>
 
                                     <div class="profile-field profile-field-wide">
@@ -221,7 +190,7 @@
                                 </div>
                             </section>
 
-                            <div id="pnlMessage" runat="server" class="profile-message" role="status"><p id="profileAvailability"><asp:Literal ID="litProfileMessage" runat="server" Mode="Encode" /></p></div>
+                            <div id="pnlMessage" runat="server" class="profile-message" role="status" visible="false"><p id="profileAvailability"><asp:Literal ID="litProfileMessage" runat="server" Mode="Encode" /></p></div>
 
                             <footer class="profile-actions">
                                 <p>
@@ -239,8 +208,19 @@
             </div>
         </div>
     </form>
-    <script src="../Js_project/Demo/demo-store.js?v=20261021-original-ui"></script>
+    <script src="../Js_project/Demo/demo-store.js?v=20261023-hide-unavailable-notice"></script>
 <script>
+        (() => {
+            const cvInput = document.getElementById("cvUpload");
+            const selectedName = document.getElementById("cvSelectedName");
+            if (!cvInput || !selectedName) return;
+            cvInput.addEventListener("change", () => {
+                selectedName.textContent = cvInput.files && cvInput.files.length
+                    ? cvInput.files[0].name
+                    : "No file chosen";
+            });
+        })();
+
         (() => {
             "use strict";
             const sidebar = document.querySelector(".sidebar");
@@ -251,7 +231,7 @@
             const closeButton = sidebar && sidebar.querySelector(".sidebar-close");
             const accountToggle = userMenu && userMenu.querySelector("summary");
             if (!(sidebar instanceof HTMLElement) || !(menuButton instanceof HTMLButtonElement) ||
-                !(backdrop instanceof HTMLButtonElement) || !(main instanceof HTMLElement) ||
+                !(backdrop instanceof HTMLElement) || !(main instanceof HTMLElement) ||
                 !(userMenu instanceof HTMLElement) || !(closeButton instanceof HTMLButtonElement) ||
                 !(accountToggle instanceof HTMLElement)) return;
             const ui = { sidebar, menuButton, backdrop, main, userMenu, closeButton, accountToggle };

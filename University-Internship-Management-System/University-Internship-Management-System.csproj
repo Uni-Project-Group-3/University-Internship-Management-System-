@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="..\packages\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.2.0.1\build\net46\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.props" Condition="Exists('..\packages\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.2.0.1\build\net46\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.props')" />
   <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
@@ -55,7 +55,6 @@
     </Reference>
     <Reference Include="Microsoft.CodeDom.Providers.DotNetCompilerPlatform, Version=2.0.1.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
       <HintPath>..\packages\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.2.0.1\lib\net45\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.dll</HintPath>
-      <Private>True</Private>
     </Reference>
     <Reference Include="Microsoft.CSharp" />
     <Reference Include="System.Collections.Immutable, Version=8.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
@@ -147,10 +146,19 @@
     <Content Include="Js_project\Student\explore-opportunities.js" />
     <Content Include="Assets\shared\colors.css" />
     <Content Include="Assets\shared\images\JUST-Logo-01.png" />
+    <Content Include="Shared\Sidebar.ascx" />
+    <Content Include="Shared\StudentSidebar.ascx" />
+    <Content Include="Shared\AcademicSidebar.ascx" />
+    <Content Include="Shared\CompanySidebar.ascx" />
+    <Content Include="Shared\CoordinatorSidebar.ascx" />
     <Content Include="Shared\HomeNavbar.ascx" />
+    <Content Include="Shared\WorkspaceNavbar.ascx" />
+    <Content Include="Assets\shared\workspace-navigation.css" />
+    <Content Include="Js_project\Public\workspace-navigation.js" />
     <Content Include="Js_project\Public\navbar.js" />
     <Content Include="Assets\shared\navbar.css" />
     <Content Include="Assets\shared\sidebar.css" />
+    <Content Include="Assets\shared\role-sidebars.css" />
     <Content Include="Js_project\Public\dashboard-navigation.js" />
     <Content Include="Auth\Login.aspx" />
     <Content Include="Assets\auth\auth.css" />
@@ -450,6 +458,16 @@
     <Compile Include="Shared\AccountHistoryCleanup.cs" />
     <Compile Include="Shared\CompanyManagementService.cs" />
     <Compile Include="Shared\AcademicSupervisorService.cs" />
+    <Compile Include="Shared\Sidebar.ascx.cs">
+      <DependentUpon>Sidebar.ascx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="Shared\RoleSidebarBase.cs">
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="Shared\Sidebar.ascx.designer.cs">
+      <DependentUpon>Sidebar.ascx</DependentUpon>
+    </Compile>
     <Compile Include="UniversityStudentRecord.cs" />
     <Compile Include="ViewSwitcher.ascx.cs">
       <DependentUpon>ViewSwitcher.ascx</DependentUpon>
@@ -533,8 +551,8 @@
     <PropertyGroup>
       <ErrorText>This project references NuGet package(s) that are missing on this computer. Use NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
     </PropertyGroup>
-    <Error Condition="!Exists('..\packages\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.2.0.1\build\net46\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.props')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.2.0.1\build\net46\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.props'))" />
     <Error Condition="!Exists('..\packages\System.ValueTuple.4.6.2\build\net471\System.ValueTuple.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\System.ValueTuple.4.6.2\build\net471\System.ValueTuple.targets'))" />
+    <Error Condition="!Exists('..\packages\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.2.0.1\build\net46\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.props')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.2.0.1\build\net46\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.props'))" />
   </Target>
   <ItemGroup>
     <Content Include="Public\home.aspx" />
@@ -801,6 +819,7 @@
     <Content Include="FinalReports.aspx" />
     <Content Include="Assets\final-reports.css" />
     <Content Include="Assets\shared\workflow-ui.css" />
+    <Content Include="Assets\shared\account-form-design.css" />
     <Content Include="Js_project\final-reports.js" />
     <Content Include="Js_project\final-report-summary.js" />
     <Content Include="Js_project\workflow-dialogs.js" />
@@ -945,16 +964,32 @@
       <Private>True</Private>
     </Reference>
   </ItemGroup>
-<ItemGroup><Compile Include="Shared\RoleSidebarBase.cs" /></ItemGroup>
-<ItemGroup><Content Include="Shared\StudentSidebar.ascx" /></ItemGroup>
-<ItemGroup><Content Include="Shared\CompanySidebar.ascx" /></ItemGroup>
-<ItemGroup><Content Include="Shared\AcademicSidebar.ascx" /></ItemGroup>
-<ItemGroup><Content Include="Shared\CoordinatorSidebar.ascx" /></ItemGroup>
-<ItemGroup><Content Include="Assets\shared\just-theme.css" /></ItemGroup>
-<ItemGroup><Content Include="Js_project\shared-role-navigation.js" /></ItemGroup>
-<ItemGroup><Content Include="Assets\shared\role-sidebar.css" /></ItemGroup>
-<ItemGroup><Content Include="Shared\Sidebar.ascx" /></ItemGroup>
-<ItemGroup><Compile Include="Shared\Sidebar.ascx.cs" /></ItemGroup>
-<ItemGroup><Compile Include="Shared\Sidebar.ascx.designer.cs" /></ItemGroup>
-<ItemGroup><Content Include="Assets\tasks-premium.css" /></ItemGroup>
+  <ItemGroup>
+  </ItemGroup>
+  <ItemGroup>
+  </ItemGroup>
+  <ItemGroup>
+  </ItemGroup>
+  <ItemGroup>
+  </ItemGroup>
+  <ItemGroup>
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="Assets\shared\just-theme.css" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="Js_project\shared-role-navigation.js" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="Assets\shared\role-sidebar.css" />
+  </ItemGroup>
+  <ItemGroup>
+  </ItemGroup>
+  <ItemGroup>
+  </ItemGroup>
+  <ItemGroup>
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="Assets\tasks-premium.css" />
+  </ItemGroup>
 </Project>

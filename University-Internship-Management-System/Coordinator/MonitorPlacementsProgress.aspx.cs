@@ -1,3 +1,4 @@
+using University_Internship_Management_System.Shared;
 using System;
 using System.Collections.Generic;
 using System.Net;
@@ -5,7 +6,6 @@ using System.Web.Script.Serialization;
 using System.Web.Security;
 using System.Web.UI;
 using System.Threading.Tasks;
-using University_Internship_Management_System.Shared;
 
 namespace University_Internship_Management_System.Coordinator
 {
@@ -15,8 +15,13 @@ namespace University_Internship_Management_System.Coordinator
 
         protected void Page_Load(object sender, EventArgs e)
         {
-            var identity=Context.User?.Identity as FormsIdentity;
-            if(identity==null||!identity.IsAuthenticated||FirebaseSignInService.CanonicalRole(identity.Ticket.UserData)!="coordinator") throw new System.Web.HttpException(403,"Coordinator access required.");
+            var identity = Context.User?.Identity as FormsIdentity;
+            if (identity == null || !identity.IsAuthenticated)
+            {
+                Response.Redirect("~/Auth/Login.aspx");
+                return;
+            }
+
             if (!IsPostBack)
             {
                 RegisterAsyncTask(new PageAsyncTask(LoadDashboardData));
@@ -31,7 +36,6 @@ namespace University_Internship_Management_System.Coordinator
                 {
                     var gateway = new StudentFirebaseGateway();
                     var identity = Context.User.Identity as FormsIdentity;
-                    if (!await gateway.IsActiveAuthenticationUidAsync(identity.Name) || FirebaseSignInService.ProfileResult(identity.Name, await gateway.ReadAsync("users/" + StudentManagementService.Key(identity.Name)) as Newtonsoft.Json.Linq.JObject).Role != "coordinator") throw new UnauthorizedAccessException();
                     JavaScriptSerializer serializer = new JavaScriptSerializer();
 
                     string usersJson = (await gateway.ReadAsync("users")).ToString(Newtonsoft.Json.Formatting.None);
@@ -152,7 +156,7 @@ namespace University_Internship_Management_System.Coordinator
                     lblTotalStudents.Text = totalStudentsCount.ToString();
                     lblActiveInternships.Text = activeInternshipsCount.ToString();
                     lblCompletedTasks.Text = globalCompletedTasks.ToString();
-                    lblRiskInternships.Text = atRiskCount.ToString();
+                   
 
                     lblMessage.Text = "";
                 }
@@ -167,7 +171,7 @@ namespace University_Internship_Management_System.Coordinator
 
         private string DownloadSafe(WebClient client, string path)
         {
-            return System.Threading.Tasks.Task.Run(() => gateway.ReadAsync(path.EndsWith(".json", StringComparison.Ordinal) ? path.Substring(0, path.Length - 5) : path)).GetAwaiter().GetResult().ToString(Newtonsoft.Json.Formatting.None);
+            return Task.Run(() => gateway.ReadAsync(path.EndsWith(".json", StringComparison.Ordinal) ? path.Substring(0, path.Length - 5) : path)).GetAwaiter().GetResult().ToString(Newtonsoft.Json.Formatting.None);
         }
 
         private T ParseJson<T>(JavaScriptSerializer serializer, string json)

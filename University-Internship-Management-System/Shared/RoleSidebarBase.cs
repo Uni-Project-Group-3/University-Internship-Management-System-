@@ -1,4 +1,5 @@
 using System;
+using System.Web.Security;
 using System.Web.UI;
 
 namespace University_Internship_Management_System.Shared
@@ -8,6 +9,15 @@ namespace University_Internship_Management_System.Shared
     public class RoleSidebarBase : UserControl
     {
         public string SidebarId { get; set; } = "sidebar";
+
+        protected void Logout_Click(object sender, EventArgs e)
+        {
+            FormsAuthentication.SignOut();
+            Session.Clear();
+            Session.Abandon();
+            Response.Redirect("~/Auth/Login.aspx", false);
+            Context.ApplicationInstance.CompleteRequest();
+        }
 
         protected string ActiveClass(string target)
         {
@@ -21,10 +31,7 @@ namespace University_Internship_Management_System.Shared
 
         private bool IsCurrent(string target)
         {
-            string current = Context?.Request?.AppRelativeCurrentExecutionFilePath;
-            if (string.IsNullOrEmpty(current)) current = Page?.AppRelativeVirtualPath;
-            if (!string.IsNullOrEmpty(current) && !current.EndsWith(".aspx", StringComparison.OrdinalIgnoreCase)) current += ".aspx";
-            return Page != null && string.Equals(current, target,
+            return Page != null && string.Equals(Page.AppRelativeVirtualPath, target,
                 StringComparison.OrdinalIgnoreCase);
         }
     }

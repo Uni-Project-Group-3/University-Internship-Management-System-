@@ -122,8 +122,7 @@ namespace University_Internship_Management_System.Academic
             litSummaryName.Text = Encoded(name, "Academic Supervisor");
             litSummaryDetails.Text = Encoded(department) + (email.Length > 0 ? " · " + Encoded(email) : "");
             litFullName.Text = Encoded(name);
-            // Display the academic supervisor business ID stored on this Firebase user profile.
-            litStaffId.Text = Encoded(Text(profile, "academicSupervisorId"));
+            litCollegeId.Text = Encoded(Text(profile, "collegeId"));
             litDepartment.Text = Encoded(department);
             litEmail.Text = Encoded(email);
 

@@ -1,5 +1,5 @@
 /* Original-page demo bindings. Layout and server controls remain in the ASPX. */
-(function () {
+(function() {
     'use strict';
     // Demo-only behavior is opt-in. A missing demo session must not hijack normal page navigation.
     if (!window.UimsDemo?.enabled()) return;
@@ -86,7 +86,6 @@
             try {
                 const result = demo.transaction(action, payload); view = demo.view();
                 if (popup) close(popup, true);
-                render(); notice('Saved in local demo storage. No Firebase operation or email was sent.');
                 return { ok: true, result };
             } catch (exception) { error(exception, popup ? by(popup) : null); return { ok: false }; }
         }
@@ -326,7 +325,6 @@
         ['oppTitle', 'oppDescription', 'oppSeats', 'oppLocation', 'oppDeadline', 'oppStart', 'oppDuration', 'oppRequiredHours'].forEach(id => by(id).required = true);
 
         render();
-        notice('DEMO — original interface connected to local browser storage. No Firebase or real authentication.');
         window.addEventListener('storage', event => { if (event.key === 'uims.demo.v1') { view = demo.view(); if (view && !view.user.mustChangePassword && view.user.role === document.body.dataset.demoRole) render(); else location.href = '../Auth/Login.aspx?demo=1'; } }, { signal });
         window.addEventListener('focus', () => { const current = demo.current(); if (!current || current.mustChangePassword) location.href = '../Auth/Login.aspx?demo=1'; }, { signal });
         window.addEventListener('pageshow', () => { const current = demo.current(); if (!current || current.mustChangePassword) location.href = '../Auth/Login.aspx?demo=1'; }, { signal });

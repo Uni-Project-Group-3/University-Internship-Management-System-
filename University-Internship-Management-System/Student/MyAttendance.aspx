@@ -41,11 +41,6 @@
                 <ul class="side-nav"><li><a href="../Contact.aspx"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="m8 12 3 3 5-6"/></svg><span>Help &amp; contact</span></a></li>
 </ul>
 
-                <div class="side-promo">
-                    <i class="bi bi-mortarboard-fill"></i>
-                    <p>Build your future<br />with real experience.</p>
-                    <a href="ExploreOpportunities.aspx">Explore opportunities &rarr;</a>
-                </div>
             </aside>
             <div class="sidebar-backdrop" onclick="toggleSidebar()"></div>
 
