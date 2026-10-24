@@ -36,6 +36,7 @@ Artifacts/UIMS-FULL-UNCHANGED-*.json
 
 # Local attendance signing material; never publish.
 .private/
+**/FirebaseSecrets/
 
 # Local database exports, audit artifacts, and generated verification output.
 Artifacts/

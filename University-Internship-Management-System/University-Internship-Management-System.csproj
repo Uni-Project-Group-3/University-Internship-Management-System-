@@ -992,4 +992,9 @@
   <ItemGroup>
     <Content Include="Assets\tasks-premium.css" />
   </ItemGroup>
+  <ItemGroup>
+    <None Include="Firebase.Local.config" Condition="Exists('Firebase.Local.config')">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
 </Project>
