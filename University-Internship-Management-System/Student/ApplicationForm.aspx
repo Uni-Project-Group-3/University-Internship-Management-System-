@@ -174,7 +174,7 @@
                             </div>
                             <p id="cvHelp" class="field-help"><i class="bi bi-link-45deg"></i> Use a shareable link that the company supervisor can access.</p>
 
-                            <label for="portfolioLink" class="form-label">Portfolio or GitHub link <span>(optional)</span></label>
+                            <label for="portfolioLink" class="form-label">Portfolio <span>(optional)</span></label>
                             <div class="input-icon">
                                 <i class="bi bi-github"></i>
                                 <input id="portfolioLink" name="portfolioLink" class="form-control" type="url" placeholder="https://" maxlength="500" />
