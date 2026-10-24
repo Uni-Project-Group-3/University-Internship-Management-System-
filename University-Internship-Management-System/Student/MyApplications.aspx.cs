@@ -44,6 +44,7 @@ namespace University_Internship_Management_System.Student
             string placementId = "PLC-" + id;
             string now = FirebaseDb.Now;
 
+            var period = UIMS.Attendance.AttendanceOnboarding.TrainingPeriod(application, opportunity);
             var updates = new JObject
             {
                 ["placements/" + placementId] = new JObject
@@ -59,8 +60,10 @@ namespace University_Internship_Management_System.Student
                     ["studentProfileId"] = studentId,
                     ["studentUid"] = Uid,
                     ["requiredHours"] = Int(opportunity["requiredHours"]),
-                    ["durationWeeks"] = Int(opportunity["durationWeeks"]),
-                    ["startDate"] = S(opportunity["startDate"]),
+                    ["durationWeeks"] = period["durationWeeks"],
+                    ["acceptedAt"] = period["acceptedAt"], ["attendanceMode"] = "flexible",
+                    ["endDate"] = period["endDate"],
+                    ["startDate"] = period["startDate"],
                     ["status"] = "active",
                     ["createdAt"] = now
                 },
@@ -91,7 +94,15 @@ namespace University_Internship_Management_System.Student
                 updates["opportunities/" + otherOpportunity + "/acceptedCount"] = Math.Max(0, Int(op["acceptedCount"]) - 1);
             }
 
-            Db.Update("", updates); // one atomic write
+            var placement = (JObject)updates["placements/" + placementId];
+            UIMS.Attendance.AttendanceOnboarding.ApplyTrainingDefaults(placement);
+            var attendance = Db.GetObject("uimsAttendance") ?? new JObject();
+            var provisioned = UIMS.Attendance.AttendanceOnboarding.Build(attendance, Uid, studentId, placementId, placement, Profile);
+            string assignmentId = (string)provisioned["students"][studentId]["activeAssignmentId"];
+            updates["uimsAttendance/students/" + studentId] = provisioned["students"][studentId];
+            updates["uimsAttendance/trainingAssignments/" + assignmentId] = provisioned["trainingAssignments"][assignmentId];
+            updates["uimsAttendance/provisioningClaims/" + placementId] = provisioned["provisioningClaims"][placementId];
+            Db.Update("", updates); // placement and attendance links are saved atomically
         }
     }
 }

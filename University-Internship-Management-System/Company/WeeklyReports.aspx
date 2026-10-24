@@ -1,4 +1,4 @@
-<%@ Page Language="C#" AutoEventWireup="true" CodePage="65001" %>
+﻿<%@ Page Language="C#" AutoEventWireup="true" CodePage="65001" %>
 <%@ Import Namespace="System.Web.Security" %>
 <%@ Import Namespace="University_Internship_Management_System.Shared" %>
 <script runat="server">
@@ -25,4 +25,5 @@
 <label>Comments <span class="wr-muted">(optional)</span><textarea id="companyComments" rows="3" maxlength="3000" placeholder="Weekly progress and observations"></textarea></label>
 <button id="submitReport" class="wr-primary" type="button">Submit weekly report</button></section>
 <section class="wr-card"><div class="wr-card-heading"><div><h2>Reports</h2></div><button id="refreshCompany" class="wr-secondary" type="button">Refresh</button></div><div id="companyReports" class="wr-report-list"><p class="wr-empty">Loading reports…</p></div></section>
-</div></main></div></form><link href="../Assets/task-workspace.css" rel="stylesheet" /><script src="../Js_project/task-dialogs.js?v=20261024-polish"></script><script src="../Js_project/weekly-task-context.js?v=20261024-review"></script><script src="../Js_project/Company/WeeklyReports.js?v=20261024-clean"></script></body></html>
+</div></main></div></form><link href="../Assets/task-workspace.css" rel="stylesheet" /><script src="../Js_project/task-dialogs.js?v=20261025-flow"></script><script src="../Js_project/weekly-task-context.js?v=20261024-review"></script><script src="../Js_project/Company/WeeklyReports.js?v=20261024-clean"></script><link href="../Assets/task-flow.css?v=20261025-flow" rel="stylesheet" />
+</body></html>

@@ -19,7 +19,7 @@
 <link rel="stylesheet" href="../Assets/shared/just-theme.css" />
 
 <link href="../Assets/shared/workspace-identity.css?v=20261024-refine" rel="stylesheet" />
-<script src="../Js_project/workspace-navigation-unified.js?v=20261024-refine" defer></script>
+<script src="../Js_project/workspace-navigation-unified.js?v=20261025-task-flow" defer></script>
 <link href="../Assets/company/company-hero.css?v=20261024-blue" rel="stylesheet" />
 </head>
     <body class="uims-tasks-theme" data-demo-role="company">
@@ -110,11 +110,11 @@
                             </div>
                             <div class="mb-3"><label for="newTaskCriteria" class="form-label custom-label">Instructions &amp; assessment criteria <span aria-hidden="true">*</span></label><textarea class="form-control custom-input" id="newTaskCriteria" rows="4" required maxlength="500" placeholder="Explain the steps, deliverables and how the work will be assessed."></textarea><small>Clear instructions for the student · up to 500 characters.</small></div>
                             <div class="row mb-3">
-                                <div class="col-md-6">
-                                    <label for="newTaskStart">Start date &amp; time *</label><input id="newTaskStart" type="datetime-local" required class="form-control" /><label for="newTaskDeadline" class="form-label custom-label">Deadline date &amp; time <span aria-hidden="true">*</span></label>
+                                <div class="col-md-4">
+                                    <label for="newTaskStart">Start date &amp; time *</label><input id="newTaskStart" type="datetime-local" required class="form-control" /></div><div class="col-md-4"><label for="newTaskDeadline" class="form-label custom-label">Deadline date &amp; time <span aria-hidden="true">*</span></label>
                                     <input type="datetime-local" id="newTaskDeadline" required class="form-control custom-input"><small class="task-timezone"></small>
                                 </div>
-                                <div class="col-md-6"><label class="form-label custom-label" for="newTaskMaximum">Maximum grade <span aria-hidden="true">*</span></label><input type="number" id="newTaskMaximum" class="form-control custom-input" min="1" max="1000" step="1" value="10" required /><small>Whole number from 1 to 1000.</small></div>
+                                <div class="col-md-4"><label class="form-label custom-label" for="newTaskMaximum">Maximum grade <span aria-hidden="true">*</span></label><input type="number" id="newTaskMaximum" class="form-control custom-input" min="1" max="1000" step="1" value="10" required /><small>Whole number from 1 to 1000.</small></div>
                             </div></section>
                             <section class="task-compose-section task-compose-students"><h6>02 <span>Assign students</span></h6>
                                     <label for="studentSearch" class="form-label custom-label">Eligible students <span aria-hidden="true">*</span></label>
@@ -203,10 +203,11 @@
         <link href="../Assets/task-workspace.css?v=20261023-task-connection" rel="stylesheet" />
 <link href="../Assets/tasks-premium.css?v=20261024-buttons" rel="stylesheet" />
         <script src="../Js_project/firebase-client.js?v=20261023-task-connection"></script>
-        <script src="../Js_project/task-dialogs.js?v=20261024-polish"></script>
-        <script src="../Js_project/Company/TaskExams.js?v=20261024-polish"></script>
-        <script src="../Js_project/Company/ManageTasks.js?v=20261023-closeout">
+        <script src="../Js_project/task-dialogs.js?v=20261025-flow"></script>
+        <script src="../Js_project/Company/TaskExams.js?v=20261025-flow"></script>
+        <script src="../Js_project/Company/ManageTasks.js?v=20261025-flow">
         </script>
-        <script src="../Js_project/Company/TaskComposer.js?v=20261023-exam-readiness"></script>
-    </body>
+        <script src="../Js_project/Company/TaskComposer.js?v=20261025-flow"></script>
+    <link href="../Assets/task-flow.css?v=20261025-flow" rel="stylesheet" />
+</body>
 </html>

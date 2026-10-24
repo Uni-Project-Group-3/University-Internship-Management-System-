@@ -65,6 +65,7 @@ namespace UIMS.Services
             Validate(input, true);
             string id = "OP-" + Guid.NewGuid().ToString("N");
             var record = ToRecord(input, id, actor.CompanyId, actor.CompanyName);
+            UIMS.Attendance.AttendanceOnboarding.ApplyTrainingDefaults(record);
             var snapshot = await database.ReadVersionAsync("opportunities/" + id).ConfigureAwait(false);
             if (snapshot.Value != null || string.IsNullOrWhiteSpace(snapshot.ETag))
                 throw new FirebaseException(409, "Could not reserve a unique opportunity identifier.");
@@ -87,6 +88,7 @@ namespace UIMS.Services
             if (input.Seats < accepted)
                 throw new FirebaseException(400, "Seats cannot be lower than the number of accepted students.");
             ApplyEditableFields(current, input);
+            UIMS.Attendance.AttendanceOnboarding.ApplyTrainingDefaults(current);
             if (string.IsNullOrWhiteSpace(snapshot.ETag) ||
                 !await database.CompareWriteAsync("opportunities/" + id, current, snapshot.ETag).ConfigureAwait(false))
                 throw new FirebaseException(409, "Opportunity changed while you were editing it. Reload and retry.");
@@ -217,7 +219,7 @@ namespace UIMS.Services
             if (value == null || string.IsNullOrWhiteSpace(value.Title) || value.Title.Trim().Length > 180 ||
                 string.IsNullOrWhiteSpace(value.Description) || value.Description.Trim().Length > 12000 ||
                 string.IsNullOrWhiteSpace(value.Location) || value.Location.Trim().Length > 180 ||
-                string.IsNullOrWhiteSpace(value.WorkMode) || value.Seats < 1 || value.DurationWeeks < 1 ||
+                string.IsNullOrWhiteSpace(value.WorkMode) || value.Seats < 1 || value.DurationWeeks < 1 || value.DurationWeeks > 52 ||
                 value.RequiredHours < 1 || value.Majors == null || value.Majors.Count == 0 ||
                 value.Majors.Any(string.IsNullOrWhiteSpace) || value.Deadline == default(DateTime) || value.StartDate == default(DateTime) ||
                 value.Deadline.Date < DateTime.UtcNow.Date || value.Deadline.Date > value.StartDate.Date)

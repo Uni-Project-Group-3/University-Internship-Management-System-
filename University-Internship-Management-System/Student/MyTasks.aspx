@@ -19,7 +19,7 @@
 <link rel="stylesheet" href="../Assets/shared/just-theme.css" />
 
 <link href="../Assets/shared/workspace-identity.css?v=20261024-refine" rel="stylesheet" />
-<script src="../Js_project/workspace-navigation-unified.js?v=20261024-refine" defer></script>
+<script src="../Js_project/workspace-navigation-unified.js?v=20261025-task-flow" defer></script>
 </head>
     <body class="uims-tasks-theme" data-demo-role="student">
         <form id="form1" runat="server">
@@ -146,10 +146,11 @@
         <link href="../Assets/task-workspace.css?v=20261023-task-connection" rel="stylesheet" />
 <link href="../Assets/tasks-premium.css?v=20261024-buttons" rel="stylesheet" />
         <script src="../Js_project/firebase-client.js?v=20261023-task-connection"></script>
-        <script src="../Js_project/task-dialogs.js?v=20261024-polish"></script>
-        <script src="../Js_project/Student/TaskExams.js?v=20261024-polish"></script>
+        <script src="../Js_project/task-dialogs.js?v=20261025-flow"></script>
+        <script src="../Js_project/Student/TaskExams.js?v=20261025-flow"></script>
         <script src="../Js_project/workflow-dialogs.js?v=20261023"></script>
-        <script src="../Js_project/Student/MyTasks.js?v=20261024-view-button">
+        <script src="../Js_project/Student/MyTasks.js?v=20261025-flow">
         </script>
-    </body>
+    <link href="../Assets/task-flow.css?v=20261025-flow" rel="stylesheet" />
+</body>
 </html>

@@ -1,4 +1,4 @@
-(function () {
+﻿(function () {
     'use strict';
     const embedded = !!document.getElementById('taskExamWorkspace');
     const api = '../TaskExamsApi.ashx', $ = id => document.getElementById(embedded ? ({ notice: 'taskExamNotice', examList: 'taskExamList' }[id] || id) : id);
@@ -20,11 +20,19 @@
     function countdown(ms) { const s = Math.max(0, Math.ceil(ms / 1000)), d = Math.floor(s / 86400); return (d ? d + 'd ' : '') + [Math.floor(s / 3600) % 24, Math.floor(s / 60) % 60, s % 60].map(n => String(n).padStart(2, '0')).join(' : '); }
     const resultLabel = item => item.resultStatus === 'released' ? 'Score ' + item.score + ' / ' + item.maximumScore + (item.feedback ? ' · ' + item.feedback : '') + ' · Released ' + date(item.releasedAt) : item.resultStatus === 'revisionRequested' ? 'Not complete. Your supervisor requested a new examination attempt. Check the new deadline before starting.' : item.resultStatus === 'approvedHidden' ? 'Your result is currently hidden by your company supervisor.' : 'Exam submitted successfully. Your result is awaiting supervisor approval.';
     function element(tag, text, className) { const el = document.createElement(tag); if (tag === 'button') el.type = 'button'; if (text) el.textContent = text; if (className) el.className = className; return el; }
-    function dialog(title, large) { const el = element('dialog', '', 'workspace-dialog student-exam-popup' + (large ? ' workspace-exam-attempt' : '')); const h = element('h2', title); h.id = 'exam-title-' + Math.random().toString(36).slice(2); el.setAttribute('aria-labelledby', h.id); el.append(h); const parent = document.querySelector('.modal.show'), trap = parent && window.bootstrap?.Modal.getInstance(parent)?._focustrap; trap?.deactivate(); el.addEventListener('close', () => { if (!document.querySelector('dialog[open]')) trap?.activate(); }); document.body.append(el); return el; }
+    function dialog(title, large) {
+        const surface = TaskDialogs.createSurface(title, { fullPage: !!large });
+        surface.classList.add('student-exam-popup');
+        surface.querySelector('.task-flow-back').textContent = large ? '← My exams' : '← Back';
+        if (large) surface.classList.add('workspace-exam-attempt');
+        return surface;
+    }
     async function load() {
         const version = ++loadVersion, filter = taskFilter;
         try {
-            const items = await call('list'); if (version !== loadVersion) return; indexedTasks = new Set(Object.values(items || {}).filter(x=>x?.versionData).map(x=>x.taskId)); window.dispatchEvent(new Event('task-exam-index')); $('examList').replaceChildren();
+            const items = await call('list'); if (version !== loadVersion) return;
+            const clockSource = Object.values(items || {}).find(item => Number.isFinite(Date.parse(item?.serverNow)));
+            if (clockSource) anchor = { server: Date.parse(clockSource.serverNow), local: performance.now() }; indexedTasks = new Set(Object.values(items || {}).filter(x=>x?.versionData).map(x=>x.taskId)); window.dispatchEvent(new Event('task-exam-index')); $('examList').replaceChildren();
             for (const [id, item] of Object.entries(items || {})) {
                 if (!item?.versionData || (filter && item.taskId !== filter)) continue;
                 const card = element('article', '', 'exam-card'), button = element('button', 'View exam', 'primary');
@@ -53,7 +61,9 @@
             let checking = false, eligible = false, checkingEligibility = false, lastCheck = -Infinity;
             start.onclick = async () => {
                 if (checking) return; checking = true; start.disabled = true;
-                try { if (latest?.status !== 'inProgress' && !await TaskDialogs.confirm('Start examination?', 'Starting consumes an allowed attempt. The server timer continues even if you close the popup.', 'Start exam')) return; attempt = await call('start', { examId: id }); exam = await call('exam&examId=' + encodeURIComponent(id)); answers = attempt.answers || {}; finish(); renderAttempt(); }
+                try { if (latest?.status !== 'inProgress' && !await TaskDialogs.confirm('Start examination?', 'Starting consumes an allowed attempt. The server timer continues even if you close the popup.', 'Start exam')) return; attempt = await call('start', { examId: id }); exam = await call('exam&examId=' + encodeURIComponent(id)); answers = attempt.answers || {}; finish();
+                    if (embedded) { location.assign('MyExams.aspx?examId=' + encodeURIComponent(id) + '&resume=1'); return; }
+                    renderAttempt(); }
                 catch (e) { status.textContent = e.message; } finally { checking = false; }
             };
             function tick() {
@@ -75,7 +85,7 @@
         } catch (e) { message(e.message, true); }
     }
     function renderAttempt() {
-        clearInterval(timer); document.getElementById('takeExamDialog')?.remove();
+        clearInterval(timer); const previousAttempt = document.getElementById('takeExamDialog'); if (previousAttempt) { previousAttempt.close(); previousAttempt.remove(); }
         const popup = dialog(exam.versionData.title, true); popup.id = 'takeExamDialog';
         const clock = element('div', '', 'exam-timer'), progress = element('p'), status = element('p'), content = element('div', '', 'workspace-dialog-body'), nav = element('nav');
         clock.setAttribute('role', 'timer'); nav.setAttribute('aria-label', 'Question navigation'); const v = exam.versionData, order = v.questionOrder || [];
@@ -100,7 +110,7 @@
         const previous = element('button', 'Previous', 'secondary'), next = element('button', 'Next', 'primary'); previous.disabled = true; next.disabled = order.length <= 1;
         const step = delta => { selectQuestion(Math.max(0, Math.min(order.length - 1, currentQuestion + delta))); previous.disabled = currentQuestion === 0; next.disabled = currentQuestion === order.length - 1; };
         previous.onclick = () => step(-1); next.onclick = () => step(1);
-        actions.append(previous, next, close, submit); popup.append(clock, progress, completion, nav, status, content, actions); update(); selectQuestion(0); popup.showModal(); popup.oncancel = e => { e.preventDefault(); close.click(); };
+        actions.append(previous, next, close, submit); popup.append(clock, progress, completion, nav, status, content, actions); update(); selectQuestion(0); popup.showModal(); popup.addEventListener('cancel', e => { e.preventDefault(); close.click(); });
         if (attempt.status !== 'inProgress') {
             // A finalized attempt is a receipt, not an editable examination.
             clock.remove(); progress.remove(); completion.remove(); nav.remove(); content.remove();
@@ -136,8 +146,17 @@
         } catch (e) { status.textContent = 'Save failed: ' + e.message + ' Your answers remain on this page. Retry when connected.'; return false; } finally { busy = false; }
     }
     window.StudentTaskExams = Object.freeze({ hasTask: id => indexedTasks.has(id), index: load, showTask(id) { taskFilter = id; $('examList').replaceChildren(); notice.textContent = 'Loading examination from Firebase…'; return load(); }, async refresh() { if (refreshDetails) await refreshDetails(); else if (canRefresh()) await load(); } });
-    if (!embedded) load();
-    const canRefresh = () => !document.querySelector('dialog[open]') && (!embedded || (!document.getElementById('studentPanelExam').hidden && document.getElementById('submitModal').classList.contains('show')));
+    if (!embedded) load().then(async () => {
+        const params = new URLSearchParams(location.search), id = params.get('examId');
+        if (!id || params.get('resume') !== '1') return;
+        try {
+            const records = await call('myAttempts&examId=' + encodeURIComponent(id));
+            const latest = Object.values(records || {}).sort((a,b) => String(b.startedAt).localeCompare(String(a.startedAt)))[0];
+            if (!latest) throw new Error('No existing examination attempt is available. Return to My Tasks to start.');
+            exam = await call('exam&examId=' + encodeURIComponent(id)); attempt = latest; answers = attempt.answers || {}; if (now() == null) throw new Error('The server clock is unavailable. Refresh before continuing the examination.'); renderAttempt();
+        } catch (error) { message(error.message, true); }
+    });
+    const canRefresh = () => !TaskDialogs.activeSurface() && (!embedded || (!document.getElementById('studentPanelExam').hidden && document.getElementById('submitModal').classList.contains('show')));
     window.addEventListener('focus', () => { if (canRefresh()) load(); });
     if (!embedded) TaskDialogs.watch(() => window.StudentTaskExams.refresh(), () => !busy);
 }());

@@ -24,6 +24,9 @@ namespace UIMS.Attendance
         private void RequireResetActor(string studentId, string uid)
         {
             var actor = AttendanceConfiguration.WriteRequest.Value;
+            if (configuration.AuthenticatedWritesEnabled && IsLocalResetRequest(HttpContext.Current) &&
+                actor != null && actor.Role == "company" && actor.Uid == uid && !string.IsNullOrWhiteSpace(uid) &&
+                !string.IsNullOrWhiteSpace(actor.Id) && (actor.Action == "supervisorResetPreview" || actor.Action == "supervisorResetToday")) return;
             if (!CanOfferStudentReset || actor == null || actor.Role != "student" || actor.Id != studentId || actor.Uid != uid ||
                 (actor.Action != "resetPreview" && actor.Action != "resetToday") || string.IsNullOrWhiteSpace(uid))
                 throw new UIMS.Services.FirebaseException(403, "Attendance reset is available only for your own account in enabled local testing.");
@@ -38,9 +41,11 @@ namespace UIMS.Attendance
         private async Task<AttendanceContext> ResetContext(string studentId, string uid)
         {
             RequireResetActor(studentId, uid);
-            await Identity("student", studentId, uid, false);
+            var actor = AttendanceConfiguration.WriteRequest.Value;
+            bool supervisor = actor.Role == "company";
+            await Identity(supervisor ? "company" : "student", supervisor ? actor.Id : studentId, uid, false);
             await CheckEnabled();
-            var c = await Context(studentId, null);
+            var c = await Context(studentId, supervisor ? actor.Id : null);
             CheckFlexibleAttendanceDate(c);
             CheckRecord(c);
             // Legacy requests live in a separate conditional record. Never silently reset half of a two-record workflow.

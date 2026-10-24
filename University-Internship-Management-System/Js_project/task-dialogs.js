@@ -1,6 +1,54 @@
-(function () {
+﻿(function () {
     'use strict';
     let serial = 0;
+    const surfaces = [];
+    function createSurface(title, options = {}) {
+        const previousFocus = document.activeElement;
+        const parent = surfaces[surfaces.length - 1];
+        const bootstrapModal = !parent && document.querySelector('.modal.show');
+        const ownShell = !parent && !bootstrapModal;
+        const host = parent ? parent.parentNode : bootstrapModal ? bootstrapModal.querySelector('.modal-content') : document.createElement('dialog');
+        if (ownShell) { host.className = 'task-flow-shell'; document.body.append(host); }
+        const surface = document.createElement('section'); surface.className = 'task-flow-surface';
+        const header = document.createElement('header'); header.className = 'task-flow-header';
+        const back = document.createElement('button'); back.type = 'button'; back.className = 'task-flow-back'; back.textContent = ownShell ? 'Close' : '← Back';
+        const heading = document.createElement('h2'); heading.textContent = title; heading.id = 'task-flow-heading-' + (++serial);
+        surface.setAttribute('aria-labelledby', heading.id); surface.setAttribute('role', 'region');
+        header.append(back, heading); surface.append(header);
+        let parked, opened = false;
+        const modalRoot = bootstrapModal || parent?.closest('.modal') || host;
+        const wasFull = modalRoot.classList.contains('task-flow-fullscreen');
+        Object.defineProperty(surface, 'open', { get: () => opened });
+        function cancel() { const event = new Event('cancel', { cancelable: true }); surface.dispatchEvent(event); if (!event.defaultPrevented) surface.close(); }
+        back.onclick = cancel;
+        const escape = event => { if (event.key === 'Escape' && surfaces[surfaces.length - 1] === surface) { event.preventDefault(); event.stopImmediatePropagation(); cancel(); } };
+        const hide = event => { if (opened && surfaces[surfaces.length - 1] === surface) { event.preventDefault(); cancel(); } };
+        surface.showModal = () => {
+            if (opened) return; opened = true; surface.setAttribute('open', '');
+            parked = document.createElement('div'); parked.className = 'task-flow-previous'; parked.hidden = true; parked.inert = true;
+            while (host.firstChild) parked.append(host.firstChild);
+            host.append(parked, surface); surface.dataset.taskFlowActive = 'true'; surfaces.push(surface);
+            modalRoot.classList.toggle('task-flow-fullscreen', !!options.fullPage || wasFull);
+            document.addEventListener('keydown', escape, true);
+            if (bootstrapModal) bootstrapModal.addEventListener('hide.bs.modal', hide);
+            if (ownShell) { host.addEventListener('cancel', event => { event.preventDefault(); cancel(); }); host.showModal(); }
+            back.focus();
+        };
+        surface.close = () => {
+            if (!opened) return;
+            while (surfaces[surfaces.length - 1] !== surface) surfaces[surfaces.length - 1].close();
+            opened = false; surface.removeAttribute('open'); surfaces.pop(); delete surface.dataset.taskFlowActive;
+            document.removeEventListener('keydown', escape, true);
+            if (bootstrapModal) bootstrapModal.removeEventListener('hide.bs.modal', hide);
+            const restored = [...parked.childNodes]; host.replaceChildren(...restored);
+            modalRoot.classList.toggle('task-flow-fullscreen', wasFull);
+            if (ownShell) { host.close(); host.remove(); }
+            surface.dispatchEvent(new Event('close'));
+            if (previousFocus?.isConnected) previousFocus.focus();
+        };
+        return surface;
+    }
+    function activeSurface() { return surfaces[surfaces.length - 1] || null; }
     function validate(container) {
         let first;
         container.querySelectorAll('input,textarea,select').forEach(field => {
@@ -16,13 +64,7 @@
         return !first;
     }
     function open(title, content, options = {}) {
-        const previous = document.activeElement, dialog = document.createElement('dialog');
-        const activeBootstrap = document.querySelector('.modal.show');
-        const focusTrap = activeBootstrap && window.bootstrap?.Modal.getInstance(activeBootstrap)?._focustrap;
-        focusTrap?.deactivate();
-        dialog.className = 'workspace-dialog';
-        const heading = document.createElement('h2'); heading.id = 'workspace-dialog-' + (++serial); heading.textContent = title;
-        dialog.setAttribute('aria-labelledby', heading.id);
+        const previous = document.activeElement, dialog = createSurface(title);
         const body = document.createElement('div'); body.className = 'workspace-dialog-body';
         if (typeof content === 'string') { const p = document.createElement('p'); p.textContent = content; body.append(p); } else body.append(content);
         const actions = document.createElement('div'); actions.className = 'workspace-dialog-actions';
@@ -30,10 +72,12 @@
         const confirm = document.createElement('button'); confirm.type = 'button'; confirm.className = 'btn primary btn-primary'; confirm.textContent = options.confirm || 'Confirm';
         if (/discard|archive|delete|reject|hide/i.test(confirm.textContent)) confirm.classList.add('workspace-danger');
         if (typeof content === 'string') { dialog.classList.add('workspace-confirmation'); const icon = document.createElement('div'); icon.className = 'workspace-confirm-icon'; icon.setAttribute('aria-hidden', 'true'); icon.textContent = '?'; dialog.prepend(icon); }
-        actions.append(cancel, confirm); dialog.append(heading, body, actions); document.body.append(dialog);
+        if (options.cancel === 'Close' && options.confirm === 'Done') cancel.hidden = true;
+        actions.append(cancel, confirm); dialog.append(body, actions);
         return new Promise(resolve => {
             let finished = false;
-            function close(value) { if (finished) return; finished = true; dialog.close(); dialog.remove(); if (!document.querySelector('dialog[open]')) focusTrap?.activate(); previous?.focus(); resolve(value); }
+            function close(value) { if (finished) return; finished = true; dialog.close(); dialog.remove(); if (previous?.isConnected) previous.focus(); resolve(value); }
+            dialog.addEventListener('close', () => { if (!finished) { finished = true; resolve(false); } });
             cancel.onclick = () => close(false);
             confirm.onclick = () => {
                 if (options.validate && options.validate(body) === false) { validate(body); return; }
@@ -78,5 +122,5 @@
         })();
         window.addEventListener('pagehide', () => { stopped = true; channel?.close(); }, { once: true });
     }
-    window.TaskDialogs = { open, validate, watch, renderBoardShell, confirm: (title, detail, label) => open(title, detail, { confirm: label || 'Confirm' }) };
+    window.TaskDialogs = { open, createSurface, activeSurface, validate, watch, renderBoardShell, confirm: (title, detail, label) => open(title, detail, { confirm: label || 'Confirm' }) };
 }());

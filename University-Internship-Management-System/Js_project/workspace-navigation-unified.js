@@ -1,4 +1,4 @@
-/* One drawer and sign-out path for every workspace role. */
+﻿/* One drawer and sign-out path for every workspace role. */
 (() => {
  'use strict';
  const asset = document.currentScript.src;
@@ -51,7 +51,7 @@
  function icons(){document.querySelectorAll('.workspace-nav-primary a').forEach(el=>{if(/^task exams$/i.test(el.textContent.trim()))el.remove();});document.querySelectorAll('button,a').forEach(el=>{if(/^view details$/i.test(el.textContent.trim())&&!el.querySelector('svg')){el.setAttribute('aria-label','View details');el.title='View details';el.classList.add('workspace-details-icon');el.innerHTML=eye;}})}
  function dismiss(dialog){const cancel=new Event('cancel',{cancelable:true});if(dialog.dispatchEvent(cancel))dialog.close();}
  document.addEventListener('click',e=>{const d=e.target;if(d instanceof HTMLDialogElement&&d.open){const r=d.getBoundingClientRect();if(e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom)dismiss(d);}});
- document.addEventListener('workspace:saved',()=>{document.querySelectorAll('dialog[open]').forEach(dismiss);document.querySelectorAll('.modal.show').forEach(m=>window.bootstrap?.Modal.getInstance(m)?.hide());});
+ document.addEventListener('workspace:saved',()=>{if(window.TaskDialogs?.activeSurface())return;document.querySelectorAll('dialog[open]').forEach(dismiss);document.querySelectorAll('.modal.show').forEach(m=>window.bootstrap?.Modal.getInstance(m)?.hide());});
  const tables=new WeakMap();
  function paginate(table){
   if(tables.has(table)||!table.tHead||!table.tBodies.length)return;
@@ -64,7 +64,7 @@
   buttons[0].onclick=()=>{page--;update()};buttons[1].onclick=()=>{page++;update()};select.onchange=()=>update(true);parent.addEventListener('input',e=>{if(!pager.contains(e.target))setTimeout(()=>update(true),0)});parent.addEventListener('change',e=>{if(!pager.contains(e.target))setTimeout(()=>update(true),0)});new MutationObserver(()=>update()).observe(table,{childList:true,subtree:true});tables.set(table,update);update();
  }
  function scan(){icons();document.querySelectorAll('table').forEach(paginate)}
- let scheduled=false;const observer=new MutationObserver(records=>{for(const r of records){const el=r.target.nodeType===1?r.target:r.target.parentElement;const status=el?.closest?.('[role="status"],.text-success,.alert-success,.notice.success,[data-tone="success"]');const text=status?.textContent||'';if(status&&/\b(successfully|saved|created successfully|submitted successfully|updated successfully)\b/i.test(text)&&!/(no saved|unsaved|not saved|not been saved|not yet saved|could not|failed|unsuccessful|unavailable)/i.test(text)){const dialog=status.closest('dialog[open]');if(dialog)dismiss(dialog);const modal=status.closest('.modal.show');if(modal)window.bootstrap?.Modal.getInstance(modal)?.hide();if(!dialog&&!modal){const open=[...document.querySelectorAll('dialog[open]')].at(-1);if(open)dismiss(open);document.querySelectorAll('.modal.show').forEach(m=>window.bootstrap?.Modal.getInstance(m)?.hide());}}}if(!scheduled){scheduled=true;requestAnimationFrame(()=>{scheduled=false;scan()})}});
+ let scheduled=false;const observer=new MutationObserver(records=>{for(const r of records){const el=r.target.nodeType===1?r.target:r.target.parentElement;const status=el?.closest?.('[role="status"],.text-success,.alert-success,.notice.success,[data-tone="success"]');const text=status?.textContent||'';if(status&&/\b(successfully|saved|created successfully|submitted successfully|updated successfully)\b/i.test(text)&&!/(no saved|unsaved|not saved|not been saved|not yet saved|could not|failed|unsuccessful|unavailable)/i.test(text)){if(window.TaskDialogs?.activeSurface())continue;const dialog=status.closest('dialog[open]');if(dialog)dismiss(dialog);const modal=status.closest('.modal.show');if(modal)window.bootstrap?.Modal.getInstance(modal)?.hide();if(!dialog&&!modal){const open=[...document.querySelectorAll('dialog[open]')].at(-1);if(open)dismiss(open);document.querySelectorAll('.modal.show').forEach(m=>window.bootstrap?.Modal.getInstance(m)?.hide());}}}if(!scheduled){scheduled=true;requestAnimationFrame(()=>{scheduled=false;scan()})}});
  function init(){scan();observer.observe(document.body,{childList:true,subtree:true,characterData:true});}
  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
 })();

@@ -261,10 +261,10 @@
         function dateHint() {
             const hint = by('dateHint'), output = by('dateHintText'); if (!hint || !output) return;
             const start = toDate(value('oppStart')), deadline = toDate(value('oppDeadline')), weeks = Number(value('oppDuration'));
-            let message = 'Pick a start date and duration to see when the internship ends.', warning = false;
+            let message = 'Training weeks begin on company acceptance. Attendance is available at any hour during that period.', warning = false;
             if (start && deadline && deadline > start) { message = 'The application deadline must be on or before the start date.'; warning = true; }
             else if (deadline && !selected && daysUntil(value('oppDeadline')) < 0) { message = 'The application deadline cannot be in the past.'; warning = true; }
-            else if (start && weeks > 0) { const end = new Date(start); end.setDate(end.getDate() + weeks * 7); message = 'Training runs ' + formatDate(start) + ' → ' + formatDate(end) + ' (' + plural(weeks, 'week') + ').'; }
+            else if (weeks > 0) { message = 'Training lasts ' + plural(weeks, 'week') + ' from company acceptance. Attendance is available at any hour.'; }
             output.textContent = message; hint.classList.toggle('is-warning', warning);
             const icon = hint.querySelector('i'); if (icon) icon.className = 'bi ' + (warning ? 'bi-exclamation-triangle' : 'bi-calendar-check');
         }

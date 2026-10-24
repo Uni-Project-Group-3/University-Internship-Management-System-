@@ -1,4 +1,4 @@
-(function () {
+﻿(function () {
     'use strict';
     const api = '../TasksApi.ashx';
     let state = { tasks: [], submissions: [], students: [] }, boardState = null, selectedId = null, busy = false, boardBusy = false, viewMode = 'board', draggedTaskId = null, examStates = new Map();
@@ -281,7 +281,7 @@
         selectReviewTab('details');
         modal('reviewModal')?.show();
     }
-    function selectReviewTab(){const isExam=state.tasks.find(task => task.id === selectedId)?.taskType === 'exam'||examStates.has(selectedId);document.querySelectorAll('[data-company-panel]').forEach(p=>{p.hidden=isExam?p.dataset.companyPanel!=='exam':p.dataset.companyPanel==='exam';});by('approveTaskBtn').hidden=isExam;by('requestRevisionBtn').hidden=isExam;}
+    function selectReviewTab(){const isExam=state.tasks.find(task => task.id === selectedId)?.taskType === 'exam'||examStates.has(selectedId);document.querySelectorAll('[data-company-panel]').forEach(p=>{p.hidden=isExam?!['details','exam'].includes(p.dataset.companyPanel):p.dataset.companyPanel==='exam';});by('approveTaskBtn').hidden=isExam;by('requestRevisionBtn').hidden=isExam;}
     by('reviewModal').addEventListener('hide.bs.modal', event => { if (allowReviewClose || busy || JSON.stringify([by('gradeInput').value, by('feedbackInput').value]) === reviewBaseline) return; event.preventDefault(); TaskDialogs.confirm('Discard unsaved review?', 'Your unsaved grade and feedback will be discarded.', 'Discard review').then(confirmed => { if (confirmed) { allowReviewClose = true; modal('reviewModal').hide(); } }); });
     async function renderTaskExams(taskId) {
         const host = by('companyTaskExams'); host.textContent = 'Loading authorized examinations…';

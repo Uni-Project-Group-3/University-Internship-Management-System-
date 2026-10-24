@@ -1,4 +1,4 @@
-(function () {
+﻿(function () {
     'use strict';
     const api = '../TaskExamsApi.ashx';
     const $ = id => document.getElementById(id);
@@ -140,7 +140,18 @@
             for (const student of Object.values(attempts || {})) for (const attempt of Object.values(student || {})) {
                 if (!['submitted', 'expired'].includes(attempt.status)) continue;
                 const card = document.createElement('article'), title = document.createElement('h3'); title.textContent = attempt.studentId + ' · ' + attempt.score + ' / ' + attempt.maximumScore;
-                const answers = document.createElement('pre'); answers.style.whiteSpace = 'pre-wrap'; answers.textContent = Object.entries(attempt.answerKey || {}).map(([id, key]) => { const question = definition.versions?.[attempt.version]?.questions?.[id] || definition.draft?.questions?.[id]; const label = value => question?.options?.find(option => option.id === value)?.text || String(value ?? 'Unanswered'); return (question?.prompt || id) + '\nStudent: ' + label(attempt.answers?.[id]) + ' · Correct: ' + label(key.correctOptionId ?? key.correctAnswer); }).join('\n\n');
+                const answers = document.createElement('div'); answers.className = 'exam-answer-list';
+                Object.entries(attempt.answerKey || {}).forEach(([id, key], index) => {
+                    const question = definition.versions?.[attempt.version]?.questions?.[id] || definition.draft?.questions?.[id];
+                    const label = value => question?.options?.find(option => option.id === value)?.text || String(value ?? 'Unanswered');
+                    const detail = document.createElement('details'), summary = document.createElement('summary');
+                    summary.textContent = (index + 1) + '. ' + (question?.prompt || 'Question'); detail.append(summary);
+                    for (const [name, value] of [['Student answer', label(attempt.answers?.[id])], ['Correct answer', label(key.correctOptionId ?? key.correctAnswer)]]) {
+                        const line = document.createElement('p'), title = document.createElement('strong'); title.textContent = name + ': ';
+                        line.append(title, document.createTextNode(value)); detail.append(line);
+                    }
+                    answers.append(detail);
+                });
                 const feedback = document.createElement('textarea'); feedback.maxLength = 3000; feedback.placeholder = 'Optional feedback to student'; feedback.setAttribute('aria-label', 'Result feedback'); feedback.value = drafts.get(attempt.id) ?? attempt.feedback ?? ''; card.dataset.reviewAttempt = attempt.id;
                 const status = document.createElement('p'); status.className = 'exam-review-state'; status.textContent = attempt.resultStatus === 'released' ? 'Completed · Result visible to student' : attempt.resultStatus === 'approvedHidden' ? 'Completed · Result hidden' : attempt.resultStatus === 'revisionRequested' ? 'Not complete · New attempt requested' : 'Awaiting supervisor review · Result hidden';
                 const release = document.createElement('button'); release.className = 'primary'; release.type = 'button'; release.textContent = attempt.resultStatus === 'released' ? 'Result released' : attempt.resultStatus === 'approvedHidden' ? 'Show result' : 'Approve and release result'; release.disabled = ['released', 'revisionRequested'].includes(attempt.resultStatus);
@@ -161,13 +172,14 @@
                     try { await call('revision', { examId, studentId: attempt.studentId, attemptId: attempt.id, reason: form.querySelector('textarea').value, deadline: new Date(form.querySelector('input').value).toISOString() }); release.disabled = true; hide.disabled = true; status.textContent = 'Not complete · New attempt requested'; window.dispatchEvent(new Event('task-data-changed')); }
                     catch (e) { revision.disabled = false; message(e.message, 'error'); }
                 };
-                card.append(title, status, answers, feedback, release, hide, revision); card.className = 'exam-review-card'; body.append(card);
+                const controls = document.createElement('div'); controls.className = 'exam-result-actions'; controls.append(release, hide, revision);
+                card.append(title, status, answers, feedback, controls); card.className = 'exam-review-card'; body.append(card);
             }
             if (!body.children.length) body.textContent = 'No submitted examination attempts.';
             } finally { refreshing = false; }
             }
             await renderResults();
-            const update = async () => { if (body.isConnected && document.querySelectorAll('dialog[open]').length === 1 && document.activeElement?.tagName !== 'TEXTAREA') await renderResults(); };
+            const update = async () => { if (body.isConnected && TaskDialogs.activeSurface()?.contains(body) && document.activeElement?.tagName !== 'TEXTAREA') await renderResults(); };
             activeResultRefresh = update;
             try { await TaskDialogs.open('Review examination results', body, { cancel: 'Close', confirm: 'Done' }); } finally { if (activeResultRefresh === update) activeResultRefresh = null; }
         } catch (e) { message(e.message, 'error'); }

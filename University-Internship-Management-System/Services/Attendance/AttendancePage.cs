@@ -389,8 +389,18 @@ namespace UIMS.Attendance
 
         public void WriteResponse()
         {
-            if (!streaming) Response.ContentType = "application/json";
-            Response.Write((jsonResponse ?? "{\"success\":false,\"message\":\"Attendance request was not completed.\"}") + (streaming ? "\n" : ""));
+            if (!Response.IsClientConnected) return;
+            try
+            {
+                if (!streaming) Response.ContentType = "application/json";
+                Response.Write((jsonResponse ?? "{\"success\":false,\"message\":\"Attendance request was not completed.\"}") + (streaming ? "\n" : ""));
+            }
+            catch (HttpException error) when (!Response.IsClientConnected ||
+                error.ErrorCode == unchecked((int)0x800704CD) || error.ErrorCode == unchecked((int)0x800703E3) ||
+                error.ErrorCode == unchecked((int)0x80070040))
+            {
+                // A closed browser/tab cannot receive a response. Do not retry an attendance write.
+            }
         }
     }
 }

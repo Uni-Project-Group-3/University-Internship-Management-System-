@@ -6,6 +6,7 @@ let saving = false;
 let dataVersion = 0;
 let qrDeadline = 0;
 let qrAction = "";
+let displayedQrIssuedAt = 0;
 let qrTimer;
 let lastOpenedIssuedQr = '';
 let serverSessionVerified = false;
@@ -64,6 +65,24 @@ function time(value) {
 }
 function label(value) {
     return String(value || "Not recorded").replace(/([A-Z])/g, " $1").replace(/^./, function (c) { return c.toUpperCase(); });
+}
+function trainingPeriodDetails(assignment, today) {
+    const parse = value => {
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(value || "")) return NaN;
+        const stamp = Date.parse(value + "T00:00:00Z");
+        return Number.isFinite(stamp) && new Date(stamp).toISOString().slice(0, 10) === value ? stamp : NaN;
+    };
+    const first = parse(assignment.startDate), last = parse(assignment.endDate), day = parse(today);
+    if (![first, last, day].every(Number.isFinite) || first > last) return { state: "unknown", text: "Training dates unavailable" };
+    const totalDays = Math.round((last - first) / 86400000) + 1;
+    const remainingDays = Math.max(0, Math.min(totalDays, Math.round((last - day) / 86400000) + 1));
+    const weeks = totalDays / 7;
+    const duration = Number.isInteger(weeks) ? weeks + " weeks" : totalDays + " days";
+    return { state: day < first ? "upcoming" : day > last ? "ended" : "active", remainingDays,
+        text: duration + " · " + (day < first ? "Starts " + assignment.startDate : day > last ? "Training period ended" : remainingDays + " days remaining") };
+}
+function attendanceHistoryStatus(record, today) {
+    return record.status === "checkedIn" && !record.checkOutAt && record.attendanceDate < today ? "missingCheckOut" : record.status;
 }
 function addCell(row, value) {
     const cell = document.createElement("td");
@@ -204,7 +223,7 @@ function renderStudentProgress(type, data) {
         }
         connected(data, data.student.name);
         document.getElementById("studentName").textContent = data.student.name + (data.student.studentNumber ? " \u00b7 " + data.student.studentNumber : "");
-        document.getElementById("connectionStatus").textContent = "Loading attendance\u2026";
+        if (!attendance) document.getElementById("connectionStatus").textContent = "Loading attendance\u2026";
     } else if (type === "profile") {
         document.getElementById("companyName").textContent = data.company.name;
         document.getElementById("supervisorName").textContent = data.supervisor.name;
@@ -242,8 +261,10 @@ function renderStudent(data) {
     progress.value = Math.min(required, approved);
     document.getElementById("scheduleDate").textContent = data.today + " \u00b7 Asia/Amman" +
         (assignment.startDate && assignment.endDate ? " \u00b7 Training: " + assignment.startDate + " \u2013 " + assignment.endDate : "");
-    document.getElementById("scheduledStart").textContent = data.flexibleAttendance ? "Any time · supervisor-issued QR" : time(schedule.scheduledStartAt);
-    document.getElementById("scheduledEnd").textContent = data.flexibleAttendance ? "Any time · supervisor-issued QR" : time(schedule.scheduledEndAt);
+    const period = trainingPeriodDetails(assignment, data.today);
+    document.getElementById("trainingPeriodSummary").textContent = assigned ? period.text : "Not linked yet";
+    document.getElementById("scheduledStart").textContent = assignment.startDate || "—";
+    document.getElementById("scheduledEnd").textContent = assignment.endDate || "—";
     document.getElementById("actualCheckIn").textContent = time(record.checkInAt);
     document.getElementById("actualCheckOut").textContent = time(record.checkOutAt);
     document.getElementById("todayStatus").textContent = !assigned ? placement ? "Attendance setup pending" : "Unassigned" : !schedule.assignmentId ? "No schedule"
@@ -254,6 +275,12 @@ function renderStudent(data) {
     document.getElementById("checkInButton").disabled = saving || !data.canCheckIn || data.issuedQr?.action !== 'checkIn';
     document.getElementById("checkOutButton").disabled = saving || !data.canCheckOut || data.issuedQr?.action !== 'checkOut';
     document.getElementById("earlyButton").disabled = saving || !data.canRequestEarly;
+    const qrAvailable = !!data.issuedQr && (data.issuedQr.action === "checkIn" ? data.canCheckIn : data.canCheckOut);
+    document.getElementById("qrAvailability").textContent = !assigned ? "Attendance setup pending" : !data.actionsEnabled ? "Attendance unavailable"
+        : record.checkOutAt ? "Today's attendance complete" : period.state === "upcoming" ? "Training has not started"
+        : period.state === "ended" ? "Training period ended" : qrAvailable ? "QR ready · show it to your supervisor" : "Waiting for your supervisor's QR";
+    document.getElementById("qrAvailability").dataset.state = qrAvailable ? "ready" : "waiting";
+
     document.getElementById("earlyStatus").textContent = request.status ? "Early departure: " + label(request.status) + "." : "";
     document.getElementById("scheduleHelp").textContent = !assigned ? placement?.setupMessage || "Your account is verified. No approved training assignment is linked yet. Attendance actions are unavailable."
         : !data.actionsEnabled ? "Attendance actions are disabled in Firebase settings. Reading history remains available."
@@ -266,17 +293,27 @@ function renderStudent(data) {
                 : "Attendance complete, but less than one full minute was recorded. No whole training minute can be approved. Wait at least one minute between check-in and check-out when testing.")
             : "Attendance complete. Hours status: " + label(record.hoursApprovalStatus) + ".")
         : record.checkInAt ? "Your supervisor can issue your check-out QR now. Actual worked time counts after hours approval."
-        : "Flexible attendance is available at any hour during your training period. Ask your company supervisor to issue a QR; it will open here automatically.";
-    if (data.issuedQr && !document.hidden) {
+        : period.state === "upcoming" ? "Your training starts on " + assignment.startDate + ". Attendance becomes available on that date."
+        : period.state === "ended" ? "Your training period ended on " + assignment.endDate + ". Your saved attendance and approved hours remain available below."
+        : "Attendance is available at any hour during your training period. Your supervisor issues the QR and scans it to record your check-in or check-out.";
+    const dialog = document.getElementById("qrDialog");
+    const recorded = (qrAction === "checkIn" && record.checkInAt) || (qrAction === "checkOut" && record.checkOutAt);
+    if (dialog.open && recorded) {
+        dialog.close();
+        document.getElementById("historyFilter").value = "all";
+        document.getElementById("attendanceSearch").value = "";
+        showNotice(qrAction === "checkOut" ? "Check-out recorded. Your hours are awaiting supervisor approval." : "Check-in recorded successfully.");
+    } else if (data.issuedQr && !document.hidden && !saving) {
         const issuedKey = data.today + ':' + data.issuedQr.action + ':' + data.issuedQr.issuedAt;
-        if (lastOpenedIssuedQr !== issuedKey && !document.getElementById('qrDialog').open) {
+        const replacement = dialog.open && displayedQrIssuedAt && displayedQrIssuedAt !== Number(data.issuedQr.issuedAt);
+        if (lastOpenedIssuedQr !== issuedKey && (!dialog.open || replacement)) {
             lastOpenedIssuedQr = issuedKey;
-            setTimeout(() => showQr(data.issuedQr.action), 0);
+            setTimeout(() => { if (attendance === data) showQr(data.issuedQr.action); }, 0);
         }
-    }
-    if (document.getElementById("qrDialog").open && ((qrAction === "checkIn" && record.checkInAt) || (qrAction === "checkOut" && record.checkOutAt))) {
-        document.getElementById("qrDialog").close();
-        showNotice("Attendance updated.");
+    } else if (dialog.open && !saving && !data.issuedQr) {
+        clearInterval(qrTimer); document.getElementById("qrCode").replaceChildren();
+        document.getElementById("qrCountdown").textContent = "Ask your supervisor for a new QR";
+        document.getElementById("qrDialog").dataset.state = "expired";
     }
     renderHistory();
 }
@@ -292,25 +329,26 @@ function renderHistory() {
     });
     rows.forEach(function (record) {
         const row = document.createElement("tr");
-        const status = record.status === "checkedIn" && !record.checkOutAt && Number(record.scheduledEndAt) < Date.now() ? "missingCheckOut" : record.status;
+        const status = attendanceHistoryStatus(record, attendance.today);
         [record.attendanceDate, time(record.checkInAt), time(record.checkOutAt),
             record.checkOutAt ? (Number(record.workedMinutes) / 60).toFixed(2) + " h" : "\u2014",
             label(status) + (record.isLate ? " \u00b7 Late" : ""), label(record.hoursApprovalStatus)].forEach(function (value) { addCell(row, value); });
+        const badge = document.createElement("span"); badge.className = "record-status status-" + String(status).replace(/[^a-zA-Z]/g, "");
+        badge.textContent = row.children[4].textContent; row.children[4].replaceChildren(badge);
         list.append(row);
     });
     document.getElementById("historyEmpty").hidden = rows.length > 0;
 }
 
-async function loadAttendance() {
+async function loadAttendance(manual = false) {
     if (loading || saving) return;
     loading = true;
-    document.getElementById("connectionStatus").textContent = "Refreshing\u2026";
+    if (!attendance || manual) document.getElementById("connectionStatus").textContent = "Refreshing\u2026";
     const version = dataVersion;
     if (!attendance) ["checkInButton", "checkOutButton", "earlyButton", "resetTodayButton"].forEach(function (id) { document.getElementById(id).disabled = true; });
     ["historyRows", "todayStatus", "actualCheckIn", "actualCheckOut"].forEach(function (id) {
         document.getElementById(id).setAttribute("aria-busy", "true");
     });
-    document.getElementById("todayStatus").textContent = "Loading\u2026";
     if (!attendance) {
         document.getElementById("historyEmpty").textContent = "Loading attendance\u2026";
         document.getElementById("historyEmpty").hidden = false;
@@ -354,6 +392,7 @@ async function showQr(action, button) {
     document.getElementById("qrTitle").textContent = action === "checkIn" ? "Check-in QR" : "Check-out QR";
     document.getElementById("qrCountdown").textContent = "Loading your supervisor-issued QR\u2026";
     document.getElementById("qrDescription").textContent = "Your assigned supervisor must scan this code to record attendance. Each code is valid for 120 seconds.";
+    dialog.dataset.state = "loading";
     if (!dialog.open) openDialog("qrDialog", button);
     try {
         if (typeof qrcodegen === "undefined" || typeof qrcodegen.QrCode?.encodeText !== "function") throw new Error("The local QR generation library could not be loaded.");
@@ -387,11 +426,14 @@ async function showQr(action, button) {
         document.getElementById("qrTitle").textContent = action === "checkIn" ? "Check-in QR" : "Check-out QR";
         document.getElementById("qrDescription").textContent = attendance.student.name + " \u00b7 " + attendance.company.name + ". Show this QR to your assigned supervisor.";
         qrAction = action;
+        displayedQrIssuedAt = Number(attendance.issuedQr?.issuedAt || 0);
+        dialog.dataset.state = "ready";
         clearInterval(qrTimer);
         qrTimer = setInterval(updateCountdown, 250);
         updateCountdown();
     } catch (error) {
         document.getElementById("qrCode").replaceChildren();
+        dialog.dataset.state = "error";
         document.getElementById("qrCountdown").textContent = "QR unavailable";
         document.getElementById("qrDescription").textContent = error.message;
         showNotice(error.message, true);
@@ -405,9 +447,11 @@ function updateCountdown() {
     if (!seconds) {
         clearInterval(qrTimer);
         document.getElementById("qrCode").replaceChildren();
+        document.getElementById("qrDialog").dataset.state = "expired";
     }
 }
 document.getElementById("qrDialog").addEventListener("close", function () {
+    displayedQrIssuedAt = 0;
     clearInterval(qrTimer);
     document.getElementById("qrCode").replaceChildren();
 });
@@ -435,7 +479,7 @@ document.getElementById("sendEarlyRequest").addEventListener("click", async func
 });
 document.getElementById("historyFilter").addEventListener("change", renderHistory);
 document.getElementById("attendanceSearch").addEventListener("input", renderHistory);
-document.getElementById("refreshAttendance").addEventListener("click", function () { loadAttendance(); });
+document.getElementById("refreshAttendance").addEventListener("click", function () { loadAttendance(true); });
 // \u0646\u062d\u0645\u0651\u0644 \u0627\u0644\u0628\u064a\u0627\u0646\u0627\u062a \u0639\u0646\u062f \u0641\u062a\u062d \u0627\u0644\u0635\u0641\u062d\u0629\u061b \u062a\u062d\u062f\u064a\u062b \u062a\u063a\u064a\u064a\u0631\u0627\u062a \u0627\u0644\u0637\u0631\u0641 \u0627\u0644\u0622\u062e\u0631 \u064a\u0643\u0648\u0646 \u064a\u062f\u0648\u064a\u064b\u0627 \u0645\u0646 \u0632\u0631 Refresh.
 loadAttendance();
 setInterval(() => { if (!document.hidden && !saving && !loading) loadAttendance(); }, 5000);
