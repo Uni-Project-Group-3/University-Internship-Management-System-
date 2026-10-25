@@ -154,3 +154,7 @@ body.uims-tasks-theme.uims-tasks-theme :is(#taskBoard,#taskList) .task-card .car
 body.uims-tasks-theme.uims-tasks-theme :is(#taskBoard,#taskList) .task-card .card-move-controls button:hover:not(:disabled) { background:#e9f2ff !important; color:#0c66e4 !important; border-color:#cce0ff !important; }
 body.uims-tasks-theme.uims-tasks-theme :is(#taskBoard,#taskList) .task-card .card-move-controls button:disabled { opacity:.45; }
 body.uims-tasks-theme.uims-tasks-theme :is(#taskBoard,#taskList) .task-card .task-action>.btn{flex:1 1 0!important;max-width:none!important;margin:0!important}
+/* Board cards: a plain "View" button, and no Move up/down buttons (drag the card, or use Move card in its details). */
+body.uims-tasks-theme.uims-tasks-theme :is(#taskBoard,#taskList) .task-card .task-action .workspace-details-icon svg { display:none !important; }
+body.uims-tasks-theme.uims-tasks-theme :is(#taskBoard,#taskList) .task-card .task-action .workspace-details-icon::after { content:"View" !important; }
+body.uims-tasks-theme.uims-tasks-theme :is(#taskBoard,#taskList) .task-card .card-move-controls { display:none !important; }

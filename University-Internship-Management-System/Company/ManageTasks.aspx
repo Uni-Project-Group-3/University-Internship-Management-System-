@@ -208,6 +208,6 @@
         <script src="../Js_project/Company/ManageTasks.js?v=20261025-task-details">
         </script>
         <script src="../Js_project/Company/TaskComposer.js?v=20261025-flow"></script>
-    <link href="../Assets/task-flow.css?v=20261025-trello" rel="stylesheet" />
+    <link href="../Assets/task-flow.css?v=20261025-trello-view" rel="stylesheet" />
 </body>
 </html>
