@@ -494,3 +494,5 @@ body:not(#coordinator-style-scope) :is(main.app-content,main.content,main.review
 @media(prefers-reduced-motion:reduce){body:not(#coordinator-style-scope) :is(main.app-content,main.content,main.review-page),body:not(#coordinator-style-scope) :is(main.app-content,main.content,main.review-page) *{animation:none!important;transition:none!important}}
 @media(max-width:991.98px){body:not(#coordinator-style-scope) :is(main.app-content,main.content,main.review-page){padding:16px 20px 28px!important}body:not(#coordinator-style-scope) :is(.topbar,.dash-topbar,.workspace-navbar){padding:16px 20px 12px!important}}
 @media(max-width:767px){body:not(#coordinator-style-scope) :is(main.app-content,main.content,main.review-page){padding:16px!important}body:not(#coordinator-style-scope) :is(.topbar,.dash-topbar,.workspace-navbar){padding:12px 16px!important}body:not(#coordinator-style-scope) :is(.management-hero,.hero-banner,.messages-hero,.workspace-header,.uims-page-hero,.content>.hero){padding:26px 2px!important}}
+
+.record-warning{display:inline-block;margin-top:4px;padding:2px 8px;border-radius:999px;background:#fff4e5;color:#9a5b00;font-size:12px;font-weight:600}

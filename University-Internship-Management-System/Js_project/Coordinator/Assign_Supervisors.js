@@ -67,7 +67,8 @@
         by('assignmentStudentsHint').textContent = g ? 'Only students from this major who are not in another group or assigned to another supervisor are listed.' : 'Students already in another group or assigned to another supervisor cannot be selected.';
         if (g) {
             const members = memberIds(g);
-            by('summaryProfessor').textContent = professorName(g.supervisorId);
+            const owner = data.professors.find(x => x.id === g.supervisorId);
+            by('summaryProfessor').textContent = professorName(g.supervisorId) + (owner && !owner.official ? ' (not in university records)' : '');
             by('summaryMajor').textContent = majorName(g.department);
             by('summaryCount').textContent = members.length;
             by('assignmentCurrentTitle').textContent = 'Current students (' + members.length + ')';
@@ -83,7 +84,7 @@
             }
             if (!members.length) list.append(node('p', 'No students in this group yet.', 'assignment-empty'));
         }
-        options(by('assignmentProfessor'), data.professors.filter(p => !p.conflict || p.id === g?.supervisorId).map(p => ({ id: p.id, name: p.name + (p.conflict ? ' - review assignments required' : '') })), 'Select academic supervisor');
+        options(by('assignmentProfessor'), data.professors.filter(p => (!p.conflict && p.official) || p.id === g?.supervisorId).map(p => ({ id: p.id, name: p.name + (p.conflict ? ' - review assignments required' : !p.official ? ' - not in university records' : '') })), 'Select academic supervisor');
         by('assignmentProfessor').value = g?.supervisorId || '';
         by('assignmentProfessor').disabled = !!g;
         majors(); dialog.showModal(); dialog.scrollTop = 0;
@@ -96,12 +97,12 @@
         by('assignmentDepartment').disabled = !p || p.conflict || !!group;
         // Even an existing responsibility is chosen explicitly after the supervisor.
         by('assignmentDepartment').value = group?.department || '';
-        by('assignmentMajorHint').textContent = !p ? 'Choose the supervisor first.' : p.conflict ? 'This supervisor has conflicting majors. Review existing assignments before adding students.' : p.department ? 'This supervisor is responsible for ' + majorName(p.department) + '.' : 'The selected major will become this supervisor\'s responsibility.';
+        by('assignmentMajorHint').textContent = !p ? 'Choose the supervisor first.' : !p.official ? 'This account is not in university records, so it cannot receive students. Delete this group, or delete the account from Manage Academic Supervisors.' : p.conflict ? 'This supervisor has conflicting majors. Review existing assignments before adding students.' : p.department ? 'This supervisor is responsible for ' + majorName(p.department) + '.' : 'The selected major will become this supervisor\'s responsibility.';
         students();
     }
     function blocked(s) {
         const p = professor();
-        if (!p || p.conflict || s.conflict) return true;
+        if (!p || p.conflict || !p.official || s.conflict) return true;
         if (['universityId', 'collegeId'].some(f => s[f] && p[f] && s[f] !== p[f])) return true;
         return s.groupIds.some(id => id !== group?.id) || s.supervisorIds.some(id => id !== p.id) || s.groupIds.includes(group?.id);
     }
@@ -123,7 +124,7 @@
                 label.append(check, info); host.append(label);
             }
         }
-        if (!host.children.length) host.append(node('p', !enabled ? 'Choose a supervisor and major to see students.' : group && !query ? 'No more available students in this major.' : 'No students match this major and search.', 'assignment-empty'));
+        if (!host.children.length) host.append(node('p', !enabled ? 'Choose a supervisor and major to see students.' : professor() && !professor().official ? 'This supervisor is not in university records, so no students can be added. Delete this group or the account instead.' : group && !query ? 'No more available students in this major.' : 'No students match this major and search.', 'assignment-empty'));
         by('studentCount').textContent = selected.size + ' selected';
         by('assignmentSave').disabled = busy || (!!group && !selected.size);
     }
