@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Configuration;
 using System.IO;
+using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
@@ -34,6 +35,16 @@ namespace University_Internship_Management_System.Student
         }
 
         private bool fileResponse;
+        // Applications that used the profile CV point at its stored object, so it is kept for them.
+        private static async Task<bool> CvUsedByApplicationAsync(string objectPath)
+        {
+            try
+            {
+                var attachments = await new StudentFirebaseGateway().ReadAsync("applicationAttachments") as Newtonsoft.Json.Linq.JObject;
+                return attachments != null && attachments.Properties().Any(p => (string)p.Value["objectPath"] == objectPath);
+            }
+            catch (Exception) { return true; }
+        }
         protected override void Render(HtmlTextWriter writer)
         { if (!fileResponse) base.Render(writer); }
         private async Task DownloadCvAsync()
@@ -173,7 +184,8 @@ namespace University_Internship_Management_System.Student
                 await FirebaseSignInService.PatchDatabasePathAsync("users/" + StudentManagementService.Key(uid), updates, token);
                 uploadedPath = null;
 
-                if (hasNewCv && !string.IsNullOrWhiteSpace(previousPath) && !string.Equals(previousPath, Text(profile, "cvObjectPath"), StringComparison.Ordinal))
+                if (hasNewCv && !string.IsNullOrWhiteSpace(previousPath) && !string.Equals(previousPath, Text(profile, "cvObjectPath"), StringComparison.Ordinal)
+                    && !await CvUsedByApplicationAsync(previousPath))
                 {
                     try { await storage.DeleteObjectAsync(previousPath, Text(profile, "cvStorageProvider"), CancellationToken.None); }
                     catch (Exception) { }
