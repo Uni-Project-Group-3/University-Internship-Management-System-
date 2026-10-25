@@ -55,3 +55,21 @@
 .wr-report-row>.wr-primary{flex-shrink:0;min-height:42px;padding:0 20px;border-radius:10px;font-weight:700}
 .wr-academic-section .wr-empty{margin:0;padding:28px 20px;border:1px dashed #cfd7e4;border-radius:12px;background:#fafbfd;text-align:center;color:#6d7f9e}
 @media(max-width:640px){.wr-student-grid{grid-template-columns:minmax(0,1fr)}.wr-report-row{flex-wrap:wrap}.wr-report-row>.wr-primary{width:100%}.wr-academic-section{padding:18px!important}}
+
+/* Company weekly reports: card grid instead of a table. */
+.wr-company-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:16px}
+.wr-company-card{display:flex;flex-direction:column;gap:14px;padding:18px;border:1px solid #dfe5ef;border-radius:16px;background:#fff;box-shadow:0 1px 2px rgba(9,30,66,.06);transition:box-shadow .15s,transform .15s}
+.wr-company-card:hover{box-shadow:0 10px 24px rgba(32,46,81,.1);transform:translateY(-1px)}
+.wr-company-card-top{display:flex;align-items:center;gap:14px;min-width:0}
+.wr-company-card-top .wr-week{width:58px;height:58px}
+.wr-company-card-who{flex:1;min-width:0}
+.wr-company-card-who h3{margin:0;font-size:16px;font-weight:700;color:#242e51;overflow-wrap:anywhere}
+.wr-company-card-top .wr-badge{flex-shrink:0;align-self:flex-start}
+.wr-company-card-facts{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:0;padding:12px 0;border-top:1px solid #e3e8f0;border-bottom:1px solid #e3e8f0}
+.wr-company-card-facts dt{margin:0 0 3px;font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:#7a879c}
+.wr-company-card-facts dd{margin:0;font-size:13px;font-weight:600;color:#253250}
+.wr-company-card-actions{display:flex;gap:10px;margin-top:auto}
+.wr-company-card-actions .wr-primary{flex:1;min-height:42px;border-radius:10px;font-weight:700}
+.wr-company-card-actions .wr-secondary{display:inline-flex;align-items:center;justify-content:center;min-height:42px;padding:0 18px;border-radius:10px;font-weight:700;text-decoration:none}
+@media(max-width:640px){.wr-company-cards{grid-template-columns:minmax(0,1fr)}}
+.wr-company-card-who .wr-badge{display:inline-flex;margin-top:6px}
