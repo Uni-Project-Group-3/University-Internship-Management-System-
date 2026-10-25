@@ -74,6 +74,8 @@ namespace University_Internship_Management_System.Coordinator
                     .ReadAsync("users/DEMO_UID_COORDINATOR_001") as JObject;
                 var universityDetails = ReadUniversityDetails(universityProfile);
                 string coordinatorId = First(profile, "id", "coordinatorId", "staffId");
+                if (string.IsNullOrWhiteSpace(coordinatorId))
+                    coordinatorId = First(universityProfile, "id", "coordinatorId", "staffId");
                 ViewState["DisplayedProfile"] = new[]
                 {
                     First(profile, "fullName", "displayName"), Text(profile, "phone"), Text(profile, "officeLocation"),
