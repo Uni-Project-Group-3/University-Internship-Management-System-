@@ -84,7 +84,7 @@
             }
             if (!members.length) list.append(node('p', 'No students in this group yet.', 'assignment-empty'));
         }
-        options(by('assignmentProfessor'), data.professors.filter(p => (!p.conflict && p.official) || p.id === g?.supervisorId).map(p => ({ id: p.id, name: p.name + (p.conflict ? ' - review assignments required' : !p.official ? ' - not in university records' : '') })), 'Select academic supervisor');
+        options(by('assignmentProfessor'), data.professors.filter(p => !p.conflict || p.id === g?.supervisorId).map(p => ({ id: p.id, name: p.name + (p.conflict ? ' - review assignments required' : !p.official ? ' - not in university records' : '') })), 'Select academic supervisor');
         by('assignmentProfessor').value = g?.supervisorId || '';
         by('assignmentProfessor').disabled = !!g;
         majors(); dialog.showModal(); dialog.scrollTop = 0;
