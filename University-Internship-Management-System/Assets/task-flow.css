@@ -88,3 +88,24 @@ dialog.task-confirm-dialog .workspace-dialog-actions:has(button[hidden]) { grid-
 dialog.task-confirm-dialog .secondary { background:var(--surface,#fff); border:1px solid var(--border,#dfe3eb); color:var(--primary,#1f3d78); }
 dialog.task-confirm-dialog .primary { background:var(--primary,#1f3d78); border:1px solid var(--primary,#1f3d78); color:#fff; }
 dialog.task-confirm-dialog .primary.workspace-danger { background:#a12f2f; border-color:#a12f2f; }
+
+/* Company task details popup: lead text, labeled facts, one-line column move, clean exam card. */
+#reviewModal .modal-header { align-items:center; }
+#reviewModal .modal-title { font-size:22px; line-height:1.3; overflow-wrap:anywhere; }
+#reviewModal section[data-company-panel] { padding:20px 22px; margin:0 0 16px; border:1px solid var(--border,#dfe3eb); border-radius:14px; background:var(--surface,#fff); }
+#reviewModal section[data-company-panel] > h6 { margin:0 0 14px; font-size:15px; font-weight:700; color:var(--text,#242844); }
+#reviewModal #taskFullDetails .task-detail-lead { margin:0 0 16px; font-size:15px; line-height:1.7; color:var(--text,#242844); white-space:pre-line; }
+#reviewModal .task-detail-facts { display:grid; grid-template-columns:2fr 1fr 1fr; gap:14px 20px; margin:0; padding:16px 0; border-top:1px solid var(--border,#dfe3eb); border-bottom:1px solid var(--border,#dfe3eb); }
+#reviewModal .task-detail-facts dt { margin:0 0 4px; font-size:11px; font-weight:700; letter-spacing:.05em; text-transform:uppercase; color:#7a879c; }
+#reviewModal .task-detail-facts dd { margin:0; font-size:14px; font-weight:600; color:#253250; white-space:pre-line; overflow-wrap:anywhere; }
+#reviewModal .task-move-row { display:flex; align-items:center; justify-content:space-between; gap:12px 20px; flex-wrap:wrap; margin-top:16px; }
+#reviewModal .task-move-row > label { margin:0; font-size:13px; font-weight:700; color:var(--text,#242844); }
+#reviewModal .task-move-controls { display:flex; gap:10px; flex:1 1 320px; max-width:460px; }
+#reviewModal .task-move-controls select { flex:1; min-width:0; min-height:42px; border-radius:9px; }
+#reviewModal .task-move-controls button { min-height:42px; padding:0 18px; border-radius:9px; font-weight:700; white-space:nowrap; }
+#reviewModal .exam-review-card { display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap; margin:0; padding:16px 18px; border:1px solid var(--border,#dfe3eb); border-radius:12px; background:var(--primary-soft,#f3f6fb); }
+#reviewModal .exam-review-card + .exam-review-card { margin-top:10px; }
+#reviewModal .exam-review-title { margin:0; font-size:15px; font-weight:700; color:var(--text,#242844); }
+#reviewModal .exam-review-card button { margin:0; min-height:40px; padding:0 18px; border-radius:9px; font-weight:700; }
+@media(max-width:700px) { #reviewModal .task-detail-facts { grid-template-columns:minmax(0,1fr); } #reviewModal .task-move-controls { max-width:none; } }
+#reviewModal .task-move-controls button { border:1px solid var(--primary,#1f3d78) !important; background:var(--surface,#fff); color:var(--primary,#1f3d78); } #reviewModal .task-move-controls button:hover:not(:disabled) { background:var(--primary,#1f3d78); color:#fff; }

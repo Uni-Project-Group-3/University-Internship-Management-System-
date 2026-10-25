@@ -18,6 +18,6 @@
     <script src="../Js_project/firebase-client.js?v=20261023-live-review"></script>
     <script src="../Js_project/task-dialogs.js?v=20261025-confirm-popup"></script>
     <script src="../Js_project/Student/TaskExams.js?v=20261025-exam-cards"></script>
-<link href="../Assets/task-flow.css?v=20261025-confirm-popup" rel="stylesheet" />
+<link href="../Assets/task-flow.css?v=20261025-task-details" rel="stylesheet" />
 </body>
 </html>

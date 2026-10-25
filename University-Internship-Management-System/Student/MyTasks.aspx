@@ -151,6 +151,6 @@
         <script src="../Js_project/workflow-dialogs.js?v=20261023"></script>
         <script src="../Js_project/Student/MyTasks.js?v=20261025-flow">
         </script>
-    <link href="../Assets/task-flow.css?v=20261025-confirm-popup" rel="stylesheet" />
+    <link href="../Assets/task-flow.css?v=20261025-task-details" rel="stylesheet" />
 </body>
 </html>
