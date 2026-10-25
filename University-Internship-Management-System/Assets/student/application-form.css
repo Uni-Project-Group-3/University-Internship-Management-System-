@@ -1536,3 +1536,17 @@ a:focus-visible, button:focus-visible {
         border-radius: 6px;
         max-width: 100%
     }
+
+/* Saved profile CV, attached automatically. */
+.cv-profile-card{display:flex;align-items:center;gap:14px;margin:6px 0 10px;padding:14px 16px;border:1px solid #cfe3d6;border-radius:14px;background:#f0f8f3}
+.cv-profile-card.is-off{border-color:#dfe5ef;background:#f6f7fa}
+.cv-profile-icon{flex-shrink:0;width:44px;height:44px;display:grid;place-items:center;border-radius:12px;background:#1f6b45;color:#fff;font-weight:800;font-size:13px;letter-spacing:.04em}
+.cv-profile-card.is-off .cv-profile-icon{background:#8592a8}
+.cv-profile-card>div{flex:1;min-width:0;display:grid;gap:2px}
+.cv-profile-card strong{font-size:12px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:#1f6b45}
+.cv-profile-card.is-off strong{color:#5e6c84}
+.cv-profile-card>div>span{font-size:14px;font-weight:700;color:#253250;overflow-wrap:anywhere}
+.cv-profile-card small{font-size:12px;color:#5e6c84}
+.cv-profile-swap{flex-shrink:0;min-height:38px;padding:0 14px;border:1px solid #b9c6dc;border-radius:9px;background:#fff;color:#354c7a;font-size:13px;font-weight:700;cursor:pointer}
+.cv-profile-swap:hover{border-color:#354c7a}
+@media(max-width:560px){.cv-profile-card{flex-wrap:wrap}.cv-profile-swap{width:100%}}
