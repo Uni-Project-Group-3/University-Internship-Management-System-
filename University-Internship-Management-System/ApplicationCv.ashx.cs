@@ -31,12 +31,14 @@ public sealed class ApplicationCv : HttpTaskAsyncHandler {
     if(role!="student" || (mode!="upload" && mode!="profile"))throw new HttpException(403,"Student attachment upload is required.");
     byte[] bytes;string name,mime;
     if(mode=="profile") {
-     // Copy the profile CV into its own application attachment, so replacing the profile CV later never breaks a submitted application.
-     if(!HasProfileCv(uid,profile))throw new HttpException(404,"Add a CV to your profile first, or attach a file here.");
-     bytes=await storage.DownloadAsync((string)profile["cvObjectPath"],(string)profile["cvStorageProvider"],context.Response.ClientDisconnectedToken);
-     if(bytes.LongLength!=((long?)profile["cvSizeBytes"]??-1) || !string.Equals(University_Internship_Management_System.Services.FinalEvaluation.CompletionReportValidation.Hash(bytes),(string)profile["cvSha256"],StringComparison.OrdinalIgnoreCase))
-      throw new HttpException(409,"Your saved profile CV failed verification. Upload it again in your profile or attach a file here.");
-     name=UIMS.Services.FirebaseFileStorageService.SanitizeFileName((string)profile["cvFileName"]);
+     // Reference the stored profile CV directly: no download or re-upload, so it cannot fail on storage.
+     // Profile.aspx keeps a replaced CV object while any application attachment still points at it.
+     if(!HasProfileCv(uid,profile))throw new HttpException(404,"Your profile has no CV yet. Upload one in My Profile, or choose a file here.");
+     string profileId=UIMS.Services.FirebaseFileStorageService.CreateFileId(),profileName=UIMS.Services.FirebaseFileStorageService.SanitizeFileName((string)profile["cvFileName"]);
+     string profileType=(string)profile["cvContentType"];
+     if(string.IsNullOrWhiteSpace(profileType)){string profileExt=Path.GetExtension(profileName).ToLowerInvariant();profileType=profileExt==".pdf"?"application/pdf":profileExt==".doc"?"application/msword":"application/vnd.openxmlformats-officedocument.wordprocessingml.document";}
+     await gateway.WriteAsync("applicationAttachments/"+profileId,new { ownerUid=uid, fileName=profileName, objectPath=(string)profile["cvObjectPath"], provider=(string)profile["cvStorageProvider"]??"", contentType=profileType, sha256=(string)profile["cvSha256"], source="profile" });
+     context.Response.ContentType="application/json";context.Response.Write(JsonConvert.SerializeObject(new { attachmentId=profileId,fileName=profileName }));return;
     } else {
      var file=context.Request.Files["cv"];
      if(file==null || file.ContentLength<1 || file.ContentLength>UIMS.Services.FirebaseFileStorageService.MaximumFileBytes)throw new HttpException(400,"Choose a CV file up to 10 MiB.");
@@ -61,7 +63,7 @@ public sealed class ApplicationCv : HttpTaskAsyncHandler {
    byte[] content=await storage.DownloadAsync((string)attachment["objectPath"],(string)attachment["provider"],context.Response.ClientDisconnectedToken);
    using(var sha=System.Security.Cryptography.SHA256.Create()){string hash=BitConverter.ToString(sha.ComputeHash(content)).Replace("-","").ToLowerInvariant();if(!string.Equals(hash,(string)attachment["sha256"],StringComparison.OrdinalIgnoreCase))throw new HttpException(503,"CV attachment unavailable.");}
    context.Response.ContentType=(string)attachment["contentType"];context.Response.AddHeader("X-Content-Type-Options","nosniff");context.Response.AddHeader("Content-Disposition","attachment; filename*=UTF-8''"+Uri.EscapeDataString((string)attachment["fileName"]));context.Response.BinaryWrite(content);
-  }catch(Exception error){context.Response.StatusCode=error is HttpException?((HttpException)error).GetHttpCode():error is UIMS.Services.FirebaseException?((UIMS.Services.FirebaseException)error).StatusCode:503;context.Response.SuppressFormsAuthenticationRedirect=true;context.Response.ContentType="application/json";context.Response.Write(JsonConvert.SerializeObject(new { error=error is HttpException?error.Message:"The private CV service is unavailable. Your file has not been attached. Please try again." }));}
+  }catch(Exception error){context.Response.StatusCode=error is HttpException?((HttpException)error).GetHttpCode():error is UIMS.Services.FirebaseException?((UIMS.Services.FirebaseException)error).StatusCode:503;context.Response.SuppressFormsAuthenticationRedirect=true;context.Response.ContentType="application/json";context.Response.Write(JsonConvert.SerializeObject(new { error=error is HttpException||error is UIMS.Services.FirebaseException?error.Message:"The private CV service is unavailable. Your file has not been attached. Please try again." }));}
  }
  public static bool HasProfileCv(string uid,JObject profile) {
   string path=(string)profile?["cvObjectPath"]??"";
