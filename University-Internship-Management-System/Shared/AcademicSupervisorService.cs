@@ -152,13 +152,20 @@ namespace University_Internship_Management_System.Shared
             if(students==0&&members==0) return null;
             return "This supervisor still has "+Math.Max(students,members)+" assigned student(s). Remove them from the supervisor's groups on Assign Academic Supervisors first.";
         }
-        // Official only when the account was created from a matching university staff record.
-        public static bool Official(JToken profile,JObject records)
+        private static string Clean(string value){return Regex.Replace(value??"","\\s+"," ").Trim().ToLowerInvariant();}
+        // The account's university record: by staff ID, then by email, then by a unique full name.
+        public static JProperty FindRecord(JToken profile,JObject records)
         {
-            string staff=T(profile,"staffId");
-            var record=staff.Length>0?records?[staff] as JObject:null;
-            return record!=null&&string.Equals(T(record,"email").Trim(),T(profile,"email").Trim(),StringComparison.OrdinalIgnoreCase);
+            if(records==null) return null;
+            var rows=records.Properties().Where(p=>p.Value is JObject).ToArray();
+            string staff=T(profile,"staffId"),email=T(profile,"email").Trim(),name=Clean(T(profile,"fullName"));
+            var match=staff.Length>0?rows.FirstOrDefault(p=>p.Name==staff||T(p.Value,"staffId")==staff):null;
+            if(match==null&&email.Length>0) match=rows.FirstOrDefault(p=>string.Equals(T(p.Value,"email").Trim(),email,StringComparison.OrdinalIgnoreCase));
+            if(match==null&&name.Length>0){var named=rows.Where(p=>Clean(T(p.Value,"fullName"))==name).ToArray();if(named.Length==1)match=named[0];}
+            return match;
         }
+        public static bool Official(JToken profile,JObject records){return FindRecord(profile,records)!=null;}
+        public static string RecordStaffId(JProperty record){return record==null?"":T(record.Value,"staffId").Length>0?T(record.Value,"staffId"):record.Name;}
         public async Task<JObject> DirectoryAsync()
         {
             var users=await db.ReadAsync("users") as JObject??new JObject();
@@ -168,10 +175,11 @@ namespace University_Internship_Management_System.Shared
             foreach(var p in users.Properties().Where(p=>Academic(p.Value)))
             {
                 string dept=T(p.Value,"departmentId");if(dept=="")dept=T(p.Value,"majorId");
-                supervisors.Add(new JObject{["uid"]=p.Name,["staffId"]=T(p.Value,"staffId"),["fullName"]=T(p.Value,"fullName"),["email"]=T(p.Value,"email"),
+                var record=FindRecord(p.Value,records);
+                supervisors.Add(new JObject{["uid"]=p.Name,["staffId"]=T(p.Value,"staffId").Length>0?T(p.Value,"staffId"):RecordStaffId(record),["fullName"]=T(p.Value,"fullName"),["email"]=T(p.Value,"email"),
                     ["universityId"]=T(p.Value,"universityId"),["collegeId"]=T(p.Value,"collegeId"),["departmentId"]=dept,["department"]=StudentManagementService.DisplayName(dept),
                     ["isActive"]=p.Value.Value<bool?>("isActive")==true,["mustChangePassword"]=p.Value.Value<bool?>("mustChangePassword")==true,
-                    ["accountSetupStatus"]=T(p.Value,"accountSetupStatus"),["deletionStatus"]=T(p.Value,"deletionStatus"),["official"]=Official(p.Value,records),
+                    ["accountSetupStatus"]=T(p.Value,"accountSetupStatus"),["deletionStatus"]=T(p.Value,"deletionStatus"),["official"]=record!=null,
                     ["groupCount"]=groups.Properties().Count(g=>ActiveGroup(g.Value,p.Name,T(p.Value,"academicSupervisorId"))),
                     ["studentCount"]=users.Properties().Count(s=>Student(s.Value,p.Name,T(p.Value,"academicSupervisorId")))});
             }
