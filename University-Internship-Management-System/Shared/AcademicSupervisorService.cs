@@ -129,31 +129,59 @@ namespace University_Internship_Management_System.Shared
             }
             finally{await ReleaseAsync(uid);}
         }
-        private static bool ActiveGroup(JToken group,string uid)
+        private static bool ActiveGroup(JToken group,string uid,string alias=null)
         {
-            return (T(group,"supervisorId")==uid||T(group,"academicSupervisorId")==uid||T(group,"supervisorUid")==uid) && group.Value<bool?>("isActive")!=false;
+            var ids=new[]{uid,alias}.Where(x=>!string.IsNullOrEmpty(x)).ToArray();
+            return new[]{"supervisorId","academicSupervisorId","supervisorUid"}.Any(f=>ids.Contains(T(group,f))) && group.Value<bool?>("isActive")!=false && group.Value<bool?>("active")!=false;
         }
-        private async Task<bool> HasAssignmentsAsync(string uid)
+        private static int Members(JToken group)
+        { return (group?["students"] as JObject)?.Properties().Count(p=>p.Value.Type==JTokenType.Boolean&&(bool)p.Value) ?? 0; }
+        private static bool Student(JToken value,string uid,string alias)
+        {
+            string id=T(value,"academicSupervisorId");
+            return FirebaseSignInService.CanonicalRole(T(value,"role"))=="student"&&id.Length>0&&(id==uid||id==alias)&&value.Value<bool?>("isActive")!=false;
+        }
+        // Only real students block deletion. Empty groups are removed with the account.
+        private async Task<string> AssignmentsAsync(string uid)
         {
             var users=await db.ReadAsync("users") as JObject??new JObject();
             var groups=await db.ReadAsync("groups") as JObject??new JObject();
-            return users.Properties().Any(p=>T(p.Value,"role")=="student"&&T(p.Value,"academicSupervisorId")==uid&&p.Value.Value<bool?>("isActive")!=false)
-                ||groups.Properties().Any(p=>ActiveGroup(p.Value,uid));
+            string alias=T(users[uid],"academicSupervisorId");
+            int students=users.Properties().Count(p=>Student(p.Value,uid,alias));
+            int members=groups.Properties().Where(p=>ActiveGroup(p.Value,uid,alias)).Sum(p=>Members(p.Value));
+            if(students==0&&members==0) return null;
+            return "This supervisor still has "+Math.Max(students,members)+" assigned student(s). Remove them from the supervisor's groups on Assign Academic Supervisors first.";
         }
+        private static string Clean(string value){return Regex.Replace(value??"","\\s+"," ").Trim().ToLowerInvariant();}
+        // The account's university record: by staff ID, then by email, then by a unique full name.
+        public static JProperty FindRecord(JToken profile,JObject records)
+        {
+            if(records==null) return null;
+            var rows=records.Properties().Where(p=>p.Value is JObject).ToArray();
+            string staff=T(profile,"staffId"),email=T(profile,"email").Trim(),name=Clean(T(profile,"fullName"));
+            var match=staff.Length>0?rows.FirstOrDefault(p=>p.Name==staff||T(p.Value,"staffId")==staff):null;
+            if(match==null&&email.Length>0) match=rows.FirstOrDefault(p=>string.Equals(T(p.Value,"email").Trim(),email,StringComparison.OrdinalIgnoreCase));
+            if(match==null&&name.Length>0){var named=rows.Where(p=>Clean(T(p.Value,"fullName"))==name).ToArray();if(named.Length==1)match=named[0];}
+            return match;
+        }
+        public static bool Official(JToken profile,JObject records){return FindRecord(profile,records)!=null;}
+        public static string RecordStaffId(JProperty record){return record==null?"":T(record.Value,"staffId").Length>0?T(record.Value,"staffId"):record.Name;}
         public async Task<JObject> DirectoryAsync()
         {
             var users=await db.ReadAsync("users") as JObject??new JObject();
+            var records=await db.ReadAsync("universityRecords/academicSupervisors") as JObject??new JObject();
             var groups=await db.ReadAsync("groups") as JObject??new JObject();
             var supervisors=new JArray();
             foreach(var p in users.Properties().Where(p=>Academic(p.Value)))
             {
                 string dept=T(p.Value,"departmentId");if(dept=="")dept=T(p.Value,"majorId");
-                supervisors.Add(new JObject{["uid"]=p.Name,["staffId"]=T(p.Value,"staffId"),["fullName"]=T(p.Value,"fullName"),["email"]=T(p.Value,"email"),
+                var record=FindRecord(p.Value,records);
+                supervisors.Add(new JObject{["uid"]=p.Name,["staffId"]=T(p.Value,"staffId").Length>0?T(p.Value,"staffId"):RecordStaffId(record),["fullName"]=T(p.Value,"fullName"),["email"]=T(p.Value,"email"),
                     ["universityId"]=T(p.Value,"universityId"),["collegeId"]=T(p.Value,"collegeId"),["departmentId"]=dept,["department"]=StudentManagementService.DisplayName(dept),
                     ["isActive"]=p.Value.Value<bool?>("isActive")==true,["mustChangePassword"]=p.Value.Value<bool?>("mustChangePassword")==true,
-                    ["accountSetupStatus"]=T(p.Value,"accountSetupStatus"),["deletionStatus"]=T(p.Value,"deletionStatus"),
-                    ["groupCount"]=groups.Properties().Count(g=>ActiveGroup(g.Value,p.Name)),
-                    ["studentCount"]=users.Properties().Count(s=>T(s.Value,"role")=="student"&&T(s.Value,"academicSupervisorId")==p.Name&&s.Value.Value<bool?>("isActive")!=false)});
+                    ["accountSetupStatus"]=T(p.Value,"accountSetupStatus"),["deletionStatus"]=T(p.Value,"deletionStatus"),["official"]=record!=null,
+                    ["groupCount"]=groups.Properties().Count(g=>ActiveGroup(g.Value,p.Name,T(p.Value,"academicSupervisorId"))),
+                    ["studentCount"]=users.Properties().Count(s=>Student(s.Value,p.Name,T(p.Value,"academicSupervisorId")))});
             }
             return new JObject{["supervisors"]=supervisors};
         }
@@ -169,7 +197,7 @@ namespace University_Internship_Management_System.Shared
                 profile=await RequireAcademicAsync(uid);
                 if(action=="delete")
                 {
-                    if(await HasAssignmentsAsync(uid)) throw new StudentManagementException("Reassign this supervisor's active students and groups before deleting the account.");
+                    string blocked=await AssignmentsAsync(uid);if(blocked!=null) throw new StudentManagementException(blocked);
                     await db.PatchAsync("users/"+Key(uid),new{isActive=false,deletionStatus="pending"});
                     await auth.DeleteAsync(uid);
                     await AccountHistoryCleanup.AcademicAsync(db,uid);
@@ -190,7 +218,7 @@ namespace University_Internship_Management_System.Shared
                     {
                         var official=await LookupAsync(T(profile,"staffId"));
                         if(official.UniversityId!=T(profile,"universityId")) throw new StudentManagementException("The university changed for this staff ID. Manual account review is required.");
-                        if((official.DepartmentId!=T(profile,"departmentId")||official.CollegeId!=T(profile,"collegeId"))&&await HasAssignmentsAsync(uid))
+                        if((official.DepartmentId!=T(profile,"departmentId")||official.CollegeId!=T(profile,"collegeId"))&&await AssignmentsAsync(uid)!=null)
                             throw new StudentManagementException("Reassign active students and groups before changing this supervisor's department or college.");
                         await auth.UpdateProfileAsync(uid,official.Email,official.FullName);
                         await db.PatchAsync("users/"+Key(uid),Profile(official));

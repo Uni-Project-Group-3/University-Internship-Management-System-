@@ -198,7 +198,7 @@ namespace UIMS.Services
                 string previous = T(record, "status");
                 record["companySupervisorId"] = access.CompanySupervisor; record["academicSupervisorId"] = access.Academic;
                 if (T(record,"studentName").Length == 0) record["studentName"] = access.StudentName;
-                if (action == "save" || action == "submit")
+                if (action == "save" || action == "submit" || action == "submitToAdmin")
                 {
                     if (access.Role != "companySupervisor") throw new FirebaseException(403, "Only the assigned company supervisor prepares this report.");
                     State(record, access.Role, "draft", "companyRevisionRequested");
@@ -226,7 +226,10 @@ namespace UIMS.Services
                         if (!draft.HasValues) throw new FirebaseException(400, "Save the report before submitting.");
                         if (previous == "companyRevisionRequested" && string.IsNullOrWhiteSpace(T(draft, "companyResponse"))) throw new FirebaseException(400, "A company response is required for resubmission.");
                         string revisionId = "revision-" + requestId; var revisions = O(record["revisions"]); var revision = (JObject)draft.DeepClone(); revision["id"] = revisionId; revision["submittedAt"] = Now(); revision["submittedBy"] = uid; revision["approvedTrainingMinutes"] = minutes; revisions[revisionId] = revision;
-                        record["revisions"] = revisions; record["currentRevisionId"] = revisionId; record["approvedTrainingMinutes"] = minutes; record["status"] = "pendingAcademicReview"; record.Remove("draft");
+                        record["revisions"] = revisions; record["currentRevisionId"] = revisionId; record["approvedTrainingMinutes"] = minutes; record.Remove("draft");
+                        // "Send to admin" skips the academic step; the admin's final approval accepts this exact revision.
+                        if (action == "submitToAdmin") { record["status"] = "pendingAdminReview"; record["directToAdmin"] = revisionId; record.Remove("academicApprovalId"); }
+                        else { record["status"] = "pendingAcademicReview"; record.Remove("directToAdmin"); }
                     }
                 }
                 else if (action == "academicApprove" || action == "companyRevision")
@@ -245,10 +248,10 @@ namespace UIMS.Services
                     if (access.Role != "coordinator") throw new FirebaseException(403, "Only the authorized admin/coordinator may give the final decision.");
                     Revision(record, input); State(record, access.Role, "pendingAdminReview");
                     var approval = record["academicReviews"]?[T(record, "academicApprovalId")];
-                    if (approval == null || T(approval, "revisionId") != T(record, "currentRevisionId") || T(approval, "action") != "academicApprove" || (action == "finalApprove" && T(approval, "academicSupervisorId") != access.Academic)) throw new FirebaseException(409, "Fresh academic approval of the current revision and current academic assignment is required.");
+                    if (!DirectToAdmin(record) && (approval == null || T(approval, "revisionId") != T(record, "currentRevisionId") || T(approval, "action") != "academicApprove" || (action == "finalApprove" && T(approval, "academicSupervisorId") != access.Academic))) throw new FirebaseException(409, "Fresh academic approval of the current revision and current academic assignment is required.");
                     string feedback = Text(input, "feedback", 4000, action == "adminCorrection"); var reviews = O(record["adminReviews"]);
                     reviews[requestId] = new JObject { ["revisionId"] = record["currentRevisionId"], ["actorUid"] = uid, ["action"] = action, ["feedback"] = feedback, ["at"] = Now() }; record["adminReviews"] = reviews;
-                    if (action == "adminCorrection") { record["status"] = "companyRevisionRequested"; record["draft"] = record["revisions"][T(record, "currentRevisionId")].DeepClone(); record["draft"]["companyResponse"] = ""; record["draftVersion"] = "return-" + requestId; record.Remove("academicApprovalId"); }
+                    if (action == "adminCorrection") { record.Remove("directToAdmin"); record["status"] = "companyRevisionRequested"; record["draft"] = record["revisions"][T(record, "currentRevisionId")].DeepClone(); record["draft"]["companyResponse"] = ""; record["draftVersion"] = "return-" + requestId; record.Remove("academicApprovalId"); }
                     else
                     {
                         long minutes = await Minutes(placementId, access);
@@ -272,7 +275,9 @@ namespace UIMS.Services
                 if (!saved) { if (retry < 2) continue; throw new FirebaseException(409, "Another review changed this report. Reload before deciding."); }
                 if (action == "finalApprove") await Reconcile(uid, role, placementId);
                 string reportStudent = T(record, "studentName").Length > 0 ? T(record, "studentName") : access.Student;
-                if (action == "submit")
+                if (action == "submitToAdmin")
+                    Notify.Send(Notify.WithRole("coordinator"), "Final report awaiting approval", "The company sent the final training report for " + reportStudent + " directly for your final decision.", "FinalReports.aspx", "report");
+                else if (action == "submit")
                     Notify.Send(Notify.AcademicSupervisor(access.Academic), "Final report to review", "The company submitted the final training report for " + reportStudent + ". Review it in Final Academic Evaluation.", "Academic/FinalAcademicEvaluation.aspx", "report");
                 else if (action == "academicApprove")
                     Notify.Send(Notify.WithRole("coordinator"), "Final report awaiting approval", "The academic supervisor approved the final report for " + reportStudent + ". Give the final decision.", "FinalReports.aspx", "report");
@@ -288,6 +293,7 @@ namespace UIMS.Services
             }
             throw new FirebaseException(409, "The report changed. Reload.");
         }
+        private static bool DirectToAdmin(JObject record) { return T(record, "currentRevisionId").Length > 0 && T(record, "directToAdmin") == T(record, "currentRevisionId"); }
         public async Task Reconcile(string uid, string role, string placementId)
         {
             var a = await Authorize(uid, role, placementId); if (a.Role != "coordinator") throw new FirebaseException(403, "Admin reconciliation is required.");
@@ -295,7 +301,7 @@ namespace UIMS.Services
             var f = r["finalization"] as JObject; if (f == null) throw new FirebaseException(409, "There is no pending finalization.");
             await Minutes(placementId, a);
             var approval = r["academicReviews"]?[T(r, "academicApprovalId")];
-            if (T(approval, "academicSupervisorId") != a.Academic || T(approval, "revisionId") != T(r, "currentRevisionId")) throw new FirebaseException(409, "Assignment changed during finalization. Completion remains blocked.");
+            if (!DirectToAdmin(r) && (T(approval, "academicSupervisorId") != a.Academic || T(approval, "revisionId") != T(r, "currentRevisionId"))) throw new FirebaseException(409, "Assignment changed during finalization. Completion remains blocked.");
             string operation = T(f, "requestId"); string notificationId = "final-training-" + placementId;
             var outcome = new JObject { ["placementId"] = placementId, ["studentId"] = a.Student, ["finalGrade"] = f["grade"], ["gradeMaximum"] = 100, ["revisionId"] = f["revisionId"], ["requestId"] = operation, ["approvedBy"] = f["actorUid"], ["approvedAt"] = f["preparedAt"], ["completionReport"] = f["attachment"].DeepClone(), ["certificate"] = f["certificate"]?.DeepClone() };
             var notification = new JObject { ["id"] = notificationId, ["studentId"] = a.Student, ["placementId"] = placementId, ["requestId"] = operation, ["type"] = "trainingCompletion", ["message"] = "Congratulations! You have successfully completed your field training.", ["createdAt"] = f["preparedAt"], ["read"] = false };

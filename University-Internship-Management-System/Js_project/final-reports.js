@@ -1,6 +1,6 @@
 (function () {
     'use strict';
-    const by = id => document.getElementById(id), states = { draft: 'Draft', pendingAcademicReview: 'Awaiting academic review', companyRevisionRequested: 'Company revision requested', pendingAdminReview: 'Academically approved \u2014 awaiting final admin approval.', academicRevisionRequested: 'Returned to academic supervisor by admin', completed: 'Training completed', completionConsistencyPending: 'Completion verification requires administration review' };
+    const by = id => document.getElementById(id), states = { draft: 'Draft', pendingAcademicReview: 'Awaiting academic review', companyRevisionRequested: 'Company revision requested', pendingAdminReview: 'Awaiting final admin approval.', academicRevisionRequested: 'Returned to academic supervisor by admin', completed: 'Training completed', completionConsistencyPending: 'Completion verification requires administration review' };
     let items = [], role = '', loading = false, activeRefresh = null;
     const placementScope = new URLSearchParams(location.search).get('placementId');
     const embedded = new URLSearchParams(location.search).get('embedded') === '1' && !!placementScope;
@@ -111,8 +111,8 @@
                 async function fillAutomatically(manual){if(saving||automaticLoading)return;automaticLoading=true;automaticReady=false;refresh.disabled=true;actions.querySelectorAll('button').forEach(b=>{if(b!==close)b.disabled=true;});autoStatus.textContent='Loading current tasks, examinations, reports and approved hours...';try{const source=await api('sourceSummary',id);if(!d.open&&d.isConnected===false)return;const grade=source.gradeCalculation||{};percentage.value=grade.percentage==null?'':grade.percentage;gradeNumber.textContent=grade.percentage==null?'No released grades':Number(grade.percentage).toFixed(2)+' / 100';comments.value=source.comments||'';filename.value=source.fileName;useCalculatedGrade=true;automaticReady=grade.percentage!=null;showGrades(grade);showWeekly(source.weeklyReports);autoStatus.textContent=grade.percentage==null?'No eligible grades yet. A percentage will not be invented.':(grade.provisional?'Calculated from available grades; some assessments are excluded.':'Calculated from approved tasks and released examination results.');if(manual){dirty=true;pendingRequest=null;}error.textContent=grade.percentage==null?'Saving requires at least one valid approved task grade or released exam result.':'';}catch(e){error.textContent='Student records could not be loaded. '+e.message;autoStatus.textContent='Refresh student data to retry.';}finally{automaticLoading=false;refresh.disabled=false;actions.querySelectorAll('button').forEach(b=>{if(b!==close)b.disabled=false;});}}
                 refresh.onclick=()=>fillAutomatically(true);
                 editor.addEventListener('input',()=>{dirty=true;pendingRequest=null;});
-                addAction('Generate and save report PDF','save');if(view.eligible&&r.draft)addAction('Submit saved report to academic supervisor','submit');
-                if(!view.eligible)body.append(node('p','Draft preparation is available. Final submission requires '+((view.requiredTrainingMinutes||18000)/60)+' approved hours.','automatic-report-status'));
+                addAction('Generate and save report PDF','save');if(r.draft)addAction('Send final evaluation to admin','submitToAdmin');if(view.eligible&&r.draft)addAction('Submit saved report to academic supervisor','submit');
+                if(!view.eligible)body.append(node('p',r.draft?'Use "Send final evaluation to admin" to send the saved report straight to the admin for approval and the certificate. Academic review normally requires '+((view.requiredTrainingMinutes||18000)/60)+' approved hours.':'Save the report first, then send it to the admin for approval.','automatic-report-status'));
                 if(!r.draft){automaticLoading=true;setTimeout(()=>{automaticLoading=false;fillAutomatically(false);},0);}
             }
             if(role!=='student'&&(r.draft||revision)){
@@ -163,16 +163,16 @@
                 const button = node('button', label); actions.append(button);
                 button.onclick = async () => {
                     if (saving || automaticLoading) return;
-                    if(role==='companySupervisor'&&['save','submit'].includes(action)&&!automaticReady){error.textContent='Load valid student assessment grades before saving. Use Refresh student data.';return;}
+                    if(role==='companySupervisor'&&['save','submit','submitToAdmin'].includes(action)&&!automaticReady){error.textContent='Load valid student assessment grades before saving. Use Refresh student data.';return;}
                     const input = { revisionId: r.currentRevisionId || '', expectedDraftVersion: r.draftVersion || '' }; const controls = [...editor.querySelectorAll('input[name],textarea[name]')];
                     const feedback = editor.querySelector('[name=feedback]'); if (feedback) feedback.required = ['companyRevision', 'adminCorrection'].includes(action) || view.status === 'academicRevisionRequested';
                     const relevant = action === 'adminCorrection' ? controls.filter(c => c.name === 'feedback') : controls;
                     const temporarilyDisabled = controls.filter(c => !relevant.includes(c)); temporarilyDisabled.forEach(c => c.disabled = true);
                     const valid = validate(editor); temporarilyDisabled.forEach(c => c.disabled = false); if (!valid) return;
-                    if (action === 'submit' && dirty) { error.textContent = 'Save your report changes before submitting.'; return; }
+                    if ((action === 'submit' || action === 'submitToAdmin') && dirty) { error.textContent = 'Save your report changes before submitting.'; return; }
                     relevant.forEach(c => input[c.name] = c.value);
                     if (action === 'save') { input.weeklyReportIds = weeklyIds; input.useCalculatedGrade = useCalculatedGrade; }
-                    if (action === 'submit') for (const key of Object.keys(input)) if (!['revisionId', 'expectedDraftVersion'].includes(key)) delete input[key];
+                    if (action === 'submit' || action === 'submitToAdmin') for (const key of Object.keys(input)) if (!['revisionId', 'expectedDraftVersion'].includes(key)) delete input[key];
                     if (!await confirm(label + '?', 'This decision will be saved to Firebase for the current report revision. Assessment PDFs are generated from the saved report through private storage.')) return;
                     const signature = JSON.stringify({ action, input }); if (!pendingRequest || pendingRequest.signature !== signature) pendingRequest = { signature, id: crypto.randomUUID() }; input.requestId = pendingRequest.id;
                     saving = true; actions.querySelectorAll('button').forEach(b => b.disabled = true);

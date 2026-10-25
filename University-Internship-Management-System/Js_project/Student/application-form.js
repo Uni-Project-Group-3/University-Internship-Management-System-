@@ -199,7 +199,7 @@
         on('motivation', 'input', () => { const length = by('motivation').value.length; text('characterCount', length + ' / 1000'); by('characterCount').classList.toggle('near-limit', length >= 900); });
         on('applicationForm', 'submit', async event => {
             event.preventDefault(); if (!opportunity || alreadyApplied || !valid(['fullName', 'studentNumber', 'email', 'phone', 'major', 'cvAttachment', 'portfolioLink', 'motivation', 'confirmInformation'])) return;
-            const useProfileCv=by('cvAttachment').dataset.profileCv==='true',cvFile=by('cvAttachment').files[0];if(!useProfileCv&&(!cvFile||cvFile.size>10*1024*1024||!/\.(pdf|docx?)$/i.test(cvFile.name))){notice('Choose a PDF, DOC or DOCX CV up to 10 MiB.');return;}
+            const cvFile=by('cvAttachment').files[0],useProfileCv=by('cvAttachment').dataset.profileCv==='true'||!cvFile;if(!useProfileCv&&(!cvFile||cvFile.size>10*1024*1024||!/\.(pdf|docx?)$/i.test(cvFile.name))){notice('Choose a PDF, DOC or DOCX CV up to 10 MiB.');return;}
             if(by('applicationFields').dataset.submitting)return;by('applicationFields').dataset.submitting='true';
             try{const upload=new FormData();if(!useProfileCv)upload.append('cv',cvFile);const response=await fetch('../ApplicationCv.ashx',{method:'POST',credentials:'same-origin',headers:{'X-UIMS-Attachment':useProfileCv?'profile':'upload'},body:upload,signal:AbortSignal.timeout(60000)});const reply=await response.json();if(!response.ok||!reply.attachmentId)throw Error(reply.error||'CV upload failed.');set('cvAttachmentId',reply.attachmentId);set('cvLink',reply.fileName);}catch(e){notice(e.message);delete by('applicationFields').dataset.submitting;return;}
             delete by('applicationFields').dataset.submitting;
@@ -247,7 +247,8 @@
         if (cv) {
             const wrapper = cv.closest('.input-icon'); wrapper?.classList.add('cv-file-picker');
             wrapper?.querySelector('i')?.remove();
-            cv.classList.add('cv-native-input');
+            // Without a chosen file the profile CV is used; the server says if the profile has none.
+            cv.required = false; cv.classList.add('cv-native-input');
             const choose = document.createElement('button'); choose.type = 'button'; choose.className = 'cv-choose-button';
             choose.textContent = 'Attach CV file'; choose.onclick = () => cv.click();
             const name = document.createElement('span'); name.className = 'cv-selected-name'; name.setAttribute('aria-live', 'polite');
@@ -270,7 +271,7 @@
         const ok = id => { const el = $(id); return !!el && el.value.trim() !== '' && el.checkValidity(); };
         const steps = {
             personal: () => ['fullName', 'studentNumber', 'email', 'phone', 'major'].every(ok),
-            supporting: () => ($('cvAttachment')?.dataset.profileCv === 'true' || ok('cvAttachment')) && ($('portfolioLink')?.checkValidity() ?? true),
+            supporting: () => ($('cvAttachment')?.dataset.profileCv === 'true' || !$('cvAttachment')?.files.length || ok('cvAttachment')) && ($('portfolioLink')?.checkValidity() ?? true),
             review: () => !!$('confirmInformation')?.checked
         };
         const titles = ['Let’s get started', 'Good start', 'Almost there', 'Ready to submit'];

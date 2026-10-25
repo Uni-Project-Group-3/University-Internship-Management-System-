@@ -12,6 +12,25 @@
     const professor = () => data.professors.find(p => p.id === by('assignmentProfessor').value);
     const professorName = id => data.professors.find(p => p.id === id)?.name || id || 'Unassigned';
     const notice = text => { by('assignmentNotice').textContent = text; };
+    const sameName = (a, b) => String(a || '').replace(/\s+/g, ' ').trim().toLowerCase() === String(b || '').replace(/\s+/g, ' ').trim().toLowerCase();
+    // In-page confirmation popup in place of the browser's confirm box. Resolves true on confirm.
+    function ask(message, okLabel) {
+        return new Promise(resolve => {
+            const box = document.createElement('dialog'), text = node('p', message), row = node('div'), cancel = node('button', 'Cancel'), ok = node('button', okLabel || 'Confirm');
+            box.setAttribute('aria-label', 'Confirm action');
+            box.style.cssText = 'border:1px solid #dbe3f0;border-radius:20px;padding:26px;width:min(440px,calc(100vw - 32px));color:#193761;background:#fff;box-shadow:0 24px 80px #182d5633;font-family:inherit';
+            text.style.cssText = 'margin:0 0 22px;font-size:15px;line-height:1.6;overflow-wrap:anywhere';
+            row.style.cssText = 'display:flex;justify-content:flex-end;gap:10px;flex-wrap:wrap';
+            const button = 'border-radius:12px;padding:11px 18px;font:inherit;font-size:14px;font-weight:600;cursor:pointer;';
+            cancel.type = ok.type = 'button';
+            cancel.style.cssText = button + 'border:1px solid #dae2ef;background:#fff;color:#203e7d';
+            ok.style.cssText = button + 'border:1px solid #b42338;background:#b42338;color:#fff';
+            const finish = value => { box.close(); box.remove(); resolve(value); };
+            cancel.onclick = () => finish(false); ok.onclick = () => finish(true);
+            box.oncancel = e => { e.preventDefault(); finish(false); };
+            row.append(cancel, ok); box.append(text, row); document.body.append(box); box.showModal(); cancel.focus();
+        });
+    }
     const memberIds = g => Object.keys(g?.students || {}).filter(id => g.students[id] === true);
     function options(control, rows, placeholder) {
         control.replaceChildren(new Option(placeholder, ''));
@@ -35,9 +54,10 @@
             const row = node('tr'), title = node('td');
             title.append(node('strong', g.name, 'group-name'), node('small', g.id, 'group-id'));
             row.append(title, node('td', majorName(g.department)), node('td', Object.values(g.students || {}).filter(v => v === true).length), node('td', professorName(g.supervisorId)));
-            const action = node('td'), button = node('button', 'View / add students', 'assignment-secondary');
+            const action = node('td'), tools = node('div', null, 'group-actions'), button = node('button', 'View / edit', 'assignment-secondary'), remove = node('button', 'Delete', 'assignment-danger');
             button.type = 'button'; button.onclick = () => open(g);
-            action.append(button); row.append(action); host.append(row);
+            remove.type = 'button'; remove.setAttribute('aria-label', 'Delete group ' + g.name); remove.onclick = () => deleteGroup(g);
+            tools.append(button, remove); action.append(tools); row.append(action); host.append(row);
         }
         if (!host.children.length) {
             const row = node('tr'), cell = node('td', 'No groups yet in this view. Add a group to assign students.');
@@ -59,12 +79,14 @@
         by('assignmentTitle').textContent = g ? (g.name || 'Group students') : 'Add student group';
         by('assignmentSave').textContent = g ? 'Add selected students' : 'Create group';
         by('assignmentIntro').textContent = g ? 'Review the students in this group and add more from the same major.' : 'Each supervisor is responsible for one major. Select students from that major to join the group.';
+        by('assignmentRenameRow').hidden = !g; by('assignmentDelete').hidden = !g; by('groupRename').value = g?.name || '';
         by('assignmentSetup').hidden = !!g; by('assignmentSummary').hidden = !g; by('assignmentCurrent').hidden = !g;
         by('assignmentStudentsTitle').textContent = g ? 'Add students' : '03 \u00a0 Students';
         by('assignmentStudentsHint').textContent = g ? 'Only students from this major who are not in another group or assigned to another supervisor are listed.' : 'Students already in another group or assigned to another supervisor cannot be selected.';
         if (g) {
             const members = memberIds(g);
-            by('summaryProfessor').textContent = professorName(g.supervisorId);
+            const owner = data.professors.find(x => x.id === g.supervisorId);
+            by('summaryProfessor').textContent = professorName(g.supervisorId) + (owner && !owner.official ? ' (not in university records)' : '');
             by('summaryMajor').textContent = majorName(g.department);
             by('summaryCount').textContent = members.length;
             by('assignmentCurrentTitle').textContent = 'Current students (' + members.length + ')';
@@ -80,7 +102,7 @@
             }
             if (!members.length) list.append(node('p', 'No students in this group yet.', 'assignment-empty'));
         }
-        options(by('assignmentProfessor'), data.professors.filter(p => !p.conflict || p.id === g?.supervisorId).map(p => ({ id: p.id, name: p.name + (p.conflict ? ' - review assignments required' : '') })), 'Select academic supervisor');
+        options(by('assignmentProfessor'), data.professors.filter(p => !p.conflict || p.id === g?.supervisorId).map(p => ({ id: p.id, name: p.name + (p.conflict ? ' - review assignments required' : !p.official ? ' - not in university records' : '') })), 'Select academic supervisor');
         by('assignmentProfessor').value = g?.supervisorId || '';
         by('assignmentProfessor').disabled = !!g;
         majors(); dialog.showModal(); dialog.scrollTop = 0;
@@ -93,12 +115,12 @@
         by('assignmentDepartment').disabled = !p || p.conflict || !!group;
         // Even an existing responsibility is chosen explicitly after the supervisor.
         by('assignmentDepartment').value = group?.department || '';
-        by('assignmentMajorHint').textContent = !p ? 'Choose the supervisor first.' : p.conflict ? 'This supervisor has conflicting majors. Review existing assignments before adding students.' : p.department ? 'This supervisor is responsible for ' + majorName(p.department) + '.' : 'The selected major will become this supervisor\'s responsibility.';
+        by('assignmentMajorHint').textContent = !p ? 'Choose the supervisor first.' : !p.official ? 'This account is not in university records, so it cannot receive students. Delete this group, or delete the account from Manage Academic Supervisors.' : p.conflict ? 'This supervisor has conflicting majors. Review existing assignments before adding students.' : p.department ? 'This supervisor is responsible for ' + majorName(p.department) + '.' : 'The selected major will become this supervisor\'s responsibility.';
         students();
     }
     function blocked(s) {
         const p = professor();
-        if (!p || p.conflict || s.conflict) return true;
+        if (!p || p.conflict || !p.official || s.conflict) return true;
         if (['universityId', 'collegeId'].some(f => s[f] && p[f] && s[f] !== p[f])) return true;
         return s.groupIds.some(id => id !== group?.id) || s.supervisorIds.some(id => id !== p.id) || s.groupIds.includes(group?.id);
     }
@@ -120,12 +142,12 @@
                 label.append(check, info); host.append(label);
             }
         }
-        if (!host.children.length) host.append(node('p', !enabled ? 'Choose a supervisor and major to see students.' : group && !query ? 'No more available students in this major.' : 'No students match this major and search.', 'assignment-empty'));
+        if (!host.children.length) host.append(node('p', !enabled ? 'Choose a supervisor and major to see students.' : professor() && !professor().official ? 'This supervisor is not in university records, so no students can be added. Delete this group or the account instead.' : group && !query ? 'No more available students in this major.' : 'No students match this major and search.', 'assignment-empty'));
         by('studentCount').textContent = selected.size + ' selected';
         by('assignmentSave').disabled = busy || (!!group && !selected.size);
     }
     async function removeStudent(id, name) {
-        if (busy || !group || !window.confirm('Remove ' + name + ' from ' + (group.name || 'this group') + '? The student will no longer have this academic supervisor.')) return;
+        if (busy || !group || !await ask('Remove ' + name + ' from ' + (group.name || 'this group') + '? The student will no longer have this academic supervisor.', 'Remove')) return;
         busy = true; by('assignmentFields').inert = true; by('assignmentError').textContent = '';
         try {
             const result = await api({ action: 'remove', groupId: group.id, studentId: id });
@@ -139,6 +161,34 @@
         } catch (e) { by('assignmentError').textContent = e.message; }
         finally { busy = false; by('assignmentFields').inert = false; }
     }
+    // Rename and delete write straight to the database, then the table reloads from it.
+    async function manage(payload, confirmText) {
+        if (busy || (confirmText && !await ask(confirmText, payload.action === 'deleteGroup' ? 'Delete group' : 'Confirm'))) return null;
+        busy = true; by('assignmentFields').inert = true; by('assignmentError').textContent = '';
+        try {
+            const result = await api(payload);
+            if (!result.saved) throw Error('The server did not confirm this change. Refresh and check the group.');
+            await load();
+            notice(result.message || 'Saved.');
+            return result;
+        } catch (e) {
+            if (dialog.open) by('assignmentError').textContent = e.message; else notice(e.message);
+            return null;
+        } finally { busy = false; by('assignmentFields').inert = false; }
+    }
+    async function deleteGroup(g) {
+        const count = memberIds(g).length;
+        const text = 'Delete the group "' + g.name + '" (' + g.id + ')?' + (count ? ' Its ' + count + ' student(s) will be unlinked from ' + professorName(g.supervisorId) + '.' : '') + ' This cannot be undone.';
+        if (await manage({ action: 'deleteGroup', groupId: g.id }, text) && dialog.open) dialog.close();
+    }
+    by('assignmentRename').onclick = async () => {
+        const name = by('groupRename').value.replace(/\s+/g, ' ').trim();
+        if (!name) { by('assignmentError').textContent = 'Enter a group name.'; return; }
+        if (sameName(name, group.name)) { by('assignmentError').textContent = 'The name is unchanged.'; return; }
+        const groupId = group.id;
+        if (await manage({ action: 'rename', groupId, name })) { const fresh = data.groups.find(g => g.id === groupId); if (fresh) open(fresh); }
+    };
+    by('assignmentDelete').onclick = () => deleteGroup(group);
     async function close() {
         if (busy) return;
         dialog.close();
@@ -150,7 +200,9 @@
         if (!p || p.conflict) { error.textContent = 'Choose an eligible academic supervisor first.'; by('assignmentProfessor').focus(); return; }
         if (!major) { error.textContent = 'Select the university major.'; by('assignmentDepartment').focus(); return; }
         if (!selected.size) { error.textContent = 'Select at least one available student.'; return; }
-        const payload = { groupId: group?.id || '', name: by('assignmentName').value.trim() || (majorName(major) + ' - ' + p.name).slice(0, 120), department: major, supervisorId: p.id, studentIds: [...selected].sort() };
+        const name = group ? group.name : by('assignmentName').value.replace(/\s+/g, ' ').trim() || (majorName(major) + ' - ' + p.name).slice(0, 120);
+        if (!group && data.groups.some(g => g.supervisorId === p.id && g.department === major && sameName(g.name, name))) { error.textContent = p.name + ' already has a group named "' + name + '" in this major. Open that group and add the students there.'; return; }
+        const payload = { groupId: group?.id || '', name, department: major, supervisorId: p.id, studentIds: [...selected].sort() };
         const signature = JSON.stringify(payload);
         if (!retry || retry.signature !== signature) retry = { signature, id: crypto.randomUUID() };
         payload.requestId = retry.id;

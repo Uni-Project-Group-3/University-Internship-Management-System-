@@ -54,8 +54,8 @@ namespace University_Internship_Management_System.Student
                 if (assigned.Length > 1) throw new AppError("Your academic supervisor assignments disagree. Ask the coordinator to review them before confirming this offer.");
                 if (assigned.Length == 1) academicId = assigned[0];
             }
-            if (academicId.Length == 0)
-                throw new AppError("You do not have an academic supervisor yet. Ask the internship coordinator to add you to a supervision group, then confirm this offer.");
+            // Confirming registers the training right away. If no academic supervisor is assigned yet,
+            // the coordinator's later group assignment fills it in on the placement and attendance records.
             string placementId = "PLC-" + id;
             string now = FirebaseDb.Now;
 

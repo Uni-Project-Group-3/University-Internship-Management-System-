@@ -50,3 +50,9 @@
 .assign-supervisors-page .assignment-member{justify-content:space-between}
 .assign-supervisors-page .assignment-remove{flex-shrink:0;border:1px solid #e3b4b4;border-radius:8px;background:#fff;color:#a12f2f;font-weight:700;font-size:13px;padding:7px 14px;cursor:pointer}
 .assign-supervisors-page .assignment-remove:hover{background:#fbeeee}
+.assign-supervisors-page .assignment-danger{border:1px solid #f1c4cc;border-radius:12px;padding:12px 18px;font-family:inherit;font-size:14px;font-weight:600;line-height:1.4;cursor:pointer;white-space:nowrap;background:#fff5f6;color:#b42338}
+.assign-supervisors-page .assignment-dialog-footer .assignment-danger{margin-right:auto}
+.assign-supervisors-page .group-actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+.assign-supervisors-page #assignmentRenameRow{margin:0 0 20px}
+.assign-supervisors-page .assignment-name-row{display:flex;gap:8px;font-weight:400}
+@media(max-width:600px){.assign-supervisors-page .assignment-name-row{flex-wrap:wrap}}
