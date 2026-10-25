@@ -807,6 +807,21 @@ namespace UIMS.Tasks
             var notifications = task["notifications"] as JObject ?? new JObject();
             notifications[Guid.NewGuid().ToString("N")] = new JObject { ["kind"] = kind, ["message"] = detail, ["createdAt"] = DateTimeOffset.UtcNow.ToString("o"), ["recipientRole"] = actor.Role == "student" ? "companySupervisor" : "student", ["recipientId"] = actor.Role == "student" ? task["assignedBy"] : task["studentId"] };
             task["notifications"] = notifications;
+            string taskTitle = Text(task, "title"), title;
+            switch (kind)
+            {
+                case "assigned": title = "New task assigned"; break;
+                case "submitted": title = "Task submitted for review"; break;
+                case "graded": title = "Task reviewed"; break;
+                case "resubmissionRequested": title = "Changes requested on a task"; break;
+                case "extension": title = "Task deadline extension"; break;
+                case "archived": title = "Task archived"; break;
+                default: title = "Task updated"; break;
+            }
+            if (actor.Role == "student")
+                UIMS.Services.Notify.Send(UIMS.Services.Notify.User(Text(task, "assignedBy")), title, (taskTitle != "" ? taskTitle + ": " : "") + detail, "Company/ManageTasks.aspx", "task", actor.Uid);
+            else
+                UIMS.Services.Notify.Send(UIMS.Services.Notify.Student(Text(task, "studentId")), title, (taskTitle != "" ? taskTitle + ": " : "") + detail, "Student/MyTasks.aspx", "task", actor.Uid);
         }
         // Creation plans contain answer keys and stay in the EXISTING private collection.
         // Progress is reconciled from business records, never accepted from the browser.

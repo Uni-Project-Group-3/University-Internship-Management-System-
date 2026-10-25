@@ -19,7 +19,7 @@
 <link rel="stylesheet" href="../Assets/shared/just-theme.css" />
 
 <link href="../Assets/shared/workspace-identity.css?v=20261025-progress-stat" rel="stylesheet" />
-<script src="../Js_project/workspace-navigation-unified.js?v=20261025-task-flow" defer></script>
+<script src="../Js_project/workspace-navigation-unified.js?v=20261025-notifications" defer></script>
 <link href="../Assets/company/company-hero.css?v=20261024-blue" rel="stylesheet" />
 </head>
     <body class="coordinator-banner uims-tasks-theme" data-demo-role="company">

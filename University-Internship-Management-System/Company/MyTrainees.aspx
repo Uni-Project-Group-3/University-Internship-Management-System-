@@ -9,7 +9,7 @@
 
     <link runat="server" href="~/Assets/company/my-trainees.css?v=20261024-progress" rel="stylesheet" />
 <link href="../Assets/shared/workspace-identity.css?v=20261025-progress-stat" rel="stylesheet" />
-<script src="../Js_project/workspace-navigation-unified.js?v=20261024-refine" defer></script>
+<script src="../Js_project/workspace-navigation-unified.js?v=20261025-notifications" defer></script>
 </head>
 <body class="coordinator-banner app-page trainees-page role-shell" data-demo-role="company">
     <form id="form1" runat="server">

@@ -118,6 +118,9 @@ namespace University_Internship_Management_System.Student
             updates["uimsAttendance/trainingAssignments/" + assignmentId] = provisioned["trainingAssignments"][assignmentId];
             updates["uimsAttendance/provisioningClaims/" + placementId] = provisioned["provisioningClaims"][placementId];
             Db.Update("", updates); // placement and attendance links are saved atomically
+            string offerTitle = S(opportunity["title"]) != "" ? S(opportunity["title"]) : "the internship";
+            UIMS.Services.Notify.Send(UIMS.Services.Notify.CompanySupervisors(companyId), "Offer confirmed", S(Profile["fullName"]) + " confirmed the offer for " + offerTitle + ".", "Company/MyTrainees.aspx", "placement");
+            UIMS.Services.Notify.Send(UIMS.Services.Notify.AcademicSupervisor(academicId), "Student placement confirmed", S(Profile["fullName"]) + " confirmed an internship: " + offerTitle + ".", "Academic/StudentProgressMonitor.aspx", "placement");
         }
     }
 }

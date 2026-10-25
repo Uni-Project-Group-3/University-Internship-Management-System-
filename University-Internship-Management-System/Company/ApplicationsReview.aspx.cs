@@ -63,6 +63,10 @@ namespace University_Internship_Management_System.Company
             }
 
             Db.Update("", updates); // one atomic write
+            UIMS.Services.Notify.Send(UIMS.Services.Notify.Student(S(application["studentUid"]) != "" ? S(application["studentUid"]) : S(application["studentId"])),
+                status == "accepted" ? "Application accepted" : "Application not accepted",
+                (S(application["companyName"]) != "" ? S(application["companyName"]) : "The company") + (status == "accepted" ? " accepted your application. Open My Applications to confirm the offer." : " did not accept your application." + (reason != "" ? " Reason: " + reason : "")),
+                "Student/MyApplications.aspx", "application");
         }
     }
 }

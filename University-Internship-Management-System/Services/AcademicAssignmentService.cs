@@ -129,6 +129,7 @@ namespace UIMS.Services
             await Authorize(uid);
             // Atomic multi-location PATCH, matching SaveAsync.
             await db.PatchAsync("", update);
+            Notify.Send(Notify.Student(studentId), "Supervision group changed", "You were removed from " + (T(group, "name").Length > 0 ? T(group, "name") : "your supervision group") + ". The coordinator will assign your academic supervisor.", "Student/StudentDashboard.aspx", "assignment");
             return new JObject { ["removed"] = true, ["groupId"] = groupId, ["studentId"] = studentId };
         }
         public async Task<JObject> SaveAsync(string uid, JObject input)
@@ -199,6 +200,9 @@ namespace UIMS.Services
                 await Authorize(uid); patchAttempted = true;
                 // Atomic multi-location PATCH; never a root PUT or independent per-student writes.
                 await db.PatchAsync("", update);
+                foreach (var studentId in selected.Select(x => (string)x))
+                    Notify.Send(Notify.Student(studentId), "Academic supervisor assigned", Name(professor.Value) + " is now your academic supervisor (" + name + ").", "Student/StudentDashboard.aspx", "assignment");
+                Notify.Send(Notify.User(professor.Name), "Students added to your group", added + " student(s) were added to " + name + ".", "Academic/StudentProgressMonitor.aspx", "assignment");
                 return new JObject { ["saved"] = true, ["groupId"] = groupId, ["added"] = added };
             }
             catch

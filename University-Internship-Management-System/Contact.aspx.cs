@@ -80,6 +80,7 @@ namespace University_Internship_Management_System
                 ["reply"] = "",
                 ["createdAt"] = DateTime.UtcNow.ToString("o")
             });
+            UIMS.Services.Notify.Send(UIMS.Services.Notify.WithRole("coordinator"), "New contact message", name + ": " + subject, "Coordinator/ContactMessages.aspx", "message");
 
             return null;
         }
