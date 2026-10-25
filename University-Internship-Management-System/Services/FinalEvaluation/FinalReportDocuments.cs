@@ -31,27 +31,51 @@ namespace UIMS.Services
             var doc = new Document(); doc.Info.Title = "Field Training Completion Certificate";
             doc.Info.Author = "JUST Internship Management System";
             doc.Styles[StyleNames.Normal].Font.Name = "Segoe UI"; doc.Styles[StyleNames.Normal].Font.Size = 12;
-            var section = doc.AddSection(); section.PageSetup.PageFormat = PageFormat.A4;
-            section.PageSetup.TopMargin = Unit.FromCentimeter(2.5); section.PageSetup.LeftMargin = section.PageSetup.RightMargin = Unit.FromCentimeter(2.3);
-            section.PageSetup.BottomMargin = Unit.FromCentimeter(2.5);
-            var logo = System.Web.Hosting.HostingEnvironment.MapPath("~/Assets/shared/images/JUST-Logo-01.png") ?? System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory,"Assets/shared/images/JUST-Logo-01.png");
-            if(File.Exists(logo)){var image=section.AddImage("base64:"+Convert.ToBase64String(File.ReadAllBytes(logo)));image.Width=Unit.FromCentimeter(2);image.LockAspectRatio=true;}
-            void Line(string text, int size = 12, bool bold = false) {
-                // The existing shaper uses a fixed 10.5pt font; scale its canvas to match the requested PDF font size.
-                if(text.Any(c=>c>='\u0590'&&c<='\u109f'||c>='\ufb1d'&&c<='\ufeff')){var image=section.AddImage("base64:"+Convert.ToBase64String(UIMS.Tasks.WeeklyReportService.ShapeReportText(text,.45+16*10.5/size)));image.Width=Unit.FromCentimeter(16);image.LockAspectRatio=true;return;}
-                var paragraph=section.AddParagraph(text);paragraph.Format.Font.Size=size;paragraph.Format.Font.Bold=bold;paragraph.Format.Font.Color=Color.Parse("#1F3D78");paragraph.Format.SpaceAfter=Unit.FromPoint(18);
+            // Landscape certificate: navy frame, centered content, gold accents and signature lines.
+            var section = doc.AddSection(); section.PageSetup.PageFormat = PageFormat.A4; section.PageSetup.Orientation = Orientation.Landscape;
+            section.PageSetup.TopMargin = section.PageSetup.BottomMargin = Unit.FromCentimeter(1.2);
+            section.PageSetup.LeftMargin = section.PageSetup.RightMargin = Unit.FromCentimeter(1.4);
+            Color navy = Color.Parse("#1F3D78"), gold = Color.Parse("#B8892D"), muted = Color.Parse("#5E6C84");
+            var frame = section.AddTable(); frame.Borders.Color = navy; frame.Borders.Width = Unit.FromPoint(3);
+            frame.TopPadding = frame.BottomPadding = Unit.FromCentimeter(0.6); frame.LeftPadding = frame.RightPadding = Unit.FromCentimeter(1.2);
+            frame.AddColumn(Unit.FromCentimeter(26.9));
+            var frameRow = frame.AddRow(); frameRow.Height = Unit.FromCentimeter(18.4); frameRow.HeightRule = MigraDoc.DocumentObjectModel.Tables.RowHeightRule.Exactly;
+            frameRow.VerticalAlignment = MigraDoc.DocumentObjectModel.Tables.VerticalAlignment.Center;
+            var cell = frameRow.Cells[0];
+            Paragraph Put(string text, double size, bool bold, Color color, double spaceAfter) {
+                var paragraph = cell.AddParagraph(); paragraph.Format.Alignment = ParagraphAlignment.Center; paragraph.Format.SpaceAfter = Unit.FromPoint(spaceAfter);
+                // Arabic and other RTL text is shaped into an image by the existing report shaper, scaled to the requested size.
+                if (text.Any(c => c >= '\u0590' && c <= '\u109f' || c >= '\ufb1d' && c <= '\ufeff')) { var shaped = paragraph.AddImage("base64:" + Convert.ToBase64String(UIMS.Tasks.WeeklyReportService.ShapeReportText(text, .45 + 16 * 10.5 / size))); shaped.Width = Unit.FromCentimeter(14); shaped.LockAspectRatio = true; return paragraph; }
+                var run = paragraph.AddFormattedText(text); run.Font.Size = size; run.Font.Bold = bold; run.Font.Color = color; return paragraph;
             }
-            Line("JORDAN UNIVERSITY OF SCIENCE AND TECHNOLOGY",13,true);
-            Line("FIELD TRAINING",26,true);Line("Completion Certificate",24,true);
-            Line("This certifies that");Line(T(certificate,"studentName").Length>0?T(certificate,"studentName"):string.IsNullOrWhiteSpace(access.StudentName)?access.Student:access.StudentName,21,true);
-            Line("Student ID: "+access.Student);
-            Line("has successfully completed the approved field training requirements.");
-            if(T(certificate,"companyName").Length>0)Line("Training organization: "+T(certificate,"companyName"));
-            Line("Approved training hours: "+((decimal)record["finalization"]["approvedTrainingMinutes"]/60m).ToString("0.00",System.Globalization.CultureInfo.InvariantCulture));
-            Line("Final approved grade: "+T(outcome,"finalGrade")+" / 100");
-            DateTimeOffset date; if(DateTimeOffset.TryParse(T(outcome,"approvedAt"),out date))Line("Issued on: "+date.ToString("yyyy-MM-dd"));
-            Line("Approved through academic review and final administration approval.",10);
-            var footer=section.Footers.Primary.AddParagraph("UIMS verification reference: "+placementId+" / "+T(outcome,"requestId"));footer.Format.Font.Size=8;
+            Paragraph Columns(string[] values, double size, bool bold, Color color, double spaceAfter, double[] stops) {
+                var paragraph = cell.AddParagraph(); paragraph.Format.SpaceAfter = Unit.FromPoint(spaceAfter); paragraph.Format.Font.Size = size; paragraph.Format.Font.Bold = bold; paragraph.Format.Font.Color = color;
+                foreach (double stop in stops) paragraph.Format.AddTabStop(Unit.FromCentimeter(stop), TabAlignment.Center);
+                for (int i = 0; i < values.Length; i++) { paragraph.AddTab(); paragraph.AddText(values[i]); }
+                return paragraph;
+            }
+            var logo = System.Web.Hosting.HostingEnvironment.MapPath("~/Assets/shared/images/JUST-Logo-01.png") ?? System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory,"Assets/shared/images/JUST-Logo-01.png");
+            if (File.Exists(logo)) { var logoLine = cell.AddParagraph(); logoLine.Format.Alignment = ParagraphAlignment.Center; logoLine.Format.SpaceAfter = Unit.FromPoint(6); var image = logoLine.AddImage("base64:" + Convert.ToBase64String(File.ReadAllBytes(logo))); image.Width = Unit.FromCentimeter(2.2); image.LockAspectRatio = true; }
+            Put("JORDAN UNIVERSITY OF SCIENCE AND TECHNOLOGY", 11, true, navy, 2);
+            Put("University Internship Management System", 9, false, muted, 14);
+            Put("CERTIFICATE OF COMPLETION", 30, true, navy, 2);
+            Put("F I E L D   T R A I N I N G", 12, true, gold, 16);
+            Put("This is to certify that", 12, false, muted, 6);
+            Put(T(certificate,"studentName").Length>0?T(certificate,"studentName"):string.IsNullOrWhiteSpace(access.StudentName)?access.Student:access.StudentName, 26, true, navy, 4);
+            Put("Student ID: " + access.Student, 11, false, muted, 10);
+            Put("has successfully completed the approved field training requirements" + (T(certificate,"companyName").Length > 0 ? " at " + T(certificate,"companyName") : "") + ".", 12, false, navy, 12);
+            var divider = cell.AddParagraph(); divider.Format.LeftIndent = Unit.FromCentimeter(8); divider.Format.RightIndent = Unit.FromCentimeter(8); divider.Format.SpaceAfter = Unit.FromPoint(12);
+            divider.Format.Borders.Bottom.Width = Unit.FromPoint(1.2); divider.Format.Borders.Bottom.Color = gold;
+            DateTimeOffset date; string issued = DateTimeOffset.TryParse(T(outcome,"approvedAt"), out date) ? date.ToString("dd MMMM yyyy", System.Globalization.CultureInfo.InvariantCulture) : "";
+            string hours = ((decimal)record["finalization"]["approvedTrainingMinutes"]/60m).ToString("0.##", System.Globalization.CultureInfo.InvariantCulture) + " hours";
+            double[] three = { 4.1, 12.25, 20.4 };
+            Columns(new[] { "APPROVED TRAINING", "FINAL GRADE", "ISSUED ON" }, 8, true, muted, 2, three);
+            Columns(new[] { hours, T(outcome,"finalGrade") + " / 100", issued }, 13, true, navy, 26, three);
+            double[] two = { 6.5, 18 };
+            Columns(new[] { "____________________________", "____________________________" }, 10, false, muted, 2, two);
+            Columns(new[] { "Academic Supervisor", "Internship Coordinator" }, 10, true, navy, 8, two);
+            Put("Approved through academic review and final administration approval.", 8.5, false, muted, 0);
+            var footer=section.Footers.Primary.AddParagraph("UIMS verification reference: "+placementId+" / "+T(outcome,"requestId"));footer.Format.Font.Size=7;footer.Format.Font.Color=muted;footer.Format.Alignment=ParagraphAlignment.Center;
             var renderer=new PdfDocumentRenderer{Document=doc};renderer.RenderDocument();byte[] bytes;
             using(var stream=new MemoryStream()){renderer.PdfDocument.Save(stream,false);bytes=stream.ToArray();}
             University_Internship_Management_System.Services.FinalEvaluation.CompletionReportPdfRenderer.ValidatePdf(bytes);

@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Task Exams | JUST Internships</title>
     <link href="../Assets/company/TaskExams.css" rel="stylesheet" />
-    <link href="../Assets/shared/workflow-ui.css?v=20261025-final-cards" rel="stylesheet" />
+    <link href="../Assets/shared/workflow-ui.css?v=20261025-final-flow" rel="stylesheet" />
 <link href="../Assets/shared/workspace-identity.css?v=20261025-progress-stat" rel="stylesheet" />
 <script src="../Js_project/workspace-navigation-unified.js?v=20261025-notifications" defer></script>
 </head>
