@@ -138,6 +138,23 @@
             if (role === 'coordinator' && view.status === 'pendingAdminReview' && !r.finalization) { field(editor, 'Admin feedback', 'feedback', '', 'textarea'); field(editor, 'Explicit approved final grade (0\u2013100)', 'finalGrade', revision?.percentage, 'number', true); field(editor, 'Student completion notice filename \u2014 not uploaded', 'fileName', '', 'text', true); addAction('Final approval and training completion', 'finalApprove'); addAction('Return to academic supervisor', 'adminCorrection'); }
             if (role === 'coordinator' && r.finalization && !completed) addAction('Reconcile interrupted finalization', 'reconcile');
             if (completed) { body.append(node('p', 'Completed records are read-only.')); appendOutcome({ completed: true, outcome: r.outcome, notification: r.studentNotification }); }
+            if (role === 'coordinator') {
+                // Email the completion certificate PDF to the student (SMTP), and let the coordinator check the PDF first.
+                const mail = node('section', null, 'final-certificate-actions'), status = node('p', null, 'final-certificate-status'), buttons = node('div', null, 'final-certificate-buttons');
+                const send = node('button', 'Send certificate to student’s email', 'primary'), download = node('a', 'Download certificate', 'secondary');
+                const showDelivery = delivery => { if (!delivery) return; status.textContent = delivery.message || ''; status.dataset.state = delivery.status || ''; };
+                mail.append(node('h3', 'Completion certificate'), status, buttons); buttons.append(send);
+                if (completed) { download.href = 'FinalReportsApi.ashx?action=certificate&placementId=' + encodeURIComponent(id); download.target = '_blank'; buttons.append(download); }
+                else { send.disabled = true; status.textContent = 'Available after the final approval completes the training.'; }
+                showDelivery(r.certificateEmail);
+                send.onclick = async () => {
+                    if (!await confirm('Send the certificate?', 'The completion certificate PDF will be emailed to ' + (view.studentName || 'the student') + '.', 'Send certificate')) return;
+                    send.disabled = true; status.textContent = 'Sending the certificate…'; status.dataset.state = 'sending';
+                    try { showDelivery(await api('sendCertificate', id, {})); } catch (error) { status.textContent = error.message; status.dataset.state = 'rejected'; }
+                    finally { send.disabled = false; }
+                };
+                body.append(mail);
+            }
             const history = node('section', null, 'final-history'); history.append(node('h3', 'Immutable revisions and review history'));
             for (const [key, rev] of Object.entries(r.revisions || {})) { const card = node('article'); card.append(node('strong', key), node('p', rev.comments), node('p', 'Company response: ' + (rev.companyResponse || 'None')), node('p', 'Filename: ' + rev.attachment?.fileName + ' \u2014 not uploaded')); weeklyHistory(card, rev.weeklyReports); history.append(card); }
             for (const category of ['academicReviews', 'adminReviews']) for (const review of Object.values(r[category] || {})) { const card = node('article'); card.append(node('strong', category === 'academicReviews' ? 'Academic review' : 'Administration review'), node('p', review.action + ' \u00b7 ' + review.revisionId), node('p', review.feedback || 'No feedback'), node('p', review.at)); history.append(card); }
