@@ -81,7 +81,7 @@
     document.forms[0].addEventListener('submit',event=>{if(event.submitter?.id==='btnLogout')return;event.preventDefault();});
     // Preserve the existing responsive sidebar without demo login interception.
     const sidebar=by('sidebar'),menu=document.querySelector('.menu-btn'),backdrop=document.querySelector('.sidebar-backdrop');
-    const toggle=open=>{document.body.classList.toggle('sidebar-open',open);menu.setAttribute('aria-expanded',String(open));};
-    menu.addEventListener('click',()=>toggle(!document.body.classList.contains('sidebar-open')));document.querySelector('.sidebar-close').addEventListener('click',()=>toggle(false));backdrop.addEventListener('click',()=>toggle(false));
+    const toggle=open=>{document.body.classList.toggle('sidebar-open',open);menu?.setAttribute('aria-expanded',String(open));};
+    menu?.addEventListener('click',()=>toggle(!document.body.classList.contains('sidebar-open')));document.querySelector('.sidebar-close,.workspace-nav-close')?.addEventListener('click',()=>toggle(false));backdrop?.addEventListener('click',()=>toggle(false));
     load().then(()=>notice('')).catch(error=>notice(error.message,true));
 })();

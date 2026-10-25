@@ -22,10 +22,10 @@
             border: none; outline: none; background: transparent; font-family: inherit; font-size: inherit; color: inherit; cursor: pointer;
         }
     </style>
-<link href="../Assets/shared/workspace-identity.css?v=20261024-refine" rel="stylesheet" />
-<script src="../Js_project/workspace-navigation-unified.js?v=20261024-refine" defer></script>
+<link href="../Assets/shared/workspace-identity.css?v=20261025-progress-stat" rel="stylesheet" />
+<script src="../Js_project/workspace-navigation-unified.js?v=20261025-notifications" defer></script>
 </head>
-<body class="dashboard-direct app-page placements-page shared-workspace-shell">
+<body class="coordinator-banner dashboard-direct app-page placements-page shared-workspace-shell">
 
     <!-- Icon sprite -->
     <svg width="0" height="0" style="position:absolute" aria-hidden="true">
@@ -67,24 +67,25 @@
                             <span class="hero-badge"><svg class="ic"><use href="#i-chart"/></svg>UNIVERSITY-WIDE OVERSIGHT</span>
                             <h1>Monitor Placements &amp; Progress</h1>
                             <p>Track university-wide internships, training hours, tasks, evaluations, and student progress.</p>
-                            <span class="hero-info"><svg class="ic"><use href="#i-building"/></svg>Jordan University of Science and Technology &nbsp;·&nbsp; University-wide Management</span>
+                            <span class="hero-info"><svg class="ic"><use href="#i-building"/></svg>Jordan University of Science and Technology &nbsp;&middot;&nbsp; University-wide Management</span>
                         </div>
 
-                        <section class="hero-stats">
-                            <article class="monitor-stat">
-                                <span class="stat-icon s-blue"><svg class="ic"><use href="#i-users"/></svg></span>
-                                <div><strong><asp:Literal ID="lblTotalStudents" runat="server" Text="0" /></strong><p>Total Students</p></div>
-                            </article>
-                            <article class="monitor-stat">
-                                <span class="stat-icon s-amber"><svg class="ic"><use href="#i-briefcase"/></svg></span>
-                                <div><strong><asp:Literal ID="lblActiveInternships" runat="server" Text="0" /></strong><p>Active Internships</p></div>
-                            </article>
-                            <article class="monitor-stat">
-                                <span class="stat-icon s-green"><svg class="ic"><use href="#i-check"/></svg></span>
-                                <div><strong><asp:Literal ID="lblCompletedTasks" runat="server" Text="0" /></strong><p>Completed Tasks</p></div>
-                            </article>
-                        </section>
                     </div>
+
+                    <section class="hero-stats">
+                        <article class="monitor-stat">
+                            <span class="stat-icon s-blue"><svg class="ic"><use href="#i-users"/></svg></span>
+                            <div><strong><asp:Literal ID="lblTotalStudents" runat="server" Text="0" /></strong><p>Total Students</p></div>
+                        </article>
+                        <article class="monitor-stat">
+                            <span class="stat-icon s-amber"><svg class="ic"><use href="#i-briefcase"/></svg></span>
+                            <div><strong><asp:Literal ID="lblActiveInternships" runat="server" Text="0" /></strong><p>Active Internships</p></div>
+                        </article>
+                        <article class="monitor-stat">
+                            <span class="stat-icon s-green"><svg class="ic"><use href="#i-check"/></svg></span>
+                            <div><strong><asp:Literal ID="lblCompletedTasks" runat="server" Text="0" /></strong><p>Completed Tasks</p></div>
+                        </article>
+                    </section>
 
                     <asp:Label ID="lblMessage" runat="server" CssClass="page-message"></asp:Label>
 

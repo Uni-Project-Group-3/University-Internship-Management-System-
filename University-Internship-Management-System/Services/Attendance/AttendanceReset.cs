@@ -11,10 +11,13 @@ namespace UIMS.Attendance
 {
     public partial class AttendanceService
     {
-        // Explicit local testing capability, independent of the legacy demo-identity mechanism.
+        // Resets are local-only unless AttendanceResetAllowRemote=true lets a deployed server offer them.
+        // Identity, own-record, today-only and archive checks apply either way.
         public static bool IsLocalResetRequest(HttpContext context)
         {
-            if (context == null || !context.Request.IsLocal || context.Request.HttpMethod != "POST") return false;
+            if (context == null || context.Request.HttpMethod != "POST") return false;
+            if (System.Configuration.ConfigurationManager.AppSettings["AttendanceResetAllowRemote"] == "true") return true;
+            if (!context.Request.IsLocal) return false;
             string host = context.Request.Url.Host;
             return host.Equals("localhost", StringComparison.OrdinalIgnoreCase) || host == "127.0.0.1" || host == "::1" || host == "[::1]";
         }

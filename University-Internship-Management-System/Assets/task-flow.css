@@ -73,3 +73,88 @@
 .task-support-details > summary { font-size:13px; font-weight:600; cursor:pointer; }
 .task-support-details[open] > summary { margin-bottom:14px; }
 #taskExamNotice { padding:12px 14px; border-radius:9px; font-size:12px; line-height:1.7; }
+
+/* Yes/no confirmations: a compact popup above the task or exam screen. */
+dialog.task-confirm-dialog { width:min(460px,calc(100vw - 32px)); max-width:none; padding:28px; border:1px solid var(--border,#dfe3eb); border-radius:18px; background:var(--surface,#fff); color:var(--text,#242844); box-shadow:0 24px 70px #15234440; font-family:var(--font-body,Arial,sans-serif); text-align:center; }
+dialog.task-confirm-dialog::backdrop { background:#17213c80; }
+dialog.task-confirm-dialog .workspace-confirm-icon { display:grid; place-items:center; width:48px; height:48px; margin:0 auto 14px; border-radius:50%; background:var(--primary-soft,#eaf2fa); color:var(--primary,#1f3d78); font-size:22px; font-weight:800; }
+dialog.task-confirm-dialog h2 { margin:0 0 10px; font:700 20px/1.35 var(--font-heading,Arial,sans-serif); color:var(--text,#242844); }
+dialog.task-confirm-dialog .workspace-dialog-body { color:var(--text-secondary,#66718a); font-size:14px; line-height:1.7; padding:0; margin:0; }
+dialog.task-confirm-dialog .workspace-dialog-body p { margin:0; }
+dialog.task-confirm-dialog .workspace-dialog-actions { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin:22px 0 0; padding:0; border:0; }
+dialog.task-confirm-dialog .workspace-dialog-actions button { min-height:44px; border-radius:10px; font-size:13px; font-weight:700; cursor:pointer; }
+dialog.task-confirm-dialog .workspace-dialog-actions button[hidden] { display:none; }
+dialog.task-confirm-dialog .workspace-dialog-actions:has(button[hidden]) { grid-template-columns:1fr; }
+dialog.task-confirm-dialog .secondary { background:var(--surface,#fff); border:1px solid var(--border,#dfe3eb); color:var(--primary,#1f3d78); }
+dialog.task-confirm-dialog .primary { background:var(--primary,#1f3d78); border:1px solid var(--primary,#1f3d78); color:#fff; }
+dialog.task-confirm-dialog .primary.workspace-danger { background:#a12f2f; border-color:#a12f2f; }
+
+/* Company task details popup: lead text, labeled facts, one-line column move, clean exam card. */
+#reviewModal .modal-header { align-items:center; }
+#reviewModal .modal-title { font-size:22px; line-height:1.3; overflow-wrap:anywhere; }
+#reviewModal section[data-company-panel] { padding:20px 22px; margin:0 0 16px; border:1px solid var(--border,#dfe3eb); border-radius:14px; background:var(--surface,#fff); }
+#reviewModal section[data-company-panel] > h6 { margin:0 0 14px; font-size:15px; font-weight:700; color:var(--text,#242844); }
+#reviewModal #taskFullDetails .task-detail-lead { margin:0 0 16px; font-size:15px; line-height:1.7; color:var(--text,#242844); white-space:pre-line; }
+#reviewModal .task-detail-facts { display:grid; grid-template-columns:2fr 1fr 1fr; gap:14px 20px; margin:0; padding:16px 0; border-top:1px solid var(--border,#dfe3eb); border-bottom:1px solid var(--border,#dfe3eb); }
+#reviewModal .task-detail-facts dt { margin:0 0 4px; font-size:11px; font-weight:700; letter-spacing:.05em; text-transform:uppercase; color:#7a879c; }
+#reviewModal .task-detail-facts dd { margin:0; font-size:14px; font-weight:600; color:#253250; white-space:pre-line; overflow-wrap:anywhere; }
+#reviewModal .task-move-row { display:flex; align-items:center; justify-content:space-between; gap:12px 20px; flex-wrap:wrap; margin-top:16px; }
+#reviewModal .task-move-row > label { margin:0; font-size:13px; font-weight:700; color:var(--text,#242844); }
+#reviewModal .task-move-controls { display:flex; gap:10px; flex:1 1 320px; max-width:460px; }
+#reviewModal .task-move-controls select { flex:1; min-width:0; min-height:42px; border-radius:9px; }
+#reviewModal .task-move-controls button { min-height:42px; padding:0 18px; border-radius:9px; font-weight:700; white-space:nowrap; }
+#reviewModal .exam-review-card { display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap; margin:0; padding:16px 18px; border:1px solid var(--border,#dfe3eb); border-radius:12px; background:var(--primary-soft,#f3f6fb); }
+#reviewModal .exam-review-card + .exam-review-card { margin-top:10px; }
+#reviewModal .exam-review-title { margin:0; font-size:15px; font-weight:700; color:var(--text,#242844); }
+#reviewModal .exam-review-card button { margin:0; min-height:40px; padding:0 18px; border-radius:9px; font-weight:700; }
+@media(max-width:700px) { #reviewModal .task-detail-facts { grid-template-columns:minmax(0,1fr); } #reviewModal .task-move-controls { max-width:none; } }
+#reviewModal .task-move-controls button { border:1px solid var(--primary,#1f3d78) !important; background:var(--surface,#fff); color:var(--primary,#1f3d78); } #reviewModal .task-move-controls button:hover:not(:disabled) { background:var(--primary,#1f3d78); color:#fff; }
+
+/* Trello-style task board: soft lanes that fit their cards, compact white cards with a colored label. */
+body.uims-tasks-theme.uims-tasks-theme #taskBoard .task-board-columns { display:grid; grid-template-columns:repeat(4,minmax(270px,1fr)); gap:16px; align-items:start; min-width:1120px; }
+body.uims-tasks-theme.uims-tasks-theme #taskBoard .task-board-column { height:auto !important; max-height:calc(100dvh - 160px) !important; min-height:0 !important; display:flex; flex-direction:column; padding:12px !important; border:0 !important; border-radius:16px !important; background:#eef1f6 !important; box-shadow:inset 0 0 0 1px #e1e6ef; position:relative; overflow:hidden; }
+body.uims-tasks-theme.uims-tasks-theme #taskBoard .task-board-column::before { content:""; position:absolute; inset:0 0 auto; height:4px; background:#579dff; }
+body.uims-tasks-theme.uims-tasks-theme #taskBoard .task-board-column:is([data-column-id="inProgress"],[data-column-id="progress"])::before { background:#e2b203; }
+body.uims-tasks-theme.uims-tasks-theme #taskBoard .task-board-column[data-column-id="review"]::before { background:#9f8fef; }
+body.uims-tasks-theme.uims-tasks-theme #taskBoard .task-board-column[data-column-id="done"]::before { background:#4bce97; }
+body.uims-tasks-theme.uims-tasks-theme #taskBoard .task-board-column>header { display:flex; align-items:center; justify-content:space-between; gap:8px; margin:4px 4px 12px !important; }
+body.uims-tasks-theme.uims-tasks-theme #taskBoard .task-board-column>header h5 { margin:0; font-size:14px; font-weight:800; letter-spacing:.01em; color:#253250; }
+body.uims-tasks-theme.uims-tasks-theme #taskBoard .task-board-column>header span { min-width:26px; height:26px; display:grid; place-items:center; padding:0 8px; border:0 !important; border-radius:999px; background:#dfe5ef; color:#3b4a66; font-size:12px; font-weight:800; }
+body.uims-tasks-theme.uims-tasks-theme #taskBoard .task-board-dropzone { flex:1 1 auto; min-height:90px; display:flex; flex-direction:column; gap:10px; padding:2px; overflow-y:auto; border-radius:12px; }
+body.uims-tasks-theme.uims-tasks-theme #taskBoard .task-board-dropzone.drag-over,body.uims-tasks-theme.uims-tasks-theme #taskBoard .task-board-dropzone:has(.dragging) { background:#e2e8f2; }
+body.uims-tasks-theme.uims-tasks-theme #taskBoard .task-board-column-empty { min-height:84px; display:grid; place-items:center; border:2px dashed #d3dae6 !important; border-radius:12px; background:transparent !important; color:#8592a8; font-size:13px; font-weight:600; }
+body.uims-tasks-theme.uims-tasks-theme :is(#taskBoard,#taskList) .task-card { position:relative; gap:8px !important; padding:14px 14px 12px !important; border:0 !important; border-radius:12px !important; background:#fff !important; box-shadow:0 1px 1px rgba(9,30,66,.13),0 0 1px rgba(9,30,66,.2) !important; transition:box-shadow .15s,transform .15s; overflow:hidden; }
+body.uims-tasks-theme.uims-tasks-theme :is(#taskBoard,#taskList) .task-card:hover { box-shadow:0 8px 18px rgba(9,30,66,.16),0 0 1px rgba(9,30,66,.25) !important; transform:translateY(-1px); }
+body.uims-tasks-theme.uims-tasks-theme :is(#taskBoard,#taskList) .task-card::before { content:""; position:absolute; inset:0 0 auto; height:4px; background:#579dff; }
+body.uims-tasks-theme.uims-tasks-theme :is(#taskBoard,#taskList) .task-card:is([data-status="inprogress"],[data-status="revision"])::before { background:#e2b203; }
+body.uims-tasks-theme.uims-tasks-theme :is(#taskBoard,#taskList) .task-card[data-status="submitted"]::before { background:#9f8fef; }
+body.uims-tasks-theme.uims-tasks-theme :is(#taskBoard,#taskList) .task-card[data-status="completed"]::before { background:#4bce97; }
+body.uims-tasks-theme.uims-tasks-theme :is(#taskBoard,#taskList) .task-card.dragging { opacity:.6; transform:rotate(2deg); }
+body.uims-tasks-theme.uims-tasks-theme :is(#taskBoard,#taskList) .task-board-card-head { display:flex; align-items:flex-start; justify-content:space-between; gap:8px; margin:0; }
+body.uims-tasks-theme.uims-tasks-theme :is(#taskBoard,#taskList) .task-board-card-head h3 { margin:0; font-size:15px !important; font-weight:700; line-height:1.35; color:#172b4d; overflow-wrap:anywhere; }
+body.uims-tasks-theme.uims-tasks-theme :is(#taskBoard,#taskList) .task-card .status-badge { flex-shrink:0; padding:3px 9px !important; border-radius:999px !important; font-size:11px !important; font-weight:700; }
+body.uims-tasks-theme.uims-tasks-theme :is(#taskBoard,#taskList) .task-card .task-desc { margin:0; font-size:13px; line-height:1.5; color:#5e6c84; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+body.uims-tasks-theme.uims-tasks-theme :is(#taskBoard,#taskList) .task-card>p:has(.task-avatar) { display:flex; align-items:center; gap:8px; margin:0; font-size:13px; font-weight:600; color:#344563; }
+body.uims-tasks-theme.uims-tasks-theme :is(#taskBoard,#taskList) .task-card .task-avatar { width:28px; height:28px; display:inline-grid; place-items:center; border-radius:50%; background:linear-gradient(135deg,#1f294d,#6689bb) !important; color:#fff !important; font-size:11px; font-weight:800; }
+body.uims-tasks-theme.uims-tasks-theme :is(#taskBoard,#taskList) .task-card .task-card-dates { display:flex; flex-wrap:wrap; gap:6px; margin:2px 0 0; }
+body.uims-tasks-theme.uims-tasks-theme :is(#taskBoard,#taskList) .task-card .task-card-dates span { padding:3px 8px; border-radius:6px; background:#f1f3f7; color:#44546f; font-size:11px; font-weight:600; line-height:1.5; }
+body.uims-tasks-theme.uims-tasks-theme :is(#taskBoard,#taskList) .task-card .task-card-dates span.task-overdue { background:#ffeceb; color:#ae2e24; }
+body.uims-tasks-theme.uims-tasks-theme :is(#taskBoard,#taskList) .task-card .task-card-dates span:last-child:not(.task-overdue) { background:#e9f2ff; color:#0c66e4; }
+body.uims-tasks-theme.uims-tasks-theme :is(#taskBoard,#taskList) .task-card .task-type-badge { align-self:flex-start; padding:3px 9px !important; border-radius:6px !important; background:#f3f0ff !important; color:#5e4db2 !important; font-size:11px !important; font-weight:700; }
+body.uims-tasks-theme.uims-tasks-theme :is(#taskBoard,#taskList) .task-card :is(.task-review-notice,.task-approved-notice) { margin:0; padding:6px 10px !important; border-radius:8px !important; font-size:12px !important; font-weight:700; }
+body.uims-tasks-theme.uims-tasks-theme :is(#taskBoard,#taskList) .task-card .task-action { display:flex; gap:8px; margin-top:4px; padding-top:10px; border-top:1px solid #edf0f5; }
+body.uims-tasks-theme.uims-tasks-theme :is(#taskBoard,#taskList) .task-card .task-action .btn { flex:1; min-height:36px !important; padding:6px 12px !important; border-radius:8px !important; font-size:13px !important; font-weight:700; width:auto !important; }
+body.uims-tasks-theme.uims-tasks-theme #taskList:not([hidden]) { display:grid !important; grid-template-columns:repeat(auto-fill,minmax(300px,1fr)); gap:16px; align-items:start; }
+body.uims-tasks-theme.uims-tasks-theme :is(#taskBoard,#taskList) .task-card .task-action .workspace-details-icon { flex:1 1 100%; max-width:none !important; display:inline-flex; align-items:center; justify-content:center; gap:6px; }
+body.uims-tasks-theme.uims-tasks-theme :is(#taskBoard,#taskList) .task-card .task-action .workspace-details-icon::after { content:"View details"; font-size:13px; font-weight:700; }
+body.uims-tasks-theme.uims-tasks-theme :is(#taskBoard,#taskList) .task-card .task-action .workspace-details-icon svg { width:16px; height:16px; }
+body.uims-tasks-theme.uims-tasks-theme :is(#taskBoard,#taskList) .task-card>small { margin:0; font-size:11px; color:#8592a8; }
+body.uims-tasks-theme.uims-tasks-theme :is(#taskBoard,#taskList) .task-card .card-move-controls { display:flex !important; gap:6px; margin:0 !important; padding:0 !important; border:0 !important; }
+body.uims-tasks-theme.uims-tasks-theme :is(#taskBoard,#taskList) .task-card .card-move-controls button { flex:1; min-height:30px !important; padding:4px 8px !important; border:1px solid #e1e6ef !important; border-radius:7px !important; background:#f7f8fa !important; color:#5e6c84 !important; font-size:11px !important; font-weight:700; }
+body.uims-tasks-theme.uims-tasks-theme :is(#taskBoard,#taskList) .task-card .card-move-controls button:hover:not(:disabled) { background:#e9f2ff !important; color:#0c66e4 !important; border-color:#cce0ff !important; }
+body.uims-tasks-theme.uims-tasks-theme :is(#taskBoard,#taskList) .task-card .card-move-controls button:disabled { opacity:.45; }
+body.uims-tasks-theme.uims-tasks-theme :is(#taskBoard,#taskList) .task-card .task-action>.btn{flex:1 1 0!important;max-width:none!important;margin:0!important}
+/* Board cards: a plain "View" button, and no Move up/down buttons (drag the card, or use Move card in its details). */
+body.uims-tasks-theme.uims-tasks-theme :is(#taskBoard,#taskList) .task-card .task-action .workspace-details-icon svg { display:none !important; }
+body.uims-tasks-theme.uims-tasks-theme :is(#taskBoard,#taskList) .task-card .task-action .workspace-details-icon::after { content:"View" !important; }
+body.uims-tasks-theme.uims-tasks-theme :is(#taskBoard,#taskList) .task-card .card-move-controls { display:none !important; }

@@ -15,3 +15,59 @@ button:focus-visible,a:focus-visible{outline:3px solid #698cda;outline-offset:3p
 .exam-dialog{width:min(960px,calc(100% - 32px));max-height:90dvh;padding:28px;overflow:auto}.exam-dialog.exam-confirm{width:min(480px,calc(100% - 32px))}.exam-dialog .panel{border:0;padding:0;box-shadow:none}.exam-dialog .question{background:#f7f9fd;border:1px solid var(--wf-line);border-radius:14px;padding:22px;margin:18px 0}.exam-dialog .option{background:#fff;border:1px solid var(--wf-line);border-radius:9px;padding:12px;margin:8px 0;cursor:pointer}.exam-dialog .option:has(input:checked){border-color:#5a7dc5;background:#edf3ff}.exam-dialog .actions{position:sticky;bottom:-28px;background:#fff;border-top:1px solid var(--wf-line);padding:18px 0 2px}.exam-dialog .exam-close{float:right;min-width:40px;background:#f0f4fa;color:var(--wf-ink)}.exam-dialog .notice{clear:both}
 @media(prefers-reduced-motion:no-preference){.exam-dialog[open],.final-dialog[open]{animation:workflow-enter .18s ease-out}@keyframes workflow-enter{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}}
 @media(max-width:640px){.modal-dialog{margin:10px}.modal-content{border-radius:16px}.modal-header,.modal-body,.modal-footer{padding:18px!important}.modal-title{font-size:19px}.modal-footer>*{flex:1 1 auto}.final-workspace{padding:16px;margin:0}.final-dialog,.exam-dialog{padding:20px;width:calc(100% - 16px);max-height:94dvh}.dialog-actions,.exam-dialog .actions{bottom:-20px;flex-wrap:wrap}.task-board-columns{overflow-x:auto;scroll-snap-type:x proximity}.task-board-column{scroll-snap-align:start}.exam-dialog .question{padding:15px}}
+
+/* Final reports: summary tiles and student record cards. */
+#finalSummary{display:grid!important;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:18px;margin:0 0 22px}
+#finalSummary>.final-stat{position:relative;overflow:hidden;padding:22px 24px!important;border:1px solid #dfe5ef!important;border-radius:16px!important;background:#fff!important;box-shadow:0 6px 18px rgba(32,46,81,.05)!important}
+#finalSummary>.final-stat::before{content:"";position:absolute;inset:0 auto 0 0;width:4px;background:#354c7a}
+#finalSummary>.final-stat:nth-child(2)::before{background:#c28a1c}
+#finalSummary>.final-stat:nth-child(3)::before{background:#1f6b45}
+#finalSummary>.final-stat p{margin:0 0 10px;font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#6d7f9e}
+#finalSummary>.final-stat strong{display:block;font:800 34px/1 var(--font-heading,Manrope),sans-serif;color:#242e51}
+#finalRecords{display:grid!important;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:18px}
+#finalRecords>.final-student-card{display:flex!important;flex-direction:column;gap:16px;margin:0!important;padding:22px!important;border-radius:16px!important}
+.final-card-head{display:flex;align-items:center;gap:12px;min-width:0}
+.final-avatar{flex-shrink:0;width:48px;height:48px;display:grid;place-items:center;border-radius:50%;background:linear-gradient(135deg,#1f294d,#6689bb);color:#fff;font:800 15px/1 var(--font-heading,Manrope),sans-serif}
+.final-card-who{flex:1;min-width:0}
+.final-card-who h2{margin:0!important;font-size:18px!important;line-height:1.3;color:#242e51;overflow-wrap:anywhere}
+.final-card-who .student-id{margin:2px 0 0!important;font-size:13px;color:#6d7f9e}
+.final-student-card .report-state{flex-shrink:0;margin:0!important;padding:5px 12px!important;border-radius:999px!important;font-size:11px!important;font-weight:800!important;letter-spacing:.04em;text-transform:uppercase;background:#eef1f6!important;color:#4b5c79!important}
+.final-student-card .final-state-draft{background:#eaf0fa!important;color:#2c4d8a!important}
+.final-student-card :is(.final-state-pendingacademicreview,.final-state-pendingadminreview){background:#fdf3e1!important;color:#8a5a12!important}
+.final-student-card :is(.final-state-companyrevisionrequested,.final-state-academicrevisionrequested){background:#f4ecec!important;color:#8e3434!important}
+.final-student-card .final-state-completed{background:#e6f3eb!important;color:#1f6b45!important}
+.final-card-details{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin:0!important;padding:16px 0;border-top:1px solid #e3e8f0;border-bottom:1px solid #e3e8f0}
+.final-card-details>div{min-width:0}
+.final-card-details dt{margin:0 0 4px;font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:#7a879c}
+.final-card-details dd{margin:0;font-size:14px;font-weight:700;color:#253250;overflow-wrap:anywhere}
+.final-progress-wrap{display:grid;gap:6px}
+.final-progress{height:8px;border-radius:999px;background:#e8edf6;overflow:hidden}
+.final-progress>span{display:block;height:100%;border-radius:inherit;background:linear-gradient(90deg,#354c7a,#6689bb)}
+.final-progress-label{font-size:12px;color:#6d7f9e}
+.final-card-help{margin:0!important;font-size:13px;line-height:1.6;color:#6d7f9e}
+#finalRecords>.final-student-card>button{margin-top:auto;width:100%;min-height:44px;border-radius:10px;font-weight:700}
+@media(max-width:600px){#finalRecords{grid-template-columns:minmax(0,1fr)}.final-card-details{grid-template-columns:minmax(0,1fr)}}
+.final-student-card>.report-state{align-self:flex-start;max-width:100%;white-space:normal;line-height:1.4}
+/* Final report popup: submitted report summary. */
+.final-revision-card{margin:18px 0;padding:18px 20px;border:1px solid #dfe5ef;border-radius:14px;background:#fff}
+.final-revision-card h3{margin:0 0 14px;font-size:17px;color:#242e51}
+.final-revision-card h4{margin:16px 0 6px;font-size:12px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:#7a879c}
+.final-revision-facts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:0}
+.final-revision-facts>div{padding:12px 14px;border-radius:12px;background:#f3f6fb;min-width:0}
+.final-revision-facts dt{margin:0 0 4px;font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:#7a879c}
+.final-revision-facts dd{margin:0;font-size:14px;font-weight:700;color:#253250;overflow-wrap:anywhere}
+.final-revision-facts .is-big dd{font-size:24px;color:#1f3d78}
+.final-revision-text{margin:0;padding:12px 14px;border-left:3px solid #9aaac5;border-radius:0 10px 10px 0;background:#fafbfd;font-size:13.5px;line-height:1.7;color:#344563;white-space:pre-line;overflow-wrap:anywhere}
+.final-revision-ref{display:block;margin-top:12px;font-size:11px;color:#9aa5b8;overflow-wrap:anywhere}
+@media(max-width:640px){.final-revision-facts{grid-template-columns:minmax(0,1fr)}}
+.final-certificate-actions{margin:18px 0;padding:18px 20px;border:1px solid #cfe3d6;border-radius:14px;background:#f0f8f3}
+.final-certificate-actions h3{margin:0 0 6px;font-size:17px;color:#1f6b45}
+.final-certificate-status{margin:0 0 12px;font-size:13px;color:#4b5c79}
+.final-certificate-status:empty{display:none}
+.final-certificate-status[data-state="sent"]{color:#1f6b45;font-weight:600}
+.final-certificate-status:is([data-state="blocked"],[data-state="rejected"],[data-state="deliveryUnconfirmed"]){color:#a12f2f;font-weight:600}
+.final-certificate-buttons{display:flex;gap:10px;flex-wrap:wrap}
+.final-certificate-buttons>*{display:inline-flex;align-items:center;justify-content:center;min-height:42px;padding:0 18px;border-radius:10px;font-weight:700;text-decoration:none}
+.final-certificate-buttons .primary{background:#1f6b45;border:1px solid #1f6b45;color:#fff}
+.final-certificate-buttons .primary:disabled{opacity:.5}
+.final-certificate-buttons .secondary{background:#fff;border:1px solid #9cc7ad;color:#1f6b45}

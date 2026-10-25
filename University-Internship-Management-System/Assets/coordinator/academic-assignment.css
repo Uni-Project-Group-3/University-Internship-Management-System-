@@ -37,14 +37,22 @@
 .assign-supervisors-page .assignment-error{color:#b42338;font-size:14px;line-height:1.5}
 .assign-supervisors-page .assignment-error:empty{display:none}
 .assign-supervisors-page .assignment-dialog-footer{display:flex;justify-content:flex-end;gap:10px;margin-top:20px;padding-top:20px;border-top:1px solid #e1e7f1}
-.assign-supervisors-page .assignment-danger{border:1px solid #f1c4cc;border-radius:12px;padding:12px 18px;font-family:inherit;font-size:14px;font-weight:600;line-height:1.4;cursor:pointer;white-space:nowrap;background:#fff5f6;color:#b42338;margin-right:auto}
-.assign-supervisors-page .group-actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
-.assign-supervisors-page .group-actions .assignment-danger{margin-right:0}
-.assign-supervisors-page .assignment-name-row{display:flex;gap:8px;font-weight:400}
-.assign-supervisors-page .assignment-member{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:12px 16px;border-bottom:1px solid #edf0f5}
-.assign-supervisors-page .assignment-member:last-child{border-bottom:0}
-.assign-supervisors-page .assignment-member span{display:grid;gap:4px;overflow-wrap:anywhere}
-.assign-supervisors-page .assignment-member small{font-size:12px;color:#70819d}
-.assign-supervisors-page .assignment-member .assignment-danger{padding:8px 14px;margin-right:0}
 .assign-supervisors-page .group-id{display:block;margin-top:5px;color:#7486a0;font-size:12px;overflow-wrap:anywhere}
-@media(max-width:600px){.assign-supervisors-page #assignmentDialog{padding:20px}.assign-supervisors-page .assignment-student-tools{flex-wrap:wrap}.assign-supervisors-page .assignment-student-tools input{flex-basis:100%}.assign-supervisors-page .panel-tools{width:100%}.assign-supervisors-page .select-wrap{width:100%}.assign-supervisors-page .select-wrap select{flex:1;max-width:none}.assign-supervisors-page .assignment-name-row{flex-wrap:wrap}.assign-supervisors-page #assignmentDialog h2{font-size:23px}}
+@media(max-width:600px){.assign-supervisors-page #assignmentDialog{padding:20px}.assign-supervisors-page .assignment-student-tools{flex-wrap:wrap}.assign-supervisors-page .assignment-student-tools input{flex-basis:100%}.assign-supervisors-page .panel-tools{width:100%}.assign-supervisors-page .select-wrap{width:100%}.assign-supervisors-page .select-wrap select{flex:1;max-width:none}.assign-supervisors-page #assignmentDialog h2{font-size:23px}}
+.assign-supervisors-page .assignment-summary{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:0 0 20px}
+.assign-supervisors-page .assignment-summary>div{border:1px solid #dce3f0;border-radius:12px;background:#fff;padding:12px 14px;min-width:0}
+.assign-supervisors-page .assignment-summary dt{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#687996;margin:0 0 4px}
+.assign-supervisors-page .assignment-summary dd{margin:0;font-weight:700;color:#242e51;overflow-wrap:anywhere}
+.assign-supervisors-page .assignment-current{margin:0 0 22px}
+.assign-supervisors-page .assignment-current .assignment-students{max-height:200px}
+.assign-supervisors-page .assignment-member{cursor:default}
+@media(max-width:600px){.assign-supervisors-page .assignment-summary{grid-template-columns:minmax(0,1fr)}}
+.assign-supervisors-page .assignment-member{justify-content:space-between}
+.assign-supervisors-page .assignment-remove{flex-shrink:0;border:1px solid #e3b4b4;border-radius:8px;background:#fff;color:#a12f2f;font-weight:700;font-size:13px;padding:7px 14px;cursor:pointer}
+.assign-supervisors-page .assignment-remove:hover{background:#fbeeee}
+.assign-supervisors-page .assignment-danger{border:1px solid #f1c4cc;border-radius:12px;padding:12px 18px;font-family:inherit;font-size:14px;font-weight:600;line-height:1.4;cursor:pointer;white-space:nowrap;background:#fff5f6;color:#b42338}
+.assign-supervisors-page .assignment-dialog-footer .assignment-danger{margin-right:auto}
+.assign-supervisors-page .group-actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+.assign-supervisors-page #assignmentRenameRow{margin:0 0 20px}
+.assign-supervisors-page .assignment-name-row{display:flex;gap:8px;font-weight:400}
+@media(max-width:600px){.assign-supervisors-page .assignment-name-row{flex-wrap:wrap}}

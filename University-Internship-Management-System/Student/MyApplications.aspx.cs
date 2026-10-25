@@ -41,6 +41,21 @@ namespace University_Internship_Management_System.Student
             string opportunityId = FirebaseDb.Key(S(application["opportunityId"]));
             var opportunity = Db.GetObject("opportunities/" + opportunityId) ?? new JObject();
             string supervisorId = S(application["companySupervisorId"]);
+            string companyId = S(application["companyId"]);
+            if (companyId.Length == 0) companyId = S(opportunity["companyId"]);
+            if (companyId.Length == 0 || supervisorId.Length == 0)
+                throw new AppError("This offer is missing its company or company supervisor. Ask the company to review your application again, then confirm the offer.");
+            // A re-created account can lose the profile link; fall back to the active assignment record.
+            string academicId = S(Profile["academicSupervisorId"]);
+            if (academicId.Length == 0)
+            {
+                var assigned = Db.List("supervisorAssignments").Where(a => S(a["studentId"]) == studentId && (bool?)a["active"] != false && (bool?)a["isActive"] != false)
+                    .Select(a => S(a["academicSupervisorId"])).Where(x => x.Length > 0).Distinct().ToArray();
+                if (assigned.Length > 1) throw new AppError("Your academic supervisor assignments disagree. Ask the coordinator to review them before confirming this offer.");
+                if (assigned.Length == 1) academicId = assigned[0];
+            }
+            if (academicId.Length == 0)
+                throw new AppError("You do not have an academic supervisor yet. Ask the internship coordinator to add you to a supervision group, then confirm this offer.");
             string placementId = "PLC-" + id;
             string now = FirebaseDb.Now;
 
@@ -52,10 +67,10 @@ namespace University_Internship_Management_System.Student
                     ["id"] = placementId,
                     ["applicationId"] = id,
                     ["opportunityId"] = opportunityId,
-                    ["companyId"] = S(application["companyId"]),
+                    ["companyId"] = companyId,
                     ["companySupervisorId"] = supervisorId,
                     ["supervisorId"] = supervisorId,
-                    ["academicSupervisorId"] = S(Profile["academicSupervisorId"]),
+                    ["academicSupervisorId"] = academicId,
                     ["studentId"] = studentId,
                     ["studentProfileId"] = studentId,
                     ["studentUid"] = Uid,
@@ -103,6 +118,9 @@ namespace University_Internship_Management_System.Student
             updates["uimsAttendance/trainingAssignments/" + assignmentId] = provisioned["trainingAssignments"][assignmentId];
             updates["uimsAttendance/provisioningClaims/" + placementId] = provisioned["provisioningClaims"][placementId];
             Db.Update("", updates); // placement and attendance links are saved atomically
+            string offerTitle = S(opportunity["title"]) != "" ? S(opportunity["title"]) : "the internship";
+            UIMS.Services.Notify.Send(UIMS.Services.Notify.CompanySupervisors(companyId), "Offer confirmed", S(Profile["fullName"]) + " confirmed the offer for " + offerTitle + ".", "Company/MyTrainees.aspx", "placement");
+            UIMS.Services.Notify.Send(UIMS.Services.Notify.AcademicSupervisor(academicId), "Student placement confirmed", S(Profile["fullName"]) + " confirmed an internship: " + offerTitle + ".", "Academic/StudentProgressMonitor.aspx", "placement");
         }
     }
 }

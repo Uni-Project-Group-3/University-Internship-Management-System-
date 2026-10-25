@@ -64,14 +64,18 @@
     list.replaceChildren(); const query = search.value.trim().toLowerCase();
     const entries = Object.entries(reports).filter(([, r]) => (!filter.value || (filter.value === 'submitted' ? ['submitted', 'resubmitted'].includes(r.status) : r.status === filter.value)) && (!query || [r.studentId, r.studentName, placements[r.placementId]?.studentName].join(' ').toLowerCase().includes(query))).sort((a, b) => String(b[1].submittedAt || '').localeCompare(String(a[1].submittedAt || '')));
     if (!entries.length) { list.append(node('p', Object.keys(reports).length ? 'No matching reports.' : 'No weekly reports yet.', 'wr-empty')); return; }
-    const scroll = node('div', null, 'wr-table-scroll'), table = node('table', null, 'wr-company-table'), head = node('thead'), header = node('tr'), body = node('tbody');
-    ['Student', 'Week', 'Period', 'Status', 'Actions'].forEach(text => { const th = node('th', text); th.scope = 'col'; header.append(th); }); head.append(header);
+    const grid = node('div', null, 'wr-company-cards');
     entries.forEach(([id, r]) => {
-      const tr = node('tr'), student = node('td'), name = r.studentName || placements[r.placementId]?.studentName || r.studentId;
-      student.append(node('strong', name), node('small', r.studentId)); const period = node('td', date(r.weekStart) + ' – ' + date(r.weekEnd)), state = node('td'), actions = node('td'); state.append(badge(r.status));
-      const view = node('button', 'View report', 'wr-secondary'); view.onclick = () => showDetails(id); const download = node('a', 'PDF', 'wr-secondary'); download.href = api + '?action=download&reportId=' + encodeURIComponent(id); download.setAttribute('aria-label', 'Download report for ' + name + ', week ' + r.weekNumber); actions.append(view, download);
-      tr.append(student, node('td', r.weekNumber), period, state, actions); body.append(tr);
-    }); table.append(head, body); scroll.append(table); list.append(scroll);
+      const name = r.studentName || placements[r.placementId]?.studentName || r.studentId || 'Student', card = node('div', null, 'wr-company-card'), top = node('div', null, 'wr-company-card-top'), week = node('div', null, 'wr-week'), who = node('div', null, 'wr-company-card-who');
+      week.append(node('small', 'Week'), node('strong', r.weekNumber || '\u2014'));
+      who.append(node('h3', name), node('p', r.studentId || '', 'wr-student-id'), badge(r.status));
+      top.append(week, who);
+      const facts = node('dl', null, 'wr-company-card-facts');
+      for (const [label, value] of [['Period', date(r.weekStart) + ' \u2013 ' + date(r.weekEnd)], ['Submitted', r.submittedAt ? date(r.submittedAt) : 'Not yet']]) { const row = node('div'); row.append(node('dt', label), node('dd', value)); facts.append(row); }
+      const actions = node('div', null, 'wr-company-card-actions'), view = node('button', 'View report', 'wr-primary'); view.type = 'button'; view.onclick = () => showDetails(id);
+      const download = node('a', 'PDF', 'wr-secondary'); download.href = api + '?action=download&reportId=' + encodeURIComponent(id); download.setAttribute('aria-label', 'Download report for ' + name + ', week ' + r.weekNumber);
+      actions.append(view, download); card.append(top, facts, actions); grid.append(card);
+    }); list.append(grid);
   }
   async function loadReports() { const data = await request(api + '?action=companyReports'); reports = data.reports || {}; renderReports(); }
   async function showDetails(id) {

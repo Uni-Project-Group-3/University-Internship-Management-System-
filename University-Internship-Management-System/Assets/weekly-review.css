@@ -16,3 +16,60 @@
 .wr-message{padding:16px;border-radius:12px;border:1px solid #DFE3EB;max-width:94%;margin:12px 0;background:#fff}.wr-message.from-company{background:#EAF2FA;border-left:3px solid #1F3D78}.wr-message.from-academic{margin-left:auto;background:#F6F7FA;border-left:3px solid #28734D}.wr-message strong,.wr-message small{display:block}.wr-message p{white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.7;margin:10px 0 0;font-size:14px}
 .wr-returned-notice{padding:16px;border:1px solid #efdaa9;border-radius:12px;background:#FFF1D8;color:#895A18;font-size:14px;line-height:1.7}
 @media(max-width:600px){.wr-review-dialog #reportDetail{padding:16px!important}.wr-review-dialog .wr-detail-block,.wr-review-dialog .wr-revision-box,.wr-review-dialog .wr-history-item{padding:16px}.wr-review-dialog .wr-progress-grid{grid-template-columns:1fr}.wr-message{max-width:100%}}
+
+/* Academic weekly reports: two clear sections, student cards and report rows. */
+.wr-academic-layout{display:grid!important;grid-template-columns:minmax(0,1fr)!important;gap:22px}
+.wr-academic-section{padding:24px 26px!important;border-radius:16px!important}
+.wr-section-head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin:0 0 18px}
+.wr-section-head h2{margin:0;font-size:20px;font-weight:700;color:#242e51}
+.wr-section-head p{margin:4px 0 0;font-size:13px;color:#6d7f9e}
+.wr-count{flex-shrink:0;min-width:40px;height:40px;display:grid;place-items:center;padding:0 12px;border-radius:12px;background:#e8edf6;color:#2c4377;font:800 17px/1 var(--font-heading,Manrope),sans-serif}
+.wr-student-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px}
+.wr-student-card{display:flex;flex-direction:column;gap:12px;padding:18px;border:1px solid #dfe5ef;border-radius:14px;background:#fff;transition:box-shadow .15s,border-color .15s}
+.wr-student-card:hover{border-color:#b9c6dc;box-shadow:0 8px 22px rgba(32,46,81,.08)}
+.wr-student-head{display:flex;align-items:center;gap:12px;min-width:0}
+.wr-student-head>div{min-width:0}
+.wr-avatar{flex-shrink:0;width:46px;height:46px;display:grid;place-items:center;border-radius:50%;background:linear-gradient(135deg,#1f294d,#6689bb);color:#fff;font:800 15px/1 var(--font-heading,Manrope),sans-serif}
+.wr-student-head h3{margin:0;font-size:16px;font-weight:700;color:#242e51;overflow-wrap:anywhere}
+.wr-student-id{margin:2px 0 0;font-size:13px;color:#6d7f9e}
+.wr-student-email{font-size:13px;color:#354c7a;text-decoration:none;overflow-wrap:anywhere}
+.wr-student-email:hover{text-decoration:underline}
+.wr-placement{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px;border-radius:10px;background:#f3f6fb;margin:0}
+.wr-placement>div{display:grid;gap:2px;min-width:0}
+.wr-placement strong{font-size:13px;color:#253250;overflow-wrap:anywhere}
+.wr-placement small{font-size:11px;color:#7a879c;overflow-wrap:anywhere}
+.wr-placement-none{font-size:13px;color:#7a879c}
+.wr-chip{flex-shrink:0;padding:4px 10px;border-radius:999px;font-size:11px;font-weight:800;text-transform:capitalize;background:#eef1f6;color:#4b5c79}
+.wr-chip-active,.wr-chip-confirmed{background:#e6f3eb;color:#1f6b45}
+.wr-chip-completed{background:#eaf0fa;color:#2c4d8a}
+.wr-chip-cancelled,.wr-chip-withdrawn{background:#f4ecec;color:#8e3434}
+.wr-report-rows{display:grid;gap:12px}
+.wr-report-row{display:flex;align-items:center;gap:18px;padding:16px 18px;border:1px solid #dfe5ef;border-radius:14px;background:#fff}
+.wr-week{flex-shrink:0;width:64px;height:64px;display:grid;place-content:center;text-align:center;border-radius:12px;background:#e8edf6;color:#2c4377}
+.wr-week small{font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase}
+.wr-week strong{font:800 22px/1.1 var(--font-heading,Manrope),sans-serif}
+.wr-report-info{flex:1;min-width:0}
+.wr-report-title{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:4px}
+.wr-report-title h3{margin:0;font-size:16px;font-weight:700;color:#242e51}
+.wr-report-info .wr-small{margin:2px 0 0}
+.wr-report-row>.wr-primary{flex-shrink:0;min-height:42px;padding:0 20px;border-radius:10px;font-weight:700}
+.wr-academic-section .wr-empty{margin:0;padding:28px 20px;border:1px dashed #cfd7e4;border-radius:12px;background:#fafbfd;text-align:center;color:#6d7f9e}
+@media(max-width:640px){.wr-student-grid{grid-template-columns:minmax(0,1fr)}.wr-report-row{flex-wrap:wrap}.wr-report-row>.wr-primary{width:100%}.wr-academic-section{padding:18px!important}}
+
+/* Company weekly reports: card grid instead of a table. */
+.wr-company-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:16px}
+.wr-company-card{display:flex;flex-direction:column;gap:14px;padding:18px;border:1px solid #dfe5ef;border-radius:16px;background:#fff;box-shadow:0 1px 2px rgba(9,30,66,.06);transition:box-shadow .15s,transform .15s}
+.wr-company-card:hover{box-shadow:0 10px 24px rgba(32,46,81,.1);transform:translateY(-1px)}
+.wr-company-card-top{display:flex;align-items:center;gap:14px;min-width:0}
+.wr-company-card-top .wr-week{width:58px;height:58px}
+.wr-company-card-who{flex:1;min-width:0}
+.wr-company-card-who h3{margin:0;font-size:16px;font-weight:700;color:#242e51;overflow-wrap:anywhere}
+.wr-company-card-top .wr-badge{flex-shrink:0;align-self:flex-start}
+.wr-company-card-facts{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:0;padding:12px 0;border-top:1px solid #e3e8f0;border-bottom:1px solid #e3e8f0}
+.wr-company-card-facts dt{margin:0 0 3px;font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:#7a879c}
+.wr-company-card-facts dd{margin:0;font-size:13px;font-weight:600;color:#253250}
+.wr-company-card-actions{display:flex;gap:10px;margin-top:auto}
+.wr-company-card-actions .wr-primary{flex:1;min-height:42px;border-radius:10px;font-weight:700}
+.wr-company-card-actions .wr-secondary{display:inline-flex;align-items:center;justify-content:center;min-height:42px;padding:0 18px;border-radius:10px;font-weight:700;text-decoration:none}
+@media(max-width:640px){.wr-company-cards{grid-template-columns:minmax(0,1fr)}}
+.wr-company-card-who .wr-badge{display:inline-flex;margin-top:6px}

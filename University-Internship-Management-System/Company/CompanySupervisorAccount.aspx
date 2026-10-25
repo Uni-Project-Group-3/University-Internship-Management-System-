@@ -12,10 +12,10 @@
     <link runat="server" href="~/Assets/shared/account-form-design.css?v=20261024-hide-firebase-badge" rel="stylesheet" />
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet" />
     <link runat="server" href="~/Assets/shared/role-sidebars.css?v=20261023" rel="stylesheet" />
-<link href="../Assets/shared/workspace-identity.css?v=20261024-refine" rel="stylesheet" />
-<script src="../Js_project/workspace-navigation-unified.js?v=20261024-refine" defer></script>
+<link href="../Assets/shared/workspace-identity.css?v=20261025-progress-stat" rel="stylesheet" />
+<script src="../Js_project/workspace-navigation-unified.js?v=20261025-notifications" defer></script>
 </head>
-<body class="app-page uims-workspace company-account" data-demo-role="company">
+<body class="coordinator-banner app-page uims-workspace company-account" data-demo-role="company">
     <form id="form1" runat="server" novalidate="novalidate">
         <div class="app-layout">
             <shared:CompanySidebar ID="RoleNavigation" runat="server" SidebarId="sidebar" />
@@ -67,7 +67,7 @@
                                     <asp:TextBox ID="Phone" runat="server" ClientIDMode="Static" CssClass="workspace-input" TextMode="Phone" MaxLength="25" ReadOnly="true" autocomplete="tel" aria-describedby="profileValidation" />
                                 </div>
                             </div>
-<div class="profile-protected-email"><span class="workspace-label">Account email · read-only</span><span><span data-uims-profile="email"><asp:Literal ID="EditEmail" runat="server" Mode="Encode" EnableViewState="false" /></span></span></div>
+<div class="profile-protected-email"><span class="workspace-label">Account email &middot; read-only</span><span><span data-uims-profile="email"><asp:Literal ID="EditEmail" runat="server" Mode="Encode" EnableViewState="false" /></span></span></div>
                             <div class="workspace-actions profile-edit-actions">
                                 <asp:Button ID="SaveProfile" runat="server" ClientIDMode="Static" Text="Save Changes" CssClass="workspace-button" OnClick="SaveProfile_Click" Visible="false" />
                                 <asp:Button ID="CancelEdit" runat="server" ClientIDMode="Static" Text="Cancel" CssClass="workspace-button secondary" OnClick="CancelEdit_Click" CausesValidation="false" Visible="false" formnovalidate="formnovalidate" />

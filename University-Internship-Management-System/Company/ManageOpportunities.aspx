@@ -11,10 +11,10 @@
     <link runat="server" href="~/Assets/shared/colors.css" rel="stylesheet" />
     
     <link runat="server" href="~/Assets/company/manage-opportunities.css?v=20261024-modal-spacing" rel="stylesheet" />
-<link href="../Assets/shared/workspace-identity.css?v=20261024-refine" rel="stylesheet" />
-<script src="../Js_project/workspace-navigation-unified.js?v=20261024-refine" defer></script>
+<link href="../Assets/shared/workspace-identity.css?v=20261025-progress-stat" rel="stylesheet" />
+<script src="../Js_project/workspace-navigation-unified.js?v=20261025-notifications" defer></script>
 </head>
-<body data-demo-role="company" class="opportunities-workspace">
+<body data-demo-role="company" class="coordinator-banner opportunities-workspace">
     <form id="form1" runat="server">
         <div class="app">
 
@@ -50,7 +50,7 @@
                     <!-- Page header -->
                     <section class="page-hero">
                         <div class="page-hero-text">
-                            <div class="hero-eyebrow"><i class="bi bi-building"></i> Company Supervisor · Orange Jordan</div>
+                            <div class="hero-eyebrow"><i class="bi bi-building"></i> Company Supervisor &middot; Orange Jordan</div>
                             <h1 class="page-title">Manage Opportunities</h1>
                             <p class="page-subtitle">Post internships for JUST students, choose who can apply, and close them when seats are filled.</p>
                         </div>

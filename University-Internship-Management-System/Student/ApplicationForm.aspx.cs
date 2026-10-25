@@ -73,6 +73,8 @@ namespace University_Internship_Management_System.Student
                 ["applications/" + id] = application,
                 ["opportunities/" + opportunityId + "/applicantsCount"] = Int(opportunity["applicantsCount"]) + 1
             });
+            UIMS.Services.Notify.Send(UIMS.Services.Notify.CompanySupervisors(S(opportunity["companyId"])), "New application",
+                S(Profile["fullName"]) + " applied to " + (S(opportunity["title"]) != "" ? S(opportunity["title"]) : "your opportunity") + ".", "Company/ApplicationsReview.aspx", "application");
         }
 
         static bool IsUrl(string value)

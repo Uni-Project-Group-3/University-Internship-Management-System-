@@ -271,6 +271,19 @@ namespace UIMS.Services
                 }
                 if (!saved) { if (retry < 2) continue; throw new FirebaseException(409, "Another review changed this report. Reload before deciding."); }
                 if (action == "finalApprove") await Reconcile(uid, role, placementId);
+                string reportStudent = T(record, "studentName").Length > 0 ? T(record, "studentName") : access.Student;
+                if (action == "submit")
+                    Notify.Send(Notify.AcademicSupervisor(access.Academic), "Final report to review", "The company submitted the final training report for " + reportStudent + ". Review it in Final Academic Evaluation.", "Academic/FinalAcademicEvaluation.aspx", "report");
+                else if (action == "academicApprove")
+                    Notify.Send(Notify.WithRole("coordinator"), "Final report awaiting approval", "The academic supervisor approved the final report for " + reportStudent + ". Give the final decision.", "FinalReports.aspx", "report");
+                else if (action == "companyRevision" || action == "adminCorrection")
+                    Notify.Send(Notify.CompanySupervisors(T(record, "companyId")), "Final report returned", "The final report for " + reportStudent + " needs changes. Open it to see the feedback and resubmit.", "Company/ReportsFinalEvaluation.aspx", "report");
+                else if (action == "finalApprove")
+                {
+                    Notify.Send(Notify.Student(access.Student), "Training completed", "Congratulations! Your field training is complete. Your certificate has been emailed to you.", "Student/MyProgressEvaluation.aspx", "report");
+                    Notify.Send(Notify.CompanySupervisors(T(record, "companyId")), "Training completed", "The final report for " + reportStudent + " was approved and the training is complete.", "Company/ReportsFinalEvaluation.aspx", "report");
+                    Notify.Send(Notify.AcademicSupervisor(access.Academic), "Training completed", "The coordinator approved the final report for " + reportStudent + ".", "Academic/FinalAcademicEvaluation.aspx", "report");
+                }
                 return await ReadAsync(uid, role, placementId);
             }
             throw new FirebaseException(409, "The report changed. Reload.");
@@ -322,7 +335,8 @@ namespace UIMS.Services
         {
             var a = await Authorize(uid, role, placementId); var r = O(await db.ReadAsync(Path(placementId)));
             string status = T(r, "status"); if (status.Length == 0) status = "draft";
-            if (a.Role == "coordinator" && !new[] { "pendingAdminReview", "academicRevisionRequested", "completed" }.Contains(status) && !O(r["adminReviews"]).HasValues) throw new FirebaseException(403, "Administration can only access academically approved reports and their correction history.");
+            // Administration follows every submitted report; the final decision itself still requires academic approval (State checks in ActAsync).
+            if (a.Role == "coordinator" && status == "draft") throw new FirebaseException(403, "Administration sees reports once the company submits them.");
             if (status == "completed")
             {
                 string operation = T(r["finalization"], "requestId");
@@ -363,7 +377,7 @@ namespace UIMS.Services
                 {
                     var view = await reader.ReadAsync(uid, role, p.Name);
                     var canonical = FirebaseSignInService.CanonicalRole(role); string state = T(view, "status");
-                    if (canonical == "coordinator" && !new[] { "pendingAdminReview", "academicRevisionRequested", "completed" }.Contains(state) && !O(view["record"]?["adminReviews"]).HasValues) return null;
+                    if (canonical == "coordinator" && state == "draft") return null;
                     if (canonical == "academicSupervisor" && state == "draft") return null;
                     return view;
                 }
@@ -372,6 +386,9 @@ namespace UIMS.Services
                     // never disclose another company's student/placement details.
                     if (e.StatusCode == 409 && canonicalRole == "companySupervisor" && currentCompany.Length > 0 && T(p.Value,"companyId") == currentCompany)
                         issues.Add("A company training record cannot be reviewed: " + e.Message);
+                    // Administration sees why a submitted report cannot be shown instead of an empty list.
+                    if (e.StatusCode == 409 && canonicalRole == "coordinator" && await cache.ReadAsync(Path(p.Name)) is JObject)
+                        issues.Add("Placement " + p.Name + " has a final report that cannot be shown: " + e.Message);
                     return null;
                 }
                 finally { limit.Release(); }

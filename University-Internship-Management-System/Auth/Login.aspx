@@ -10,7 +10,7 @@
     <title>Sign In | UIMS</title>
     <link runat="server" href="~/Assets/shared/colors.css" rel="stylesheet" />
     <link runat="server" href="~/Assets/auth/auth.css" rel="stylesheet" /><link href="../Assets/auth/login-card.css?v=20261024-reference-pulse" rel="stylesheet" />
-<link href="../Assets/auth/login-immersive.css?v=20261024-1" rel="stylesheet" /></head>
+<link href="../Assets/auth/login-immersive.css?v=20261025-ring" rel="stylesheet" /></head>
 <body class="auth-page">
     <svg class="auth-sprite" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
         <symbol id="icon-mail" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="3" /><path d="m4 7 8 6 8-6" /></symbol>
@@ -160,7 +160,7 @@
     <footer class="auth-public-footer"><span>&copy; <%= DateTime.Now.Year %> Jordan University of Science and Technology.</span><span>University Internship Management System.</span></footer>
 
 <script src="../Js_project/Auth/login-card.js?v=20261024-reference-pulse" defer="defer"></script>
-<script src="../Js_project/firebase-client.js?v=20261024-merged-link-flow" defer="defer"></script>
+<script src="../Js_project/firebase-client.js?v=20261025-field-errors" defer="defer"></script>
 <script src="../Js_project/Auth/auth.js?v=20261024-merged-link-flow" defer="defer"></script>
 </body>
 </html>

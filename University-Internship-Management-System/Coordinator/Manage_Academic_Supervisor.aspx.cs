@@ -86,7 +86,7 @@ namespace University_Internship_Management_System.Coordinator
                         Reply(200,new{created=true,emailSent=false,message="Email delivery was not confirmed. The account is saved. Use Retry Send; a retry may send a duplicate."});return;
                     }
                     candidate.EmailSent=true;candidate.Password=null;Store(candidate);
-                    Reply(200,new{created=true,emailSent=true,message="Academic supervisor account saved. Firebase accepted a password setup email for " + candidate.Record.Email + ". Check inbox and spam, then sign in using this same email address."});return;
+                    Reply(200,new{created=true,emailSent=true,message="Academic supervisor account saved. Firebase accepted a password setup email for " + candidate.Record.Email + ". The supervisor must open the newest email (check spam), set a password, then sign in with this same email address. Any earlier password or older setup link no longer works."});return;
                 }
                 Reply(200,new{message=await service.ActAsync((string)request["uid"],action,actor)});
             }

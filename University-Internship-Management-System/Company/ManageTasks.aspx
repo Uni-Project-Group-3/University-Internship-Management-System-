@@ -13,16 +13,16 @@
 
         <link href="../Assets/shared/colors.css" rel="stylesheet" />
         <link href="../Assets/company/ManageTasks.css?v=20261022-task-board" rel="stylesheet" />
-        <link href="../Assets/shared/workflow-ui.css?v=20261023" rel="stylesheet" />
+        <link href="../Assets/shared/workflow-ui.css?v=20261025-send-certificate" rel="stylesheet" />
 <script src="../Js_project/shared-role-navigation.js" defer></script>
 <link rel="stylesheet" href="../Assets/shared/role-sidebar.css" />
 <link rel="stylesheet" href="../Assets/shared/just-theme.css" />
 
-<link href="../Assets/shared/workspace-identity.css?v=20261024-refine" rel="stylesheet" />
-<script src="../Js_project/workspace-navigation-unified.js?v=20261025-task-flow" defer></script>
+<link href="../Assets/shared/workspace-identity.css?v=20261025-progress-stat" rel="stylesheet" />
+<script src="../Js_project/workspace-navigation-unified.js?v=20261025-notifications" defer></script>
 <link href="../Assets/company/company-hero.css?v=20261024-blue" rel="stylesheet" />
 </head>
-    <body class="uims-tasks-theme" data-demo-role="company">
+    <body class="coordinator-banner uims-tasks-theme" data-demo-role="company">
         <form id="form1" runat="server">
 <just:RoleSidebar ID="SharedRoleNavigation" runat="server" SidebarId="sidebar" />
             <div class="app">
@@ -108,7 +108,7 @@
                                 <textarea class="form-control custom-input" rows="3" id="newTaskDescription" required maxlength="3000" placeholder="Describe requirements clearly...">
                                 </textarea>
                             </div>
-                            <div class="mb-3"><label for="newTaskCriteria" class="form-label custom-label">Instructions &amp; assessment criteria <span aria-hidden="true">*</span></label><textarea class="form-control custom-input" id="newTaskCriteria" rows="4" required maxlength="500" placeholder="Explain the steps, deliverables and how the work will be assessed."></textarea><small>Clear instructions for the student · up to 500 characters.</small></div>
+                            <div class="mb-3"><label for="newTaskCriteria" class="form-label custom-label">Instructions &amp; assessment criteria <span aria-hidden="true">*</span></label><textarea class="form-control custom-input" id="newTaskCriteria" rows="4" required maxlength="500" placeholder="Explain the steps, deliverables and how the work will be assessed."></textarea><small>Clear instructions for the student &middot; up to 500 characters.</small></div>
                             <div class="row mb-3">
                                 <div class="col-md-4">
                                     <label for="newTaskStart">Start date &amp; time *</label><input id="newTaskStart" type="datetime-local" required class="form-control" /></div><div class="col-md-4"><label for="newTaskDeadline" class="form-label custom-label">Deadline date &amp; time <span aria-hidden="true">*</span></label>
@@ -130,7 +130,7 @@
                                     </div>
                                     <p class="task-compose-help">Select one, several or all students. Submissions, grades and board positions stay separate.</p>
                             </section>
-                            <section class="task-compose-section"><h6>03 <span>Resources</span> <small>Optional</small></h6><label for="createTaskResources" class="form-label custom-label">Supporting files</label><div class="task-compose-upload"><i class="bi bi-cloud-arrow-up" aria-hidden="true"></i><input id="createTaskResources" type="file" multiple class="form-control" accept=".pdf,.docx,.xlsx,.pptx,.txt,.png,.jpg,.jpeg" /><small>PDF, Office documents, text or images · up to 10 MiB each.</small></div></section>
+                            <section class="task-compose-section"><h6>03 <span>Resources</span> <small>Optional</small></h6><label for="createTaskResources" class="form-label custom-label">Supporting files</label><div class="task-compose-upload"><i class="bi bi-cloud-arrow-up" aria-hidden="true"></i><input id="createTaskResources" type="file" multiple class="form-control" accept=".pdf,.docx,.xlsx,.pptx,.txt,.png,.jpg,.jpeg" /><small>PDF, Office documents, text or images &middot; up to 10 MiB each.</small></div></section>
                             <section class="task-compose-section"><h6>04 <span>Examination</span> <small>Optional</small></h6><label class="task-compose-exam"><input type="checkbox" id="configureTaskExam" /><span><strong>Add an examination</strong><small>Build MCQ, True / False and image questions inside this popup after creating the assignments.</small></span></label></section></div>
                             <div id="taskExamBuilder" class="task-builder" hidden></div>
                         </div>
@@ -172,7 +172,7 @@
                                 <div id="companyTaskAttachments" class="small mb-3" aria-live="polite">Loading authorized files…</div>
                                 <label for="companyTaskFile" class="form-label custom-label">Attach a task resource</label>
                                 <input type="file" id="companyTaskFile" class="form-control custom-input" accept=".pdf,.docx,.xlsx,.pptx,.txt,.png,.jpg,.jpeg" />
-                                <small class="text-muted mt-2 d-block">PDF, DOCX, XLSX, PPTX, TXT, PNG or JPEG · maximum 10 MiB.</small>
+                                <small class="text-muted mt-2 d-block">PDF, DOCX, XLSX, PPTX, TXT, PNG or JPEG &middot; maximum 10 MiB.</small>
                                 <button type="button" class="btn btn-light mt-2" id="uploadTaskFileBtn">Upload to Firebase Storage</button>
                             </div>
                             </section>
@@ -203,11 +203,11 @@
         <link href="../Assets/task-workspace.css?v=20261023-task-connection" rel="stylesheet" />
 <link href="../Assets/tasks-premium.css?v=20261024-buttons" rel="stylesheet" />
         <script src="../Js_project/firebase-client.js?v=20261023-task-connection"></script>
-        <script src="../Js_project/task-dialogs.js?v=20261025-flow"></script>
+        <script src="../Js_project/task-dialogs.js?v=20261025-confirm-popup"></script>
         <script src="../Js_project/Company/TaskExams.js?v=20261025-flow"></script>
-        <script src="../Js_project/Company/ManageTasks.js?v=20261025-flow">
+        <script src="../Js_project/Company/ManageTasks.js?v=20261025-task-details">
         </script>
         <script src="../Js_project/Company/TaskComposer.js?v=20261025-flow"></script>
-    <link href="../Assets/task-flow.css?v=20261025-flow" rel="stylesheet" />
+    <link href="../Assets/task-flow.css?v=20261025-trello-view" rel="stylesheet" />
 </body>
 </html>

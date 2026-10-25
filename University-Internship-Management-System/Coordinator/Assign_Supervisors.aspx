@@ -12,10 +12,10 @@
     <link runat="server" href="~/Assets/shared/role-sidebars.css?v=20261024-workspace" rel="stylesheet" />
     <link runat="server" href="~/Assets/shared/workspace-navigation.css?v=20261024-hide-search" rel="stylesheet" />
     <link rel="stylesheet" href="../Assets/coordinator/academic-assignment.css?v=20261025-group-actions" />
-<link href="../Assets/shared/workspace-identity.css?v=20261024-refine" rel="stylesheet" />
-<script src="../Js_project/workspace-navigation-unified.js?v=20261024-refine" defer></script>
+<link href="../Assets/shared/workspace-identity.css?v=20261025-progress-stat" rel="stylesheet" />
+<script src="../Js_project/workspace-navigation-unified.js?v=20261025-notifications" defer></script>
 </head>
-<body class="dashboard-direct app-page assign-supervisors-page shared-workspace-shell">
+<body class="coordinator-banner dashboard-direct app-page assign-supervisors-page shared-workspace-shell">
 
     <!-- Icon sprite -->
     <svg width="0" height="0" style="position:absolute" aria-hidden="true">
@@ -99,24 +99,31 @@
             <div><span class="assignment-eyebrow">ACADEMIC SUPERVISION</span><h2 id="assignmentTitle">Add student group</h2></div>
             <button type="button" id="assignmentClose" class="assignment-close" aria-label="Close group dialog">&times;</button>
         </div>
-        <p class="assignment-intro">Each supervisor is responsible for one major. Select students from that major to join the group.</p>
+        <p id="assignmentIntro" class="assignment-intro">Each supervisor is responsible for one major. Select students from that major to join the group.</p>
         <div id="assignmentFields">
-            <label class="assignment-field" for="assignmentProfessor"><span>01 &nbsp; Academic supervisor <span aria-hidden="true">*</span></span>
-                <select id="assignmentProfessor" required="required"></select>
-            </label>
-            <label class="assignment-field" for="assignmentDepartment"><span>02 &nbsp; University major <span aria-hidden="true">*</span></span>
-                <select id="assignmentDepartment" required="required" disabled="disabled"></select>
-            </label>
-            <p id="assignmentMajorHint" class="assignment-hint"></p>
-            <label class="assignment-field" for="assignmentName"><span>Group name (optional)</span><span class="assignment-name-row"><input id="assignmentName" maxlength="120" placeholder="For example: Computer Science - Group A" /><button type="button" class="assignment-secondary" id="assignmentRename" hidden="hidden">Save name</button></span></label>
-            <section id="assignmentMembersSection" aria-labelledby="assignmentMembersTitle" hidden="hidden">
-                <h3 id="assignmentMembersTitle">Current students</h3>
-                <p class="assignment-hint">Removing a student also removes their link to this supervisor in the database.</p>
-                <div id="assignmentMembers" class="assignment-students"></div>
+            <dl id="assignmentSummary" class="assignment-summary" hidden="hidden">
+                <div><dt>Academic supervisor</dt><dd id="summaryProfessor"></dd></div>
+                <div><dt>University major</dt><dd id="summaryMajor"></dd></div>
+                <div><dt>Students in group</dt><dd id="summaryCount"></dd></div>
+            </dl>
+            <div id="assignmentRenameRow" class="assignment-field" hidden="hidden"><label for="groupRename">Group name</label><span class="assignment-name-row"><input id="groupRename" maxlength="120" /><button type="button" class="assignment-secondary" id="assignmentRename">Save name</button></span></div>
+            <section id="assignmentCurrent" class="assignment-current" aria-labelledby="assignmentCurrentTitle" hidden="hidden">
+                <h3 id="assignmentCurrentTitle">Current students</h3>
+                <div id="assignmentCurrentList" class="assignment-students"></div>
             </section>
+            <div id="assignmentSetup">
+                <label class="assignment-field" for="assignmentProfessor"><span>01 &nbsp; Academic supervisor <span aria-hidden="true">*</span></span>
+                <select id="assignmentProfessor" required="required"></select>
+                </label>
+                <label class="assignment-field" for="assignmentDepartment"><span>02 &nbsp; University major <span aria-hidden="true">*</span></span>
+                <select id="assignmentDepartment" required="required" disabled="disabled"></select>
+                </label>
+                <p id="assignmentMajorHint" class="assignment-hint"></p>
+                <label class="assignment-field" for="assignmentName"><span>Group name (optional)</span><input id="assignmentName" maxlength="120" placeholder="For example: Computer Science - Group A" /></label>
+            </div>
             <section aria-labelledby="assignmentStudentsTitle">
                 <h3 id="assignmentStudentsTitle">03 &nbsp; Students</h3>
-                <p class="assignment-hint">Students already in another group or assigned to another supervisor cannot be selected.</p>
+                <p id="assignmentStudentsHint" class="assignment-hint">Students already in another group or assigned to another supervisor cannot be selected.</p>
                 <div class="assignment-student-tools">
                     <input id="studentSearch" type="search" placeholder="Search by name or student ID" aria-label="Search eligible students" disabled="disabled" />
                     <button type="button" class="assignment-secondary" id="studentSelectAll" disabled="disabled">Select all</button>

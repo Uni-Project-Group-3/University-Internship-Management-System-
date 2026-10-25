@@ -199,9 +199,9 @@
         on('motivation', 'input', () => { const length = by('motivation').value.length; text('characterCount', length + ' / 1000'); by('characterCount').classList.toggle('near-limit', length >= 900); });
         on('applicationForm', 'submit', async event => {
             event.preventDefault(); if (!opportunity || alreadyApplied || !valid(['fullName', 'studentNumber', 'email', 'phone', 'major', 'cvAttachment', 'portfolioLink', 'motivation', 'confirmInformation'])) return;
-            const cvFile=by('cvAttachment').files[0];if(!cvFile||cvFile.size>10*1024*1024||!/\.(pdf|docx?)$/i.test(cvFile.name)){notice('Choose a PDF, DOC or DOCX CV up to 10 MiB.');return;}
+            const useProfileCv=by('cvAttachment').dataset.profileCv==='true',cvFile=by('cvAttachment').files[0];if(!useProfileCv&&(!cvFile||cvFile.size>10*1024*1024||!/\.(pdf|docx?)$/i.test(cvFile.name))){notice('Choose a PDF, DOC or DOCX CV up to 10 MiB.');return;}
             if(by('applicationFields').dataset.submitting)return;by('applicationFields').dataset.submitting='true';
-            try{const upload=new FormData();upload.append('cv',cvFile);const response=await fetch('../ApplicationCv.ashx',{method:'POST',credentials:'same-origin',headers:{'X-UIMS-Attachment':'upload'},body:upload,signal:AbortSignal.timeout(60000)});const reply=await response.json();if(!response.ok||!reply.attachmentId)throw Error(reply.error||'CV upload failed.');set('cvAttachmentId',reply.attachmentId);set('cvLink',reply.fileName);}catch(e){notice(e.message);delete by('applicationFields').dataset.submitting;return;}
+            try{const upload=new FormData();if(!useProfileCv)upload.append('cv',cvFile);const response=await fetch('../ApplicationCv.ashx',{method:'POST',credentials:'same-origin',headers:{'X-UIMS-Attachment':useProfileCv?'profile':'upload'},body:upload,signal:AbortSignal.timeout(60000)});const reply=await response.json();if(!response.ok||!reply.attachmentId)throw Error(reply.error||'CV upload failed.');set('cvAttachmentId',reply.attachmentId);set('cvLink',reply.fileName);}catch(e){notice(e.message);delete by('applicationFields').dataset.submitting;return;}
             delete by('applicationFields').dataset.submitting;
             by('applicationFields').querySelectorAll('[data-uims-error]').forEach(el => el.remove());
             const result = transact('apply', { opportunityId, motivation: value('motivation'), phone: value('phone'), cvLink: value('cvLink'), cvAttachmentId: value('cvAttachmentId'), portfolioLink: value('portfolioLink') });
@@ -253,11 +253,24 @@
             const name = document.createElement('span'); name.className = 'cv-selected-name'; name.setAttribute('aria-live', 'polite');
             cv.before(choose); cv.after(name);
             cv.addEventListener('change', () => { name.textContent = cv.files[0]?.name || ''; choose.textContent = cv.files.length ? 'Change CV file' : 'Attach CV file'; });
+            // A CV saved in the student's profile is attached automatically; the file picker becomes optional.
+            fetch('../ApplicationCv.ashx?profileCv=1', { credentials: 'same-origin', cache: 'no-store' }).then(r => r.ok ? r.json() : null).then(info => {
+                if (!info?.hasCv) return;
+                const card = document.createElement('div'); card.className = 'cv-profile-card'; card.setAttribute('role', 'status');
+                const icon = document.createElement('span'); icon.className = 'cv-profile-icon'; icon.setAttribute('aria-hidden', 'true'); icon.textContent = 'CV';
+                const textBox = document.createElement('div'), title = document.createElement('strong'), file = document.createElement('span'), hint = document.createElement('small');
+                title.textContent = 'Your profile CV'; file.textContent = info.fileName; hint.textContent = 'Attached automatically from your profile.';
+                textBox.append(title, file, hint);
+                const swap = document.createElement('button'); swap.type = 'button'; swap.className = 'cv-profile-swap';
+                const useProfile = on => { cv.dataset.profileCv = String(on); cv.required = !on; wrapper.hidden = on; card.classList.toggle('is-off', !on); swap.textContent = on ? 'Use a different file' : 'Use my profile CV'; hint.textContent = on ? 'Attached automatically from your profile.' : 'Not attached. The file you choose below is used instead.'; if (on) { cv.value = ''; name.textContent = ''; choose.textContent = 'Attach CV file'; } cv.dispatchEvent(new Event('change', { bubbles: true })); };
+                swap.onclick = () => useProfile(cv.dataset.profileCv !== 'true');
+                card.append(icon, textBox, swap); wrapper.before(card); useProfile(true);
+            }).catch(() => { /* Without the profile check the student attaches a file as before. */ });
         }
         const ok = id => { const el = $(id); return !!el && el.value.trim() !== '' && el.checkValidity(); };
         const steps = {
             personal: () => ['fullName', 'studentNumber', 'email', 'phone', 'major'].every(ok),
-            supporting: () => ok('cvAttachment') && ($('portfolioLink')?.checkValidity() ?? true),
+            supporting: () => ($('cvAttachment')?.dataset.profileCv === 'true' || ok('cvAttachment')) && ($('portfolioLink')?.checkValidity() ?? true),
             review: () => !!$('confirmInformation')?.checked
         };
         const titles = ['Let’s get started', 'Good start', 'Almost there', 'Ready to submit'];

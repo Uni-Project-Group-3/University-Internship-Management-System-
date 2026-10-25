@@ -42,7 +42,7 @@ namespace University_Internship_Management_System.Shared
             if (path.StartsWith("~/", StringComparison.Ordinal)) path = path.Substring(2);
             else if (path.StartsWith("/", StringComparison.Ordinal)) path = path.Substring(1);
             else return null;
-            foreach (string page in new[] { "ManageStudents", "ManageCompanies", "Manage_Academic_Supervisor" })
+            foreach (string page in new[] { "ManageStudents", "ManageCompanies", "Manage_Academic_Supervisor", "SystemOptions" })
                 if (string.Equals(path, "Coordinator/" + page, StringComparison.OrdinalIgnoreCase) ||
                     string.Equals(path, "Coordinator/" + page + ".aspx", StringComparison.OrdinalIgnoreCase))
                     return "~/Coordinator/" + page + ".aspx";

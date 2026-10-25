@@ -33,11 +33,11 @@
             if (link.sheet) activate();
         });
     </script>
-<link href="../Assets/shared/workspace-identity.css?v=20261024-refine" rel="stylesheet" />
-<script src="../Js_project/workspace-navigation-unified.js?v=20261024-refine" defer></script>
+<link href="../Assets/shared/workspace-identity.css?v=20261025-progress-stat" rel="stylesheet" />
+<script src="../Js_project/workspace-navigation-unified.js?v=20261025-notifications" defer></script>
 
 </head>
-<body class="standalone-shell">
+<body class="coordinator-banner standalone-shell">
     <form id="reviewForm" runat="server">
         <div class="app">
             <!-- سايد بار المنسق داخل الصفحة مباشرة حسب التنظيم المتفق عليه -->

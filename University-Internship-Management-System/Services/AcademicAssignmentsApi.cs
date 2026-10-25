@@ -29,9 +29,21 @@ namespace UIMS.Services
                     string body; using (var reader = new StreamReader(context.Request.InputStream)) body = await reader.ReadToEndAsync();
                     if (body.Length > 24000) throw new FirebaseException(413, "Assignment request too large.");
                     var input = JObject.Parse(body);
-                    foreach (var field in input.Properties()) if (Array.IndexOf(new[] { "action", "requestId", "groupId", "name", "department", "supervisorId", "studentIds", "studentId" }, field.Name) < 0 || (field.Name != "studentIds" && field.Value is JContainer)) throw new FirebaseException(400, "Unsupported assignment field.");
-                    string action = (string)input["action"] ?? "";
-                    result = action.Length == 0 || action == "save" ? await service.SaveAsync(identity.Name, input) : await service.ManageAsync(identity.Name, input);
+                    if ((string)input["action"] == "rename" || (string)input["action"] == "deleteGroup")
+                    {
+                        foreach (var field in input.Properties()) if (Array.IndexOf(new[] { "action", "groupId", "name" }, field.Name) < 0 || field.Value.Type != JTokenType.String) throw new FirebaseException(400, "Unsupported assignment field.");
+                        result = await service.ManageAsync(identity.Name, input);
+                    }
+                    else if ((string)input["action"] == "remove")
+                    {
+                        foreach (var field in input.Properties()) if (Array.IndexOf(new[] { "action", "groupId", "studentId" }, field.Name) < 0 || field.Value.Type != JTokenType.String) throw new FirebaseException(400, "Unsupported assignment field.");
+                        result = await service.RemoveAsync(identity.Name, input);
+                    }
+                    else
+                    {
+                        foreach (var field in input.Properties()) if (Array.IndexOf(new[] { "requestId", "groupId", "name", "department", "supervisorId", "studentIds" }, field.Name) < 0 || (field.Name != "studentIds" && field.Value is JContainer)) throw new FirebaseException(400, "Unsupported assignment field.");
+                        result = await service.SaveAsync(identity.Name, input);
+                    }
                 }
                 else throw new FirebaseException(405, "Use GET or POST.");
                 context.Response.Write(result.ToString(Formatting.None));
