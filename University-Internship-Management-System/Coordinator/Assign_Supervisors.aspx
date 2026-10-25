@@ -13,7 +13,7 @@
     <link runat="server" href="~/Assets/shared/workspace-navigation.css?v=20261024-hide-search" rel="stylesheet" />
     <link rel="stylesheet" href="../Assets/coordinator/academic-assignment.css?v=20261024-group-remove" />
 <link href="../Assets/shared/workspace-identity.css?v=20261025-progress-stat" rel="stylesheet" />
-<script src="../Js_project/workspace-navigation-unified.js?v=20261024-refine" defer></script>
+<script src="../Js_project/workspace-navigation-unified.js?v=20261025-notifications" defer></script>
 </head>
 <body class="coordinator-banner dashboard-direct app-page assign-supervisors-page shared-workspace-shell">
 

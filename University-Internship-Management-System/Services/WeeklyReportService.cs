@@ -617,7 +617,10 @@ namespace UIMS.Tasks
             string reportId = StableReportId(placementId, week);
             var existing = await ReadAsync("weeklyReports/" + reportId, cancellation).ConfigureAwait(false);
             if (existing.Value != null) throw new UIMS.Services.FirebaseException(409, "A weekly report already exists for this placement and training week. Use the resubmit action only after revision was requested.");
-            return await StoreNewOrRevisionAsync(reportId, placementId, null, placement, studentId, academicId, week, weekStart, weekEnd, fileName, contentType, bytes, companyComments, cancellation, selectedTaskIds).ConfigureAwait(false);
+            var submitted = await StoreNewOrRevisionAsync(reportId, placementId, null, placement, studentId, academicId, week, weekStart, weekEnd, fileName, contentType, bytes, companyComments, cancellation, selectedTaskIds).ConfigureAwait(false);
+            UIMS.Services.Notify.Send(UIMS.Services.Notify.AcademicSupervisor(academicId), "Weekly report to review", "Week " + week + " report for student " + studentId + " is waiting for your review.", "Academic/WeeklyReports.aspx", "report");
+            UIMS.Services.Notify.Send(UIMS.Services.Notify.Student(studentId), "Weekly report submitted", "Your company supervisor submitted your week " + week + " report.", "Student/WeeklyReports.aspx", "report");
+            return submitted;
         }
 
         public async Task<JObject> ResubmitAsync(string reportId, string fileName, string contentType, byte[] bytes, string companyComments, CancellationToken cancellation, JArray selectedTaskIds = null, string expectedAcademicSupervisorId = null)
@@ -630,8 +633,10 @@ namespace UIMS.Tasks
             string currentAcademic = await ResolveAcademicSupervisorAsync(Text(report, "studentId"), cancellation).ConfigureAwait(false);
             if (expectedAcademicSupervisorId != null && currentAcademic != expectedAcademicSupervisorId) throw new UIMS.Services.FirebaseException(409, "The academic assignment has changed. Refresh the student selection and check the recipient before submitting.");
             var placementNode = await ReadAsync("placements/" + Text(report, "placementId"), cancellation).ConfigureAwait(false);
-            return await StoreNewOrRevisionAsync(reportId, Text(report, "placementId"), reportNode, placementNode.Value as JObject,
+            var resubmitted = await StoreNewOrRevisionAsync(reportId, Text(report, "placementId"), reportNode, placementNode.Value as JObject,
                 Text(report, "studentId"), currentAcademic, (int?)report["weekNumber"] ?? 0, Text(report, "weekStart"), Text(report, "weekEnd"), fileName, contentType, bytes, companyComments, cancellation, selectedTaskIds).ConfigureAwait(false);
+            UIMS.Services.Notify.Send(UIMS.Services.Notify.AcademicSupervisor(currentAcademic), "Revised weekly report", "A revised week " + ((int?)report["weekNumber"] ?? 0) + " report for student " + Text(report, "studentId") + " is waiting for your review.", "Academic/WeeklyReports.aspx", "report");
+            return resubmitted;
         }
 
         private async Task<JObject> StoreNewOrRevisionAsync(string reportId, string placementId, Node existing, JObject placement, string studentId, string academicId,
@@ -805,6 +810,10 @@ namespace UIMS.Tasks
                 await EnsureCurrentAssignmentAsync(Text(report, "studentId"), actor.AcademicSupervisorId, cancellation).ConfigureAwait(false);
                 updated = await WriteAsync("weeklyReports/" + reportId, updated, node.ETag, HttpMethod.Put, cancellation).ConfigureAwait(false);
                 review = await FinalizeReviewRecordAsync(reviewPath, review, cancellation).ConfigureAwait(false);
+                string reviewedWeek = "week " + ((int?)updated["weekNumber"] ?? 0) + " report";
+                UIMS.Services.Notify.Send(UIMS.Services.Notify.CompanySupervisors(Text(updated, "companyId")), decision == "approved" ? "Weekly report approved" : "Weekly report needs changes",
+                    "The academic supervisor " + (decision == "approved" ? "approved the " : "requested changes to the ") + reviewedWeek + " for student " + Text(updated, "studentId") + ".", "Company/WeeklyReports.aspx", "report");
+                if (decision == "approved") UIMS.Services.Notify.Send(UIMS.Services.Notify.Student(Text(updated, "studentId")), "Weekly report approved", "Your " + reviewedWeek + " was approved by your academic supervisor.", "Student/WeeklyReports.aspx", "report");
                 return new JObject { ["review"] = review, ["report"] = PublicReport(updated) };
             }
             catch (UIMS.Services.FirebaseException)

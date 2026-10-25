@@ -12,7 +12,7 @@
     
     <link runat="server" href="~/Assets/company/manage-opportunities.css?v=20261024-modal-spacing" rel="stylesheet" />
 <link href="../Assets/shared/workspace-identity.css?v=20261025-progress-stat" rel="stylesheet" />
-<script src="../Js_project/workspace-navigation-unified.js?v=20261024-refine" defer></script>
+<script src="../Js_project/workspace-navigation-unified.js?v=20261025-notifications" defer></script>
 </head>
 <body data-demo-role="company" class="coordinator-banner opportunities-workspace">
     <form id="form1" runat="server">

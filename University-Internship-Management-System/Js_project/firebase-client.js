@@ -54,7 +54,7 @@
             if (!response.ok || !result.success) {
                 if (response.status === 401 && action !== 'signIn') sessionStorage.removeItem(storageKey);
                 const error = Error(result.message || 'The operation could not be completed.');
-                error.status = response.status; error.retryAfterSeconds = Number(result.retryAfterSeconds || response.headers.get('Retry-After')) || 60;
+                error.status = response.status; error.field = result.field || ''; error.retryAfterSeconds = Number(result.retryAfterSeconds || response.headers.get('Retry-After')) || 60;
                 if (response.status === 429 && ['signIn', 'refresh', 'identity'].includes(action)) authRetryAt = performance.now() + Math.max(1, Math.min(3600, error.retryAfterSeconds)) * 1000;
                 throw error;
             }
@@ -70,6 +70,10 @@
     }
     function showError(error) {
         if (error.status === 429) { status(''); if (form) cooldown(error.retryAfterSeconds); return; }
+        // A wrong email or password is shown under that field, which is outlined; other errors use the form message.
+        const input = error.field === 'email' ? document.getElementById('Email') : error.field === 'password' ? document.getElementById('Password') : null;
+        const fieldError = error.field === 'email' ? document.getElementById('emailError') : error.field === 'password' ? document.getElementById('passwordError') : null;
+        if (input && fieldError) { fieldError.textContent = error.message; input.setAttribute('aria-invalid', 'true'); status(''); input.focus(); if (error.field === 'password') input.select(); return; }
         status(error.message);
     }
     async function loginFeedback(phase) {
@@ -100,6 +104,7 @@
         if (data.role !== 'admin' && old) ['firebaseSchemaInspect', 'firebaseSchemaCollection', 'firebaseSchemaResult'].forEach(id => document.getElementById(id)?.remove());
         if (form) { await loginFeedback('success'); await navigate(dashboards[data.role]); }
     }
+    if (form) for (const [inputId, errorId] of [['Email', 'emailError'], ['Password', 'passwordError']]) document.getElementById(inputId)?.addEventListener('input', () => { const node = document.getElementById(errorId); if (node) node.textContent = ''; document.getElementById(inputId).removeAttribute('aria-invalid'); });
     if (form) form.addEventListener('submit', async event => {
         if (event.submitter && event.submitter.dataset.action !== 'login') return;
         event.preventDefault(); event.stopImmediatePropagation();

@@ -814,6 +814,10 @@
     <Compile Include="Services\AcademicAssignmentService.cs" />
     <Compile Include="Services\AcademicAssignmentsApi.cs" />
     <Compile Include="Services\SystemOptionsService.cs" />
+    <Compile Include="Services\Notify.cs" />
+    <Compile Include="Services\NotificationsApi.cs" />
+    <Content Include="NotificationsApi.ashx" />
+    <Content Include="Js_project\notifications.js" />
     <Compile Include="Services\SystemOptionsApi.cs" />
     <Content Include="SystemOptionsApi.ashx" />
     <Content Include="Coordinator\SystemOptions.aspx" />
