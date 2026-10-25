@@ -56,7 +56,7 @@ namespace UIMS
             catch (FirebaseLoginException error)
             {
                 if (error.RetryAfterSeconds > 0) context.Response.Headers["Retry-After"] = error.RetryAfterSeconds.ToString(System.Globalization.CultureInfo.InvariantCulture);
-                Write(context, error.StatusCode, new { success = false, message = error.Message, retryAfterSeconds = error.RetryAfterSeconds });
+                Write(context, error.StatusCode, new { success = false, message = error.Message, retryAfterSeconds = error.RetryAfterSeconds, field = error.Field });
             }
             catch (UIMS.Services.FirebaseException error) { Write(context, error.StatusCode, new { success = false, message = error.Message }); }
             catch (UnauthorizedAccessException) { Write(context, 403, new { success = false, message = "This account is not authorized for that operation." }); }

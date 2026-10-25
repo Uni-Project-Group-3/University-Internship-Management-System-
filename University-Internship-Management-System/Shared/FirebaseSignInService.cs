@@ -24,6 +24,8 @@ namespace University_Internship_Management_System.Shared
     {
         public int StatusCode { get; private set; }
         public int RetryAfterSeconds { get; private set; }
+        // Which sign-in field the error belongs to: "email", "password", or null for the whole form.
+        public string Field { get; set; }
         public FirebaseLoginException(string message) : this(message, 401) { }
         public FirebaseLoginException(string message, int statusCode, int retryAfterSeconds = 0) : base(message) { StatusCode = statusCode; RetryAfterSeconds = retryAfterSeconds; }
     }
@@ -85,7 +87,18 @@ namespace University_Internship_Management_System.Shared
                         throw new FirebaseLoginException("Check the Firebase Web API key and enable Email/Password sign-in for this project.", 503);
                     var transient = ProviderTransientFailure(response, code);
                     if (transient != null) throw transient;
-                    throw new FirebaseLoginException("Sign-in failed. Check the email and password. If your account was just created or re-created, your old password no longer works: use the set-password link in your newest email, or choose Forgot Password?. Contact your coordinator if the account is disabled.");
+                    if (code.StartsWith("USER_DISABLED"))
+                        throw new FirebaseLoginException("This account is disabled. Contact your internship coordinator.", 403) { Field = "email" };
+                    string field = code.StartsWith("EMAIL_NOT_FOUND") ? "email" : code.StartsWith("INVALID_PASSWORD") ? "password" : null;
+                    // With email enumeration protection Firebase only says INVALID_LOGIN_CREDENTIALS; ask the Admin API whether the email exists.
+                    if (field == null && code.StartsWith("INVALID_LOGIN_CREDENTIALS"))
+                    {
+                        bool? exists = await EmailExistsAsync(email).ConfigureAwait(false);
+                        if (exists.HasValue) field = exists.Value ? "password" : "email";
+                    }
+                    if (field == "email") throw new FirebaseLoginException("No account uses this email address. Check it for typing mistakes.") { Field = "email" };
+                    if (field == "password") throw new FirebaseLoginException("The password is incorrect. Try again, or choose Forgot Password? to set a new one.") { Field = "password" };
+                    throw new FirebaseLoginException("The email address or password is incorrect.");
                 }
                 string idToken = (string)body["idToken"];
                 string localId = (string)body["localId"];
@@ -104,6 +117,12 @@ namespace University_Internship_Management_System.Shared
                 result.ExpiresIn = expires;
                 return result;
             }
+        }
+
+        private static async Task<bool?> EmailExistsAsync(string email)
+        {
+            try { return await new StudentFirebaseGateway().FindByEmailAsync((email ?? "").Trim()).ConfigureAwait(false) != null; }
+            catch (Exception) { return null; }
         }
 
         public async Task<FirebaseLoginResult> RefreshAsync(string refreshToken)

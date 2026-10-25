@@ -107,7 +107,10 @@ namespace University_Internship_Management_System.Auth
                     Session["Uims.LoginAttempts"] = attempts >= 5 ? 0 : attempts;
                     if (attempts >= 5) Session["Uims.LoginBlockedUntil"] = DateTime.UtcNow.AddMinutes(1);
                 }
-                AuthMessage.Text = error is FirebaseLoginException ? error.Message :
+                // Show a wrong email or password under that field, and outline it; other errors stay in the form message.
+                if (loginError?.Field == "email") { EmailError.Text = loginError.Message; Email.Attributes["aria-invalid"] = "true"; }
+                else if (loginError?.Field == "password") { PasswordError.Text = loginError.Message; Password.Attributes["aria-invalid"] = "true"; }
+                else AuthMessage.Text = error is FirebaseLoginException ? error.Message :
                     "Sign-in could not be completed. Check the connection and Firebase server configuration.";
                 Trace.Warn("Login", error.GetType().Name);
             }

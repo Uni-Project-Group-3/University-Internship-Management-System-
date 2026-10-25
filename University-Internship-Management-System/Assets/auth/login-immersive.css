@@ -163,3 +163,22 @@ body.auth-page{background:#eeeae1;color:#253f5b;background-image:radial-gradient
  .auth-page .is-success .id-card{box-shadow:0 0 0 2px #43865c80,0 0 55px 18px #54966b58,0 0 155px 58px #54966b3c}
  .auth-page .is-error .id-card{box-shadow:0 0 0 2px #ba3d3280,0 0 55px 18px #cc433658,0 0 155px 58px #cc43363c}
 }
+/* Calm sign-in feedback: one short shake and a fading glow, then a thin outline. No endless pulsing. */
+.auth-page .card-workspace.is-error .id-card,.auth-page .card-workspace.is-success .id-card{animation:none!important}
+.auth-page .card-workspace.is-error .id-card{border-color:rgba(186,61,50,.7)!important;box-shadow:0 30px 55px rgba(4,14,35,.32),0 0 0 2px rgba(186,61,50,.45)!important;animation:card-error-glow 1.4s ease-out 1!important}
+.auth-page .card-workspace.is-success .id-card{border-color:rgba(22,128,74,.7)!important;box-shadow:0 30px 55px rgba(4,14,35,.32),0 0 0 2px rgba(22,128,74,.45)!important;animation:card-success-glow 1.4s ease-out 1!important}
+@keyframes card-error-glow{0%{box-shadow:0 30px 55px rgba(4,14,35,.32),0 0 0 2px rgba(186,61,50,.7),0 0 0 0 rgba(204,67,54,.45)}100%{box-shadow:0 30px 55px rgba(4,14,35,.32),0 0 0 2px rgba(186,61,50,.45),0 0 0 22px rgba(204,67,54,0)}}
+@keyframes card-success-glow{0%{box-shadow:0 30px 55px rgba(4,14,35,.32),0 0 0 2px rgba(22,128,74,.7),0 0 0 0 rgba(34,160,94,.45)}100%{box-shadow:0 30px 55px rgba(4,14,35,.32),0 0 0 2px rgba(22,128,74,.45),0 0 0 22px rgba(34,160,94,0)}}
+.auth-page .card-workspace.is-error .card-tilt{animation:login-error-shake .45s cubic-bezier(.36,.07,.19,.97) 1!important}
+@keyframes login-error-shake{10%,90%{transform:translateX(-2px)}20%,80%{transform:translateX(4px)}30%,50%,70%{transform:translateX(-6px)}40%,60%{transform:translateX(6px)}}
+@media(prefers-reduced-motion:reduce){.auth-page .card-workspace.is-error .id-card,.auth-page .card-workspace.is-success .id-card,.auth-page .card-workspace.is-error .card-tilt{animation:none!important}}
+
+/* Sign-in errors: a tidy alert under the button, and the wrong field outlined with its own message. */
+.auth-page .login-panel .auth-message:not(:empty):not([hidden]){display:flex!important;align-items:flex-start;gap:10px;margin:4px 0 14px;padding:12px 14px;border:1px solid #f1c7c2;border-left:4px solid #c2412d;border-radius:12px;background:#fdf1ef;color:#8f2a1d!important;font:600 13px/1.55 Inter,sans-serif}
+.auth-page .login-panel .auth-message:not(:empty):not([hidden])::before{content:"!";flex-shrink:0;width:20px;height:20px;display:grid;place-items:center;border-radius:50%;background:#c2412d;color:#fff;font:800 12px/1 Inter,sans-serif;margin-top:1px}
+.auth-page .login-panel .auth-message.is-success:not(:empty):not([hidden]){border-color:#c3e3cf;border-left-color:#1f8a52;background:#eff8f2;color:#1f6b45!important}
+.auth-page .login-panel .auth-message.is-success:not(:empty):not([hidden])::before{content:"\2713";background:#1f8a52}
+.auth-page .login-panel .auth-field-error:not(:empty){display:flex!important;align-items:center;gap:6px;margin-top:7px;color:#b33a28!important;font:600 12.5px/1.45 Inter,sans-serif}
+.auth-page .login-panel .auth-field-error:not(:empty)::before{content:"";flex-shrink:0;width:6px;height:6px;border-radius:50%;background:#c2412d}
+.auth-page .login-panel .input-wrap:has(input[aria-invalid="true"]){border-color:#d0675a!important;background:#fffafa!important;box-shadow:0 0 0 4px rgba(194,65,45,.09)!important}
+.auth-page .login-panel .auth-message:has(> :only-child:empty):not(:has(> :only-child:not(:empty))){display:none!important}
