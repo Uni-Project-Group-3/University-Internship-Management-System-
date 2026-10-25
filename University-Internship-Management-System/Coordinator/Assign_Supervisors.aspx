@@ -11,7 +11,7 @@
     <link rel="stylesheet" type="text/css" href="../Assets/coordinator/Assign_Supervisors.css?v=2.0" />
     <link runat="server" href="~/Assets/shared/role-sidebars.css?v=20261024-workspace" rel="stylesheet" />
     <link runat="server" href="~/Assets/shared/workspace-navigation.css?v=20261024-hide-search" rel="stylesheet" />
-    <link rel="stylesheet" href="../Assets/coordinator/academic-assignment.css?v=20261024-groups" />
+    <link rel="stylesheet" href="../Assets/coordinator/academic-assignment.css?v=20261025-group-actions" />
 <link href="../Assets/shared/workspace-identity.css?v=20261024-refine" rel="stylesheet" />
 <script src="../Js_project/workspace-navigation-unified.js?v=20261024-refine" defer></script>
 </head>
@@ -108,7 +108,12 @@
                 <select id="assignmentDepartment" required="required" disabled="disabled"></select>
             </label>
             <p id="assignmentMajorHint" class="assignment-hint"></p>
-            <label class="assignment-field" for="assignmentName"><span>Group name (optional)</span><input id="assignmentName" maxlength="120" placeholder="For example: Computer Science - Group A" /></label>
+            <label class="assignment-field" for="assignmentName"><span>Group name (optional)</span><span class="assignment-name-row"><input id="assignmentName" maxlength="120" placeholder="For example: Computer Science - Group A" /><button type="button" class="assignment-secondary" id="assignmentRename" hidden="hidden">Save name</button></span></label>
+            <section id="assignmentMembersSection" aria-labelledby="assignmentMembersTitle" hidden="hidden">
+                <h3 id="assignmentMembersTitle">Current students</h3>
+                <p class="assignment-hint">Removing a student also removes their link to this supervisor in the database.</p>
+                <div id="assignmentMembers" class="assignment-students"></div>
+            </section>
             <section aria-labelledby="assignmentStudentsTitle">
                 <h3 id="assignmentStudentsTitle">03 &nbsp; Students</h3>
                 <p class="assignment-hint">Students already in another group or assigned to another supervisor cannot be selected.</p>
@@ -122,9 +127,9 @@
             </section>
         </div>
         <p id="assignmentError" role="alert" class="assignment-error"></p>
-        <div class="assignment-dialog-footer"><button type="button" id="assignmentCancel" class="assignment-secondary">Cancel</button><button type="button" id="assignmentSave" class="assignment-primary">Create group</button></div>
+        <div class="assignment-dialog-footer"><button type="button" id="assignmentDelete" class="assignment-danger" hidden="hidden">Delete group</button><button type="button" id="assignmentCancel" class="assignment-secondary">Cancel</button><button type="button" id="assignmentSave" class="assignment-primary">Create group</button></div>
     </dialog>
-    <script src="../Js_project/Coordinator/Assign_Supervisors.js?v=20261024-groups" defer="defer"></script>
+    <script src="../Js_project/Coordinator/Assign_Supervisors.js?v=20261025-group-actions" defer="defer"></script>
     <script src="<%= ResolveUrl("~/Js_project/Public/workspace-navigation.js?v=20261024") %>" defer="defer"></script>
 </body>
 </html>

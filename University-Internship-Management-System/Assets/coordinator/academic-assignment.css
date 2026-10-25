@@ -37,5 +37,14 @@
 .assign-supervisors-page .assignment-error{color:#b42338;font-size:14px;line-height:1.5}
 .assign-supervisors-page .assignment-error:empty{display:none}
 .assign-supervisors-page .assignment-dialog-footer{display:flex;justify-content:flex-end;gap:10px;margin-top:20px;padding-top:20px;border-top:1px solid #e1e7f1}
+.assign-supervisors-page .assignment-danger{border:1px solid #f1c4cc;border-radius:12px;padding:12px 18px;font-family:inherit;font-size:14px;font-weight:600;line-height:1.4;cursor:pointer;white-space:nowrap;background:#fff5f6;color:#b42338;margin-right:auto}
+.assign-supervisors-page .group-actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+.assign-supervisors-page .group-actions .assignment-danger{margin-right:0}
+.assign-supervisors-page .assignment-name-row{display:flex;gap:8px;font-weight:400}
+.assign-supervisors-page .assignment-member{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:12px 16px;border-bottom:1px solid #edf0f5}
+.assign-supervisors-page .assignment-member:last-child{border-bottom:0}
+.assign-supervisors-page .assignment-member span{display:grid;gap:4px;overflow-wrap:anywhere}
+.assign-supervisors-page .assignment-member small{font-size:12px;color:#70819d}
+.assign-supervisors-page .assignment-member .assignment-danger{padding:8px 14px;margin-right:0}
 .assign-supervisors-page .group-id{display:block;margin-top:5px;color:#7486a0;font-size:12px;overflow-wrap:anywhere}
-@media(max-width:600px){.assign-supervisors-page #assignmentDialog{padding:20px}.assign-supervisors-page .assignment-student-tools{flex-wrap:wrap}.assign-supervisors-page .assignment-student-tools input{flex-basis:100%}.assign-supervisors-page .panel-tools{width:100%}.assign-supervisors-page .select-wrap{width:100%}.assign-supervisors-page .select-wrap select{flex:1;max-width:none}.assign-supervisors-page #assignmentDialog h2{font-size:23px}}
+@media(max-width:600px){.assign-supervisors-page #assignmentDialog{padding:20px}.assign-supervisors-page .assignment-student-tools{flex-wrap:wrap}.assign-supervisors-page .assignment-student-tools input{flex-basis:100%}.assign-supervisors-page .panel-tools{width:100%}.assign-supervisors-page .select-wrap{width:100%}.assign-supervisors-page .select-wrap select{flex:1;max-width:none}.assign-supervisors-page .assignment-name-row{flex-wrap:wrap}.assign-supervisors-page #assignmentDialog h2{font-size:23px}}

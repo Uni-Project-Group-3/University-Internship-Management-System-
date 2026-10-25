@@ -29,8 +29,13 @@ namespace University_Internship_Management_System.Shared
         {
             return ApplyAsync(db, root => {
                 var ids = Set(uid);
+                // Groups and links may store the supervisor's business alias instead of the UID.
+                Add(ids, Text(At(root, "users")?[uid], "academicSupervisorId"));
                 foreach (string branch in new[] { "assignments", "supervisorAssignments", "academicFinalEvaluations", "academicFeedback" })
                     RemoveRows(root, branch, p => References(p.Value, ids, "academicSupervisorId", "supervisorId", "evaluatorId", "reviewerId", "authorUid"));
+                // Groups owned by the deleted supervisor that hold no students are only empty
+                // shells; delete them instead of leaving orphaned "Unassigned" groups behind.
+                RemoveRows(root, "groups", p => References(p.Value, ids, "academicSupervisorId", "supervisorId", "supervisorUid") && !HasMembers(p.Value));
                 // These are other students' records. Detach the deleted supervisor, without
                 // removing the students, their company work, or another supervisor's reviews.
                 foreach (string branch in new[] { "users", "placements", "groups", "weeklyReports", "uimsAttendance/trainingAssignments" })
@@ -42,6 +47,9 @@ namespace University_Internship_Management_System.Shared
                 RemoveRows(root, "notifications", p => ids.Contains(p.Name) || References(p.Value, ids, "userId", "uid", "recipientUid", "ownerUid"));
             });
         }
+
+        private static bool HasMembers(JToken group)
+        { return (group?["students"] as JObject)?.Properties().Any(p => p.Value.Type == JTokenType.Boolean && (bool)p.Value) == true; }
 
         private static async Task ApplyAsync(IStudentDatabase db, Action<JObject> change)
         {

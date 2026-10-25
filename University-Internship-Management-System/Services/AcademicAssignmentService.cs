@@ -24,6 +24,12 @@ namespace UIMS.Services
         private static bool Active(JToken value) { return (bool?)value?["isActive"] != false && (bool?)value?["active"] != false && !new[] { "inactive", "archived", "ended", "reassigned", "disabled", "deleted" }.Contains(T(value, "status").ToLowerInvariant()); }
         private static bool ReadyProfile(JToken p) { return Active(p) && (bool?)p?["isActive"] == true && T(p, "deletionStatus") != "pending" && (T(p, "accountSetupStatus").Length == 0 || T(p, "accountSetupStatus") == "complete"); }
         private static string Name(JToken p) { return System.Text.RegularExpressions.Regex.Replace(T(p, "fullName"), @"\s*\(Demo\)\s*", " ", System.Text.RegularExpressions.RegexOptions.IgnoreCase).Trim(); }
+        private static string GroupName(string value) { return System.Text.RegularExpressions.Regex.Replace(value ?? "", @"\s+", " ").Trim(); }
+        private static bool DuplicateGroup(JObject users, JObject groups, string groupId, string name, string department, string supervisorId)
+        {
+            return groups.Properties().Any(g => g.Name != groupId && Active(g.Value) && string.Equals(GroupName(T(g.Value, "name")), name, StringComparison.OrdinalIgnoreCase)
+                && Normalize(T(g.Value, "department")) == department && CanonicalSupervisor(users, T(g.Value, "academicSupervisorId")) == supervisorId);
+        }
         private static string SupervisorId(JProperty p) { return T(p.Value, "academicSupervisorId").Length > 0 ? T(p.Value, "academicSupervisorId") : p.Name; }
         private static string CanonicalSupervisor(JObject users, string id)
         {
@@ -108,7 +114,7 @@ namespace UIMS.Services
             if (!(input["studentIds"] is JArray)) throw new FirebaseException(400, "Select students from the list.");
             var selected = input["studentIds"] as JArray ?? new JArray();
             if (selected.Any(x => x.Type != JTokenType.String) || selected.Count > 200 || selected.Select(x => (string)x).Distinct().Count() != selected.Count) throw new FirebaseException(400, "Choose up to 200 distinct students.");
-            var canonical = new JObject { ["actor"] = uid, ["groupId"] = T(input, "groupId"), ["name"] = T(input, "name").Trim(), ["department"] = Normalize(T(input, "department")), ["supervisorId"] = T(input, "supervisorId"), ["studentIds"] = new JArray(selected.Select(x => Key((string)x)).OrderBy(x => x, StringComparer.Ordinal)) };
+            var canonical = new JObject { ["actor"] = uid, ["groupId"] = T(input, "groupId"), ["name"] = GroupName(T(input, "name")), ["department"] = Normalize(T(input, "department")), ["supervisorId"] = T(input, "supervisorId"), ["studentIds"] = new JArray(selected.Select(x => Key((string)x)).OrderBy(x => x, StringComparer.Ordinal)) };
             string digest; using (var sha = SHA256.Create()) digest = Convert.ToBase64String(sha.ComputeHash(Encoding.UTF8.GetBytes(canonical.ToString(Formatting.None))));
             string operationPath = "academicAssignmentOperations/" + requestId;
             var operation = O(await db.ReadAsync(operationPath));
@@ -136,6 +142,7 @@ namespace UIMS.Services
                 if (ResponsibleDepartments(users, groups, assignments, legacy, professor).Any(d => d != department)) throw new FirebaseException(400, "This supervisor is already responsible for another major. One supervisor can supervise only one major.");
                 var members = O(group?["students"]).Properties().Where(p => (bool?)p.Value == true).Select(p => p.Name).Union(selected.Select(x => (string)x)).ToArray();
                 if (members.Length == 0) throw new FirebaseException(400, "Select at least one student.");
+                if (group == null && T(canonical, "name").Length > 0 && DuplicateGroup(users, groups, groupId, T(canonical, "name"), department, supervisorId)) throw new FirebaseException(409, "This supervisor already has a group with this name in this major. Open that group and add the students there.");
                 if (group != null && T(group, "academicSupervisorId").Length > 0 && CanonicalSupervisor(users, T(group, "academicSupervisorId")) != supervisorId) throw new FirebaseException(409, "This group already has a professor. Reassignment requires a separate explicit review.");
                 var update = new JObject(); string now = DateTimeOffset.UtcNow.ToString("o"); int added = 0;
                 foreach (string studentId in members)
@@ -179,6 +186,60 @@ namespace UIMS.Services
                 if (!patchAttempted) { var own = await db.ReadVersionAsync("academicAssignmentOperations/current"); if (T(own.Value, "requestId") == requestId && T(own.Value, "digest") == digest) await db.CompareWriteAsync("academicAssignmentOperations/current", null, own.ETag); }
                 throw;
             }
+        }
+        // Rename, remove one student, or delete a whole group. Every change is one atomic
+        // multi-location PATCH, so the group and the student's supervisor links stay in sync.
+        public async Task<JObject> ManageAsync(string uid, JObject input)
+        {
+            await Authorize(uid);
+            string action = T(input, "action"), groupId = Key(T(input, "groupId"));
+            if (O(await db.ReadAsync("academicAssignmentOperations/current")).Count > 0) throw new FirebaseException(409, "Another assignment is still saving. Refresh and retry.");
+            var users = O(await db.ReadAsync("users")); var groups = O(await db.ReadAsync("groups")); var assignments = O(await db.ReadAsync("supervisorAssignments")); var legacy = O(await db.ReadAsync("assignments")); var placements = O(await db.ReadAsync("placements"));
+            var group = groups[groupId] as JObject;
+            if (group == null || !Active(group)) throw new FirebaseException(404, "This group no longer exists. Refresh the groups list.");
+            string supervisorId = CanonicalSupervisor(users, T(group, "academicSupervisorId")), department = Normalize(T(group, "department")), now = DateTimeOffset.UtcNow.ToString("o");
+            var update = new JObject(); string message;
+            if (action == "rename")
+            {
+                string name = GroupName(T(input, "name"));
+                if (name.Length == 0 || name.Length > 120) throw new FirebaseException(400, "Enter a group name of up to 120 characters.");
+                if (DuplicateGroup(users, groups, groupId, name, department, supervisorId)) throw new FirebaseException(409, "This supervisor already has another group with this name in this major.");
+                update["groups/" + groupId + "/name"] = name; update["groups/" + groupId + "/updatedAt"] = now;
+                message = "Group name saved.";
+            }
+            else if (action == "removeStudent" || action == "deleteGroup")
+            {
+                var members = O(group["students"]).Properties().Where(p => p.Value.Type == JTokenType.Boolean && (bool)p.Value).Select(p => p.Name).ToArray();
+                if (action == "removeStudent")
+                {
+                    string studentId = Key(T(input, "studentId"));
+                    if (!members.Contains(studentId)) throw new FirebaseException(404, "This student is no longer in the group. Refresh the groups list.");
+                    members = new[] { studentId };
+                    update["groups/" + groupId + "/students/" + studentId] = JValue.CreateNull(); update["groups/" + groupId + "/updatedAt"] = now;
+                }
+                else update["groups/" + groupId] = JValue.CreateNull();
+                foreach (string studentId in members)
+                {
+                    Key(studentId);
+                    // Keep the supervisor link when the student still belongs to another group of the same supervisor.
+                    if (supervisorId.Length == 0 || groups.Properties().Any(g => g.Name != groupId && Active(g.Value) && (bool?)g.Value["students"]?[studentId] == true && CanonicalSupervisor(users, T(g.Value, "academicSupervisorId")) == supervisorId)) continue;
+                    Func<JToken, bool> mine = v => T(v, "studentId") == studentId && CanonicalSupervisor(users, T(v, "academicSupervisorId")) == supervisorId;
+                    foreach (var link in assignments.Properties().Where(a => mine(a.Value))) update["supervisorAssignments/" + Key(link.Name)] = JValue.CreateNull();
+                    foreach (var link in legacy.Properties().Where(a => Active(a.Value) && mine(a.Value))) { update["assignments/" + Key(link.Name) + "/active"] = false; update["assignments/" + Key(link.Name) + "/isActive"] = false; }
+                    foreach (var user in users.Properties().Where(u => FirebaseSignInService.CanonicalRole(T(u.Value, "role")) == "student" && mine(u.Value))) update["users/" + Key(user.Name) + "/academicSupervisorId"] = JValue.CreateNull();
+                    foreach (var placement in placements.Properties().Where(p => T(p.Value, "status") != "completed" && (T(p.Value, "studentId") == studentId || T(p.Value, "studentProfileId") == studentId) && CanonicalSupervisor(users, T(p.Value, "academicSupervisorId")) == supervisorId))
+                        update["placements/" + Key(placement.Name) + "/academicSupervisorId"] = JValue.CreateNull();
+                }
+                // A supervisor without any remaining group no longer owns a major through groups.
+                if (action == "deleteGroup" && supervisorId.Length > 0 && !groups.Properties().Any(g => g.Name != groupId && Active(g.Value) && CanonicalSupervisor(users, T(g.Value, "academicSupervisorId")) == supervisorId))
+                    foreach (var prof in users.Properties().Where(p => FirebaseSignInService.CanonicalRole(T(p.Value, "role")) == "academicSupervisor" && SupervisorId(p) == supervisorId && T(p.Value, "assignedMajorId").Length > 0))
+                        update["users/" + Key(prof.Name) + "/assignedMajorId"] = JValue.CreateNull();
+                message = action == "deleteGroup" ? "Group deleted. Its students are no longer linked to this supervisor." : "Student removed from the group and unlinked from this supervisor.";
+            }
+            else throw new FirebaseException(400, "Unsupported group action.");
+            await Authorize(uid);
+            await db.PatchAsync("", update);
+            return new JObject { ["saved"] = true, ["groupId"] = groupId, ["message"] = message };
         }
     }
 }

@@ -12,6 +12,9 @@
     const professor = () => data.professors.find(p => p.id === by('assignmentProfessor').value);
     const professorName = id => data.professors.find(p => p.id === id)?.name || id || 'Unassigned';
     const notice = text => { by('assignmentNotice').textContent = text; };
+    const members = g => Object.entries(g?.students || {}).filter(([, v]) => v === true).map(([id]) => id);
+    const studentName = id => data.students.find(s => s.id === id)?.name || '';
+    const sameName = (a, b) => String(a || '').replace(/\s+/g, ' ').trim().toLowerCase() === String(b || '').replace(/\s+/g, ' ').trim().toLowerCase();
     function options(control, rows, placeholder) {
         control.replaceChildren(new Option(placeholder, ''));
         rows.forEach(r => control.append(new Option(r.name || r.id, r.id)));
@@ -34,9 +37,10 @@
             const row = node('tr'), title = node('td');
             title.append(node('strong', g.name, 'group-name'), node('small', g.id, 'group-id'));
             row.append(title, node('td', majorName(g.department)), node('td', Object.values(g.students || {}).filter(v => v === true).length), node('td', professorName(g.supervisorId)));
-            const action = node('td'), button = node('button', 'View / add students', 'assignment-secondary');
+            const action = node('td'), tools = node('div', null, 'group-actions'), button = node('button', 'View / edit', 'assignment-secondary'), remove = node('button', 'Delete', 'assignment-danger');
             button.type = 'button'; button.onclick = () => open(g);
-            action.append(button); row.append(action); host.append(row);
+            remove.type = 'button'; remove.onclick = () => deleteGroup(g);
+            tools.append(button, remove); action.append(tools); row.append(action); host.append(row);
         }
         if (!host.children.length) {
             const row = node('tr'), cell = node('td', 'No groups yet in this view. Add a group to assign students.');
@@ -54,13 +58,52 @@
     function open(g) {
         group = g; selected = new Set(); retry = null;
         by('assignmentError').textContent = ''; by('assignmentName').value = g?.name || '';
-        by('assignmentName').readOnly = !!g; by('studentSearch').value = '';
+        by('studentSearch').value = '';
+        by('assignmentRename').hidden = !g; by('assignmentDelete').hidden = !g; by('assignmentMembersSection').hidden = !g;
         by('assignmentTitle').textContent = g ? 'Group students' : 'Add student group';
         by('assignmentSave').textContent = g ? 'Add selected students' : 'Create group';
         options(by('assignmentProfessor'), data.professors.filter(p => !p.conflict || p.id === g?.supervisorId).map(p => ({ id: p.id, name: p.name + (p.conflict ? ' - review assignments required' : '') })), 'Select academic supervisor');
         by('assignmentProfessor').value = g?.supervisorId || '';
         by('assignmentProfessor').disabled = !!g;
-        majors(); dialog.showModal(); dialog.scrollTop = 0;
+        majors(); renderMembers(); dialog.showModal(); dialog.scrollTop = 0;
+    }
+    function renderMembers() {
+        const host = by('assignmentMembers');
+        host.replaceChildren();
+        if (!group) return;
+        for (const id of members(group)) {
+            const row = node('div', null, 'assignment-member'), info = node('span'), remove = node('button', 'Remove', 'assignment-danger');
+            info.append(node('strong', studentName(id) || 'Student ' + id), node('small', 'Student ID: ' + id));
+            remove.type = 'button'; remove.onclick = () => removeStudent(id);
+            row.append(info, remove); host.append(row);
+        }
+        if (!host.children.length) host.append(node('p', 'No students in this group yet.', 'assignment-empty'));
+    }
+    // Rename / remove / delete go straight to the database, then the view reloads from it.
+    async function manage(payload, confirmText) {
+        if (busy || (confirmText && !window.confirm(confirmText))) return false;
+        busy = true; by('assignmentFields').inert = true; by('assignmentError').textContent = '';
+        try {
+            const result = await api(payload);
+            await load();
+            group = group && data.groups.find(g => g.id === group.id) || null;
+            if (group) { by('assignmentName').value = group.name; renderMembers(); students(); }
+            notice(result.message || 'Saved.');
+            return true;
+        } catch (e) {
+            if (dialog.open) by('assignmentError').textContent = e.message; else notice(e.message);
+            return false;
+        } finally { busy = false; by('assignmentFields').inert = false; }
+    }
+    function removeStudent(id) {
+        manage({ action: 'removeStudent', groupId: group.id, studentId: id }, 'Remove ' + (studentName(id) || id) + ' from "' + group.name + '"? Their link to ' + professorName(group.supervisorId) + ' will also be removed.');
+    }
+    async function deleteGroup(g) {
+        const count = members(g).length;
+        const text = 'Delete the group "' + g.name + '" (' + g.id + ')?' + (count ? ' Its ' + count + ' student(s) will be unlinked from ' + professorName(g.supervisorId) + '.' : '') + ' This cannot be undone.';
+        const previous = group; group = g;
+        if (await manage({ action: 'deleteGroup', groupId: g.id }, text) && dialog.open) dialog.close();
+        else if (!dialog.open) group = previous;
     }
     function majors() {
         selected.clear(); by('assignmentError').textContent = '';
@@ -103,6 +146,13 @@
         if (busy) return;
         dialog.close();
     }
+    by('assignmentRename').onclick = () => {
+        const name = by('assignmentName').value.replace(/\s+/g, ' ').trim();
+        if (!name) { by('assignmentError').textContent = 'Enter a group name.'; return; }
+        if (sameName(name, group.name)) { by('assignmentError').textContent = 'The name is unchanged.'; return; }
+        manage({ action: 'rename', groupId: group.id, name });
+    };
+    by('assignmentDelete').onclick = () => deleteGroup(group);
     by('assignmentSave').onclick = async () => {
         if (busy) return;
         const p = professor(), major = by('assignmentDepartment').value, error = by('assignmentError');
@@ -110,7 +160,9 @@
         if (!p || p.conflict) { error.textContent = 'Choose an eligible academic supervisor first.'; by('assignmentProfessor').focus(); return; }
         if (!major) { error.textContent = 'Select the university major.'; by('assignmentDepartment').focus(); return; }
         if (!selected.size) { error.textContent = 'Select at least one available student.'; return; }
-        const payload = { groupId: group?.id || '', name: by('assignmentName').value.trim() || (majorName(major) + ' - ' + p.name).slice(0, 120), department: major, supervisorId: p.id, studentIds: [...selected].sort() };
+        const name = group ? group.name : by('assignmentName').value.replace(/\s+/g, ' ').trim() || (majorName(major) + ' - ' + p.name).slice(0, 120);
+        if (!group && data.groups.some(g => g.supervisorId === p.id && g.department === major && sameName(g.name, name))) { error.textContent = p.name + ' already has a group named "' + name + '" in this major. Open that group and add the students there.'; return; }
+        const payload = { groupId: group?.id || '', name, department: major, supervisorId: p.id, studentIds: [...selected].sort() };
         const signature = JSON.stringify(payload);
         if (!retry || retry.signature !== signature) retry = { signature, id: crypto.randomUUID() };
         payload.requestId = retry.id;
