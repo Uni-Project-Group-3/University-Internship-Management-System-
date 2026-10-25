@@ -64,7 +64,7 @@
                 <div class="schedule-grid"><div><span>Training starts</span><strong id="scheduledStart">&#8212;</strong></div><div><span>Training ends</span><strong id="scheduledEnd">&#8212;</strong></div><div><span>Actual check-in</span><strong id="actualCheckIn">&#8212;</strong></div><div><span>Actual check-out</span><strong id="actualCheckOut">&#8212;</strong></div></div>
                 <div class="timeline"><i class="bi bi-info-circle" aria-hidden="true"></i><span id="scheduleHelp"></span></div>
                 <div class="attendance-actions student-qr-actions"><button id="checkInButton" type="button" disabled class="primary-action">Show check-in QR</button><button id="checkOutButton" type="button" disabled class="primary-action">Show check-out QR</button><span id="qrAvailability" class="qr-availability" role="status"></span></div>
-                <div id="resetTodayTools" class="attendance-reset-tools" hidden><button id="resetTodayButton" type="button" class="secondary-action" disabled>Reset today’s attendance</button><p class="section-note">Local testing only &middot; previous attempts are preserved.</p></div>
+                <div id="resetTodayTools" class="attendance-reset-tools" hidden><button id="resetTodayButton" type="button" class="secondary-action" disabled>Reset today’s attendance</button><p class="section-note">Clears today’s check-in and check-out so you can show a new QR and check in again. The previous attempt is kept in the attendance archive.</p></div>
                 <button id="earlyButton" type="button" disabled class="text-action">Request early check-out</button><p id="earlyStatus" class="section-note" aria-live="polite"></p>
             </section>
 
