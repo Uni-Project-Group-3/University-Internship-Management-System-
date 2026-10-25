@@ -48,3 +48,15 @@ button:focus-visible,a:focus-visible{outline:3px solid #698cda;outline-offset:3p
 #finalRecords>.final-student-card>button{margin-top:auto;width:100%;min-height:44px;border-radius:10px;font-weight:700}
 @media(max-width:600px){#finalRecords{grid-template-columns:minmax(0,1fr)}.final-card-details{grid-template-columns:minmax(0,1fr)}}
 .final-student-card>.report-state{align-self:flex-start;max-width:100%;white-space:normal;line-height:1.4}
+/* Final report popup: submitted report summary. */
+.final-revision-card{margin:18px 0;padding:18px 20px;border:1px solid #dfe5ef;border-radius:14px;background:#fff}
+.final-revision-card h3{margin:0 0 14px;font-size:17px;color:#242e51}
+.final-revision-card h4{margin:16px 0 6px;font-size:12px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:#7a879c}
+.final-revision-facts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:0}
+.final-revision-facts>div{padding:12px 14px;border-radius:12px;background:#f3f6fb;min-width:0}
+.final-revision-facts dt{margin:0 0 4px;font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:#7a879c}
+.final-revision-facts dd{margin:0;font-size:14px;font-weight:700;color:#253250;overflow-wrap:anywhere}
+.final-revision-facts .is-big dd{font-size:24px;color:#1f3d78}
+.final-revision-text{margin:0;padding:12px 14px;border-left:3px solid #9aaac5;border-radius:0 10px 10px 0;background:#fafbfd;font-size:13.5px;line-height:1.7;color:#344563;white-space:pre-line;overflow-wrap:anywhere}
+.final-revision-ref{display:block;margin-top:12px;font-size:11px;color:#9aa5b8;overflow-wrap:anywhere}
+@media(max-width:640px){.final-revision-facts{grid-template-columns:minmax(0,1fr)}}

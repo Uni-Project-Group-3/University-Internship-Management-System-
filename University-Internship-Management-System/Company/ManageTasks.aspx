@@ -13,7 +13,7 @@
 
         <link href="../Assets/shared/colors.css" rel="stylesheet" />
         <link href="../Assets/company/ManageTasks.css?v=20261022-task-board" rel="stylesheet" />
-        <link href="../Assets/shared/workflow-ui.css?v=20261025-final-cards" rel="stylesheet" />
+        <link href="../Assets/shared/workflow-ui.css?v=20261025-final-flow" rel="stylesheet" />
 <script src="../Js_project/shared-role-navigation.js" defer></script>
 <link rel="stylesheet" href="../Assets/shared/role-sidebar.css" />
 <link rel="stylesheet" href="../Assets/shared/just-theme.css" />

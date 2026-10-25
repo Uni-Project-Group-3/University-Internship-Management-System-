@@ -122,7 +122,16 @@
                 if(documentSource.attachment?.uploadStatus==='ready'){const download=node('a','Download PDF with grade details');download.href='FinalReportsApi.ashx?action=download&placementId='+encodeURIComponent(id)+'&revisionId='+encodeURIComponent(documentRevision);pdfSection.append(download);}else pdfSection.append(node('p','PDF generation uses the saved report and approved/released assessment grades.'));
                 body.append(pdfSection);
             }
-            if (revision) { const report = node('section'); report.append(node('h3', 'Current submitted revision'), node('p', r.currentRevisionId), node('p', 'Company percentage: ' + revision.percentage + ' / 100'), node('p', revision.comments), node('p', 'Filename only: ' + revision.attachment?.fileName), node('p', 'Company response: ' + (revision.companyResponse || 'None'))); body.append(report); }
+            if (revision) {
+                // Readable summary of the submitted report: grade, dates and text, with the internal revision id only as a small reference.
+                const report = node('section', null, 'final-revision-card'), facts = node('dl', null, 'final-revision-facts');
+                for (const [label, value, big] of [['Company grade', (revision.percentage ?? '—') + ' / 100', true], ['Submitted', revision.submittedAt ? new Date(revision.submittedAt).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' }) : '—'], ['Attachment', revision.attachment?.fileName || 'None']]) { const row = node('div', null, big ? 'is-big' : ''); row.append(node('dt', label), node('dd', value)); facts.append(row); }
+                report.append(node('h3', 'Submitted company report'), facts);
+                if (revision.comments) { report.append(node('h4', 'Report summary'), node('p', revision.comments, 'final-revision-text')); }
+                if (revision.companyResponse) { report.append(node('h4', 'Company response'), node('p', revision.companyResponse, 'final-revision-text')); }
+                report.append(node('small', 'Reference: ' + r.currentRevisionId, 'final-revision-ref'));
+                body.append(report);
+            }
             function weeklyHistory(host, reports) { if (!reports?.length) return; const box = node('section', null, 'evaluation-weekly-snapshots'); box.append(node('h3', 'Included weekly report snapshots')); for (const report of reports) { const card = node('article'); card.append(node('strong', 'Week ' + report.weekNumber + ' \u00b7 ' + report.status), node('p', 'Report: ' + report.reportId + ' \u00b7 Revision: ' + report.revisionId), node('p', report.companyComments || 'No summary'), node('small', report.weekStart + ' \u2014 ' + report.weekEnd)); box.append(card); } host.append(box); }
             weeklyHistory(body, revision?.weeklyReports);
             if (role === 'academicSupervisor' && ['pendingAcademicReview', 'academicRevisionRequested'].includes(view.status)) { field(editor, 'Academic feedback / response to admin', 'feedback', '', 'textarea', view.status === 'academicRevisionRequested'); addAction('Approve current revision', 'academicApprove'); addAction('Return to company for revision', 'companyRevision'); }
