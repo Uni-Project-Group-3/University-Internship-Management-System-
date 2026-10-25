@@ -60,3 +60,14 @@ button:focus-visible,a:focus-visible{outline:3px solid #698cda;outline-offset:3p
 .final-revision-text{margin:0;padding:12px 14px;border-left:3px solid #9aaac5;border-radius:0 10px 10px 0;background:#fafbfd;font-size:13.5px;line-height:1.7;color:#344563;white-space:pre-line;overflow-wrap:anywhere}
 .final-revision-ref{display:block;margin-top:12px;font-size:11px;color:#9aa5b8;overflow-wrap:anywhere}
 @media(max-width:640px){.final-revision-facts{grid-template-columns:minmax(0,1fr)}}
+.final-certificate-actions{margin:18px 0;padding:18px 20px;border:1px solid #cfe3d6;border-radius:14px;background:#f0f8f3}
+.final-certificate-actions h3{margin:0 0 6px;font-size:17px;color:#1f6b45}
+.final-certificate-status{margin:0 0 12px;font-size:13px;color:#4b5c79}
+.final-certificate-status:empty{display:none}
+.final-certificate-status[data-state="sent"]{color:#1f6b45;font-weight:600}
+.final-certificate-status:is([data-state="blocked"],[data-state="rejected"],[data-state="deliveryUnconfirmed"]){color:#a12f2f;font-weight:600}
+.final-certificate-buttons{display:flex;gap:10px;flex-wrap:wrap}
+.final-certificate-buttons>*{display:inline-flex;align-items:center;justify-content:center;min-height:42px;padding:0 18px;border-radius:10px;font-weight:700;text-decoration:none}
+.final-certificate-buttons .primary{background:#1f6b45;border:1px solid #1f6b45;color:#fff}
+.final-certificate-buttons .primary:disabled{opacity:.5}
+.final-certificate-buttons .secondary{background:#fff;border:1px solid #9cc7ad;color:#1f6b45}

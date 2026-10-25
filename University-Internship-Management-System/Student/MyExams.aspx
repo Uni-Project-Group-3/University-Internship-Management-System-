@@ -4,7 +4,7 @@
 <head runat="server">
     <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>My Exams | JUST Internships</title><link href="../Assets/student/TaskExams.css?v=20261025-exam-cards" rel="stylesheet" />
-<link href="../Assets/shared/workflow-ui.css?v=20261025-final-flow" rel="stylesheet" /><link href="../Assets/shared/workspace-identity.css?v=20261025-progress-stat" rel="stylesheet" />
+<link href="../Assets/shared/workflow-ui.css?v=20261025-send-certificate" rel="stylesheet" /><link href="../Assets/shared/workspace-identity.css?v=20261025-progress-stat" rel="stylesheet" />
 <script src="../Js_project/workspace-navigation-unified.js?v=20261025-notifications" defer></script>
 </head>
 <body class="coordinator-banner">
