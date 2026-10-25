@@ -10,7 +10,7 @@
     <title>Sign In | UIMS</title>
     <link runat="server" href="~/Assets/shared/colors.css" rel="stylesheet" />
     <link runat="server" href="~/Assets/auth/auth.css" rel="stylesheet" /><link href="../Assets/auth/login-card.css?v=20261024-reference-pulse" rel="stylesheet" />
-<link href="../Assets/auth/login-immersive.css?v=20261025-calm-errors" rel="stylesheet" /></head>
+<link href="../Assets/auth/login-immersive.css?v=20261025-ring" rel="stylesheet" /></head>
 <body class="auth-page">
     <svg class="auth-sprite" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
         <symbol id="icon-mail" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="3" /><path d="m4 7 8 6 8-6" /></symbol>
