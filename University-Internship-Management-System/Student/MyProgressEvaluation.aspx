@@ -12,7 +12,7 @@
     <title>My Progress &amp; Evaluation | UIMS</title>
     <link runat="server" href="~/Content/bootstrap.min.css" rel="stylesheet" />
     <link runat="server" href="~/Assets/shared/evaluation-colors.css?v=20261024-fast-paint" rel="stylesheet" />
-    <link runat="server" href="~/Assets/student/my-progress-evaluation.css?v=20261024-student-task-data-v2" rel="stylesheet" />
+    <link runat="server" href="~/Assets/student/my-progress-evaluation.css?v=20261025-student-shell-v1" rel="stylesheet" />
     <link runat="server" href="~/Assets/shared/evaluation-workspace.css?v=20261023" rel="stylesheet" />
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet" media="print" data-evaluation-external="true" />
     <link href="../Assets/shared/workflow-ui.css?v=20261023" rel="stylesheet" />
@@ -27,20 +27,21 @@
 <script src="../Js_project/workspace-navigation-unified.js?v=20261024-refine" defer></script>
 
 </head>
-<body class="app-page uims-workspace student-progress">
+<body id="studentProgressPage" class="app-page uims-workspace student-progress">
     <form id="form1" runat="server">
         <div class="app-layout">
             <uims:StudentSidebar ID="studentSidebar" runat="server" SidebarId="sidebar" /><div class="sidebar-backdrop" aria-hidden="true"></div>
-            <div class="main"><header class="topbar"><button type="button" class="menu-btn d-lg-none" aria-label="Open navigation" aria-controls="sidebar" aria-expanded="false"><i class="bi bi-list" aria-hidden="true"></i></button><span class="topbar-label">University Internship Management System</span><div class="topbar-actions ms-auto"><span class="avatar" aria-hidden="true">U</span><span class="user-chip"><span class="name"><asp:Literal ID="NavName" runat="server" Mode="Encode"/><span class="role">Student workspace</span></span></span></div></header>
+            <div class="main"><header class="topbar student-progress-topbar"><button type="button" class="menu-btn d-lg-none" aria-label="Open navigation" aria-controls="sidebar" aria-expanded="false"><i class="bi bi-list" aria-hidden="true"></i></button><span class="student-progress-topbar-label">JUST Internships <span aria-hidden="true">/</span> Student Workspace</span><div class="student-progress-topbar-actions"><button type="button" class="student-progress-notifications" disabled="disabled" aria-label="Notifications unavailable" title="Notifications are not connected yet"><i class="bi bi-bell" aria-hidden="true"></i></button><a class="student-progress-account" href="Profile.aspx"><span class="student-progress-avatar" aria-hidden="true">ST</span><span class="student-progress-account-copy"><strong><asp:Literal ID="NavName" runat="server" Mode="Encode"/></strong><small>Student</small></span><i class="bi bi-chevron-down" aria-hidden="true"></i></a></div></header>
             <main class="app-content" id="mainContent">
                 <section class="uims-page-hero" aria-labelledby="studentProgressTitle">
-<div class="uims-hero-copy"><p class="uims-hero-eyebrow">JUST / STUDENT WORKSPACE</p><h1 id="studentProgressTitle">My Progress &amp; Evaluation</h1><p>Review published task grades, supervisor feedback, and approved training progress.</p></div>
-<dl class="workspace-stats uims-hero-stats" aria-label="Authorized internship progress">
-<div class="workspace-stat uims-hero-stat"><dt>Approved training hours</dt><dd><span data-uims-progress="ApprovedHours"><asp:Literal ID="ApprovedHours" runat="server" /></span></dd></div>
-<div class="workspace-stat uims-hero-stat"><dt>Required training hours</dt><dd><span data-uims-progress="RequiredHours"><asp:Literal ID="RequiredHours" runat="server" /></span></dd></div>
-<div class="workspace-stat uims-hero-stat"><dt>Hours remaining</dt><dd><span data-uims-progress="RemainingHours"><asp:Literal ID="RemainingHours" runat="server" /></span></dd></div>
-<div class="workspace-stat uims-hero-stat"><dt>Published Task Grades</dt><dd><span data-uims-progress="EvaluatedExams"><asp:Literal ID="EvaluatedExams" runat="server" /></span></dd></div>
-</dl></section>
+<div class="uims-hero-copy"><p class="uims-hero-eyebrow">JUST / STUDENT WORKSPACE</p><h1 id="studentProgressTitle">My Progress &amp; Evaluation</h1><p>Review your approved training progress, published task grades, and supervisor feedback.</p></div><a class="student-progress-hero-action" href="StudentDashboard.aspx"><i class="bi bi-grid-1x2" aria-hidden="true"></i> Student dashboard <i class="bi bi-arrow-right" aria-hidden="true"></i></a>
+</section>
+<dl class="workspace-stats student-progress-stats" aria-label="Authorized internship progress">
+<div class="workspace-stat"><span class="student-progress-stat-icon hours" aria-hidden="true"><i class="bi bi-clock-history"></i></span><div><dt>Approved training hours</dt><dd><span data-uims-progress="ApprovedHours"><asp:Literal ID="ApprovedHours" runat="server" /></span></dd></div></div>
+<div class="workspace-stat"><span class="student-progress-stat-icon required" aria-hidden="true"><i class="bi bi-flag"></i></span><div><dt>Required training hours</dt><dd><span data-uims-progress="RequiredHours"><asp:Literal ID="RequiredHours" runat="server" /></span></dd></div></div>
+<div class="workspace-stat"><span class="student-progress-stat-icon remaining" aria-hidden="true"><i class="bi bi-hourglass-split"></i></span><div><dt>Hours remaining</dt><dd><span data-uims-progress="RemainingHours"><asp:Literal ID="RemainingHours" runat="server" /></span></dd></div></div>
+<div class="workspace-stat"><span class="student-progress-stat-icon grades" aria-hidden="true"><i class="bi bi-journal-check"></i></span><div><dt>Published Task Grades</dt><dd><span data-uims-progress="EvaluatedExams"><asp:Literal ID="EvaluatedExams" runat="server" /></span></dd></div></div>
+</dl>
                 <asp:Panel ID="StudentAccessErrorPanel" runat="server" Visible="false" CssClass="student-access-error" role="alert"><asp:Literal ID="StudentAccessMessage" runat="server" Mode="Encode" /></asp:Panel>
                 <asp:Panel ID="DemoStudentPanel" runat="server" Visible="false" CssClass="workspace-note"><asp:Label runat="server" AssociatedControlID="DemoStudentChoice" Text="LOCAL DEMO Student (this dataset only)" /><asp:DropDownList ID="DemoStudentChoice" runat="server" AutoPostBack="true" OnSelectedIndexChanged="DemoStudentChoice_Changed" CssClass="workspace-input"><asp:ListItem Value="0">Student A — Lina (fictional)</asp:ListItem><asp:ListItem Value="1">Student B — Omar (fictional)</asp:ListItem><asp:ListItem Value="2">Student C — Noor (fictional)</asp:ListItem></asp:DropDownList></asp:Panel>
 
