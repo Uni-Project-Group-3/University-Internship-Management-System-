@@ -98,5 +98,6 @@
 })();
 
 </script>
-<script src="Js_project/Public/contact-demo.js?v=2"></script><script src="Js_project/firebase-client.js?v=20261024-refine"></script><script src="Js_project/Public/public-workspace.js?v=20261024-refine"></script></body>
+<script src="Js_project/Public/contact-demo.js?v=2"></script><script src="Js_project/firebase-client.js?v=20261024-refine"></script><script src="Js_project/Public/public-workspace.js?v=20261024-refine"></script><script src="Js_project/site-translate.js?v=20261025" defer></script>
+</body>
 </html>

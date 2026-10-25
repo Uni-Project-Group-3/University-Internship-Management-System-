@@ -21,7 +21,7 @@
     <link href="../Assets/shared/colors.css" rel="stylesheet" />
     <link href="../Assets/student/my-applications.css?v=20261024-error-popup" rel="stylesheet" />
 <link href="../Assets/shared/workspace-identity.css?v=20261025-progress-stat" rel="stylesheet" />
-<script src="../Js_project/workspace-navigation-unified.js?v=20261025-notifications" defer></script>
+<script src="../Js_project/workspace-navigation-unified.js?v=20261025-translate" defer></script>
 </head>
 <body class="coordinator-banner standalone-shell" data-demo-role="student">
     <form id="applicationsForm" runat="server">

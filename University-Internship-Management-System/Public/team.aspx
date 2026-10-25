@@ -57,5 +57,6 @@
 
 <script src="../Js_project/Public/team.js?v=20261024-eyad-mansur"></script>
 <noscript><p style="position:fixed;bottom:0;left:0;right:0;margin:0;padding:14px 18px;background:#f4efe3;color:#1d2a3a">The team list needs JavaScript. <a href="home.aspx">Back to the homepage</a></p></noscript>
-<script src="../Js_project/firebase-client.js?v=20261024-refine"></script><script src="../Js_project/Public/public-workspace.js?v=20261024-refine"></script></body>
+<script src="../Js_project/firebase-client.js?v=20261024-refine"></script><script src="../Js_project/Public/public-workspace.js?v=20261024-refine"></script><script src="../Js_project/site-translate.js?v=20261025" defer></script>
+</body>
 </html>

@@ -818,6 +818,7 @@
     <Compile Include="Services\NotificationsApi.cs" />
     <Content Include="NotificationsApi.ashx" />
     <Content Include="Js_project\notifications.js" />
+    <Content Include="Js_project\site-translate.js" />
     <Compile Include="Services\SystemOptionsApi.cs" />
     <Content Include="SystemOptionsApi.ashx" />
     <Content Include="Coordinator\SystemOptions.aspx" />
