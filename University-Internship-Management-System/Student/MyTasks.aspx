@@ -146,11 +146,11 @@
         <link href="../Assets/task-workspace.css?v=20261023-task-connection" rel="stylesheet" />
 <link href="../Assets/tasks-premium.css?v=20261024-buttons" rel="stylesheet" />
         <script src="../Js_project/firebase-client.js?v=20261023-task-connection"></script>
-        <script src="../Js_project/task-dialogs.js?v=20261025-flow"></script>
-        <script src="../Js_project/Student/TaskExams.js?v=20261025-flow"></script>
+        <script src="../Js_project/task-dialogs.js?v=20261025-confirm-popup"></script>
+        <script src="../Js_project/Student/TaskExams.js?v=20261025-exam-cards"></script>
         <script src="../Js_project/workflow-dialogs.js?v=20261023"></script>
         <script src="../Js_project/Student/MyTasks.js?v=20261025-flow">
         </script>
-    <link href="../Assets/task-flow.css?v=20261025-flow" rel="stylesheet" />
+    <link href="../Assets/task-flow.css?v=20261025-task-details" rel="stylesheet" />
 </body>
 </html>

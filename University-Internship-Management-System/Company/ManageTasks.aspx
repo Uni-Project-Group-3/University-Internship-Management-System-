@@ -203,11 +203,11 @@
         <link href="../Assets/task-workspace.css?v=20261023-task-connection" rel="stylesheet" />
 <link href="../Assets/tasks-premium.css?v=20261024-buttons" rel="stylesheet" />
         <script src="../Js_project/firebase-client.js?v=20261023-task-connection"></script>
-        <script src="../Js_project/task-dialogs.js?v=20261025-flow"></script>
+        <script src="../Js_project/task-dialogs.js?v=20261025-confirm-popup"></script>
         <script src="../Js_project/Company/TaskExams.js?v=20261025-flow"></script>
-        <script src="../Js_project/Company/ManageTasks.js?v=20261025-flow">
+        <script src="../Js_project/Company/ManageTasks.js?v=20261025-task-details">
         </script>
         <script src="../Js_project/Company/TaskComposer.js?v=20261025-flow"></script>
-    <link href="../Assets/task-flow.css?v=20261025-flow" rel="stylesheet" />
+    <link href="../Assets/task-flow.css?v=20261025-task-details" rel="stylesheet" />
 </body>
 </html>

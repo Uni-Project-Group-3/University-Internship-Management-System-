@@ -21,7 +21,7 @@
         Object.defineProperty(surface, 'open', { get: () => opened });
         function cancel() { const event = new Event('cancel', { cancelable: true }); surface.dispatchEvent(event); if (!event.defaultPrevented) surface.close(); }
         back.onclick = cancel;
-        const escape = event => { if (event.key === 'Escape' && surfaces[surfaces.length - 1] === surface) { event.preventDefault(); event.stopImmediatePropagation(); cancel(); } };
+        const escape = event => { if (event.key === 'Escape' && surfaces[surfaces.length - 1] === surface && !document.querySelector('dialog.task-confirm-dialog[open]')) { event.preventDefault(); event.stopImmediatePropagation(); cancel(); } };
         const hide = event => { if (opened && surfaces[surfaces.length - 1] === surface) { event.preventDefault(); cancel(); } };
         surface.showModal = () => {
             if (opened) return; opened = true; surface.setAttribute('open', '');
@@ -63,8 +63,17 @@
         if (first) { first.scrollIntoView({ block: 'center' }); first.focus(); }
         return !first;
     }
+    // A yes/no question is a small popup above the current screen, not a step that replaces it.
+    function confirmDialog(title) {
+        const dialog = document.createElement('dialog'); dialog.className = 'task-confirm-dialog';
+        const heading = document.createElement('h2'); heading.textContent = title; heading.id = 'task-confirm-heading-' + (++serial);
+        dialog.setAttribute('aria-labelledby', heading.id); dialog.append(heading);
+        // Inside an open Bootstrap modal so its focus trap keeps the popup's buttons reachable.
+        (document.querySelector('.modal.show') || document.body).append(dialog);
+        return dialog;
+    }
     function open(title, content, options = {}) {
-        const previous = document.activeElement, dialog = createSurface(title);
+        const previous = document.activeElement, dialog = typeof content === 'string' ? confirmDialog(title) : createSurface(title);
         const body = document.createElement('div'); body.className = 'workspace-dialog-body';
         if (typeof content === 'string') { const p = document.createElement('p'); p.textContent = content; body.append(p); } else body.append(content);
         const actions = document.createElement('div'); actions.className = 'workspace-dialog-actions';

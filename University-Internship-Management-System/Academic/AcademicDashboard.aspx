@@ -10,10 +10,10 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet" />
     <link runat="server" href="~/Assets/shared/colors.css" rel="stylesheet" />
     <link runat="server" href="~/Assets/academic/academic-dashboard.css?v=20261024-modern-ui" rel="stylesheet" />
-<link href="../Assets/shared/workspace-identity.css?v=20261024-refine" rel="stylesheet" />
+<link href="../Assets/shared/workspace-identity.css?v=20261025-academic-banner" rel="stylesheet" />
 <script src="../Js_project/workspace-navigation-unified.js?v=20261024-refine" defer></script>
 </head>
-<body data-demo-role="academic">
+<body class="coordinator-banner" data-demo-role="academic">
     <form id="form1" runat="server">
         <div class="app">
 

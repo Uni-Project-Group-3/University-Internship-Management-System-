@@ -37,7 +37,10 @@
                 if (!item?.versionData || (filter && item.taskId !== filter)) continue;
                 const card = element('article', '', 'exam-card'), button = element('button', 'View exam', 'primary');
                 const v = item.versionData, trusted = Date.parse(item.serverNow), state = trusted < Date.parse(v.opensAt) ? 'Scheduled' : trusted >= Date.parse(v.closesAt) ? 'Closed' : 'Open';
-                button.onclick = () => view(id); card.append(element('h2', v.title), element('p', item.taskTitle || 'Assigned task'), element('span', state, 'badge'), element('p', 'Opens: ' + date(v.opensAt) + '\nCloses: ' + date(v.closesAt)), element('p', v.durationMinutes + ' minutes · ' + v.attemptLimit + ' attempt(s)'), button); $('examList').append(card);
+                const head = element('header', '', 'exam-card-head'), meta = element('dl', '', 'exam-card-meta'), short = value => new Date(value).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' });
+                head.append(element('h2', v.title), element('span', state, 'badge exam-state-' + state.toLowerCase()));
+                for (const [label, value] of [['Opens', short(v.opensAt)], ['Closes', short(v.closesAt)], ['Duration', v.durationMinutes + ' minutes'], ['Attempts', String(v.attemptLimit)]]) { const row = element('div'); row.append(element('dt', label), element('dd', value)); meta.append(row); }
+                button.onclick = () => view(id); card.append(head, element('p', item.taskTitle || 'Assigned task', 'exam-card-task'), meta, button); $('examList').append(card);
             }
             if (!$('examList').children.length) $('examList').textContent = 'No published exams are available for your placement.';
             if (notice.textContent.startsWith('Loading')) message('Your published examinations are loaded from Firebase. Results remain private until your company supervisor releases them.');
