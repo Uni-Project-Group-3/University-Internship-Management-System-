@@ -137,7 +137,9 @@ namespace UIMS.Attendance
         public static JObject Build(JObject existing,string uid,string studentId,string placementId,JObject placement,JObject profile)
         {
             if(studentId=="2023301")throw new FirebaseException(409,"Student 2023301 is frozen pending the coordinator decision. No attendance setup was changed.");
-            foreach(string key in new[]{uid,studentId,placementId,T(placement,"companyId"),T(placement,"companySupervisorId"),T(placement,"academicSupervisorId")})AttendanceFirebase.CheckKey(key);
+            foreach(string key in new[]{uid,studentId,placementId,T(placement,"companyId"),T(placement,"companySupervisorId")})AttendanceFirebase.CheckKey(key);
+            // The academic supervisor may be assigned after the student confirms the offer.
+            if(T(placement,"academicSupervisorId").Length>0)AttendanceFirebase.CheckKey(T(placement,"academicSupervisorId"));
             if(T(profile,"studentId")!=studentId || (bool?)profile["isActive"]!=true || FirebaseSignInService.CanonicalRole(T(profile,"role"))!="student" || T(placement,"studentId")!=studentId || T(placement,"studentUid")!=uid)
                 throw new FirebaseException(409,"The verified profile and placement identity must agree before attendance setup.");
             string companyId=T(placement,"companyId"),supervisorId=T(placement,"companySupervisorId");
