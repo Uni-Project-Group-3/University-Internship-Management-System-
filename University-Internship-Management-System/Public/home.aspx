@@ -140,5 +140,6 @@
     window.addEventListener('pageshow',function(event){if(event.persisted)location.reload();});
 })();
 </script>
-<script src="../Js_project/Public/public-workspace.js?v=20261024-profile-menu"></script></body>
+<script src="../Js_project/Public/public-workspace.js?v=20261024-profile-menu"></script><script src="../Js_project/site-translate.js?v=20261025" defer></script>
+</body>
 </html>

@@ -10,7 +10,7 @@
     <link href="../Assets/shared/colors.css" rel="stylesheet" />
     <link href="../Assets/company/verify-attendance.css?v=20261025-attendance-reset-v4" rel="stylesheet" />
 <link href="../Assets/shared/workspace-identity.css?v=20261025-progress-stat" rel="stylesheet" />
-<script src="../Js_project/workspace-navigation-unified.js?v=20261025-notifications" defer></script>
+<script src="../Js_project/workspace-navigation-unified.js?v=20261025-translate" defer></script>
 <link href="../Assets/company/company-hero.css?v=20261024-blue" rel="stylesheet" />
 </head>
 <body class="coordinator-banner">

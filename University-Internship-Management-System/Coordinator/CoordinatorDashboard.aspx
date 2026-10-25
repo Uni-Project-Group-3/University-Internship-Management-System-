@@ -11,7 +11,7 @@
     <link runat="server" href="~/Assets/shared/colors.css" rel="stylesheet" />
     <link runat="server" href="~/Assets/coordinator/coordinator-dashboard.css?v=20261024-modern-ui" rel="stylesheet" />
 <link href="../Assets/shared/workspace-identity.css?v=20261025-progress-stat" rel="stylesheet" />
-<script src="../Js_project/workspace-navigation-unified.js?v=20261025-notifications" defer></script>
+<script src="../Js_project/workspace-navigation-unified.js?v=20261025-translate" defer></script>
 </head>
 <body class="coordinator-banner" data-demo-role="admin">
     <form id="form1" runat="server">

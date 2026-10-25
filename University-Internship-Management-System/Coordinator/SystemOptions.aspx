@@ -11,7 +11,7 @@
         <link href="../Assets/coordinator/Manage_Academic_Supervisor.css?v=20261024-link-cleanup" rel="stylesheet" />
         <link href="../Assets/coordinator/system-options.css?v=20261024" rel="stylesheet" />
         <link href="../Assets/shared/workspace-identity.css?v=20261025-progress-stat" rel="stylesheet" />
-        <script src="../Js_project/workspace-navigation-unified.js?v=20261025-notifications" defer></script>
+        <script src="../Js_project/workspace-navigation-unified.js?v=20261025-translate" defer></script>
     </head>
     <body class="coordinator-banner management-page" data-page="system-options">
         <form id="form1" runat="server" novalidate="novalidate">

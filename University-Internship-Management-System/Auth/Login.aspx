@@ -162,5 +162,6 @@
 <script src="../Js_project/Auth/login-card.js?v=20261024-reference-pulse" defer="defer"></script>
 <script src="../Js_project/firebase-client.js?v=20261025-field-errors" defer="defer"></script>
 <script src="../Js_project/Auth/auth.js?v=20261024-merged-link-flow" defer="defer"></script>
+<script src="../Js_project/site-translate.js?v=20261025" defer></script>
 </body>
 </html>
