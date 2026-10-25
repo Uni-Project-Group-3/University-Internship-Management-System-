@@ -18,10 +18,10 @@
 <link rel="stylesheet" href="../Assets/shared/role-sidebar.css" />
 <link rel="stylesheet" href="../Assets/shared/just-theme.css" />
 
-<link href="../Assets/shared/workspace-identity.css?v=20261025-account-button" rel="stylesheet" />
+<link href="../Assets/shared/workspace-identity.css?v=20261025-system-banner" rel="stylesheet" />
 <script src="../Js_project/workspace-navigation-unified.js?v=20261025-task-flow" defer></script>
 </head>
-    <body class="uims-tasks-theme" data-demo-role="student">
+    <body class="coordinator-banner uims-tasks-theme" data-demo-role="student">
         <form id="form1" runat="server">
 <just:RoleSidebar ID="SharedRoleNavigation" runat="server" SidebarId="sidebar" />
             <div class="app">

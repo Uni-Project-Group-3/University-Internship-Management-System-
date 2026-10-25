@@ -18,7 +18,7 @@
 <link rel="stylesheet" href="../Assets/shared/role-sidebar.css" />
 <link rel="stylesheet" href="../Assets/shared/just-theme.css" />
 
-<link href="../Assets/shared/workspace-identity.css?v=20261025-account-button" rel="stylesheet" />
+<link href="../Assets/shared/workspace-identity.css?v=20261025-system-banner" rel="stylesheet" />
 <script src="../Js_project/workspace-navigation-unified.js?v=20261025-task-flow" defer></script>
 <link href="../Assets/company/company-hero.css?v=20261024-blue" rel="stylesheet" />
 </head>

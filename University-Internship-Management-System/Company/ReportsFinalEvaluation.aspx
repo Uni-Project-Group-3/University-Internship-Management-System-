@@ -23,7 +23,7 @@
             if (link.sheet) activate();
         });
     </script>
-<link href="../Assets/shared/workspace-identity.css?v=20261025-account-button" rel="stylesheet" />
+<link href="../Assets/shared/workspace-identity.css?v=20261025-system-banner" rel="stylesheet" />
 <script src="../Js_project/workspace-navigation-unified.js?v=20261024-refine" defer></script>
 
 </head>

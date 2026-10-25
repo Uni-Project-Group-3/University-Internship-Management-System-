@@ -11,7 +11,7 @@
     <link runat="server" href="~/Assets/shared/colors.css" rel="stylesheet" />
     
     <link runat="server" href="~/Assets/company/manage-opportunities.css?v=20261024-modal-spacing" rel="stylesheet" />
-<link href="../Assets/shared/workspace-identity.css?v=20261025-account-button" rel="stylesheet" />
+<link href="../Assets/shared/workspace-identity.css?v=20261025-system-banner" rel="stylesheet" />
 <script src="../Js_project/workspace-navigation-unified.js?v=20261024-refine" defer></script>
 </head>
 <body data-demo-role="company" class="coordinator-banner opportunities-workspace">
