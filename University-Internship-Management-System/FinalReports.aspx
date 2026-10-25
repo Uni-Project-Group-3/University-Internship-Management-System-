@@ -2,7 +2,7 @@
 <%@ Register Src="~/Shared/CompanySidebar.ascx" TagPrefix="uims" TagName="CompanySidebar" %>
 <!DOCTYPE html>
 <html lang="en"><head runat="server"><meta charset="utf-8"/><base href="<%= ResolveUrl("~/") %>" /><meta name="viewport" content="width=device-width, initial-scale=1"/><title>Final training reports | JUST Internships</title><link href="Assets/shared/colors.css" rel="stylesheet"/><link href="Assets/final-reports.css?v=20261024-one-page" rel="stylesheet"/>    <link href="Assets/shared/workflow-ui.css?v=20261025-final-cards" rel="stylesheet" />
-<asp:PlaceHolder ID="CompanyWorkspaceStyles" runat="server" Visible="false"><link href="Assets/shared/workspace-identity.css?v=20261025-system-banner" rel="stylesheet"/><link href="Assets/company/final-reports-shell.css?v=20261024-hero-layout" rel="stylesheet"/></asp:PlaceHolder>
+<asp:PlaceHolder ID="CompanyWorkspaceStyles" runat="server" Visible="false"><link href="Assets/shared/workspace-identity.css?v=20261025-progress-stat" rel="stylesheet"/><link href="Assets/company/final-reports-shell.css?v=20261024-hero-layout" rel="stylesheet"/></asp:PlaceHolder>
 </head>
 <body id="pageBody" runat="server" class="coordinator-banner"><form runat="server"><div class="app-layout final-reports-layout">
 <asp:PlaceHolder ID="CompanySidebarSlot" runat="server" Visible="false"><uims:CompanySidebar ID="companySidebar" runat="server" SidebarId="sidebar"/></asp:PlaceHolder>

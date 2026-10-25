@@ -18,7 +18,7 @@
 <link rel="stylesheet" href="../Assets/shared/role-sidebar.css" />
 <link rel="stylesheet" href="../Assets/shared/just-theme.css" />
 
-<link href="../Assets/shared/workspace-identity.css?v=20261025-system-banner" rel="stylesheet" />
+<link href="../Assets/shared/workspace-identity.css?v=20261025-progress-stat" rel="stylesheet" />
 <script src="../Js_project/workspace-navigation-unified.js?v=20261025-task-flow" defer></script>
 </head>
     <body class="coordinator-banner uims-tasks-theme" data-demo-role="student">
@@ -151,6 +151,6 @@
         <script src="../Js_project/workflow-dialogs.js?v=20261023"></script>
         <script src="../Js_project/Student/MyTasks.js?v=20261025-flow">
         </script>
-    <link href="../Assets/task-flow.css?v=20261025-task-details" rel="stylesheet" />
+    <link href="../Assets/task-flow.css?v=20261025-trello" rel="stylesheet" />
 </body>
 </html>

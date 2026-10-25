@@ -4,7 +4,7 @@
 <head runat="server">
     <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>My Exams | JUST Internships</title><link href="../Assets/student/TaskExams.css?v=20261025-exam-cards" rel="stylesheet" />
-<link href="../Assets/shared/workflow-ui.css?v=20261025-final-cards" rel="stylesheet" /><link href="../Assets/shared/workspace-identity.css?v=20261025-system-banner" rel="stylesheet" />
+<link href="../Assets/shared/workflow-ui.css?v=20261025-final-cards" rel="stylesheet" /><link href="../Assets/shared/workspace-identity.css?v=20261025-progress-stat" rel="stylesheet" />
 <script src="../Js_project/workspace-navigation-unified.js?v=20261025-task-flow" defer></script>
 </head>
 <body class="coordinator-banner">
@@ -18,6 +18,6 @@
     <script src="../Js_project/firebase-client.js?v=20261023-live-review"></script>
     <script src="../Js_project/task-dialogs.js?v=20261025-confirm-popup"></script>
     <script src="../Js_project/Student/TaskExams.js?v=20261025-exam-cards"></script>
-<link href="../Assets/task-flow.css?v=20261025-task-details" rel="stylesheet" />
+<link href="../Assets/task-flow.css?v=20261025-trello" rel="stylesheet" />
 </body>
 </html>

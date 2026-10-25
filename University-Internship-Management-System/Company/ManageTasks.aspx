@@ -18,7 +18,7 @@
 <link rel="stylesheet" href="../Assets/shared/role-sidebar.css" />
 <link rel="stylesheet" href="../Assets/shared/just-theme.css" />
 
-<link href="../Assets/shared/workspace-identity.css?v=20261025-system-banner" rel="stylesheet" />
+<link href="../Assets/shared/workspace-identity.css?v=20261025-progress-stat" rel="stylesheet" />
 <script src="../Js_project/workspace-navigation-unified.js?v=20261025-task-flow" defer></script>
 <link href="../Assets/company/company-hero.css?v=20261024-blue" rel="stylesheet" />
 </head>
@@ -208,6 +208,6 @@
         <script src="../Js_project/Company/ManageTasks.js?v=20261025-task-details">
         </script>
         <script src="../Js_project/Company/TaskComposer.js?v=20261025-flow"></script>
-    <link href="../Assets/task-flow.css?v=20261025-task-details" rel="stylesheet" />
+    <link href="../Assets/task-flow.css?v=20261025-trello" rel="stylesheet" />
 </body>
 </html>

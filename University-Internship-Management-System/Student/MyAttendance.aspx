@@ -9,7 +9,7 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet" />
     <link href="../Assets/shared/colors.css" rel="stylesheet" />
     <link href="../Assets/student/my-attendance.css?v=20261025-student-equal-panels-v3" rel="stylesheet" />
-<link href="../Assets/shared/workspace-identity.css?v=20261025-system-banner" rel="stylesheet" />
+<link href="../Assets/shared/workspace-identity.css?v=20261025-progress-stat" rel="stylesheet" />
 <script src="../Js_project/workspace-navigation-unified.js?v=20261024-refine" defer></script>
 </head>
 <body class="coordinator-banner">

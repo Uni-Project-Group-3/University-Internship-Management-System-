@@ -16,7 +16,7 @@
         href="~/Assets/student/profile.css?v=20261024-student-hero" rel="stylesheet" />
     <link runat="server" href="~/Assets/shared/account-form-design.css?v=20261024-hide-firebase-badge" rel="stylesheet" />
     <link runat="server" href="~/Assets/shared/role-sidebars.css?v=20261023" rel="stylesheet" />
-<link href="../Assets/shared/workspace-identity.css?v=20261025-system-banner" rel="stylesheet" />
+<link href="../Assets/shared/workspace-identity.css?v=20261025-progress-stat" rel="stylesheet" />
 <script src="../Js_project/workspace-navigation-unified.js?v=20261024-refine" defer></script>
 </head>
 
