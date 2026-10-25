@@ -335,7 +335,8 @@ namespace UIMS.Services
         {
             var a = await Authorize(uid, role, placementId); var r = O(await db.ReadAsync(Path(placementId)));
             string status = T(r, "status"); if (status.Length == 0) status = "draft";
-            if (a.Role == "coordinator" && !new[] { "pendingAdminReview", "academicRevisionRequested", "completed" }.Contains(status) && !O(r["adminReviews"]).HasValues) throw new FirebaseException(403, "Administration can only access academically approved reports and their correction history.");
+            // Administration follows every submitted report; the final decision itself still requires academic approval (State checks in ActAsync).
+            if (a.Role == "coordinator" && status == "draft") throw new FirebaseException(403, "Administration sees reports once the company submits them.");
             if (status == "completed")
             {
                 string operation = T(r["finalization"], "requestId");
@@ -376,7 +377,7 @@ namespace UIMS.Services
                 {
                     var view = await reader.ReadAsync(uid, role, p.Name);
                     var canonical = FirebaseSignInService.CanonicalRole(role); string state = T(view, "status");
-                    if (canonical == "coordinator" && !new[] { "pendingAdminReview", "academicRevisionRequested", "completed" }.Contains(state) && !O(view["record"]?["adminReviews"]).HasValues) return null;
+                    if (canonical == "coordinator" && state == "draft") return null;
                     if (canonical == "academicSupervisor" && state == "draft") return null;
                     return view;
                 }
@@ -385,6 +386,9 @@ namespace UIMS.Services
                     // never disclose another company's student/placement details.
                     if (e.StatusCode == 409 && canonicalRole == "companySupervisor" && currentCompany.Length > 0 && T(p.Value,"companyId") == currentCompany)
                         issues.Add("A company training record cannot be reviewed: " + e.Message);
+                    // Administration sees why a submitted report cannot be shown instead of an empty list.
+                    if (e.StatusCode == 409 && canonicalRole == "coordinator" && await cache.ReadAsync(Path(p.Name)) is JObject)
+                        issues.Add("Placement " + p.Name + " has a final report that cannot be shown: " + e.Message);
                     return null;
                 }
                 finally { limit.Release(); }
