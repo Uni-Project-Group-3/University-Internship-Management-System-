@@ -8,7 +8,7 @@
     <link runat="server" href="~/Assets/shared/colors.css" rel="stylesheet" />
 
     <link runat="server" href="~/Assets/company/my-trainees.css?v=20261024-progress" rel="stylesheet" />
-<link href="../Assets/shared/workspace-identity.css?v=20261025-company-banner" rel="stylesheet" />
+<link href="../Assets/shared/workspace-identity.css?v=20261025-account-button" rel="stylesheet" />
 <script src="../Js_project/workspace-navigation-unified.js?v=20261024-refine" defer></script>
 </head>
 <body class="coordinator-banner app-page trainees-page role-shell" data-demo-role="company">
@@ -38,7 +38,7 @@
                 <div class="trainees-content">
                     <nav class="trainees-breadcrumb" aria-label="Breadcrumb"><a href="CompanyDashboard.aspx">Company workspace</a><span aria-hidden="true">/</span><span aria-current="page">My Trainees</span></nav>
                     <header class="trainees-heading">
-                        <div><p class="trainees-eyebrow"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 7h1m4 0h1m-6 4h1m4 0h1M10 21v-6h4v6"/></svg>COMPANY SUPERVISOR · TRAINING TEAM</p><h1>My Trainees</h1><p>Follow your trainees, track their progress, and support them through every stage of their internship.</p></div>
+                        <div><p class="trainees-eyebrow"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 7h1m4 0h1m-6 4h1m4 0h1M10 21v-6h4v6"/></svg>COMPANY SUPERVISOR &middot; TRAINING TEAM</p><h1>My Trainees</h1><p>Follow your trainees, track their progress, and support them through every stage of their internship.</p></div>
                         <a class="trainees-hero-action" href="ManageTasks.aspx"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4V2h6v2m-6 6 2 2 4-4m-6 8h6"/></svg>Manage tasks</a>
                     </header>
                     <div class="trainees-notice" id="traineesAvailability" role="note"><span class="trainees-notice-icon" aria-hidden="true">i</span><div><strong>Loading your company trainees…</strong><p>Loading confirmed placements from Firebase.</p></div><span class="trainees-preview-tag">Firebase</span></div>

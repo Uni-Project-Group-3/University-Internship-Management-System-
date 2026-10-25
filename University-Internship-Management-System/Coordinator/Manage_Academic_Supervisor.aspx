@@ -11,7 +11,7 @@
 
         <link href="../Assets/shared/colors.css" rel="stylesheet" />
         <link href="../Assets/coordinator/Manage_Academic_Supervisor.css?v=20261024-link-cleanup" rel="stylesheet" />
-    <link href="../Assets/shared/workspace-identity.css?v=20261025-company-banner" rel="stylesheet" />
+    <link href="../Assets/shared/workspace-identity.css?v=20261025-account-button" rel="stylesheet" />
 <script src="../Js_project/workspace-navigation-unified.js?v=20261024-refine" defer></script>
 </head>
     <body class="coordinator-banner management-page" data-page="manage-academic-supervisors">

@@ -20,7 +20,7 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet" />
     <link href="../Assets/shared/colors.css" rel="stylesheet" />
     <link href="../Assets/student/my-applications.css?v=20261024-error-popup" rel="stylesheet" />
-<link href="../Assets/shared/workspace-identity.css?v=20261024-refine" rel="stylesheet" />
+<link href="../Assets/shared/workspace-identity.css?v=20261025-account-button" rel="stylesheet" />
 <script src="../Js_project/workspace-navigation-unified.js?v=20261024-refine" defer></script>
 </head>
 <body class="standalone-shell" data-demo-role="student">
@@ -99,7 +99,7 @@
                             <div class="company-heading"><span class="company-mark tone-0" aria-hidden="true">NT</span><div class="min-w-0"><h3>Web Development Intern</h3><p class="company-name">North Tech</p></div></div>
                             <span class="status-badge status-accepted"><i class="bi bi-patch-check"></i> Accepted</span>
                         </div>
-                        <div class="application-meta"><span><i class="bi bi-geo-alt"></i> Amman · On-site</span><span><i class="bi bi-mortarboard"></i> Software Engineering</span><span><i class="bi bi-hourglass-split"></i> 8 weeks</span><span><i class="bi bi-calendar3"></i> Applied <time datetime="2026-10-15">15 Oct 2026</time></span></div>
+                        <div class="application-meta"><span><i class="bi bi-geo-alt"></i> Amman &middot; On-site</span><span><i class="bi bi-mortarboard"></i> Software Engineering</span><span><i class="bi bi-hourglass-split"></i> 8 weeks</span><span><i class="bi bi-calendar3"></i> Applied <time datetime="2026-10-15">15 Oct 2026</time></span></div>
                         <ol class="tracker" aria-label="Application progress"><li class="done"><span class="dot"></span><span class="label">Applied</span></li><li class="done"><span class="dot"></span><span class="label">Reviewed</span></li><li class="done"><span class="dot"></span><span class="label">Accepted</span></li><li class="current"><span class="dot"></span><span class="label">Confirm</span></li></ol>
                         <p class="decision-note note-success"><i class="bi bi-info-circle"></i> Your application has been accepted. Review the offer before confirming.</p>
                         <div class="application-actions"><button type="button" class="details-button" data-bs-toggle="modal" data-bs-target="#applicationModal"><i class="bi bi-eye"></i> View details</button><button type="button" class="confirm-button" data-bs-toggle="modal" data-bs-target="#confirmModal"><i class="bi bi-check2-circle"></i> Confirm offer</button></div>
@@ -121,7 +121,7 @@
                             <div class="company-heading"><span class="company-mark tone-2" aria-hidden="true">DL</span><div class="min-w-0"><h3>Data Analysis Intern</h3><p class="company-name">Data Lab</p></div></div>
                             <span class="status-badge status-pending"><i class="bi bi-hourglass-split"></i> Pending</span>
                         </div>
-                        <div class="application-meta"><span><i class="bi bi-geo-alt"></i> Irbid · On-site</span><span><i class="bi bi-mortarboard"></i> Computer Science</span><span><i class="bi bi-hourglass-split"></i> 10 weeks</span><span><i class="bi bi-calendar3"></i> Applied <time datetime="2026-10-18">18 Oct 2026</time></span></div>
+                        <div class="application-meta"><span><i class="bi bi-geo-alt"></i> Irbid &middot; On-site</span><span><i class="bi bi-mortarboard"></i> Computer Science</span><span><i class="bi bi-hourglass-split"></i> 10 weeks</span><span><i class="bi bi-calendar3"></i> Applied <time datetime="2026-10-18">18 Oct 2026</time></span></div>
                         <ol class="tracker" aria-label="Application progress"><li class="done"><span class="dot"></span><span class="label">Applied</span></li><li class="current"><span class="dot"></span><span class="label">Under review</span></li><li><span class="dot"></span><span class="label">Decision</span></li><li><span class="dot"></span><span class="label">Confirm</span></li></ol>
                         <p class="decision-note note-warning"><i class="bi bi-clock-history"></i> Your application is waiting for the company supervisor's review.</p>
                         <div class="application-actions"><button type="button" class="details-button" data-bs-toggle="modal" data-bs-target="#applicationModal"><i class="bi bi-eye"></i> View details</button></div>
@@ -132,7 +132,7 @@
                             <div class="company-heading"><span class="company-mark tone-1" aria-hidden="true">CT</span><div class="min-w-0"><h3>Software Testing Intern</h3><p class="company-name">Clear Tech</p></div></div>
                             <span class="status-badge status-rejected"><i class="bi bi-x-circle"></i> Rejected</span>
                         </div>
-                        <div class="application-meta"><span><i class="bi bi-geo-alt"></i> Amman · On-site</span><span><i class="bi bi-mortarboard"></i> Software Engineering</span><span><i class="bi bi-hourglass-split"></i> 8 weeks</span><span><i class="bi bi-calendar3"></i> Applied <time datetime="2026-10-12">12 Oct 2026</time></span></div>
+                        <div class="application-meta"><span><i class="bi bi-geo-alt"></i> Amman &middot; On-site</span><span><i class="bi bi-mortarboard"></i> Software Engineering</span><span><i class="bi bi-hourglass-split"></i> 8 weeks</span><span><i class="bi bi-calendar3"></i> Applied <time datetime="2026-10-12">12 Oct 2026</time></span></div>
                         <ol class="tracker" aria-label="Application progress"><li class="done"><span class="dot"></span><span class="label">Applied</span></li><li class="done"><span class="dot"></span><span class="label">Reviewed</span></li><li class="danger"><span class="dot"></span><span class="label">Rejected</span></li></ol>
                         <p class="decision-note note-danger"><i class="bi bi-chat-left-text"></i> Reason: All available seats have been filled.</p>
                         <div class="application-actions"><button type="button" class="details-button" data-bs-toggle="modal" data-bs-target="#applicationModal"><i class="bi bi-eye"></i> View details</button></div>

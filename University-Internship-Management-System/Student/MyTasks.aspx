@@ -13,12 +13,12 @@
 
         <link href="../Assets/shared/colors.css" rel="stylesheet" />
         <link href="../Assets/student/MyTasks.css?v=20261022-task-board" rel="stylesheet" />
-        <link href="../Assets/shared/workflow-ui.css?v=20261023" rel="stylesheet" />
+        <link href="../Assets/shared/workflow-ui.css?v=20261025-final-cards" rel="stylesheet" />
 <script src="../Js_project/shared-role-navigation.js" defer></script>
 <link rel="stylesheet" href="../Assets/shared/role-sidebar.css" />
 <link rel="stylesheet" href="../Assets/shared/just-theme.css" />
 
-<link href="../Assets/shared/workspace-identity.css?v=20261024-refine" rel="stylesheet" />
+<link href="../Assets/shared/workspace-identity.css?v=20261025-account-button" rel="stylesheet" />
 <script src="../Js_project/workspace-navigation-unified.js?v=20261025-task-flow" defer></script>
 </head>
     <body class="uims-tasks-theme" data-demo-role="student">
@@ -123,7 +123,7 @@
                             <div class="mb-2">
                                 <label for="workFile" class="form-label custom-label">Attach file (optional)</label>
                                 <input type="file" id="workFile" class="form-control custom-input" accept=".pdf,.docx,.xlsx,.pptx,.txt,.png,.jpg,.jpeg" />
-                                <small class="text-muted mt-2 d-block template-style-15">Optional: PDF, DOCX, XLSX, PPTX, TXT, PNG or JPEG · maximum 10 MiB. Files are stored privately in Firebase Storage.</small>
+                                <small class="text-muted mt-2 d-block template-style-15">Optional: PDF, DOCX, XLSX, PPTX, TXT, PNG or JPEG &middot; maximum 10 MiB. Files are stored privately in Firebase Storage.</small>
                             </div>
                             </section>
                             <section id="studentPanelExam" data-student-panel="exam">

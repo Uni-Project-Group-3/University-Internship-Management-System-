@@ -9,7 +9,7 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet" />
     <link href="../Assets/shared/colors.css" rel="stylesheet" />
     <link href="../Assets/student/my-attendance.css?v=20261025-student-equal-panels-v3" rel="stylesheet" />
-<link href="../Assets/shared/workspace-identity.css?v=20261024-refine" rel="stylesheet" />
+<link href="../Assets/shared/workspace-identity.css?v=20261025-account-button" rel="stylesheet" />
 <script src="../Js_project/workspace-navigation-unified.js?v=20261024-refine" defer></script>
 </head>
 <body>
@@ -64,7 +64,7 @@
                 <div class="schedule-grid"><div><span>Training starts</span><strong id="scheduledStart">&#8212;</strong></div><div><span>Training ends</span><strong id="scheduledEnd">&#8212;</strong></div><div><span>Actual check-in</span><strong id="actualCheckIn">&#8212;</strong></div><div><span>Actual check-out</span><strong id="actualCheckOut">&#8212;</strong></div></div>
                 <div class="timeline"><i class="bi bi-info-circle" aria-hidden="true"></i><span id="scheduleHelp"></span></div>
                 <div class="attendance-actions student-qr-actions"><button id="checkInButton" type="button" disabled class="primary-action">Show check-in QR</button><button id="checkOutButton" type="button" disabled class="primary-action">Show check-out QR</button><span id="qrAvailability" class="qr-availability" role="status"></span></div>
-                <div id="resetTodayTools" class="attendance-reset-tools" hidden><button id="resetTodayButton" type="button" class="secondary-action" disabled>Reset today’s attendance</button><p class="section-note">Local testing only · previous attempts are preserved.</p></div>
+                <div id="resetTodayTools" class="attendance-reset-tools" hidden><button id="resetTodayButton" type="button" class="secondary-action" disabled>Reset today’s attendance</button><p class="section-note">Local testing only &middot; previous attempts are preserved.</p></div>
                 <button id="earlyButton" type="button" disabled class="text-action">Request early check-out</button><p id="earlyStatus" class="section-note" aria-live="polite"></p>
             </section>
 

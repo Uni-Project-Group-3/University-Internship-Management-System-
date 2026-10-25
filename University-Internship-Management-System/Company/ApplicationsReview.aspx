@@ -11,7 +11,7 @@
     <link runat="server" href="~/Assets/shared/colors.css" rel="stylesheet" />
     
     <link runat="server" href="~/Assets/company/applications-review.css?v=20261023-modern" rel="stylesheet" />
-<link href="../Assets/shared/workspace-identity.css?v=20261025-company-banner" rel="stylesheet" />
+<link href="../Assets/shared/workspace-identity.css?v=20261025-account-button" rel="stylesheet" />
 <script src="../Js_project/workspace-navigation-unified.js?v=20261024-refine" defer></script>
 </head>
 <body class="coordinator-banner" data-demo-role="company">
@@ -50,7 +50,7 @@
                     <!-- Page header -->
                     <section class="page-hero">
                         <div class="page-hero-text">
-                            <div class="hero-eyebrow"><i class="bi bi-building"></i> Company Supervisor · Orange Jordan</div>
+                            <div class="hero-eyebrow"><i class="bi bi-building"></i> Company Supervisor &middot; Orange Jordan</div>
                             <h1 class="page-title">Applications Review</h1>
                             <p class="page-subtitle">Review JUST students who applied to your opportunities. Accept them, or reject with a reason they can read.</p>
                         </div>

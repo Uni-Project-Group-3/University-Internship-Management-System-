@@ -222,3 +222,7 @@ body.coordinator-banner.coordinator-banner:not(#coordinator-style-scope) .tasks-
 body.coordinator-banner.coordinator-banner:not(#coordinator-style-scope) .tasks-premium-hero .tasks-hero-metrics>span{border-left-color:rgba(255,255,255,.4)!important;color:rgba(255,255,255,.8)!important}
 body.coordinator-banner.coordinator-banner:not(#coordinator-style-scope) .tasks-premium-hero .tasks-hero-metrics strong{color:#fff!important}
 body.coordinator-banner.coordinator-banner:not(#coordinator-style-scope) .hero-pending .hero-pending-value{background:none!important;box-shadow:none!important;width:auto!important;height:auto!important;padding:0!important}
+/* Account pages: the primary Save button keeps white text on navy in every state. */
+body:not(#coordinator-style-scope) .workspace-button:not(.secondary),body:not(#coordinator-style-scope) .workspace-button:not(.secondary):is(:hover,:focus,:active){background:#354c7a!important;border-color:#354c7a!important;color:#fff!important}
+body:not(#coordinator-style-scope) .workspace-button:not(.secondary):hover:not(:disabled){background:#2a3d63!important}
+body:not(#coordinator-style-scope) .workspace-button:not(.secondary):disabled{opacity:.55}

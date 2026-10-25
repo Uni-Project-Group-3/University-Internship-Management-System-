@@ -15,7 +15,7 @@
     <link runat="server" href="~/Assets/student/my-progress-evaluation.css?v=20261025-student-shell-v1" rel="stylesheet" />
     <link runat="server" href="~/Assets/shared/evaluation-workspace.css?v=20261023" rel="stylesheet" />
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet" media="print" data-evaluation-external="true" />
-    <link href="../Assets/shared/workflow-ui.css?v=20261023" rel="stylesheet" />
+    <link href="../Assets/shared/workflow-ui.css?v=20261025-final-cards" rel="stylesheet" />
     <script>
         document.querySelectorAll('link[data-evaluation-external]').forEach(function (link) {
             function activate() { link.media = 'all'; }
@@ -23,7 +23,7 @@
             if (link.sheet) activate();
         });
     </script>
-<link href="../Assets/shared/workspace-identity.css?v=20261024-refine" rel="stylesheet" />
+<link href="../Assets/shared/workspace-identity.css?v=20261025-account-button" rel="stylesheet" />
 <script src="../Js_project/workspace-navigation-unified.js?v=20261024-refine" defer></script>
 
 </head>

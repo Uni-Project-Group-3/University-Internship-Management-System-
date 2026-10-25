@@ -6,8 +6,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Task Exams | JUST Internships</title>
     <link href="../Assets/company/TaskExams.css" rel="stylesheet" />
-    <link href="../Assets/shared/workflow-ui.css?v=20261023" rel="stylesheet" />
-<link href="../Assets/shared/workspace-identity.css?v=20261025-company-banner" rel="stylesheet" />
+    <link href="../Assets/shared/workflow-ui.css?v=20261025-final-cards" rel="stylesheet" />
+<link href="../Assets/shared/workspace-identity.css?v=20261025-account-button" rel="stylesheet" />
 <script src="../Js_project/workspace-navigation-unified.js?v=20261025-task-flow" defer></script>
 </head>
 <body class="coordinator-banner">
