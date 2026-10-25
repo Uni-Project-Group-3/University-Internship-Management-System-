@@ -21,12 +21,12 @@
             if (link.sheet) activate();
         });
     </script>
-<link href="../Assets/shared/workspace-identity.css?v=20261024-refine" rel="stylesheet" />
+<link href="../Assets/shared/workspace-identity.css?v=20261025-academic-banner" rel="stylesheet" />
 <link runat="server" href="~/Assets/academic/final-academic-evaluation.css?v=20261024-academic-hero-card-3" rel="stylesheet" />
 <script src="../Js_project/workspace-navigation-unified.js?v=20261024-refine" defer></script>
 
 </head>
-<body class="dashboard-direct app-page evaluation-page academic-final-evaluation" data-demo-role="academic">
+<body class="coordinator-banner dashboard-direct app-page evaluation-page academic-final-evaluation" data-demo-role="academic">
     <form id="form1" runat="server" novalidate="novalidate">
                                 <div class="app-layout">
                         <uims:AcademicSidebar ID="academicSidebar" runat="server" SidebarId="dashboardSidebar" />
