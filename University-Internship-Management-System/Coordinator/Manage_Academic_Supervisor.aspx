@@ -186,7 +186,7 @@
         </form>
 <script src="../Scripts/bootstrap.bundle.min.js">
         </script>
-        <script src="../Js_project/Coordinator/Manage_Academic_Supervisor.js?v=20261024-directory-load">
+        <script src="../Js_project/Coordinator/Manage_Academic_Supervisor.js?v=20261025-empty-groups">
         </script>
     </body>
 </html>

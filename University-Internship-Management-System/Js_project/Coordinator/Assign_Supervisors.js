@@ -12,6 +12,7 @@
     const professor = () => data.professors.find(p => p.id === by('assignmentProfessor').value);
     const professorName = id => data.professors.find(p => p.id === id)?.name || id || 'Unassigned';
     const notice = text => { by('assignmentNotice').textContent = text; };
+    const sameName = (a, b) => String(a || '').replace(/\s+/g, ' ').trim().toLowerCase() === String(b || '').replace(/\s+/g, ' ').trim().toLowerCase();
     const memberIds = g => Object.keys(g?.students || {}).filter(id => g.students[id] === true);
     function options(control, rows, placeholder) {
         control.replaceChildren(new Option(placeholder, ''));
@@ -35,9 +36,10 @@
             const row = node('tr'), title = node('td');
             title.append(node('strong', g.name, 'group-name'), node('small', g.id, 'group-id'));
             row.append(title, node('td', majorName(g.department)), node('td', Object.values(g.students || {}).filter(v => v === true).length), node('td', professorName(g.supervisorId)));
-            const action = node('td'), button = node('button', 'View / add students', 'assignment-secondary');
+            const action = node('td'), tools = node('div', null, 'group-actions'), button = node('button', 'View / edit', 'assignment-secondary'), remove = node('button', 'Delete', 'assignment-danger');
             button.type = 'button'; button.onclick = () => open(g);
-            action.append(button); row.append(action); host.append(row);
+            remove.type = 'button'; remove.setAttribute('aria-label', 'Delete group ' + g.name); remove.onclick = () => deleteGroup(g);
+            tools.append(button, remove); action.append(tools); row.append(action); host.append(row);
         }
         if (!host.children.length) {
             const row = node('tr'), cell = node('td', 'No groups yet in this view. Add a group to assign students.');
@@ -59,6 +61,7 @@
         by('assignmentTitle').textContent = g ? (g.name || 'Group students') : 'Add student group';
         by('assignmentSave').textContent = g ? 'Add selected students' : 'Create group';
         by('assignmentIntro').textContent = g ? 'Review the students in this group and add more from the same major.' : 'Each supervisor is responsible for one major. Select students from that major to join the group.';
+        by('assignmentRenameRow').hidden = !g; by('assignmentDelete').hidden = !g; by('groupRename').value = g?.name || '';
         by('assignmentSetup').hidden = !!g; by('assignmentSummary').hidden = !g; by('assignmentCurrent').hidden = !g;
         by('assignmentStudentsTitle').textContent = g ? 'Add students' : '03 \u00a0 Students';
         by('assignmentStudentsHint').textContent = g ? 'Only students from this major who are not in another group or assigned to another supervisor are listed.' : 'Students already in another group or assigned to another supervisor cannot be selected.';
@@ -139,6 +142,34 @@
         } catch (e) { by('assignmentError').textContent = e.message; }
         finally { busy = false; by('assignmentFields').inert = false; }
     }
+    // Rename and delete write straight to the database, then the table reloads from it.
+    async function manage(payload, confirmText) {
+        if (busy || (confirmText && !window.confirm(confirmText))) return null;
+        busy = true; by('assignmentFields').inert = true; by('assignmentError').textContent = '';
+        try {
+            const result = await api(payload);
+            if (!result.saved) throw Error('The server did not confirm this change. Refresh and check the group.');
+            await load();
+            notice(result.message || 'Saved.');
+            return result;
+        } catch (e) {
+            if (dialog.open) by('assignmentError').textContent = e.message; else notice(e.message);
+            return null;
+        } finally { busy = false; by('assignmentFields').inert = false; }
+    }
+    async function deleteGroup(g) {
+        const count = memberIds(g).length;
+        const text = 'Delete the group "' + g.name + '" (' + g.id + ')?' + (count ? ' Its ' + count + ' student(s) will be unlinked from ' + professorName(g.supervisorId) + '.' : '') + ' This cannot be undone.';
+        if (await manage({ action: 'deleteGroup', groupId: g.id }, text) && dialog.open) dialog.close();
+    }
+    by('assignmentRename').onclick = async () => {
+        const name = by('groupRename').value.replace(/\s+/g, ' ').trim();
+        if (!name) { by('assignmentError').textContent = 'Enter a group name.'; return; }
+        if (sameName(name, group.name)) { by('assignmentError').textContent = 'The name is unchanged.'; return; }
+        const groupId = group.id;
+        if (await manage({ action: 'rename', groupId, name })) { const fresh = data.groups.find(g => g.id === groupId); if (fresh) open(fresh); }
+    };
+    by('assignmentDelete').onclick = () => deleteGroup(group);
     async function close() {
         if (busy) return;
         dialog.close();
@@ -150,7 +181,9 @@
         if (!p || p.conflict) { error.textContent = 'Choose an eligible academic supervisor first.'; by('assignmentProfessor').focus(); return; }
         if (!major) { error.textContent = 'Select the university major.'; by('assignmentDepartment').focus(); return; }
         if (!selected.size) { error.textContent = 'Select at least one available student.'; return; }
-        const payload = { groupId: group?.id || '', name: by('assignmentName').value.trim() || (majorName(major) + ' - ' + p.name).slice(0, 120), department: major, supervisorId: p.id, studentIds: [...selected].sort() };
+        const name = group ? group.name : by('assignmentName').value.replace(/\s+/g, ' ').trim() || (majorName(major) + ' - ' + p.name).slice(0, 120);
+        if (!group && data.groups.some(g => g.supervisorId === p.id && g.department === major && sameName(g.name, name))) { error.textContent = p.name + ' already has a group named "' + name + '" in this major. Open that group and add the students there.'; return; }
+        const payload = { groupId: group?.id || '', name, department: major, supervisorId: p.id, studentIds: [...selected].sort() };
         const signature = JSON.stringify(payload);
         if (!retry || retry.signature !== signature) retry = { signature, id: crypto.randomUUID() };
         payload.requestId = retry.id;
