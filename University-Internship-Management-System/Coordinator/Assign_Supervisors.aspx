@@ -136,7 +136,7 @@
         <p id="assignmentError" role="alert" class="assignment-error"></p>
         <div class="assignment-dialog-footer"><button type="button" id="assignmentDelete" class="assignment-danger" hidden="hidden">Delete group</button><button type="button" id="assignmentCancel" class="assignment-secondary">Cancel</button><button type="button" id="assignmentSave" class="assignment-primary">Create group</button></div>
     </dialog>
-    <script src="../Js_project/Coordinator/Assign_Supervisors.js?v=20261025-group-actions" defer="defer"></script>
+    <script src="../Js_project/Coordinator/Assign_Supervisors.js?v=20261025-records" defer="defer"></script>
     <script src="<%= ResolveUrl("~/Js_project/Public/workspace-navigation.js?v=20261024") %>" defer="defer"></script>
 </body>
 </html>

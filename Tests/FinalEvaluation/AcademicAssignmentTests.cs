@@ -23,7 +23,8 @@ internal static partial class Program
     {
         await Test("department assignment validates professors/students, bulk persistence, duplicate and lost-response handling",async()=>{
             var db=new AssignmentDb();await db.WriteAsync("users/admin",new {role="coordinator",isActive=true});
-            await db.WriteAsync("users/prof",new {role="academicSupervisor",isActive=true,academicSupervisorId="AC",departmentId="computerScience",fullName="Professor"});
+            await db.WriteAsync("users/prof",new {role="academicSupervisor",isActive=true,academicSupervisorId="AC",departmentId="computerScience",fullName="Professor",staffId="A1",email="prof@uni.test"});
+            await db.WriteAsync("universityRecords/academicSupervisors/A1",new {staffId="A1",email="prof@uni.test"});
             await db.WriteAsync("users/other",new {role="academicSupervisor",isActive=true,academicSupervisorId="OTHER",departmentId="softwareEngineering"});
             foreach(string id in new[]{"S1","S2"})await db.WriteAsync("users/"+id,new {role="student",isActive=true,studentId=id,majorId="computerScience",fullName="Student (Demo)"});
             await db.WriteAsync("users/S3",new {role="student",isActive=true,studentId="S3",majorId="softwareEngineering"});await db.WriteAsync("placements/P",new {studentId="S1",status="active",unrelated="preserved"});
@@ -53,7 +54,7 @@ internal static partial class Program
             Assert(AcademicAssignmentService.AssignedStudentIds("prof", (JObject)db.Root["users"], (JObject)db.Root["groups"], (JObject)db.Root["supervisorAssignments"], new JObject()).OrderBy(x => x).SequenceEqual(new[] { "S1", "S2" }));
         });
         await Test("group validation rejects cross-college, disabled accounts, conflicting legacy links and occupied groups without partial writes", async () => {
-            foreach (string scenario in new[] { "college", "disabled", "unfinished", "deleting", "legacy", "group", "empty", "reserved" }) {
+            foreach (string scenario in new[] { "college", "disabled", "unfinished", "deleting", "legacy", "group", "empty", "reserved", "unofficial" }) {
                 var db = await GroupFixture(); var service = new AcademicAssignmentService(db, uid => Task.FromResult(true));
                 if (scenario == "college") { await db.WriteAsync("users/prof/collegeId", "C1"); await db.WriteAsync("users/S2/collegeId", "C2"); }
                 if (scenario == "disabled") await db.WriteAsync("users/S2/isActive", false);
@@ -64,6 +65,7 @@ internal static partial class Program
                 var input = GroupInput(scenario, "S1", "S2");
                 if (scenario == "empty") input["studentIds"] = new JArray();
                 if (scenario == "reserved") input["requestId"] = "current";
+                if (scenario == "unofficial") await db.DeleteAsync("universityRecords/academicSupervisors/A1");
                 await Reject<FirebaseException>(() => service.SaveAsync("admin", input));
                 Assert(db.Root["supervisorAssignments"] == null && db.Root["users"]["S1"]["academicSupervisorId"] == null);
                 Assert(db.Root["academicAssignmentOperations"]?["current"] == null);
@@ -108,7 +110,8 @@ internal static partial class Program
     private static async Task<AssignmentDb> GroupFixture() {
         var db = new AssignmentDb();
         await db.WriteAsync("users/admin", new { role = "coordinator", isActive = true });
-        await db.WriteAsync("users/prof", new { role = "academicSupervisor", academicSupervisorId = "AC", fullName = "Professor", isActive = true });
+        await db.WriteAsync("users/prof", new { role = "academicSupervisor", academicSupervisorId = "AC", fullName = "Professor", isActive = true, staffId = "A1", email = "prof@uni.test" });
+        await db.WriteAsync("universityRecords/academicSupervisors/A1", new { staffId = "A1", email = "prof@uni.test" });
         await db.WriteAsync("users/other", new { role = "academicSupervisor", academicSupervisorId = "OTHER", isActive = true });
         foreach (string id in new[] { "S1", "S2", "S3" }) await db.WriteAsync("users/" + id, new { role = "student", studentId = id, fullName = "Student " + id, majorId = id == "S3" ? "softwareEngineering" : "computerScience", isActive = true });
         return db;

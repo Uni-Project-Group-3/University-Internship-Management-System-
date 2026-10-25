@@ -80,8 +80,9 @@ namespace UIMS.Services
         public async Task<JObject> LoadAsync(string uid)
         {
             await Authorize(uid);
-            var usersTask = db.ReadAsync("users"); var groupsTask = db.ReadAsync("groups"); var assignmentsTask = db.ReadAsync("supervisorAssignments"); var legacyTask = db.ReadAsync("assignments"); var placementsTask = db.ReadAsync("placements");
-            await Task.WhenAll(usersTask, groupsTask, assignmentsTask, legacyTask, placementsTask);
+            var usersTask = db.ReadAsync("users"); var groupsTask = db.ReadAsync("groups"); var assignmentsTask = db.ReadAsync("supervisorAssignments"); var legacyTask = db.ReadAsync("assignments"); var placementsTask = db.ReadAsync("placements"); var recordsTask = db.ReadAsync("universityRecords/academicSupervisors");
+            await Task.WhenAll(usersTask, groupsTask, assignmentsTask, legacyTask, placementsTask, recordsTask);
+            var records = O(recordsTask.Result);
             var users = O(usersTask.Result); var groups = O(groupsTask.Result); var assignments = O(assignmentsTask.Result); var legacy = O(legacyTask.Result); var placements = O(placementsTask.Result);
             var professors = new JArray(); var students = new JArray(); var departments = new JObject();
             foreach (var p in users.Properties().Where(p => ReadyProfile(p.Value)))
@@ -92,7 +93,7 @@ namespace UIMS.Services
                 if (role == "academicSupervisor")
                 {
                     var majors = ResponsibleDepartments(users, groups, assignments, legacy, p);
-                    professors.Add(new JObject { ["id"] = SupervisorId(p), ["uid"] = p.Name, ["name"] = Name(p.Value), ["department"] = majors.Length == 1 ? majors[0] : "", ["conflict"] = majors.Length > 1, ["universityId"] = T(p.Value, "universityId"), ["collegeId"] = T(p.Value, "collegeId") });
+                    professors.Add(new JObject { ["id"] = SupervisorId(p), ["uid"] = p.Name, ["name"] = Name(p.Value), ["department"] = majors.Length == 1 ? majors[0] : "", ["conflict"] = majors.Length > 1, ["official"] = AcademicSupervisorService.Official(p.Value, records), ["universityId"] = T(p.Value, "universityId"), ["collegeId"] = T(p.Value, "collegeId") });
                 }
                 else if (department.Length > 0 && T(p.Value, "studentId").Length > 0)
                 {
@@ -171,6 +172,7 @@ namespace UIMS.Services
                 var professorRows = users.Properties().Where(p => FirebaseSignInService.CanonicalRole(T(p.Value, "role")) == "academicSupervisor" && SupervisorId(p) == supervisorId && ReadyProfile(p.Value)).ToArray();
                 if (professorRows.Length != 1) throw new FirebaseException(400, "Choose an active academic supervisor.");
                 var professor = professorRows[0];
+                if (!AcademicSupervisorService.Official(professor.Value, O(await db.ReadAsync("universityRecords/academicSupervisors")))) throw new FirebaseException(400, "This supervisor account is not in university records, so it cannot receive students. Delete it from Manage Academic Supervisors and create it from the official staff ID.");
                 if (ResponsibleDepartments(users, groups, assignments, legacy, professor).Any(d => d != department)) throw new FirebaseException(400, "This supervisor is already responsible for another major. One supervisor can supervise only one major.");
                 var members = O(group?["students"]).Properties().Where(p => (bool?)p.Value == true).Select(p => p.Name).Union(selected.Select(x => (string)x)).ToArray();
                 if (members.Length == 0) throw new FirebaseException(400, "Select at least one student.");

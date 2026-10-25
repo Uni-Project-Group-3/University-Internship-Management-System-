@@ -152,9 +152,17 @@ namespace University_Internship_Management_System.Shared
             if(students==0&&members==0) return null;
             return "This supervisor still has "+Math.Max(students,members)+" assigned student(s). Remove them from the supervisor's groups on Assign Academic Supervisors first.";
         }
+        // Official only when the account was created from a matching university staff record.
+        public static bool Official(JToken profile,JObject records)
+        {
+            string staff=T(profile,"staffId");
+            var record=staff.Length>0?records?[staff] as JObject:null;
+            return record!=null&&string.Equals(T(record,"email").Trim(),T(profile,"email").Trim(),StringComparison.OrdinalIgnoreCase);
+        }
         public async Task<JObject> DirectoryAsync()
         {
             var users=await db.ReadAsync("users") as JObject??new JObject();
+            var records=await db.ReadAsync("universityRecords/academicSupervisors") as JObject??new JObject();
             var groups=await db.ReadAsync("groups") as JObject??new JObject();
             var supervisors=new JArray();
             foreach(var p in users.Properties().Where(p=>Academic(p.Value)))
@@ -163,7 +171,7 @@ namespace University_Internship_Management_System.Shared
                 supervisors.Add(new JObject{["uid"]=p.Name,["staffId"]=T(p.Value,"staffId"),["fullName"]=T(p.Value,"fullName"),["email"]=T(p.Value,"email"),
                     ["universityId"]=T(p.Value,"universityId"),["collegeId"]=T(p.Value,"collegeId"),["departmentId"]=dept,["department"]=StudentManagementService.DisplayName(dept),
                     ["isActive"]=p.Value.Value<bool?>("isActive")==true,["mustChangePassword"]=p.Value.Value<bool?>("mustChangePassword")==true,
-                    ["accountSetupStatus"]=T(p.Value,"accountSetupStatus"),["deletionStatus"]=T(p.Value,"deletionStatus"),
+                    ["accountSetupStatus"]=T(p.Value,"accountSetupStatus"),["deletionStatus"]=T(p.Value,"deletionStatus"),["official"]=Official(p.Value,records),
                     ["groupCount"]=groups.Properties().Count(g=>ActiveGroup(g.Value,p.Name,T(p.Value,"academicSupervisorId"))),
                     ["studentCount"]=users.Properties().Count(s=>Student(s.Value,p.Name,T(p.Value,"academicSupervisorId")))});
             }
