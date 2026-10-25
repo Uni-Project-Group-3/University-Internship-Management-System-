@@ -225,7 +225,7 @@ namespace UIMS.Services
             if (!string.IsNullOrWhiteSpace(profileAcademicId) && !string.IsNullOrWhiteSpace(assignedAcademicId) && !string.Equals(profileAcademicId, assignedAcademicId, StringComparison.Ordinal))
                 throw new FirebaseException(409, "The student profile and supervisor assignment disagree. Ask the coordinator to reconcile the assignment.");
             string academicId = assignedAcademicId ?? profileAcademicId;
-            if (string.IsNullOrWhiteSpace(academicId)) throw new FirebaseException(409, "Assign an academic supervisor to this student before confirming the placement.");
+            academicId = academicId ?? ""; // assigned later by the coordinator if still missing
             string placementId = alreadyConfirmed ? (string)app.Value["placementId"] ?? "PLC-"+id : "PLC-" + id;
             var existingForStudent = await database.ReadEqualAsync("placements", "studentId", actor.StudentId).ConfigureAwait(false) as JObject;
             Merge(existingForStudent = existingForStudent ?? new JObject(), await database.ReadEqualAsync("placements", "studentId", uid).ConfigureAwait(false) as JObject);

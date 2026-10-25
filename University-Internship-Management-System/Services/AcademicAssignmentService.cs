@@ -164,7 +164,7 @@ namespace UIMS.Services
             bool patchAttempted = false;
             try
             {
-                var users = O(await db.ReadAsync("users")); var groups = O(await db.ReadAsync("groups")); var assignments = O(await db.ReadAsync("supervisorAssignments")); var legacy = O(await db.ReadAsync("assignments")); var placements = O(await db.ReadAsync("placements"));
+                var users = O(await db.ReadAsync("users")); var groups = O(await db.ReadAsync("groups")); var assignments = O(await db.ReadAsync("supervisorAssignments")); var legacy = O(await db.ReadAsync("assignments")); var placements = O(await db.ReadAsync("placements")); var training = O(await db.ReadAsync("uimsAttendance/trainingAssignments"));
                 var group = groups[groupId] as JObject; string department = T(canonical, "department"), supervisorId = T(canonical, "supervisorId");
                 if (group != null && !Active(group)) throw new FirebaseException(409, "This group is inactive. Refresh the groups list.");
                 if (group != null && Normalize(T(group, "department")) != department) throw new FirebaseException(400, "The group's department cannot be changed during assignment.");
@@ -197,6 +197,9 @@ namespace UIMS.Services
                     update["supervisorAssignments/" + Key(linkId)] = link;
                     update["users/" + student.Name + "/academicSupervisorId"] = supervisorId;
                     foreach (var p in ownedPlacements) if (T(p.Value, "status") != "completed") update["placements/" + p.Name + "/academicSupervisorId"] = supervisorId;
+                    // A student who confirmed an offer before having a supervisor gets it on their attendance record too.
+                    foreach (var t in training.Properties().Where(t => T(t.Value, "studentId") == studentId && T(t.Value, "status") == "active" && T(t.Value, "academicSupervisorId") != supervisorId))
+                        update["uimsAttendance/trainingAssignments/" + Key(t.Name) + "/academicSupervisorId"] = supervisorId;
                     update["groups/" + groupId + "/students/" + studentId] = true;
                 }
                 if (added == 0) throw new FirebaseException(409, "These students are already assigned to this group. No duplicate assignments were created.");
