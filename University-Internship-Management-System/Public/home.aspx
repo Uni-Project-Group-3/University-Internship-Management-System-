@@ -76,7 +76,7 @@
 
 <section class="panel" id="p2" aria-label="Opportunities">
  <div class="wrap">
-  <div class="plaque"><h2>Internship Opportunities</h2><span>Sample opportunities · <b id="flyer-count">01 / 03</b></span></div>
+  <div class="plaque"><h2>Internship Opportunities</h2><span>Sample opportunities &middot; <b id="flyer-count">01 / 03</b></span></div>
   <div class="flyers interactive" id="flyers" role="list"></div>
  </div>
 </section>

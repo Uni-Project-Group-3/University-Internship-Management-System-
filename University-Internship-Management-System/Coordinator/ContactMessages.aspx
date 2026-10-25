@@ -8,7 +8,7 @@
     <link runat="server" href="~/Assets/shared/colors.css" rel="stylesheet" />
     
     <link runat="server" href="~/Assets/coordinator/contact-messages.css?v=3" rel="stylesheet" />
-<link href="../Assets/shared/workspace-identity.css?v=20261025-academic-banner" rel="stylesheet" />
+<link href="../Assets/shared/workspace-identity.css?v=20261025-progress-stat" rel="stylesheet" />
 <script src="../Js_project/workspace-navigation-unified.js?v=20261024-refine" defer></script>
 </head>
 <body class="coordinator-banner app-page contact-messages-page role-shell" data-demo-role="admin">

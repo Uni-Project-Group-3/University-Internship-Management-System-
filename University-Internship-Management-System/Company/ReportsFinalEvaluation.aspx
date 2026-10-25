@@ -15,7 +15,7 @@
     <link runat="server" href="~/Assets/company/reports-final-evaluation.css?v=20261024-remove-system-status" rel="stylesheet" />
     <link runat="server" href="~/Assets/shared/evaluation-workspace.css?v=20261023" rel="stylesheet" />
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet" media="print" data-evaluation-external="true" />
-    <link href="../Assets/shared/workflow-ui.css?v=20261023" rel="stylesheet" />
+    <link href="../Assets/shared/workflow-ui.css?v=20261025-final-cards" rel="stylesheet" />
     <script>
         document.querySelectorAll('link[data-evaluation-external]').forEach(function (link) {
             function activate() { link.media = 'all'; }
@@ -23,16 +23,16 @@
             if (link.sheet) activate();
         });
     </script>
-<link href="../Assets/shared/workspace-identity.css?v=20261024-refine" rel="stylesheet" />
+<link href="../Assets/shared/workspace-identity.css?v=20261025-progress-stat" rel="stylesheet" />
 <script src="../Js_project/workspace-navigation-unified.js?v=20261024-refine" defer></script>
 
 </head>
-<body class="app-page uims-workspace company-evaluation" data-demo-role="company">
+<body class="coordinator-banner app-page uims-workspace company-evaluation" data-demo-role="company">
     <form id="form1" runat="server" novalidate="novalidate">
         <asp:ScriptManager ID="PageScripts" runat="server" EnablePartialRendering="true" />
         <div class="app-layout">
             <uims:CompanySidebar ID="companySidebar" runat="server" SidebarId="sidebar" /><div class="sidebar-backdrop" aria-hidden="true"></div>
-            <div class="main workspace-region"><header class="topbar"><button type="button" class="menu-btn d-lg-none" aria-label="Open navigation" aria-controls="sidebar" aria-expanded="false"><i class="bi bi-list" aria-hidden="true"></i></button><span class="topbar-label">University Internship Management System</span><div class="topbar-actions ms-auto"><span class="avatar" aria-hidden="true">U</span><span class="user-chip"><span class="name"><asp:Literal ID="NavName" runat="server" Mode="Encode"/><span class="role">Company Supervisor · Firebase read-only</span></span></span></div></header>
+            <div class="main workspace-region"><header class="topbar"><button type="button" class="menu-btn d-lg-none" aria-label="Open navigation" aria-controls="sidebar" aria-expanded="false"><i class="bi bi-list" aria-hidden="true"></i></button><span class="topbar-label">University Internship Management System</span><div class="topbar-actions ms-auto"><span class="avatar" aria-hidden="true">U</span><span class="user-chip"><span class="name"><asp:Literal ID="NavName" runat="server" Mode="Encode"/><span class="role">Company Supervisor &middot; Firebase read-only</span></span></span></div></header>
                 
 <main class="app-content workspace-content evaluation-main" id="companyWorkspace">
 <section class="uims-page-hero" aria-labelledby="companyEvaluationTitle">
