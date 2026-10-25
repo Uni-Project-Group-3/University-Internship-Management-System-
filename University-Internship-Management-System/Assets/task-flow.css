@@ -73,3 +73,18 @@
 .task-support-details > summary { font-size:13px; font-weight:600; cursor:pointer; }
 .task-support-details[open] > summary { margin-bottom:14px; }
 #taskExamNotice { padding:12px 14px; border-radius:9px; font-size:12px; line-height:1.7; }
+
+/* Yes/no confirmations: a compact popup above the task or exam screen. */
+dialog.task-confirm-dialog { width:min(460px,calc(100vw - 32px)); max-width:none; padding:28px; border:1px solid var(--border,#dfe3eb); border-radius:18px; background:var(--surface,#fff); color:var(--text,#242844); box-shadow:0 24px 70px #15234440; font-family:var(--font-body,Arial,sans-serif); text-align:center; }
+dialog.task-confirm-dialog::backdrop { background:#17213c80; }
+dialog.task-confirm-dialog .workspace-confirm-icon { display:grid; place-items:center; width:48px; height:48px; margin:0 auto 14px; border-radius:50%; background:var(--primary-soft,#eaf2fa); color:var(--primary,#1f3d78); font-size:22px; font-weight:800; }
+dialog.task-confirm-dialog h2 { margin:0 0 10px; font:700 20px/1.35 var(--font-heading,Arial,sans-serif); color:var(--text,#242844); }
+dialog.task-confirm-dialog .workspace-dialog-body { color:var(--text-secondary,#66718a); font-size:14px; line-height:1.7; padding:0; margin:0; }
+dialog.task-confirm-dialog .workspace-dialog-body p { margin:0; }
+dialog.task-confirm-dialog .workspace-dialog-actions { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin:22px 0 0; padding:0; border:0; }
+dialog.task-confirm-dialog .workspace-dialog-actions button { min-height:44px; border-radius:10px; font-size:13px; font-weight:700; cursor:pointer; }
+dialog.task-confirm-dialog .workspace-dialog-actions button[hidden] { display:none; }
+dialog.task-confirm-dialog .workspace-dialog-actions:has(button[hidden]) { grid-template-columns:1fr; }
+dialog.task-confirm-dialog .secondary { background:var(--surface,#fff); border:1px solid var(--border,#dfe3eb); color:var(--primary,#1f3d78); }
+dialog.task-confirm-dialog .primary { background:var(--primary,#1f3d78); border:1px solid var(--primary,#1f3d78); color:#fff; }
+dialog.task-confirm-dialog .primary.workspace-danger { background:#a12f2f; border-color:#a12f2f; }
