@@ -13,6 +13,24 @@
     const professorName = id => data.professors.find(p => p.id === id)?.name || id || 'Unassigned';
     const notice = text => { by('assignmentNotice').textContent = text; };
     const sameName = (a, b) => String(a || '').replace(/\s+/g, ' ').trim().toLowerCase() === String(b || '').replace(/\s+/g, ' ').trim().toLowerCase();
+    // In-page confirmation popup in place of the browser's confirm box. Resolves true on confirm.
+    function ask(message, okLabel) {
+        return new Promise(resolve => {
+            const box = document.createElement('dialog'), text = node('p', message), row = node('div'), cancel = node('button', 'Cancel'), ok = node('button', okLabel || 'Confirm');
+            box.setAttribute('aria-label', 'Confirm action');
+            box.style.cssText = 'border:1px solid #dbe3f0;border-radius:20px;padding:26px;width:min(440px,calc(100vw - 32px));color:#193761;background:#fff;box-shadow:0 24px 80px #182d5633;font-family:inherit';
+            text.style.cssText = 'margin:0 0 22px;font-size:15px;line-height:1.6;overflow-wrap:anywhere';
+            row.style.cssText = 'display:flex;justify-content:flex-end;gap:10px;flex-wrap:wrap';
+            const button = 'border-radius:12px;padding:11px 18px;font:inherit;font-size:14px;font-weight:600;cursor:pointer;';
+            cancel.type = ok.type = 'button';
+            cancel.style.cssText = button + 'border:1px solid #dae2ef;background:#fff;color:#203e7d';
+            ok.style.cssText = button + 'border:1px solid #b42338;background:#b42338;color:#fff';
+            const finish = value => { box.close(); box.remove(); resolve(value); };
+            cancel.onclick = () => finish(false); ok.onclick = () => finish(true);
+            box.oncancel = e => { e.preventDefault(); finish(false); };
+            row.append(cancel, ok); box.append(text, row); document.body.append(box); box.showModal(); cancel.focus();
+        });
+    }
     const memberIds = g => Object.keys(g?.students || {}).filter(id => g.students[id] === true);
     function options(control, rows, placeholder) {
         control.replaceChildren(new Option(placeholder, ''));
@@ -129,7 +147,7 @@
         by('assignmentSave').disabled = busy || (!!group && !selected.size);
     }
     async function removeStudent(id, name) {
-        if (busy || !group || !window.confirm('Remove ' + name + ' from ' + (group.name || 'this group') + '? The student will no longer have this academic supervisor.')) return;
+        if (busy || !group || !await ask('Remove ' + name + ' from ' + (group.name || 'this group') + '? The student will no longer have this academic supervisor.', 'Remove')) return;
         busy = true; by('assignmentFields').inert = true; by('assignmentError').textContent = '';
         try {
             const result = await api({ action: 'remove', groupId: group.id, studentId: id });
@@ -145,7 +163,7 @@
     }
     // Rename and delete write straight to the database, then the table reloads from it.
     async function manage(payload, confirmText) {
-        if (busy || (confirmText && !window.confirm(confirmText))) return null;
+        if (busy || (confirmText && !await ask(confirmText, payload.action === 'deleteGroup' ? 'Delete group' : 'Confirm'))) return null;
         busy = true; by('assignmentFields').inert = true; by('assignmentError').textContent = '';
         try {
             const result = await api(payload);
