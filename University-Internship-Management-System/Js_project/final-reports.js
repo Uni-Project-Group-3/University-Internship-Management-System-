@@ -23,7 +23,7 @@
     }
     async function load() {
         if (loading) return; loading = true;
-        try { const data = await api('list'); items = placementScope ? data.items.filter(item => item.placementId === placementScope) : data.items; role = data.role; render(); by('finalNotice').className = ''; by('finalNotice').textContent = placementScope && !items.length ? 'This placement is unavailable or not authorized for your current account.' : ''; if (role === 'student') await loadStudentProgress(); if (activeRefresh) await activeRefresh(); }
+        try { const data = await api('list'); items = placementScope ? data.items.filter(item => item.placementId === placementScope) : data.items; role = data.role; render(); by('finalNotice').className = ''; by('finalNotice').textContent = placementScope && !items.length ? 'This placement is unavailable or not authorized for your current account.' : (data.issues || []).join(' '); if ((data.issues || []).length) by('finalNotice').className = 'error'; if (role === 'student') await loadStudentProgress(); if (activeRefresh) await activeRefresh(); }
         catch (error) { try { const connection = await api('connection'); by('finalNotice').textContent = connection.connected ? 'Firebase is connected. ' + error.message : error.message; } catch (_) { by('finalNotice').textContent = error.message; } by('finalNotice').className = 'error'; }
         finally { loading = false; }
     }
