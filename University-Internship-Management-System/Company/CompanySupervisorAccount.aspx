@@ -12,10 +12,10 @@
     <link runat="server" href="~/Assets/shared/account-form-design.css?v=20261024-hide-firebase-badge" rel="stylesheet" />
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet" />
     <link runat="server" href="~/Assets/shared/role-sidebars.css?v=20261023" rel="stylesheet" />
-<link href="../Assets/shared/workspace-identity.css?v=20261024-refine" rel="stylesheet" />
+<link href="../Assets/shared/workspace-identity.css?v=20261025-company-banner" rel="stylesheet" />
 <script src="../Js_project/workspace-navigation-unified.js?v=20261024-refine" defer></script>
 </head>
-<body class="app-page uims-workspace company-account" data-demo-role="company">
+<body class="coordinator-banner app-page uims-workspace company-account" data-demo-role="company">
     <form id="form1" runat="server" novalidate="novalidate">
         <div class="app-layout">
             <shared:CompanySidebar ID="RoleNavigation" runat="server" SidebarId="sidebar" />

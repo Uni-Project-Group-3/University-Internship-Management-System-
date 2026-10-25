@@ -18,11 +18,11 @@
 <link rel="stylesheet" href="../Assets/shared/role-sidebar.css" />
 <link rel="stylesheet" href="../Assets/shared/just-theme.css" />
 
-<link href="../Assets/shared/workspace-identity.css?v=20261024-refine" rel="stylesheet" />
+<link href="../Assets/shared/workspace-identity.css?v=20261025-company-banner" rel="stylesheet" />
 <script src="../Js_project/workspace-navigation-unified.js?v=20261025-task-flow" defer></script>
 <link href="../Assets/company/company-hero.css?v=20261024-blue" rel="stylesheet" />
 </head>
-    <body class="uims-tasks-theme" data-demo-role="company">
+    <body class="coordinator-banner uims-tasks-theme" data-demo-role="company">
         <form id="form1" runat="server">
 <just:RoleSidebar ID="SharedRoleNavigation" runat="server" SidebarId="sidebar" />
             <div class="app">

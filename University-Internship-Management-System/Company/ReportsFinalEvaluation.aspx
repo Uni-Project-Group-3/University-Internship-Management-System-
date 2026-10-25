@@ -23,11 +23,11 @@
             if (link.sheet) activate();
         });
     </script>
-<link href="../Assets/shared/workspace-identity.css?v=20261024-refine" rel="stylesheet" />
+<link href="../Assets/shared/workspace-identity.css?v=20261025-company-banner" rel="stylesheet" />
 <script src="../Js_project/workspace-navigation-unified.js?v=20261024-refine" defer></script>
 
 </head>
-<body class="app-page uims-workspace company-evaluation" data-demo-role="company">
+<body class="coordinator-banner app-page uims-workspace company-evaluation" data-demo-role="company">
     <form id="form1" runat="server" novalidate="novalidate">
         <asp:ScriptManager ID="PageScripts" runat="server" EnablePartialRendering="true" />
         <div class="app-layout">
