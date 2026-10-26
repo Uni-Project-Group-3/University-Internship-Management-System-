@@ -21,9 +21,10 @@
     const resultLabel = item => item.resultStatus === 'released' ? 'Score ' + item.score + ' / ' + item.maximumScore + (item.feedback ? ' · ' + item.feedback : '') + ' · Released ' + date(item.releasedAt) : item.resultStatus === 'revisionRequested' ? 'Not complete. Your supervisor requested a new examination attempt. Check the new deadline before starting.' : item.resultStatus === 'approvedHidden' ? 'Your result is currently hidden by your company supervisor.' : 'Exam submitted successfully. Your result is awaiting supervisor approval.';
     function element(tag, text, className) { const el = document.createElement(tag); if (tag === 'button') el.type = 'button'; if (text) el.textContent = text; if (className) el.className = className; return el; }
     function dialog(title, large) {
-        const surface = TaskDialogs.createSurface(title, { fullPage: !!large });
+        // The attempt stays a popup over the current page instead of switching to a full-page view.
+        const surface = TaskDialogs.createSurface(title, { fullPage: false });
         surface.classList.add('student-exam-popup');
-        surface.querySelector('.task-flow-back').textContent = large ? '← My exams' : '← Back';
+        surface.querySelector('.task-flow-back').textContent = large ? 'Save and close' : '← Back';
         if (large) surface.classList.add('workspace-exam-attempt');
         return surface;
     }
@@ -65,7 +66,6 @@
             start.onclick = async () => {
                 if (checking) return; checking = true; start.disabled = true;
                 try { if (latest?.status !== 'inProgress' && !await TaskDialogs.confirm('Start examination?', 'Starting consumes an allowed attempt. The server timer continues even if you close the popup.', 'Start exam')) return; attempt = await call('start', { examId: id }); exam = await call('exam&examId=' + encodeURIComponent(id)); answers = attempt.answers || {}; finish();
-                    if (embedded) { location.assign('MyExams.aspx?examId=' + encodeURIComponent(id) + '&resume=1'); return; }
                     renderAttempt(); }
                 catch (e) { status.textContent = e.message; } finally { checking = false; }
             };
@@ -114,11 +114,13 @@
         const step = delta => { selectQuestion(Math.max(0, Math.min(order.length - 1, currentQuestion + delta))); previous.disabled = currentQuestion === 0; next.disabled = currentQuestion === order.length - 1; };
         previous.onclick = () => step(-1); next.onclick = () => step(1);
         actions.append(previous, next, close, submit); popup.append(clock, progress, completion, nav, status, content, actions); update(); selectQuestion(0); popup.showModal(); popup.addEventListener('cancel', e => { e.preventDefault(); close.click(); });
+        // Back on the exam list, show the current state (for example "Continue exam").
+        popup.addEventListener('close', () => { clearInterval(timer); load(); }, { once: true });
         if (attempt.status !== 'inProgress') {
             // A finalized attempt is a receipt, not an editable examination.
             clock.remove(); progress.remove(); completion.remove(); nav.remove(); content.remove();
             previous.remove(); next.remove(); submit.remove();
-            status.textContent = resultLabel(attempt); close.textContent = 'Close'; close.onclick = () => popup.close();
+            status.textContent = resultLabel(attempt); close.textContent = 'Close'; close.onclick = () => popup.close(); popup.querySelector('.task-flow-back').textContent = 'Close';
             const examId = exam.id, attemptId = attempt.id;
             const refreshResult = async () => {
                 if (!popup.open) return;
