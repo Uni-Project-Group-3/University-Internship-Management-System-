@@ -143,7 +143,7 @@
         </form>
         <script src="../Scripts/bootstrap.bundle.min.js">
         </script>
-        <link href="../Assets/task-workspace.css?v=20261026-exam-popup" rel="stylesheet" />
+        <link href="../Assets/task-workspace.css?v=20261026-exam-fit" rel="stylesheet" />
 <link href="../Assets/tasks-premium.css?v=20261024-buttons" rel="stylesheet" />
         <script src="../Js_project/firebase-client.js?v=20261023-task-connection"></script>
         <script src="../Js_project/task-dialogs.js?v=20261025-confirm-popup"></script>

@@ -15,6 +15,7 @@
 .uims-bell svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 .uims-bell-badge{position:absolute;top:-6px;right:-6px;min-width:20px;height:20px;padding:0 5px;display:grid;place-items:center;border:2px solid #fff;border-radius:999px;background:#c2412d;color:#fff;font:800 11px/1 Inter,Arial,sans-serif}
 .uims-bell-badge[hidden]{display:none}
+.uims-bell{vertical-align:middle}.uims-bell-spaced{margin-inline-end:12px}.uims-bell-pushed{margin-inline-start:auto}
 .uims-bell-floating{position:fixed;top:16px;right:20px;z-index:2000;box-shadow:0 6px 18px rgba(20,32,60,.12)}
 .uims-notify-panel{position:fixed;z-index:3000;width:min(380px,calc(100vw - 24px));max-height:min(520px,calc(100dvh - 90px));display:flex;flex-direction:column;border:1px solid #dfe5ef;border-radius:16px;background:#fff;box-shadow:0 24px 60px rgba(20,32,60,.22);overflow:hidden;font-family:Inter,Arial,sans-serif;color:#242e51}
 .uims-notify-panel[hidden]{display:none}
@@ -63,6 +64,33 @@
         if (bar) { const anchor = bar.querySelector('.user-chip, .topbar-actions, .workspace-account, .dropdown'); if (anchor && anchor.parentElement) anchor.parentElement.insertBefore(bell, anchor); else bar.appendChild(bell); }
         else { bell.classList.add('uims-bell-floating'); document.body.appendChild(bell); }
         bells.push(bell);
+    }
+    // Every page: the bell sits on the right, directly beside the account/profile chip.
+    const accountSelector = '.workspace-user-chip, .user-chip, .workspace-account, #accountMenu, .account-menu, .user-menu, .avatar';
+    const actionsSelector = '.workspace-navbar-actions, .topbar-actions, .topbar-right, .header-actions, .dash-topbar-right';
+    function dockBells() {
+        const bars = new Set();
+        for (const bell of bells.slice()) {
+            const bar = bell.closest('.topbar, .dash-topbar, .wr-top, .workspace-navbar') || document.querySelector('.topbar, .dash-topbar, .wr-top, .workspace-navbar');
+            if (!bar) continue;
+            if (bars.has(bar)) { bell.remove(); bells.splice(bells.indexOf(bell), 1); continue; } // one bell per header
+            bars.add(bar);
+            const account = bar.querySelector(accountSelector);
+            if (!account) continue;
+            bell.classList.remove('uims-bell-floating');
+            const actions = account.closest(actionsSelector);
+            if (actions && bar.contains(actions)) {
+                // Directly before the first account element inside the right-hand group.
+                const first = actions.querySelector(accountSelector);
+                const slot = [...actions.children].find(child => child === first || child.contains(first));
+                if (slot) actions.insertBefore(bell, slot); else actions.prepend(bell);
+                const style = getComputedStyle(actions);
+                if (!(style.display.includes('flex') && parseFloat(style.columnGap) > 0)) bell.classList.add('uims-bell-spaced');
+            } else {
+                account.before(bell); bell.classList.add('uims-bell-pushed', 'uims-bell-spaced');
+                if (getComputedStyle(account).marginLeft !== '0px') account.style.marginLeft = '0';
+            }
+        }
     }
     function updateBadges() {
         bells.forEach(bell => {
@@ -114,7 +142,7 @@
     function post(body) { return fetch(api, { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }).catch(() => null); }
 
     function start() {
-        placeBells(); buildPanel(); load();
+        placeBells(); dockBells(); buildPanel(); load();
         setInterval(() => { if (!document.hidden) load(); }, 30000);
         document.addEventListener('visibilitychange', () => { if (!document.hidden) load(); });
     }

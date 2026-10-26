@@ -14,7 +14,7 @@
         <section id="examList" class="exam-list" aria-live="polite"></section>
         <section id="attemptPanel" class="panel hidden" aria-live="polite"></section>
     </main>
-    <link href="../Assets/task-workspace.css?v=20261026-exam-popup" rel="stylesheet" />
+    <link href="../Assets/task-workspace.css?v=20261026-exam-fit" rel="stylesheet" />
     <script src="../Js_project/firebase-client.js?v=20261023-live-review"></script>
     <script src="../Js_project/task-dialogs.js?v=20261025-confirm-popup"></script>
     <script src="../Js_project/Student/TaskExams.js?v=20261026-exam-popup"></script>
