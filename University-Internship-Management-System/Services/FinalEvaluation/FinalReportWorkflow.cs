@@ -292,6 +292,17 @@ namespace UIMS.Services
         }
         // Reports sent straight to the admin by an earlier version can still be decided.
         private static bool DirectToAdmin(JObject record) { return T(record, "currentRevisionId").Length > 0 && T(record, "directToAdmin") == T(record, "currentRevisionId"); }
+        // The academic supervisor can notify the coordinators again about a report that already waits for their decision.
+        public async Task<JObject> RemindAdminAsync(string uid, string role, string placementId)
+        {
+            var a = await Authorize(uid, role, Key(placementId));
+            if (a.Role != "academicSupervisor") throw new FirebaseException(403, "Only the assigned academic supervisor can send this report to the admin.");
+            var r = O(await db.ReadAsync(Path(placementId)));
+            if (T(r, "status") != "pendingAdminReview") throw new FirebaseException(409, "Approve the report first; then it is sent to the admin.");
+            string student = T(r, "studentName").Length > 0 ? T(r, "studentName") : a.Student;
+            Notify.Send(Notify.WithRole("coordinator"), "Final report awaiting approval", "Reminder from the academic supervisor: the final report for " + student + " is waiting for your final decision.", "FinalReports.aspx", "report");
+            return new JObject { ["sent"] = true, ["message"] = "The coordinators were notified again. The report is waiting for their final approval." };
+        }
         public async Task Reconcile(string uid, string role, string placementId)
         {
             var a = await Authorize(uid, role, placementId); if (a.Role != "coordinator") throw new FirebaseException(403, "Admin reconciliation is required.");
