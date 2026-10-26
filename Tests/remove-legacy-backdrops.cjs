@@ -1,2 +1,0 @@
-const fs=require('fs'),path=require('path'),root='University-Internship-Management-System';
-for(const role of ['Student','Company','Academic','Coordinator'])for(const name of fs.readdirSync(path.join(root,role)).filter(n=>n.endsWith('.aspx'))){const p=path.join(root,role,name);let s=fs.readFileSync(p,'utf8');s=s.replace(/<button\b[^>]*class="[^"]*(?:sidebar-backdrop|dash-sidebar-backdrop)[^"]*"[^>]*>[\s\S]*?<\/button>/gi,'');fs.writeFileSync(p,s);}

@@ -1,7 +1,0 @@
-Import each numbered JSON only at the exact Firebase child path below. Do not import at the database root. Stop if an absent attendance child was created meanwhile.
-
-placements/PLC-APP-20261024210802-D6319F <- 01-placements.json
-uimsAttendance/students/2023005 <- 02-students.json
-uimsAttendance/trainingAssignments/PLC-APP-20261024210802-D6319F <- 03-trainingAssignments.json
-uimsAttendance/schedules/PLC-APP-20261024210802-D6319F <- 04-schedules.json
-uimsAttendance/provisioningClaims/PLC-APP-20261024210802-D6319F <- 05-provisioningClaims.json

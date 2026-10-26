@@ -1,4 +1,0 @@
-const fs=require('fs'),path=require('path'),crypto=require('crypto'),assert=require('assert');const root=path.resolve('University-Internship-Management-System'),baseline=JSON.parse(fs.readFileSync('Tests/task-scope-baseline.json'));
-for(const [p,hash]of Object.entries(baseline))assert.equal(crypto.createHash('sha256').update(fs.readFileSync(path.join(root,p))).digest('hex'),hash,p+' changed unexpectedly');
-for(const p of ['Student/MyTasks.aspx','Company/ManageTasks.aspx']){const s=fs.readFileSync(path.join(root,p),'utf8');assert.equal((s.match(/<just:RoleSidebar\b/g)||[]).length,1);assert(!s.includes('task-tabs'));assert(s.includes('tasks-premium.css'));assert(s.includes('<select id="taskSearch"'));assert(s.includes('tasks-premium-hero'));}
-console.log('PASS sidebar controls/base/CSS/JavaScript and Web.config unchanged byte-for-byte; each task page has one existing sidebar, title dropdown, hero and no old details tabs.');
