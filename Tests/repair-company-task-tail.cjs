@@ -1,6 +1,0 @@
-const fs=require('fs'),cp=require('child_process');const p='University-Internship-Management-System/Js_project/Company/ManageTasks.js';let s=fs.readFileSync(p,'utf8');const original=cp.execFileSync('git',['show','HEAD:'+p],{encoding:'utf8'});s+='    }\n'+original.slice(original.indexOf('    async function refreshBoard()'));
-const start=s.indexOf('    function selectReviewTab('),end=s.indexOf("    by('reviewModal').addEventListener('hide.bs.modal'",start);s=s.slice(0,start)+`    function selectReviewTab(){const isExam=examStates.has(selectedId);document.querySelectorAll('[data-company-panel]').forEach(p=>{p.hidden=isExam?p.dataset.companyPanel!=='exam':p.dataset.companyPanel==='exam';});by('approveTaskBtn').hidden=isExam;by('requestRevisionBtn').hidden=isExam;}
-`+s.slice(end);
-s=s.replace("by('taskSearch')?.addEventListener('input', render)","by('taskSearch')?.addEventListener('change', render)");
-s=s.replace("        boardBusy = true;\n        try {","        if(payload.columnId !== (({assigned:'todo',inprogress:'inProgress',revision:'inProgress',submitted:'review',completed:'done'})[movedTask?.status]||'todo')){message('Use the authorized task action to change its stage. Drag only reorders within a stage.',true);draggedTaskId=null;return;}\n        boardBusy = true;\n        try {");
-fs.writeFileSync(p,s);

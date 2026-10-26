@@ -47,3 +47,6 @@ Tests/FinalEvaluation/*.png
 Tests/task-scope-baseline.json
 Tests/shared-navigation-migration.json
 University-Internship-Management-System/Firebase.Local.config
+
+# Keep test suites and their reports out of the application repository.
+/Tests/
