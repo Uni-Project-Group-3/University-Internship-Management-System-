@@ -127,3 +127,11 @@
 .student-exam-popup nav{display:flex;gap:8px;flex-wrap:wrap;margin:16px 0}
 .student-exam-popup .question-image{max-width:100%;max-height:300px;object-fit:contain;display:block;margin:16px 0}
 @media(max-width:600px){#submitModal .student-task-dialog{width:calc(100% - 16px);height:calc(100% - 16px);margin:8px auto}#submitModal .modal-header{padding:20px!important}.student-task-tabs{padding:0 12px;gap:0}.student-task-tabs button{padding:13px 12px}#submitModal .modal-body{padding:14px!important}#submitModal [data-student-panel]{padding:16px}#submitModal .modal-footer{padding:14px!important}#submitModal .modal-footer .btn{flex:1 1 auto}.student-exam-popup h2{font-size:20px}}
+/* Student exam: a smooth popup over the current page, wide enough for questions. */
+.task-flow-shell:has(.workspace-exam-attempt){width:min(1050px,calc(100vw - 40px))}
+#submitModal .modal-dialog:has(.workspace-exam-attempt){max-width:min(1050px,calc(100vw - 24px))}
+.student-exam-popup{animation:student-exam-pop .2s ease-out}
+.student-exam-popup .question{animation:student-exam-fade .18s ease-out}
+@keyframes student-exam-pop{from{opacity:0;transform:translateY(8px) scale(.985)}to{opacity:1;transform:none}}
+@keyframes student-exam-fade{from{opacity:0}to{opacity:1}}
+@media(prefers-reduced-motion:reduce){.student-exam-popup,.student-exam-popup .question{animation:none}}
