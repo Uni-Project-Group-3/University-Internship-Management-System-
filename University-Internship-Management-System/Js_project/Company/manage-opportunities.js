@@ -216,7 +216,7 @@
                 + '<div class="opp-head"><div class="opp-logo">' + escape(initials(name)) + '</div><div class="opp-head-text"><h3 class="opp-title">' + escape(o.title) + '</h3><div class="opp-company">' + escape(name) + '</div></div></div>'
                 + '<div class="opp-meta">' + meta + '</div>'
                 + '<p class="opp-desc">' + escape(o.description || '') + '</p>'
-                + (o.department ? '<div class="opp-majors"><span class="tag"><i class="bi bi-mortarboard"></i>' + escape(o.department) + '</span></div>' : '')
+                + ((o.majors && o.majors.length ? o.majors : o.department ? [o.department] : []).length ? '<div class="opp-majors">' + (o.majors && o.majors.length ? o.majors : [o.department]).map(m => '<span class="tag"><i class="bi bi-mortarboard"></i>' + escape(m) + '</span>').join('') + '</div>' : '')
                 + '<div class="opp-seats"><div class="seats-row"><span><strong>' + accepted + '</strong> of ' + (seats || '—') + ' seats filled' + (seats && accepted >= seats ? '<span class="full-flag">Full</span>' : '') + '</span>'
                 + '<span class="text-secondary"><i class="bi bi-people"></i>' + plural(apps, 'applicant') + '</span></div>'
                 + '<div class="progress-slim"><span class="' + (pct >= 100 ? 'success' : '') + '" style="width:' + pct + '%"></span></div></div>'
@@ -225,7 +225,8 @@
                 + '</article></div>';
         }
 
-        by('majorPicker').innerHTML = demo.departments.map((department, index) => '<li><input type="radio" name="demoOpportunityDepartment" id="oppMajor' + index + '" value="' + escape(department) + '"><label for="oppMajor' + index + '">' + escape(department) + '</label></li>').join('');
+        const selectedDepartments = () => all('[name="demoOpportunityDepartment"]:checked').map(el => el.value);
+        by('majorPicker').innerHTML = demo.departments.map((department, index) => '<li><input type="checkbox" name="demoOpportunityDepartment" id="oppMajor' + index + '" value="' + escape(department) + '"><label for="oppMajor' + index + '">' + escape(department) + '</label></li>').join('');
 
         render = () => {
             const query = value('searchBox').toLowerCase();
@@ -277,8 +278,8 @@
             text('pvMode', checked('workMode') || 'On-site');
             text('pvDuration', value('oppDuration') || '—');
             text('pvHours', value('oppRequiredHours') || '—');
-            const department = checked('demoOpportunityDepartment');
-            by('pvMajors').innerHTML = department ? '<span class="tag"><i class="bi bi-mortarboard"></i>' + escape(department) + '</span>' : '<span class="tag tag-empty">No specialization selected</span>';
+            const departments = selectedDepartments();
+            by('pvMajors').innerHTML = departments.length ? departments.map(d => '<span class="tag"><i class="bi bi-mortarboard"></i>' + escape(d) + '</span>').join('') : '<span class="tag tag-empty">No specialization selected</span>';
             const seats = Number(value('oppSeats')) || 0, accepted = o ? acceptedOf(o) : 0;
             text('pvSeats', seats || '—'); text('pvAccepted', accepted); text('pvApplicants', o ? applicantsOf(o.id).length : 0);
             const bar = by('pvBar'); if (bar) bar.style.width = (seats ? Math.min(100, accepted / seats * 100) : 0) + '%';
@@ -291,10 +292,12 @@
         function editor(id) {
             selected = id; const o = view.opportunities.find(o => o.id === id);
             for (const [field, key] of Object.entries({ oppTitle: 'title', oppDescription: 'description', oppRequirements: 'requirements', oppLocation: 'location', oppSeats: 'seats', oppDeadline: 'deadline', oppStart: 'start', oppDuration: 'duration', oppRequiredHours: 'requiredHours' })) set(field, o?.[key] ?? ({ oppSeats: 1, oppDuration: 8, oppRequiredHours: 160 }[field] || ''));
-            all('[name="demoOpportunityDepartment"]').forEach(el => el.checked = el.value === (o?.department || demo.departments[0]));
+            // One or more specializations; a new opportunity starts with none so the company chooses explicitly.
+            const chosen = o ? (o.majors && o.majors.length ? o.majors : [o.department]).filter(Boolean) : [];
+            all('[name="demoOpportunityDepartment"]').forEach(el => el.checked = chosen.includes(el.value));
             all('[name="workMode"]').forEach(el => el.checked = el.value === (o?.workMode || 'On-site'));
             text('oppModalTitle', id ? 'Edit opportunity' : 'New opportunity');
-            text('oppModalSub', id ? 'Update the details below. Changes are visible to students right away.' : 'Fill in the details below. Students in the selected specialization will see it right away.');
+            text('oppModalSub', id ? 'Update the details below. Changes are visible to students right away.' : 'Fill in the details below. Students in the selected specializations will see it right away.');
             text('saveOppText', id ? 'Save changes' : 'Publish opportunity');
             const icon = by('oppModalIcon'); if (icon) icon.className = 'bi ' + (id ? 'bi-pencil-square' : 'bi-briefcase');
             open('oppModal'); preview();
@@ -309,8 +312,11 @@
         }, { signal }));
         click('saveOpp', () => {
             if (!valid(['oppTitle', 'oppDescription', 'oppSeats', 'oppLocation', 'oppDeadline', 'oppStart', 'oppDuration', 'oppRequiredHours'], 'oppModal')) return;
+            const departmentError = document.querySelector('[data-error-for="majorPicker"]');
+            if (!selectedDepartments().length) { if (departmentError) { departmentError.textContent = 'Choose at least one specialization.'; departmentError.hidden = false; } by('majorPicker').querySelector('input')?.focus(); return; }
+            if (departmentError) departmentError.hidden = true;
             const editing = !!selected;
-            const outcome = transact('opportunity', { id: selected, title: value('oppTitle'), description: value('oppDescription'), requirements: value('oppRequirements'), department: checked('demoOpportunityDepartment'), location: value('oppLocation'), requiredHours: value('oppRequiredHours'), seats: value('oppSeats'), deadline: value('oppDeadline'), start: value('oppStart'), duration: value('oppDuration'), workMode: checked('workMode') }, 'oppModal');
+            const outcome = transact('opportunity', { id: selected, title: value('oppTitle'), description: value('oppDescription'), requirements: value('oppRequirements'), department: selectedDepartments()[0], departments: selectedDepartments(), location: value('oppLocation'), requiredHours: value('oppRequiredHours'), seats: value('oppSeats'), deadline: value('oppDeadline'), start: value('oppStart'), duration: value('oppDuration'), workMode: checked('workMode') }, 'oppModal');
             if (outcome.ok) toast(editing ? 'Opportunity updated.' : 'Opportunity published.');
         });
         actions.close = id => {

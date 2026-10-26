@@ -1,6 +1,7 @@
 ﻿using Newtonsoft.Json.Linq;
 using System;
 using System.Globalization;
+using System.Linq;
 using University_Internship_Management_System.Shared;
 
 namespace UIMS.Company
@@ -29,8 +30,10 @@ namespace UIMS.Company
             string title = S(d["title"]).Trim();
             string description = S(d["description"]).Trim();
             string location = S(d["location"]).Trim();
-            string department = S(d["department"]).Trim();
-            if (title == "" || description == "" || location == "" || department == "")
+            // One or more specializations; older clients still send a single "department".
+            var departments = ((d["departments"] as JArray) ?? new JArray(S(d["department"])))
+                .Select(x => S(x).Trim()).Where(x => x != "").Distinct().Take(20).ToList();
+            if (title == "" || description == "" || location == "" || departments.Count == 0)
                 throw new AppError("Title, description, specialization and location are required.");
 
             int seats, duration, hours;
@@ -49,7 +52,7 @@ namespace UIMS.Company
                 ["title"] = title,
                 ["description"] = description,
                 ["requirements"] = S(d["requirements"]).Trim(),
-                ["majors"] = new JArray(department),
+                ["majors"] = new JArray(departments),
                 ["location"] = location,
                 ["workMode"] = S(d["workMode"]) == "" ? "On-site" : S(d["workMode"]),
                 ["seats"] = seats,

@@ -150,7 +150,7 @@
                         <div class="modal-icon"><i class="bi bi-briefcase" id="oppModalIcon"></i></div>
                         <div class="modal-heading">
                             <h2 class="modal-title" id="oppModalTitle">New opportunity</h2>
-                            <p class="modal-sub" id="oppModalSub">Fill in the details below. Students in the selected specialization will see it right away.</p>
+                            <p class="modal-sub" id="oppModalSub">Fill in the details below. Students in the selected specializations will see it right away.</p>
                         </div>
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
@@ -204,12 +204,12 @@
                                         <span class="block-num">2</span>
                                         <div>
                                             <h3>Who can apply</h3>
-                                            <p>Only students in the selected specialization will see this opportunity.</p>
+                                            <p>Choose one or more specializations. Only students in them will see this opportunity.</p>
                                         </div>
                                     </div>
 
                                     <div class="field">
-                                        <label>Specialization</label>
+                                        <label>Specializations</label>
                                         <ul class="major-picker" id="majorPicker"></ul>
                                         <div class="field-error" data-error-for="majorPicker" hidden></div>
                                     </div>
@@ -391,6 +391,6 @@
 
     <script src="../Js_project/Demo/demo-store.js?v=20261021-original-ui"></script>
 <script src="<%= ResolveUrl("~/Scripts/bootstrap.bundle.min.js") %>"></script>
-    <script src="../Js_project/Company/manage-opportunities.js?v=20261023-modern"></script>
+    <script src="../Js_project/Company/manage-opportunities.js?v=20261026-multi-major"></script>
 </body>
 </html>
