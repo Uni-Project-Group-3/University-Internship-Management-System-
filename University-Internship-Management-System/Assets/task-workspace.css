@@ -135,3 +135,8 @@
 @keyframes student-exam-pop{from{opacity:0;transform:translateY(8px) scale(.985)}to{opacity:1;transform:none}}
 @keyframes student-exam-fade{from{opacity:0}to{opacity:1}}
 @media(prefers-reduced-motion:reduce){.student-exam-popup,.student-exam-popup .question{animation:none}}
+/* The exam popup always fits inside its window; Previous/Next/Save/Submit stay visible at the bottom. */
+.student-exam-popup,.student-exam-popup.workspace-exam-attempt{width:100%!important;max-width:100%!important;min-width:0;box-sizing:border-box;overflow-x:hidden}
+.student-exam-popup .question,.student-exam-popup .option,.student-exam-popup .workspace-dialog-body{min-width:0;max-width:100%;box-sizing:border-box;overflow-wrap:anywhere}
+.student-exam-popup .question-image{width:auto;max-width:100%;height:auto}
+.student-exam-popup .workspace-dialog-actions{position:sticky;bottom:-24px;z-index:2;background:var(--surface,#fff);padding-bottom:16px;flex-wrap:wrap}
