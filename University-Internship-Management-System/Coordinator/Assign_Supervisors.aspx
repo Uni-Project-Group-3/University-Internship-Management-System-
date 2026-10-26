@@ -123,7 +123,7 @@
             </div>
             <section aria-labelledby="assignmentStudentsTitle">
                 <h3 id="assignmentStudentsTitle">03 &nbsp; Students</h3>
-                <p id="assignmentStudentsHint" class="assignment-hint">Students already in another group or assigned to another supervisor cannot be selected.</p>
+                <p id="assignmentStudentsHint" class="assignment-hint">Only available students from this major are listed.</p>
                 <div class="assignment-student-tools">
                     <input id="studentSearch" type="search" placeholder="Search by name or student ID" aria-label="Search eligible students" disabled="disabled" />
                     <button type="button" class="assignment-secondary" id="studentSelectAll" disabled="disabled">Select all</button>
@@ -136,7 +136,7 @@
         <p id="assignmentError" role="alert" class="assignment-error"></p>
         <div class="assignment-dialog-footer"><button type="button" id="assignmentDelete" class="assignment-danger" hidden="hidden">Delete group</button><button type="button" id="assignmentCancel" class="assignment-secondary">Cancel</button><button type="button" id="assignmentSave" class="assignment-primary">Create group</button></div>
     </dialog>
-    <script src="../Js_project/Coordinator/Assign_Supervisors.js?v=20261025-records" defer="defer"></script>
+    <script src="../Js_project/Coordinator/Assign_Supervisors.js?v=20261026-available-only" defer="defer"></script>
     <script src="<%= ResolveUrl("~/Js_project/Public/workspace-navigation.js?v=20261024") %>" defer="defer"></script>
 </body>
 </html>

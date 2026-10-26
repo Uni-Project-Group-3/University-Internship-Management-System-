@@ -82,7 +82,7 @@
         by('assignmentRenameRow').hidden = !g; by('assignmentDelete').hidden = !g; by('groupRename').value = g?.name || '';
         by('assignmentSetup').hidden = !!g; by('assignmentSummary').hidden = !g; by('assignmentCurrent').hidden = !g;
         by('assignmentStudentsTitle').textContent = g ? 'Add students' : '03 \u00a0 Students';
-        by('assignmentStudentsHint').textContent = g ? 'Only students from this major who are not in another group or assigned to another supervisor are listed.' : 'Students already in another group or assigned to another supervisor cannot be selected.';
+        by('assignmentStudentsHint').textContent = g ? 'Only available students from this major are listed.' : 'Only available students from this major are listed.';
         if (g) {
             const members = memberIds(g);
             const owner = data.professors.find(x => x.id === g.supervisorId);
@@ -131,7 +131,8 @@
         host.replaceChildren();
         if (enabled) {
             // An existing group lists only the students that can still join it.
-            for (const s of data.students.filter(s => s.department === major && (!group || !blocked(s)) && [s.name, s.id].join(' ').toLowerCase().includes(query))) {
+            // Only students who can actually be selected are listed.
+            for (const s of data.students.filter(s => s.department === major && !blocked(s) && [s.name, s.id].join(' ').toLowerCase().includes(query))) {
                 const label = node('label', null, 'assignment-student'), check = document.createElement('input');
                 check.type = 'checkbox'; check.disabled = blocked(s); check.checked = selected.has(s.id);
                 check.onchange = () => { by('assignmentError').textContent = ''; if (check.checked) selected.add(s.id); else selected.delete(s.id); students(); };
@@ -142,7 +143,7 @@
                 label.append(check, info); host.append(label);
             }
         }
-        if (!host.children.length) host.append(node('p', !enabled ? 'Choose a supervisor and major to see students.' : professor() && !professor().official ? 'This supervisor is not in university records, so no students can be added. Delete this group or the account instead.' : group && !query ? 'No more available students in this major.' : 'No students match this major and search.', 'assignment-empty'));
+        if (!host.children.length) host.append(node('p', !enabled ? 'Choose a supervisor and major to see students.' : professor() && !professor().official ? 'This supervisor is not in university records, so no students can be added. Delete this group or the account instead.' : !query ? 'No available students in this major.' : 'No available students match this search.', 'assignment-empty'));
         by('studentCount').textContent = selected.size + ' selected';
         by('assignmentSave').disabled = busy || (!!group && !selected.size);
     }
