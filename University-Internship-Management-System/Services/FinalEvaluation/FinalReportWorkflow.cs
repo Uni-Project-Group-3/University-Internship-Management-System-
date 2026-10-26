@@ -198,7 +198,7 @@ namespace UIMS.Services
                 string previous = T(record, "status");
                 record["companySupervisorId"] = access.CompanySupervisor; record["academicSupervisorId"] = access.Academic;
                 if (T(record,"studentName").Length == 0) record["studentName"] = access.StudentName;
-                if (action == "save" || action == "submit" || action == "submitToAdmin")
+                if (action == "save" || action == "submit")
                 {
                     if (access.Role != "companySupervisor") throw new FirebaseException(403, "Only the assigned company supervisor prepares this report.");
                     State(record, access.Role, "draft", "companyRevisionRequested");
@@ -227,9 +227,8 @@ namespace UIMS.Services
                         if (previous == "companyRevisionRequested" && string.IsNullOrWhiteSpace(T(draft, "companyResponse"))) throw new FirebaseException(400, "A company response is required for resubmission.");
                         string revisionId = "revision-" + requestId; var revisions = O(record["revisions"]); var revision = (JObject)draft.DeepClone(); revision["id"] = revisionId; revision["submittedAt"] = Now(); revision["submittedBy"] = uid; revision["approvedTrainingMinutes"] = minutes; revisions[revisionId] = revision;
                         record["revisions"] = revisions; record["currentRevisionId"] = revisionId; record["approvedTrainingMinutes"] = minutes; record.Remove("draft");
-                        // "Send to admin" skips the academic step; the admin's final approval accepts this exact revision.
-                        if (action == "submitToAdmin") { record["status"] = "pendingAdminReview"; record["directToAdmin"] = revisionId; record.Remove("academicApprovalId"); }
-                        else { record["status"] = "pendingAcademicReview"; record.Remove("directToAdmin"); }
+                        // Every submission goes to the academic supervisor first, then to the coordinator.
+                        record["status"] = "pendingAcademicReview"; record.Remove("directToAdmin");
                     }
                 }
                 else if (action == "academicApprove" || action == "companyRevision")
@@ -275,9 +274,7 @@ namespace UIMS.Services
                 if (!saved) { if (retry < 2) continue; throw new FirebaseException(409, "Another review changed this report. Reload before deciding."); }
                 if (action == "finalApprove") await Reconcile(uid, role, placementId);
                 string reportStudent = T(record, "studentName").Length > 0 ? T(record, "studentName") : access.Student;
-                if (action == "submitToAdmin")
-                    Notify.Send(Notify.WithRole("coordinator"), "Final report awaiting approval", "The company sent the final training report for " + reportStudent + " directly for your final decision.", "FinalReports.aspx", "report");
-                else if (action == "submit")
+                if (action == "submit")
                     Notify.Send(Notify.AcademicSupervisor(access.Academic), "Final report to review", "The company submitted the final training report for " + reportStudent + ". Review it in Final Academic Evaluation.", "Academic/FinalAcademicEvaluation.aspx", "report");
                 else if (action == "academicApprove")
                     Notify.Send(Notify.WithRole("coordinator"), "Final report awaiting approval", "The academic supervisor approved the final report for " + reportStudent + ". Give the final decision.", "FinalReports.aspx", "report");
@@ -293,6 +290,7 @@ namespace UIMS.Services
             }
             throw new FirebaseException(409, "The report changed. Reload.");
         }
+        // Reports sent straight to the admin by an earlier version can still be decided.
         private static bool DirectToAdmin(JObject record) { return T(record, "currentRevisionId").Length > 0 && T(record, "directToAdmin") == T(record, "currentRevisionId"); }
         public async Task Reconcile(string uid, string role, string placementId)
         {
